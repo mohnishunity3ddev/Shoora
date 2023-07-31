@@ -62,7 +62,7 @@ include_directories(${EXTERNAL_INCLUDE_DIR}/glfw/include)
 include_directories(${EXTERNAL_INCLUDE_DIR}/glm)
 include_directories(common)
 
-set(LIBRARY_DIR ${CMAKE_SOURCE_DIR}/common/libs)
+set(LIBRARY_DIR ${CMAKE_SOURCE_DIR}/libs)
 
 # Create an IMPORTED library target for your .lib file
 add_library(external_libraries STATIC IMPORTED)
