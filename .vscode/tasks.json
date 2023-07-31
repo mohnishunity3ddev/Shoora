@@ -1,0 +1,101 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Ninja: Build",
+            "type": "shell",
+            "command": "${workspaceFolder}/build_scripts/windows/build_cmake.ps1",
+            "windows": {
+                "options": {
+                    "shell": {
+                        "executable": "pwsh",
+                        "args": [
+                            "-File"
+                        ]
+                    }
+                }
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "Msvc: Build",
+            "type": "shell",
+            "command": "${workspaceFolder}/build_scripts/windows/build_msvc.ps1",
+            "windows": {
+                "options": {
+                    "shell": {
+                        "executable": "pwsh",
+                        "args": [
+                            "-File"
+                        ]
+                    }
+                }
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "Clean Project",
+            "type": "shell",
+            "command": "${workspaceFolder}/build_scripts/windows/cleanbuild.ps1",
+            "windows": {
+                "options": {
+                    "shell": {
+                        "executable": "pwsh",
+                        "args": [
+                            "-File"
+                        ]
+                    }
+                }
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "Run Project",
+            "type": "shell",
+            "command": "${workspaceFolder}/build_scripts/windows/run_project.ps1",
+            "windows": {
+                "options": {
+                    "shell": {
+                        "executable": "pwsh",
+                        "args": [
+                            "-File"
+                        ]
+                    }
+                }
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        }
+    ]
+}

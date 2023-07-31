@@ -1,0 +1,8 @@
+// #ifndef __JPROJECT_PATHS
+// #define __JPROJECT_PATHS
+
+// const char* const project_path = "@CMAKE_SOURCE_DIR@/";
+// const char* const texture_dir_path = "@CMAKE_SOURCE_DIR@/textures/";
+// const char* const models_dir_path = "@CMAKE_SOURCE_DIR@/models/";
+
+// #endif

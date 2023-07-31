@@ -1,0 +1,27 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${VULKAN_SDK}\\include",
+                "${CPP_LIBRARIES}\\glfw\\include",
+                "${CPP_LIBRARIES}\\glm",
+                "${CPP_LIBRARIES}\\volk"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "VK_USE_PLATFORM_WIN32_KHR",
+                "GLFW_EXPOSE_NATIVE_WIN32"
+            ],
+            "windowsSdkVersion": "10.0.19041.0",
+            "compilerPath": "C:/Program Files/LLVM/bin/clang++.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++23",
+            "intelliSenseMode": "windows-clang-x64"
+        }
+    ],
+    "version": 4
+}

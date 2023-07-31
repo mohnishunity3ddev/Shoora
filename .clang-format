@@ -1,0 +1,53 @@
+BasedOnStyle: LLVM
+
+IndentWidth: 4
+
+# The starting brace { is always on the next line.
+BreakBeforeBraces: Allman
+
+# function name below return type in a function declaration.
+AlwaysBreakAfterDefinitionReturnType: All
+
+# Align all parameters with the open bracket during a function call.
+AlignAfterOpenBracket: Align
+PointerAlignment: Right
+ReferenceAlignment: Pointer
+
+# Align consecutive equals to be aligned.
+# AlignConsecutiveAssignments: Consecutive
+# AlignConsecutiveDeclarations: Consecutive
+
+AlignTrailingComments: true
+BinPackArguments: true
+BinPackParameters: true
+# AllowAllArgumentsOnNextLine: true
+ColumnLimit: 115
+ReflowComments: true
+AlignOperands: true
+ContinuationIndentWidth: 80
+
+# BasedOnStyle: Google
+# AlignAfterOpenBracket: 'AlwaysBreak'
+# IndentWidth: 4
+# AlwaysBreakAfterDefinitionReturnType: All
+# AllowAllConstructorInitializersOnNextLine: 'false'
+# AllowAllParametersOfDeclarationOnNextLine: 'false'
+# AlignConsecutiveMacros: 'true'
+# AlignConsecutiveAssignments: true
+# AllowShortCaseLabelsOnASingleLine: 'true'
+# AllowShortFunctionsOnASingleLine: 'None'
+# AllowShortIfStatementsOnASingleLine: 'Never'
+# AllowShortLoopsOnASingleLine: 'false'
+# BreakBeforeBraces: Allman
+# BinPackArguments: 'false'
+# BinPackParameters: 'false'
+# Cpp11BracedListStyle: 'false'
+# ColumnLimit: 125
+# NamespaceIndentation: All
+# SpaceAfterTemplateKeyword: 'false'
+# SpaceBeforeCtorInitializerColon: 'true'
+# SpaceBeforeInheritanceColon: 'true'
+# SpaceBeforeParens: ControlStatements
+# SpaceBeforeRangeBasedForLoopColon: 'true'
+# SpaceInEmptyBlock: true
+# Standard: 'Latest'
