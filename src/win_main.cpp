@@ -173,17 +173,6 @@ Win32ProcessWindowsMessageQueue(HWND WindowHandle, platform_input_state *Input)
     {
         switch(Message.message)
         {
-#if 0
-            case WM_LBUTTONDOWN:
-            {
-                POINT ClientRelativeMousePos;
-                GetCursorPos(&ClientRelativeMousePos);
-                ScreenToClient(Message.hwnd, &ClientRelativeMousePos);
-
-                WIN32_LOG_OUTPUT("Clicked! MousePos: {%d, %d}\n",
-                                 ClientRelativeMousePos.x, ClientRelativeMousePos.y);
-            } break;
-#endif
             case WM_SYSKEYDOWN:
             case WM_SYSKEYUP:
             case WM_KEYDOWN:
@@ -277,17 +266,17 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     RegisterClass(&WinClass);
 
     DWORD Style = WS_OVERLAPPEDWINDOW;
-    HWND Window = CreateWindowEx(0, CLASS_NAME, L"Shura", Style,
-                                 CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-                                 NULL,
-                                 NULL,
-                                 hInstance,
-                                 NULL);
+    HWND WindowHandle = CreateWindowEx(0, CLASS_NAME, L"Shura", Style,
+                                       CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+                                       NULL,
+                                       NULL,
+                                       hInstance,
+                                       NULL);
 
-    GlobalWin32WindowContext.Handle = Window;
+    GlobalWin32WindowContext.Handle = WindowHandle;
     GlobalWin32WindowContext.ClearColor = CreateSolidBrush(RGB(48, 10, 36));
 
-    ShowWindow(Window, CmdShow);
+    ShowWindow(WindowHandle, CmdShow);
 
     platform_input_state InputState[2] = {};
     platform_input_state *OldInputState = InputState;
@@ -307,6 +296,12 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         };
 
         // Mouse
+        POINT ClientRelativeMousePos;
+        GetCursorPos(&ClientRelativeMousePos);
+        ScreenToClient(WindowHandle, &ClientRelativeMousePos);
+        NewInputState->MouseXPos = ClientRelativeMousePos.x;
+        NewInputState->MouseYPos = ClientRelativeMousePos.y;
+
         for(i32 ButtonIndex = 0;
             ButtonIndex < 5;
             ++ButtonIndex)
@@ -333,12 +328,19 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         // {
         //     OutputDebugString(L"W was pressed!\n");
         // }
+        if(Win32InputKeyPressed(NewInputState->MouseButtons[0]))
+        {
+            WIN32_LOG_OUTPUT("Left Mouse Button was pressed at [%f, %f]!\n",
+                             NewInputState->MouseXPos, NewInputState->MouseYPos);
+        }
 
 
         platform_input_state *Temp = NewInputState;
         NewInputState = OldInputState;
         OldInputState = Temp;
     }
+
+    // CloseWindow(WindowHandle);
 
     return 0;
 }
