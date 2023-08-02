@@ -51,7 +51,39 @@ macro(SETUP_APP projname chapter)
 	# if(MSVC)
 	# 	set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 	# endif()
+endmacro()
 
+macro(SETUP_WIN32_APP projname chapter)
+	set(FOLDER_NAME ${chapter})
+	set(PROJECT_NAME ${projname})
+	# project(${PROJECT_NAME} CXX)
+
+	file(GLOB_RECURSE SRC_FILES 	LIST_DIRECTORIES false RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.c *.cpp)
+	file(GLOB_RECURSE HEADER_FILES 	LIST_DIRECTORIES false RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h *.hpp)
+
+	add_executable(${PROJECT_NAME} WIN32 ${SRC_FILES} ${HEADER_FILES})
+
+	# if(MSVC)
+	# 	add_definitions(-D_CONSOLE)
+	# endif()
+
+	SETUP_GROUPS("${SRC_FILES}")
+	SETUP_GROUPS("${HEADER_FILES}")
+
+	SET_OUTPUT_NAMES(${PROJECT_NAME})
+
+	# if(NOT MSVC)
+	# 	set_property(TARGET ${PROJECT_NAME} PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+	# endif()
+
+	set_property(TARGET ${PROJECT_NAME} PROPERTY FOLDER ${FOLDER_NAME})
+
+	set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
+	set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
+
+	if(MSVC)
+		set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/assets")
+	endif()
 endmacro()
 
 macro(subdirlist result curdir)
@@ -75,11 +107,11 @@ macro(LINK_SIMPLE_LIB)
 	GET_SRC_FILES(SRC_FILES HEADER_FILES)
 
 	foreach(CXX_FILE ${SRC_FILES})
-		list(APPEND ALL_FILES ${CXX_FILE})    
+		list(APPEND ALL_FILES ${CXX_FILE})
 	endforeach()
 
 	foreach(CXX_FILE ${HEADER_FILES})
-		list(APPEND ALL_FILES ${CXX_FILE})    
+		list(APPEND ALL_FILES ${CXX_FILE})
 	endforeach()
 
 	get_filename_component(LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR} NAME)

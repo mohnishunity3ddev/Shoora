@@ -75,7 +75,7 @@ createInstance()
     instance_create_info.enabledLayerCount = sizeof(debugLayers) / sizeof(debugLayers[0]);
     instance_create_info.ppEnabledLayerNames = debugLayers;
 #endif
-    
+
     const char *extensions[] = {VK_KHR_SURFACE_EXTENSION_NAME,
                                 "VK_KHR_win32_surface",
                                 VK_EXT_DEBUG_UTILS_EXTENSION_NAME};

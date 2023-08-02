@@ -2,7 +2,7 @@
 . $PSScriptRoot/_variables.ps1
 
 # Build Shaders
-b_shader
+# b_shader
 
 $arg = $args[0]
 $arg2 = $args[1]

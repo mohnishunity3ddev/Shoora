@@ -4,9 +4,8 @@ project(Shoora CXX C)
 
 set(EXTERN_LIB_PATH ${CMAKE_CURRENT_SOURCE_DIR}/external)
 
-set(CMAKE_CXX_STANDARD 20) # this does nothing for MSVC, use target_compile_options below
+set(CMAKE_CXX_STANDARD 11) # this does nothing for MSVC, use target_compile_options below
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS ON)
 
 # Definitions
 if(WIN32)
@@ -60,7 +59,7 @@ set(EXTERNAL_INCLUDE_DIR $ENV{CPP_LIBRARIES})
 include_directories(${EXTERNAL_INCLUDE_DIR}/volk)
 include_directories(${EXTERNAL_INCLUDE_DIR}/glfw/include)
 include_directories(${EXTERNAL_INCLUDE_DIR}/glm)
-include_directories(common)
+include_directories(engine)
 
 set(LIBRARY_DIR ${CMAKE_SOURCE_DIR}/libs)
 
@@ -77,5 +76,5 @@ set_target_properties(external_libraries PROPERTIES IMPORTED_LOCATION ${LIBRARY_
 
 
 # Include Common SharedUtils
-add_subdirectory(common)
+add_subdirectory(engine)
 add_subdirectory(src)

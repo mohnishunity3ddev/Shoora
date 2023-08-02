@@ -1,8 +1,8 @@
 {
     "editor.fontFamily": " 'Maple Mono NF', 'JetBrainsMono Nerd Font Mono', 'CaskaydiaCove NF Mono'",
-    "editor.fontSize": 16,
+    "editor.fontSize": 15,
     "editor.fontLigatures": true,
-    "editor.fontWeight": "750",
+    "editor.fontWeight": "normal",
 
     "terminal.integrated.profiles.windows": {
         "Default Profile": {
