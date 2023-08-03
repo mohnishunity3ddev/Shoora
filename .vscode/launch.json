@@ -5,7 +5,7 @@
             "name": "(Windows) Launch",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/bin/src/shoora_Debug.exe",
+            "program": "${workspaceRoot}/bin/engine/ShuraEngine_Debug.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}/assets",

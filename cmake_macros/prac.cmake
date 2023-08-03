@@ -63,18 +63,10 @@ macro(SETUP_WIN32_APP projname chapter)
 
 	add_executable(${PROJECT_NAME} WIN32 ${SRC_FILES} ${HEADER_FILES})
 
-	# if(MSVC)
-	# 	add_definitions(-D_CONSOLE)
-	# endif()
-
 	SETUP_GROUPS("${SRC_FILES}")
 	SETUP_GROUPS("${HEADER_FILES}")
 
 	SET_OUTPUT_NAMES(${PROJECT_NAME})
-
-	# if(NOT MSVC)
-	# 	set_property(TARGET ${PROJECT_NAME} PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
-	# endif()
 
 	set_property(TARGET ${PROJECT_NAME} PROPERTY FOLDER ${FOLDER_NAME})
 

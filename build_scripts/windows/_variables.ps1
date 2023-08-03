@@ -1,14 +1,14 @@
 # all variables used in ps1 files
 Set-Variable -Name PROJECT_NAME -Value "Shoora"
-Set-Variable -Name EXE_NAME -Value "shoora_Debug.exe"
+Set-Variable -Name EXE_NAME -Value "ShuraEngine_Debug.exe"
 
 Set-Variable -Name BUILD_SCRIPTS_DIR_PATH -Value $PSScriptRoot
 Set-Variable -Name PROJECT_ROOT_PATH_RELATIVE_FROM_SCRIPT -Value ..\..
 Set-Variable -Name BUILD_FOLDER_NAME -Value bin
-Set-Variable -Name SRC_FOLDER_NAME -Value src
+Set-Variable -Name SRC_FOLDER_NAME -Value engine
 Set-Variable -Name BUILD_SCRIPTS_FOLDER_NAME -Value build_scripts
 Set-Variable -Name ASSETS_FOLDER_NAME -Value assets
-Set-Variable -Name ASSETS_FROM_BIN_RELATIVE_PATH -Value ..\bin\src
+Set-Variable -Name ASSETS_FROM_BIN_RELATIVE_PATH -Value ..\bin\engine
 
 Set-Variable -Name PROJECT_ROOT_DIR_PATH -Value $BUILD_SCRIPTS_DIR_PATH\$PROJECT_ROOT_PATH_RELATIVE_FROM_SCRIPT
 Set-Variable -Name BIN_DIR_PATH -Value $PROJECT_ROOT_DIR_PATH\$BUILD_FOLDER_NAME

@@ -5,6 +5,10 @@
 #include "defines.h"
 #include "win_platform.h"
 #include <Windows.h>
+
+#include "renderer/renderer_frontend.h"
+
+// TODO)): Remove this and implement your own!
 #include <stdio.h>
 
 struct win32_window_context
@@ -282,6 +286,10 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     platform_input_state *OldInputState = InputState;
     platform_input_state *NewInputState = InputState + 1;
 
+    renderer_context RendererContext = {};
+    // TODO)): Get the AppName from the game dll.
+    InitializeRenderer(&RendererContext, "Temporary Placeholder App Name");
+
     Win32GlobalRunning = true;
     while(Win32GlobalRunning)
     {
@@ -340,6 +348,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         OldInputState = Temp;
     }
 
+    DestroyRenderer(&RendererContext);
     // CloseWindow(WindowHandle);
 
     return 0;

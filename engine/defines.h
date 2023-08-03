@@ -22,16 +22,22 @@ typedef int64_t int64;
 typedef float f32;
 typedef double f64;
 
+#define SHU_ENGINE_NAME "Shura Game Engine"
+#define SHU_RENDERER_BACKEND_VULKAN
+
 #define ARRAY_SIZE(Arr) sizeof(Arr) / sizeof(Arr[0])
+
 #define ASSERT(Expression)                                                                                        \
     if (!(Expression))                                                                                            \
     {                                                                                                             \
         *((int volatile *)0) = 0;                                                                                 \
     }
+
 #define VK_CHECK(Call)                                                                                            \
     {                                                                                                             \
-        SU_ASSERT(Call == VK_SUCCESS);                                                                            \
+        ASSERT(Call == VK_SUCCESS);                                                                               \
     }
+
 #define MEMZERO(MemPtr, Size)                                                                                     \
     {                                                                                                             \
         u8 *Ptr = (u8 *)MemPtr;                                                                                   \
@@ -40,6 +46,20 @@ typedef double f64;
             *Ptr++ = 0;                                                                                           \
         }                                                                                                         \
     }
+inline u64
+AlignAs(u64 Number, u32 AlignAs)
+{
+    u64 Result;
+    u64 AlignmentMask = (u64)(AlignAs - 1);
+    Result = (Number + AlignmentMask) & (~AlignmentMask);
+    return Result;
+}
+#define ALIGN4(Number) AlignAs(Number, 4)
+#define ALIGN8(Number) AlignAs(Number, 8)
+#define ALIGN16(Number) AlignAs(Number, 16)
+#define ALIGN32(Number) AlignAs(Number, 32)
+#define ALIGN64(Number) AlignAs(Number, 64)
+
 #define WIN32_LOG_OUTPUT(FormatString, ...)                                                                       \
     {                                                                                                             \
         char TextBuffer[256];                                                                                     \
@@ -47,8 +67,14 @@ typedef double f64;
         OutputDebugStringA(TextBuffer);                                                                           \
     }
 
-#define SU_EXPORT __declspec(dllimport)
+#ifdef _MSC_VER
+#define SHU_EXPORT __declspec(dllexport)
+#elif defined(__clang__)
+#define SHU_EXPORT __attribute__((visibility("default")))
+#endif
 
-const char *EngineName = "Shura Engine";
+
+
+
 #define DEFINES_H
 #endif // DEFINES_H

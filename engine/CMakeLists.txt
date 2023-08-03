@@ -1,15 +1,21 @@
 cmake_minimum_required(VERSION 3.22.0)
+project(ShuraEngine)
 
-project(ShuraEngine CXX C)
+include(../cmake_macros/prac.cmake)
+include_directories(external)
 
-file(GLOB_RECURSE SRC_FILES     LIST_DIRECTORIES false RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.c??)
-file(GLOB_RECURSE HEADER_FILES  LIST_DIRECTORIES false RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h)
+SETUP_WIN32_APP(ShuraEngine "ShuraEngine")
 
-include_directories((platform))
 
-if(NOT SRC_FILES STREQUAL "")
-    add_library(ShuraEngine ${SRC_FILES} ${HEADER_FILES})
+####NOTE: Get all files from a particular path
+# get_filename_component(MY_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external" ABSOLUTE)
+# file(GLOB_RECURSE EXTERNAL_LIBS_SRC "${MY_SOURCE_DIR}/*.cpp" "${MY_SOURCE_DIR}/*.c")
+# file(GLOB_RECURSE EXTERNAL_LIBS_HEADER "${MY_SOURCE_DIR}/*.hpp" "${MY_SOURCE_DIR}/*.h")
 
-    set_property(TARGET ShuraEngine PROPERTY CXX_STANDARD 11)
-    set_property(TARGET ShuraEngine PROPERTY CXX_STANDARD_REQUIRED ON)
-endif()
+####NOTE: Import an already exisiting library
+set(LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external)
+add_library(extern STATIC IMPORTED)
+set_target_properties(extern PROPERTIES IMPORTED_LOCATION ${LIBS_DIR}/volk/volk.lib)
+
+# add_library(volk STATIC external/volk/volk.c external/volk/volk.h)
+target_link_libraries(ShuraEngine PRIVATE extern)

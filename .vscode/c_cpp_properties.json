@@ -7,14 +7,17 @@
                 "${VULKAN_SDK}\\include",
                 "${CPP_LIBRARIES}\\glfw\\include",
                 "${CPP_LIBRARIES}\\glm",
-                "${CPP_LIBRARIES}\\volk"
+                "${CPP_LIBRARIES}\\volk",
+                "${workspaceFolder}/engine"
             ],
             "defines": [
+                "WIN32",
                 "_DEBUG",
                 "UNICODE",
                 "_UNICODE",
                 "VK_USE_PLATFORM_WIN32_KHR",
-                "GLFW_EXPOSE_NATIVE_WIN32"
+                "GLFW_EXPOSE_NATIVE_WIN32",
+                "SHU_RENDERER_BACKEND_VULKAN"
             ],
             "windowsSdkVersion": "10.0.19041.0",
             "compilerPath": "C:/Program Files/LLVM/bin/clang++.exe",

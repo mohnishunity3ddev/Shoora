@@ -1,4 +1,4 @@
-#if !defined(WIN_PLATFORM)
+#if !defined(WIN_PLATFORM_H)
 
 enum VirtualKeyCodes
 {
@@ -68,7 +68,7 @@ enum VirtualKeyCodes
     SU_ALPHABETKEYX = 0x58,
     SU_ALPHABETKEYY = 0x59,
     SU_ALPHABETKEYZ = 0x5A,
-    SU_LEFtWINDOWSKEY = 0x5B,
+    SU_LEFTWINDOWSKEY = 0x5B,
     SU_RIGHTWINDOWSKEY = 0x5C,
     SU_SLEEP = 0x5F,
     SU_NUMPAD0 = 0x60,
@@ -151,5 +151,5 @@ enum VirtualKeyCodes
     SU_OEM_CLEAR = 0xFE,
 };
 
-#define WIN_PLATFORM
+#define WIN_PLATFORM_H
 #endif

@@ -1,11 +1,10 @@
 cmake_minimum_required(VERSION 3.22.0)
 
-project(Shoora CXX C)
+project(ShuraProject CXX C)
 
 set(EXTERN_LIB_PATH ${CMAKE_CURRENT_SOURCE_DIR}/external)
 
 set(CMAKE_CXX_STANDARD 11) # this does nothing for MSVC, use target_compile_options below
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Definitions
 if(WIN32)
@@ -56,16 +55,15 @@ endif()
 # include_directories(external/imgui)
 include_directories($ENV{VULKAN_SDK}/Include)
 set(EXTERNAL_INCLUDE_DIR $ENV{CPP_LIBRARIES})
-include_directories(${EXTERNAL_INCLUDE_DIR}/volk)
 include_directories(${EXTERNAL_INCLUDE_DIR}/glfw/include)
 include_directories(${EXTERNAL_INCLUDE_DIR}/glm)
+
 include_directories(engine)
 
 set(LIBRARY_DIR ${CMAKE_SOURCE_DIR}/libs)
-
 # Create an IMPORTED library target for your .lib file
-add_library(external_libraries STATIC IMPORTED)
-set_target_properties(external_libraries PROPERTIES IMPORTED_LOCATION ${LIBRARY_DIR}/glfw3.lib)
+# add_library(external_libraries STATIC IMPORTED)
+# set_target_properties(external_libraries PROPERTIES IMPORTED_LOCATION ${LIBRARY_DIR}/glfw3.lib)
 
 # if(WIN32)
 #     set_property(TARGET zlibstatic    PROPERTY FOLDER "ThirdPartyLibraries")
@@ -76,5 +74,5 @@ set_target_properties(external_libraries PROPERTIES IMPORTED_LOCATION ${LIBRARY_
 
 
 # Include Common SharedUtils
+add_subdirectory(game)
 add_subdirectory(engine)
-add_subdirectory(src)

@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.22.0)
+
+project(ShuraGame)
+
+file(GLOB_RECURSE SRC_FILES     LIST_DIRECTORIES false RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.c *.cpp)
+file(GLOB_RECURSE HEADER_FILES  LIST_DIRECTORIES false RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h *.hpp)
+
+if(NOT SRC_FILES STREQUAL "")
+    add_library(ShuraGame SHARED ${SRC_FILES} ${HEADER_FILES})
+    set_property(TARGET ShuraGame PROPERTY CXX_STANDARD 11)
+endif()
