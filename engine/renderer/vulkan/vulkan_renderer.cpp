@@ -56,9 +56,9 @@ InitializeVulkanRenderer(shura_vulkan_context *VulkanContext, const char *AppNam
     // Load Vulkan Logical device and Device Queues which will be used for rendering.
     shura_queue_info QueueInfos[] =
     {
-        {.Type = QueueType_Graphics, .QueueCount = 2},
-        {.Type = QueueType_Compute, .QueueCount = 2},
-        {.Type = QueueType_Transfer, .QueueCount = 2},
+        {.Type = QueueType_Graphics, .QueueCount = 1},
+        {.Type = QueueType_Compute, .QueueCount = 1},
+        {.Type = QueueType_Transfer, .QueueCount = 1},
     };
 
     VkPhysicalDeviceFeatures DesiredFeatures = {};
