@@ -1,5 +1,9 @@
 #if !defined(VULKAN_DEFINES_H)
 
+// Features
+// TODO)): Need to implement.
+#define SHU_VULKAN_FEATURE_BINDLESS_RENDERING 0
+
 #define SHU_VULKAN_VALIDATION_KHRONOS "VK_LAYER_KHRONOS_validation"
 #define SHU_VULKAN_VALIDATION_LUNARG_API_DUMP "VK_LAYER_LUNARG_api_dump"
 

@@ -1,6 +1,6 @@
 #include "renderer/renderer_frontend.h"
 #if defined(SHU_RENDERER_BACKEND_VULKAN)
-#include "renderer/vulkan/_vulkan_renderer.h"
+#include "renderer/vulkan/vulkan_renderer.h"
 #endif
 
 

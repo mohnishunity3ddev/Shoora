@@ -3,7 +3,8 @@
 #endif
 
 #include "defines.h"
-#include "win_platform.h"
+#include "platform/platform.h"
+#include "platform/windows/win_platform.h"
 #include <Windows.h>
 
 #include "renderer/renderer_frontend.h"
@@ -169,6 +170,28 @@ Win32InputKeyPressed(platform_input_button_state InputState)
     return Result;
 }
 
+// NOTE: EXPORTED FUNCTIONS
+void
+LogOutput(const char *Format, ...)
+{
+    char Buffer[1024];
+    i32 Length = 0;
+
+    if(Format)
+    {
+        va_list VarArgs;
+        va_start(VarArgs, Format);
+        Length = vsnprintf(Buffer, ARRAY_SIZE(Buffer), Format, VarArgs);
+        va_end(VarArgs);
+    }
+
+    if((Length > 0) &&
+       ((size_t)Length < ARRAY_SIZE(Buffer)))
+    {
+        OutputDebugStringA(Buffer);
+    }
+}
+
 void
 Win32ProcessWindowsMessageQueue(HWND WindowHandle, platform_input_state *Input)
 {
@@ -256,7 +279,9 @@ Win32ProcessWindowsMessageQueue(HWND WindowHandle, platform_input_state *Input)
     }
 }
 
-int WINAPI
+// TODO)): Right now this is the only entry point since win32 is the only platform right now.
+// TODO)): Have to implement multiple entrypoints for all platforms.
+i32 WINAPI
 wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdShow)
 {
     const wchar_t CLASS_NAME[] = L"Shura Engine";
