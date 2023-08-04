@@ -41,6 +41,7 @@ InitializeVulkanRenderer(shura_vulkan_context *VulkanContext, const char *AppNam
 {
     volkInitialize();
 
+    // Get Vulkan instance
     shura_instance_create_info ShuraInstanceCreateInfo =
     {
         .AppName = AppName,
@@ -52,14 +53,18 @@ InitializeVulkanRenderer(shura_vulkan_context *VulkanContext, const char *AppNam
     ASSERT(CreateVulkanInstance(VulkanContext, &ShuraInstanceCreateInfo));
     volkLoadInstance(VulkanContext->Instance);
 
+    // Load Vulkan Logical device and Device Queues which will be used for rendering.
     shura_queue_info QueueInfos[] =
     {
         {.Type = QueueType_Graphics, .QueueCount = 2},
         {.Type = QueueType_Compute, .QueueCount = 2},
         {.Type = QueueType_Transfer, .QueueCount = 2},
     };
+
     VkPhysicalDeviceFeatures DesiredFeatures = {};
-    DesiredFeatures.samplerAnisotropy = true;
+    DesiredFeatures.samplerAnisotropy = VK_TRUE;
+    DesiredFeatures.geometryShader = VK_TRUE;
+
     shura_device_create_info DeviceCreateInfo =
     {
         .ppRequiredExtensions = RequiredDeviceExtensions,
@@ -68,7 +73,7 @@ InitializeVulkanRenderer(shura_vulkan_context *VulkanContext, const char *AppNam
         .pQueueCreateInfos = QueueInfos,
         .QueueCreateInfoCount = ARRAY_SIZE(QueueInfos)
     };
-    CreateLogicalDevice(VulkanContext, &DeviceCreateInfo);
+    CreateLogicalDeviceAndGetQueues(VulkanContext, &DeviceCreateInfo);
     volkLoadDevice(VulkanContext->LogicalDevice);
 }
 

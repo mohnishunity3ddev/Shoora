@@ -7,7 +7,12 @@
 struct shura_vulkan_context
 {
     VkInstance Instance;
+
     VkDevice LogicalDevice;
+    VkQueue GraphicsQueue;
+    VkQueue ComputeQueue;
+    VkQueue TransferQueue;
+
 };
 
 void InitializeVulkanRenderer(shura_vulkan_context *VulkanContext, const char *AppName);

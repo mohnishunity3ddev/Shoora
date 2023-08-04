@@ -36,8 +36,11 @@ struct shura_device_create_info
 };
 
 struct shura_vulkan_context;
-void CreateLogicalDevice(shura_vulkan_context *VulkanContext,
+void CreateLogicalDeviceAndGetQueues(shura_vulkan_context *VulkanContext,
                          shura_device_create_info *ShuraDeviceCreateInfo);
+void GetRequiredDeviceQueues(shura_vulkan_context *Context,
+                             const shura_queue_info *RequiredQueueInfos,
+                             const u32 RequiredQueueInfoCount);
 
 void DestroyLogicalDevice(shura_vulkan_context *VulkanContext);
 
