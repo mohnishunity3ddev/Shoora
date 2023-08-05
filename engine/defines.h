@@ -58,6 +58,8 @@ typedef double f64;
         }                                                                                                         \
     }
 
+#define NANOSECONDS(Seconds) Seconds * 1000000000
+
 inline u32
 ClampToRange(u32 Value, u32 Min, u32 Max)
 {

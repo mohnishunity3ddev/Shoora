@@ -300,6 +300,52 @@ CreatePresentationSurface(shura_vulkan_context *Context, VkSurfaceKHR *Surface)
 #endif
 }
 
+u32
+AcquireNextSwapchainImage(shura_vulkan_context *Context)
+{
+    u32 ImageIndex = 0;
+
+    // NOTE: We can wait upto 2 seocnds to acquire the new swapchain image, if not throw an error.
+    VkResult AcquireResult = vkAcquireNextImageKHR(Context->LogicalDevice, Context->Swapchain.SwapchainHandle, NANOSECONDS(2),
+                                                   Context->Semaphore, Context->Fence, &ImageIndex);
+    if((AcquireResult != VK_SUCCESS) &&
+       (AcquireResult != VK_SUBOPTIMAL_KHR))
+    {
+        LogOutput("There was a problem acquiring a swapchain image!\n");
+
+        if(AcquireResult == VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            LogOutput("You cannot use the images of this swapchain. Destroy the swapchain and recreate it again!\n");
+            return -1;
+        }
+    }
+
+    ASSERT(ImageIndex >= 0 && ImageIndex < Context->Swapchain.SwapchainImageCount);
+    return ImageIndex;
+}
+
+void
+PresentImage(shura_vulkan_context *Context)
+{
+    VkQueue PresentQueue;
+
+    VkSemaphore RenderingSemaphores[1];
+    VkSwapchainKHR Swapchains[1];
+    u32 ImageIndices[1];
+
+    // NOTE: We can present multiple images to presentation engine. But only one from a specific swapchain.
+    VkPresentInfoKHR PresentInfo = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
+    PresentInfo.pNext = 0;
+    PresentInfo.waitSemaphoreCount = 1;
+    PresentInfo.pWaitSemaphores = RenderingSemaphores;
+    PresentInfo.swapchainCount = 1;
+    PresentInfo.pSwapchains = Swapchains;
+    PresentInfo.pImageIndices = ImageIndices;
+    PresentInfo.pResults = nullptr;
+
+    VK_CHECK(vkQueuePresentKHR(PresentQueue, &PresentInfo));
+}
+
 void
 DestroyPresentationSurface(shura_vulkan_context *Context)
 {

@@ -14,8 +14,17 @@ struct shura_vulkan_swapchain_create_info
     VkColorSpaceKHR DesiredImageColorSpace;
 };
 
+struct shura_vulkan_image_present_info
+{
+    VkSwapchainKHR Swapchain;
+    u32 ImageIndex;
+};
+
 void CreatePresentationSurface(shura_vulkan_context *Context, VkSurfaceKHR *Surface);
 void CreateSwapchain(shura_vulkan_context *Context, shura_vulkan_swapchain_create_info *ShuraSwapchainInfo);
+
+u32 AcquireNextSwapchainImage(shura_vulkan_context *Context);
+
 
 void DestroyPresentationSurface(shura_vulkan_context *Context);
 void DestroySwapchain(shura_vulkan_context *Context);

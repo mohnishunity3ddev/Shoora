@@ -41,6 +41,9 @@ struct shura_vulkan_context
     VkQueue TransferQueue;
 
     shura_vulkan_swapchain Swapchain;
+    
+    VkSemaphore Semaphore;
+    VkFence Fence;
 };
 
 void InitializeVulkanRenderer(shura_vulkan_context *VulkanContext, shura_app_info *AppInfo);
