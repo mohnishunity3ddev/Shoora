@@ -2,6 +2,7 @@
 #include "vulkan_device.h"
 #include "vulkan_instance.h"
 #include "vulkan_swapchain.h"
+#include "vulkan_debug.h"
 
 const char *RequiredInstanceLayers[] =
 {
@@ -35,6 +36,17 @@ const char *RequiredDeviceExtensions[] =
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
+shura_vulkan_debug_create_info DebugCreateInfo = {.SeverityFlags = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
+                                                                   VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                                                                   VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT,
+                                                  .MessageTypeFlags = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                                                                      VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                                                                      VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+                                                  .ReportFlags = VK_DEBUG_REPORT_WARNING_BIT_EXT |
+                                                                 VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT |
+                                                                 VK_DEBUG_REPORT_ERROR_BIT_EXT |
+                                                                 VK_DEBUG_REPORT_DEBUG_BIT_EXT};
+
 void
 InitializeVulkanRenderer(shura_vulkan_context *VulkanContext, shura_app_info *AppInfo)
 {
@@ -51,6 +63,11 @@ InitializeVulkanRenderer(shura_vulkan_context *VulkanContext, shura_app_info *Ap
     };
     ASSERT(CreateVulkanInstance(VulkanContext, &ShuraInstanceCreateInfo));
     volkLoadInstance(VulkanContext->Instance);
+
+    // Debug Utils
+#ifdef _DEBUG
+    SetupDebugCallbacks(VulkanContext, DebugCreateInfo);
+#endif
 
     // Load Vulkan Logical device and Device Queues which will be used for rendering.
     shura_queue_info QueueInfos[] =
@@ -74,7 +91,6 @@ InitializeVulkanRenderer(shura_vulkan_context *VulkanContext, shura_app_info *Ap
     CreateLogicalDeviceAndGetQueues(VulkanContext, &DeviceCreateInfo);
     volkLoadDevice(VulkanContext->LogicalDevice);
 
-    
     // Swapchain
     shura_vulkan_swapchain_create_info SwapchainInfo =
     {
@@ -82,7 +98,7 @@ InitializeVulkanRenderer(shura_vulkan_context *VulkanContext, shura_app_info *Ap
         .DesiredImageUsages = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
         .DesiredTransformFlagBits = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
 
-        .DesiredImageFormat = VK_FORMAT_R8G8B8A8_UNORM,
+        .DesiredImageFormat = VK_FORMAT_B8G8R8A8_UNORM,
         .DesiredImageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
     };
     CreateSwapchain(VulkanContext, &SwapchainInfo);
@@ -94,6 +110,9 @@ DestroyVulkanRenderer(shura_vulkan_context *Context)
     DestroySwapchain(Context);
     DestroyPresentationSurface(Context);
     DestroyLogicalDevice(Context);
+#ifdef _DEBUG
+    DestroyDebugUtilHandles(Context);
+#endif
     DestroyVulkanInstance(Context);
     LogOutput("Destroyed Vulkan Renderer!\n");
 }

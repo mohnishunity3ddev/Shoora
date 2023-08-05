@@ -4,6 +4,12 @@
 #include "volk/volk.h"
 #include "vulkan_defines.h"
 
+struct shura_vulkan_debug
+{
+    VkDebugUtilsMessengerEXT Messenger;
+    VkDebugReportCallbackEXT ReportCallback;
+};
+
 struct shura_vulkan_swapchain
 {
     VkSurfaceKHR Surface;
@@ -25,6 +31,7 @@ struct shura_vulkan_swapchain
 struct shura_vulkan_context
 {
     VkInstance Instance;
+    shura_vulkan_debug Debug;
 
     VkPhysicalDevice PhysicalDevice;
     VkDevice LogicalDevice;

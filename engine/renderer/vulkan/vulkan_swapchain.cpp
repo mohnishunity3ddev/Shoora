@@ -48,7 +48,8 @@ SelectSwapchainImageCount(shura_vulkan_swapchain *Swapchain)
 
     if(SurfaceCapabilities->maxImageCount > 0)
     {
-        LogOutput("There is a limit to the number of images supported!\n");
+        LogOutput("There is a limit to the number of images supported! Expected if Present Mode is anything other "
+                  "than IMMEDIATE MODE!\n");
         if(ImageCount > SurfaceCapabilities->maxImageCount)
         {
             ImageCount = SurfaceCapabilities->maxImageCount;

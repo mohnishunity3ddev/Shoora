@@ -2,10 +2,21 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(Windows) Launch",
+            "name": "Debug Build Launch",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceRoot}/bin/engine/ShuraEngine_Debug.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}/assets",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Release Build Launch",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/bin/engine/ShuraEngine_Release.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}/assets",
