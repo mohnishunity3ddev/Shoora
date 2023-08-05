@@ -311,9 +311,11 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     platform_input_state *OldInputState = InputState;
     platform_input_state *NewInputState = InputState + 1;
 
+    shura_app_info AppInfo = {.AppName = "Placeholder App Name"};
+
     renderer_context RendererContext = {};
     // TODO)): Get the AppName from the game dll.
-    InitializeRenderer(&RendererContext, "Temporary Placeholder App Name");
+    InitializeRenderer(&RendererContext, &AppInfo);
 
     Win32GlobalRunning = true;
     while(Win32GlobalRunning)
@@ -378,3 +380,19 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
 
     return 0;
 }
+
+#ifdef SHU_RENDERER_BACKEND_VULKAN
+void
+FillVulkanWin32SurfaceCreateInfo(shura_platform_presentation_surface *Surface)
+{
+#ifdef WIN32
+    VkWin32SurfaceCreateInfoKHR *SurfaceCreateInfo = Surface->Win32SurfaceCreateInfo;
+
+    SurfaceCreateInfo->sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+    SurfaceCreateInfo->pNext = 0;
+    SurfaceCreateInfo->flags = 0;
+    SurfaceCreateInfo->hinstance = GetModuleHandle(0);
+    SurfaceCreateInfo->hwnd = GlobalWin32WindowContext.Handle;
+#endif
+}
+#endif

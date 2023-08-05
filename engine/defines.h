@@ -46,6 +46,26 @@ typedef double f64;
             *Ptr++ = 0;                                                                                           \
         }                                                                                                         \
     }
+#define SET_FLAG_BITS_IF_EQUAL(FlagsToSet, FirstFlagsToCheck, SecondFlagsToCheck, NumberOfBits)                   \
+    {                                                                                                             \
+        for (u32 BitIndex = 0; BitIndex < (NumberOfBits); ++BitIndex)                                             \
+        {                                                                                                         \
+            u32 BitMask = (1 << BitIndex);                                                                        \
+            if (((FirstFlagsToCheck)&BitMask) && ((SecondFlagsToCheck)&BitMask))                                  \
+            {                                                                                                     \
+                (FlagsToSet) |= BitMask;                                                                          \
+            }                                                                                                     \
+        }                                                                                                         \
+    }
+
+inline u32
+ClampToRange(u32 Value, u32 Min, u32 Max)
+{
+    if(Value < Min) {Value = Min;}
+    else if(Value > Max) {Value = Max;}
+    return Value;
+}
+
 inline u64
 AlignAs(u64 Number, u32 AlignAs)
 {

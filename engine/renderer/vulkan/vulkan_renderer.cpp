@@ -1,8 +1,7 @@
-
 #include "vulkan_renderer.h"
 #include "vulkan_device.h"
 #include "vulkan_instance.h"
-#include "platform/platform.h"
+#include "vulkan_swapchain.h"
 
 const char *RequiredInstanceLayers[] =
 {
@@ -37,14 +36,14 @@ const char *RequiredDeviceExtensions[] =
 };
 
 void
-InitializeVulkanRenderer(shura_vulkan_context *VulkanContext, const char *AppName)
+InitializeVulkanRenderer(shura_vulkan_context *VulkanContext, shura_app_info *AppInfo)
 {
-    volkInitialize();
+    VK_CHECK(volkInitialize());
 
     // Get Vulkan instance
     shura_instance_create_info ShuraInstanceCreateInfo =
     {
-        .AppName = AppName,
+        .AppName = AppInfo->AppName,
         .ppRequiredInstanceExtensions = RequiredInstanceExtensions,
         .RequiredInstanceExtensionCount = ARRAY_SIZE(RequiredInstanceExtensions),
         .ppRequiredInstanceLayers = RequiredInstanceLayers,
@@ -60,11 +59,10 @@ InitializeVulkanRenderer(shura_vulkan_context *VulkanContext, const char *AppNam
         {.Type = QueueType_Compute, .QueueCount = 1},
         {.Type = QueueType_Transfer, .QueueCount = 1},
     };
-
     VkPhysicalDeviceFeatures DesiredFeatures = {};
     DesiredFeatures.samplerAnisotropy = VK_TRUE;
     DesiredFeatures.geometryShader = VK_TRUE;
-
+    CreatePresentationSurface(VulkanContext, &VulkanContext->Swapchain.Surface);
     shura_device_create_info DeviceCreateInfo =
     {
         .ppRequiredExtensions = RequiredDeviceExtensions,
@@ -75,11 +73,26 @@ InitializeVulkanRenderer(shura_vulkan_context *VulkanContext, const char *AppNam
     };
     CreateLogicalDeviceAndGetQueues(VulkanContext, &DeviceCreateInfo);
     volkLoadDevice(VulkanContext->LogicalDevice);
+
+    
+    // Swapchain
+    shura_vulkan_swapchain_create_info SwapchainInfo =
+    {
+        .DesiredPresentMode = VK_PRESENT_MODE_MAILBOX_KHR,
+        .DesiredImageUsages = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        .DesiredTransformFlagBits = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
+
+        .DesiredImageFormat = VK_FORMAT_R8G8B8A8_UNORM,
+        .DesiredImageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+    };
+    CreateSwapchain(VulkanContext, &SwapchainInfo);
 }
 
 void
 DestroyVulkanRenderer(shura_vulkan_context *Context)
 {
+    DestroySwapchain(Context);
+    DestroyPresentationSurface(Context);
     DestroyLogicalDevice(Context);
     DestroyVulkanInstance(Context);
     LogOutput("Destroyed Vulkan Renderer!\n");

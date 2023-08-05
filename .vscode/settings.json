@@ -126,9 +126,7 @@
         "titleBar.activeForeground": "#e7e7e7",
         "titleBar.inactiveBackground": "#05050799",
         "titleBar.inactiveForeground": "#e7e7e799",
-        "editor.lineHighlightBackground": "#00ff2a3b",
-        "editor.lineHighlightBorder": "#000000"
+        "editor.lineHighlightBorder": "#D0FEEC00"
     },
-
     "peacock.color": "#050507",
 }

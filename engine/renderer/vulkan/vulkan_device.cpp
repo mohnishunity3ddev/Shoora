@@ -20,7 +20,7 @@ const char *DeviceTypeNames[] =
 // TODO)): Read More About Transfer Queues, Sparse, Protected Queues
 b32
 CheckAvailableQueueFamilies(VkPhysicalDevice PhysicalDevice, shura_queue_info *InOutRequiredQueueFamilyInfos,
-                 const u32 RequiredQueueFamilyCount)
+                            const u32 RequiredQueueFamilyCount)
 {
     u32 AvailableQueueFamilyCount;
     vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &AvailableQueueFamilyCount, 0);
@@ -219,7 +219,7 @@ PickPhysicalDevice(VkInstance Instance, shura_device_create_info *DeviceCreateIn
 }
 
 void
-GetRequiredDeviceQueueInfos(VkDeviceQueueCreateInfo *OutQueueCreateInfos, const shura_queue_info *DesiredQueueInfos,
+FillRequiredDeviceQueueInfos(VkDeviceQueueCreateInfo *OutQueueCreateInfos, const shura_queue_info *DesiredQueueInfos,
                         const u32 DesiredQueueInfoCount)
 {
     for(u32 Index = 0;
@@ -238,6 +238,22 @@ GetRequiredDeviceQueueInfos(VkDeviceQueueCreateInfo *OutQueueCreateInfos, const 
     }
 }
 
+VkQueue *
+GetQueueHandleFromQueueInfo(shura_vulkan_context *Context, const shura_queue_info *QueueInfo)
+{
+    VkQueue *Result = 0;
+
+    switch(QueueInfo->Type)
+    {
+        case QueueType_Graphics: { Result = &Context->GraphicsQueue; } break;
+        case QueueType_Compute:  { Result = &Context->ComputeQueue;  } break;
+        case QueueType_Transfer: { Result = &Context->TransferQueue; } break;
+        default: { ASSERT(!"Queue Type Not Supported right now!") } break;
+    }
+
+    return Result;
+}
+
 void
 GetRequiredDeviceQueues(shura_vulkan_context *Context,
                         const shura_queue_info *RequiredQueueInfos,
@@ -249,14 +265,7 @@ GetRequiredDeviceQueues(shura_vulkan_context *Context,
     {
         const shura_queue_info *QueueInfo = RequiredQueueInfos + QueueInfoIndex;
 
-        VkQueue *QueueHandleDestination = 0;
-        switch(QueueInfo->Type)
-        {
-            case QueueType_Graphics: { QueueHandleDestination = &Context->GraphicsQueue; } break;
-            case QueueType_Compute:  { QueueHandleDestination = &Context->ComputeQueue;  } break;
-            case QueueType_Transfer: { QueueHandleDestination = &Context->TransferQueue; } break;
-            default: { ASSERT(!"Queue Type Not Supported right now!") } break;
-        }
+        VkQueue *QueueHandleDestination = GetQueueHandleFromQueueInfo(Context, QueueInfo);
 
         vkGetDeviceQueue(Context->LogicalDevice, QueueInfo->FamilyIndex, 0, QueueHandleDestination);
     }
@@ -267,10 +276,11 @@ CreateLogicalDeviceAndGetQueues(shura_vulkan_context *VulkanContext,
                                 shura_device_create_info *ShuraDeviceCreateInfo)
 {
     VkPhysicalDevice PhysicalDevice = PickPhysicalDevice(VulkanContext->Instance, ShuraDeviceCreateInfo);
+    VulkanContext->PhysicalDevice = PhysicalDevice;
 
     VkDeviceQueueCreateInfo QueueCreateInfos[32];
-    GetRequiredDeviceQueueInfos(QueueCreateInfos, ShuraDeviceCreateInfo->pQueueCreateInfos,
-                                ShuraDeviceCreateInfo->QueueCreateInfoCount);
+    FillRequiredDeviceQueueInfos(QueueCreateInfos, ShuraDeviceCreateInfo->pQueueCreateInfos,
+                                 ShuraDeviceCreateInfo->QueueCreateInfoCount);
 
     VkDeviceCreateInfo DeviceCreateInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
     DeviceCreateInfo.pNext = 0;

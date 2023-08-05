@@ -5,10 +5,10 @@
 
 
 void
-InitializeRenderer(renderer_context *RendererContext, const char *AppName)
+InitializeRenderer(renderer_context *RendererContext, shura_app_info *AppInfo)
 {
 #if defined(SHU_RENDERER_BACKEND_VULKAN)
-    InitializeVulkanRenderer(&RendererContext->VulkanContext, AppName);
+    InitializeVulkanRenderer(&RendererContext->VulkanContext, AppInfo);
 #else
 #error non-vulkan renderers are not supported at the moment!
 #endif

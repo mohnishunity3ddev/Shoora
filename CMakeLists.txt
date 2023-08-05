@@ -13,6 +13,7 @@ if(WIN32)
     add_definitions(-DNOMINMAX)
     add_definitions(-DVK_USE_PLATFORM_WIN32_KHR)
     add_definitions(-DGLFW_EXPOSE_NATIVE_WIN32)
+    add_definitions(-DWIN32)
 endif()
 
 option(USE_DEBUG "Enter debug mode" OFF)
