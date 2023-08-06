@@ -7,7 +7,26 @@ VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT MessageSeverityFlags,
                     const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
                     void *pUserData)
 {
-    LogOutput("Validation Layer Message: %s\n", pCallbackData->pMessage);
+    switch(MessageSeverityFlags)
+    {
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+        {
+            LogOutput(LogType_ValidationLayerInfo, "Validation Layer[VERBOSE]: %s\n", pCallbackData->pMessage);
+        } break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+        {
+            LogOutput(LogType_ValidationLayerInfo, "Validation Layer[INFO]: %s\n", pCallbackData->pMessage);
+        } break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+        {
+            LogOutput(LogType_Warn, "Validation Layer[WARN]: %s\n", pCallbackData->pMessage);
+        } break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+        {
+            LogOutput(LogType_Error, "Validation Layer[ERROR]: %s\n", pCallbackData->pMessage);
+        } break;
+        default: {} break;
+    }
 
     return VK_FALSE;
 }
@@ -19,7 +38,8 @@ VulkanDebugReportCallback(VkDebugReportFlagsEXT Flags, VkDebugReportObjectTypeEX
 {
     // if(Flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
     //     return VK_FALSE;
-    LogOutput("Debug Callback(%s): %s\n", pLayerPrefix, pMessage);
+    // TODO)): Read more about how to use this.
+    // LogOutput("Debug Callback(%s): %s\n", pLayerPrefix, pMessage);
     return VK_FALSE;
 }
 
@@ -46,7 +66,7 @@ SetupDebugCallbacks(shura_vulkan_context *Context, shura_vulkan_debug_create_inf
     VK_CHECK(vkCreateDebugReportCallbackEXT(Context->Instance, &ReportCallbackInfo, 0,
                                             &Context->Debug.ReportCallback));
 
-    LogOutput("Vulkan Debug Utils have been created!\n");
+    LogOutput(LogType_Info, "Vulkan Debug Utils have been created!\n");
     return true;
 }
 
@@ -70,5 +90,5 @@ DestroyDebugUtilHandles(shura_vulkan_context *Context)
     vkDestroyDebugUtilsMessengerEXT(Context->Instance, Context->Debug.Messenger, 0);
     vkDestroyDebugReportCallbackEXT(Context->Instance, Context->Debug.ReportCallback, 0);
 
-    LogOutput("Destroyed Debug Utils!\n");
+    LogOutput(LogType_Info, "Destroyed Debug Utils!\n");
 }

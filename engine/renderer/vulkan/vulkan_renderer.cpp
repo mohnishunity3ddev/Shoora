@@ -15,7 +15,7 @@ InitializeVulkanRenderer(shura_vulkan_context *Context, shura_app_info *AppInfo)
 #endif
 
     CreatePresentationSurface(Context, &Context->Swapchain.Surface);
-    CreateLogicalDeviceAndGetQueues(Context, &DeviceCreateInfo);
+    CreateDeviceNQueuesNCommandPool(Context, &DeviceCreateInfo);
     volkLoadDevice(Context->Device.LogicalDevice);
 
     CreateSwapchain(Context, &SwapchainInfo);
@@ -26,10 +26,10 @@ DestroyVulkanRenderer(shura_vulkan_context *Context)
 {
     DestroySwapchain(Context);
     DestroyPresentationSurface(Context);
-    DestroyLogicalDevice(Context);
+    DestroyLogicalDevice(&Context->Device);
 #ifdef _DEBUG
     DestroyDebugUtilHandles(Context);
 #endif
     DestroyVulkanInstance(Context);
-    LogOutput("Destroyed Vulkan Renderer!\n");
+    LogOutput(LogType_Info, "Destroyed Vulkan Renderer!\n");
 }

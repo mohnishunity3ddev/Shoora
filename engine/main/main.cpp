@@ -16,6 +16,7 @@ struct win32_window_context
 {
     HWND Handle;
     HBRUSH ClearColor;
+    HANDLE ConsoleHandle;
 };
 static win32_window_context GlobalWin32WindowContext = {};
 static WINDOWPLACEMENT GlobalWin32WindowPosition = {sizeof(GlobalWin32WindowPosition)};
@@ -170,9 +171,138 @@ Win32InputKeyPressed(platform_input_button_state InputState)
     return Result;
 }
 
-// NOTE: EXPORTED FUNCTIONS
 void
-LogOutput(const char *Format, ...)
+Win32LogLastError()
+{
+    DWORD ErrorCode = GetLastError();
+    LPSTR ErrorMessage = nullptr;
+
+    DWORD Result = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                                  nullptr, ErrorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                                  (LPSTR)(&ErrorMessage), 0, nullptr);
+
+    if(Result != 0)
+    {
+        char Buffer[512];
+        sprintf_s(Buffer, ARRAY_SIZE(Buffer), "Error(%d): %s", ErrorCode, ErrorMessage);
+        OutputDebugStringA(Buffer);
+        LocalFree(ErrorMessage);
+    }
+    else
+    {
+        OutputDebugStringA("Could not get error code\n");
+    }
+}
+
+#if SHU_CREATE_EXTERNAL_CONSOLE_WINDOW
+void
+Win32SetConsoleHandle()
+{
+    HANDLE Console = GlobalWin32WindowContext.ConsoleHandle;
+
+    if(Console == 0)
+    {
+        Console = GetStdHandle(STD_OUTPUT_HANDLE);
+        if (Console == 0)
+        {
+            // If GetStdHandle fails, allocate a new console
+            AllocConsole();
+            Console = GetStdHandle(STD_OUTPUT_HANDLE);
+            if (Console == 0)
+            {
+                // If GetStdHandle still fails after allocation, log the error and return
+                Win32LogLastError();
+                return;
+            }
+            else
+            {
+                GlobalWin32WindowContext.ConsoleHandle = Console;
+            }
+        }
+        else
+        {
+            GlobalWin32WindowContext.ConsoleHandle = Console;
+        }
+    }
+}
+
+void
+Win32PauseConsoleWindow()
+{
+    LogOutput(LogType_Info, "Press Enter/Escape to continue...\n");
+    Sleep(100);
+
+    while (true)
+    {
+        if (GetAsyncKeyState(VK_RETURN) & 0x8000)
+        {
+            break;
+        }
+        else if (GetAsyncKeyState(VK_ESCAPE) & 0x8000)
+        {
+            break;
+        }
+
+        Sleep(100);
+    }
+}
+
+#endif
+
+void
+OutputColoredDebugString(LogType LogType, const char *message)
+{
+    static COLORREF Colors[] = {RGB(255, 0, 0), RGB(0, 255, 0), RGB(0, 0, 255), RGB(242, 188, 47),
+                                RGB(40, 130, 255), RGB(128, 128, 128)};
+    COLORREF Color = Colors[4];
+    switch(LogType)
+    {
+        case LogType_ValidationLayerInfo:
+        {
+            Color = Colors[5];
+        } break;
+        case LogType_Fatal:
+        case LogType_Error:
+        {
+            Color = Colors[0];
+        } break;
+        case LogType_Warn:
+        {
+            Color = Colors[3];
+        } break;
+        case LogType_Info:
+        case LogType_Debug:
+        case LogType_Trace:
+        default:
+        {
+        } break;
+    }
+
+    char buffer[8192];
+    sprintf_s(buffer, sizeof(buffer), "\x1B[38;2;%d;%d;%dm%s\x1B[0m", GetRValue(Color),
+              GetGValue(Color), GetBValue(Color), message);
+    OutputDebugStringA(buffer);
+}
+
+void
+OutputToConsole(LogType LogType, const char *Message)
+{
+    HANDLE Console = GlobalWin32WindowContext.ConsoleHandle;
+
+    static u8 Levels[6] = {64, 4, 6, 2, 1, 8};
+    SetConsoleTextAttribute(Console, Levels[LogType]);
+
+    OutputColoredDebugString(LogType, Message);
+
+    u64 Length = strlen(Message);
+    LPDWORD NumberWritten = 0;
+    WriteConsoleA(Console, Message, (DWORD)Length, NumberWritten, 0);
+}
+
+// NOTE: EXPORTED FUNCTIONS
+// TODO)): Move this into a platform independent class called Logger
+void
+LogOutput(LogType LogType, const char *Format, ...)
 {
     char Buffer[1024];
     i32 Length = 0;
@@ -188,7 +318,8 @@ LogOutput(const char *Format, ...)
     if((Length > 0) &&
        ((size_t)Length < ARRAY_SIZE(Buffer)))
     {
-        OutputDebugStringA(Buffer);
+        // OutputDebugStringA(Buffer);
+        OutputToConsole(LogType, Buffer);
     }
 }
 
@@ -284,6 +415,9 @@ Win32ProcessWindowsMessageQueue(HWND WindowHandle, platform_input_state *Input)
 i32 WINAPI
 wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdShow)
 {
+#if SHU_CREATE_EXTERNAL_CONSOLE_WINDOW
+    Win32SetConsoleHandle();
+#endif
     const wchar_t CLASS_NAME[] = L"Shura Engine";
 
     WNDCLASS WinClass = {};
@@ -376,7 +510,11 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     }
 
     DestroyRenderer(&RendererContext);
-    // CloseWindow(WindowHandle);
+    CloseWindow(GlobalWin32WindowContext.Handle);
+
+#if SHU_CREATE_EXTERNAL_CONSOLE_WINDOW
+    Win32PauseConsoleWindow();
+#endif
 
     return 0;
 }

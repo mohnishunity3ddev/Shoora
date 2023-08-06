@@ -2,11 +2,13 @@
 #include <volk/volk.h>
 
 #include "defines.h"
+#include "vulkan_command_buffer.h"
 #include "vulkan_debug.h"
 #include "vulkan_device.h"
 #include "vulkan_instance.h"
 #include "vulkan_renderer.h"
 #include "vulkan_swapchain.h"
+
 
 const char *RequiredInstanceLayers[] =
 {
@@ -68,12 +70,24 @@ VkPhysicalDeviceFeatures DesiredFeatures =
     .geometryShader = VK_TRUE,
     .samplerAnisotropy = VK_TRUE
 };
-
-shura_device_create_info DeviceCreateInfo = {.ppRequiredExtensions = RequiredDeviceExtensions,
-                                             .RequiredExtensionCount = ARRAY_SIZE(RequiredDeviceExtensions),
-                                             .DesiredFeatures = &DesiredFeatures,
-                                             .pQueueCreateInfos = QueueInfos,
-                                             .QueueCreateInfoCount = ARRAY_SIZE(QueueInfos)};
+// Different Threads should have their own Command Pools.
+shura_command_pool_create_info CommandPoolCreateInfos[] =
+{
+    {
+        .CreateFlags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
+        .QueueType = QueueType_Graphics
+    }
+};
+shura_device_create_info DeviceCreateInfo =
+{
+    .ppRequiredExtensions = RequiredDeviceExtensions,
+    .RequiredExtensionCount = ARRAY_SIZE(RequiredDeviceExtensions),
+    .DesiredFeatures = &DesiredFeatures,
+    .pQueueCreateInfos = QueueInfos,
+    .QueueCreateInfoCount = ARRAY_SIZE(QueueInfos),
+    .pCommandPoolCreateInfos = CommandPoolCreateInfos,
+    .CommandPoolCount = ARRAY_SIZE(CommandPoolCreateInfos)
+};
 
 // Swapchain
 shura_vulkan_swapchain_create_info SwapchainInfo =
@@ -82,10 +96,11 @@ shura_vulkan_swapchain_create_info SwapchainInfo =
     .DesiredImageUsages = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
     .DesiredTransformFlagBits = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
 
-    .DesiredImageFormat = VK_FORMAT_B8G8R8A8_UNORM,
+    .DesiredImageFormat = VK_FORMAT_R8G8B8A8_UNORM,
     .DesiredImageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
 };
 
+VkCommandPoolCreateFlags CommandPoolFlags = 0;
 
 #define VULKAN_INPUT_INFO_H
 #endif

@@ -28,21 +28,28 @@ struct shura_vulkan_swapchain
     u32 SwapchainImageCount;
 };
 
+struct shura_vulkan_queue
+{
+    VkQueue Handle;
+    u32 Count;
+    u32 FamilyIndex;
+    // TODO)): Make this Dynamic
+    f32 Priorities[8] =
+    {
+        1.0f, 1.0f, 1.0f, 1.0f,
+        1.0f, 1.0f, 1.0f, 1.0f
+    };
+};
+
 struct shura_vulkan_device
 {
     VkPhysicalDevice PhysicalDevice;
     VkDevice LogicalDevice;
 
-    // TODO)): The Queues are actually arrays since there can be multiple queues from the same family which do a specific same task
-    VkQueue GraphicsQueue;
-    u32 GraphicsQueueCount;
-    u32 GraphicsQueueFamilyIndex;
-    VkQueue ComputeQueue;
-    u32 ComputeQueueCount;
-    u32 ComputeQueueFamilyIndex;
-    VkQueue TransferQueue;
-    u32 TransferQueueCount;
-    u32 TransferQueueFamilyIndex;
+    // TODO)): Make these Dynamic. Use Pointers instead.
+    shura_vulkan_queue Queues[8];
+    VkCommandPool CommandPools[8];
+    u32 QueueTypeCount;
 };
 
 struct shura_vulkan_context

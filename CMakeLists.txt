@@ -54,6 +54,11 @@ endif()
 # include_directories(external/assimp/include)
 # include_directories($<TARGET_FILE_DIR:assimp>/../include) # there is one config.h file which gets build in assimp's build directory by cmake.
 # include_directories(external/imgui)
+
+# Verbose Mode. Prints out all the compile messages to the screen.
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -v")
+
+
 include_directories($ENV{VULKAN_SDK}/Include)
 set(EXTERNAL_INCLUDE_DIR $ENV{CPP_LIBRARIES})
 include_directories(${EXTERNAL_INCLUDE_DIR}/glfw/include)

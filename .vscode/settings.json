@@ -1,5 +1,5 @@
 {
-    "editor.fontFamily": " 'Maple Mono NF', 'JetBrainsMono Nerd Font Mono', 'CaskaydiaCove NF Mono'",
+    "editor.fontFamily": " 'Maple Mono NF', 'CaskaydiaCove NF Mono', 'IosevkaTerm Nerd Font Mono', 'JetBrainsMono Nerd Font Mono'",
     "editor.fontSize": 16,
     "editor.fontLigatures": true,
     "editor.fontWeight": "normal",

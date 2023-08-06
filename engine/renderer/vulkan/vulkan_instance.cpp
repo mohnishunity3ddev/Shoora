@@ -95,7 +95,7 @@ CreateVulkanInstance(shura_vulkan_context *VulkanContext, shura_instance_create_
                                                                        RequiredInstanceExtensionCount);
     if(!RequiredExtensionsAvailable)
     {
-        LogOutput("Required Extensions NOT Available for creating Vulkan Instance\n");
+        LogOutput(LogType_Fatal, "Required Extensions NOT Available for creating Vulkan Instance\n");
         return false;
     }
 
@@ -120,7 +120,7 @@ CreateVulkanInstance(shura_vulkan_context *VulkanContext, shura_instance_create_
     // TODO)): I keep passing 0 as the Allocator. Might want to integrate Vulkan Memory Allocator from AMD.
     VK_CHECK(vkCreateInstance(&InstanceCreateInfo, 0, &VulkanContext->Instance));
 
-    LogOutput("Created Vulkan Instance.\n");
+    LogOutput(LogType_Info, "Created Vulkan Instance.\n");
     return true;
 }
 
@@ -128,5 +128,5 @@ void
 DestroyVulkanInstance(shura_vulkan_context *VulkanContext)
 {
     vkDestroyInstance(VulkanContext->Instance, 0);
-    LogOutput("Destroyed Vulkan Instance!\n");
+    LogOutput(LogType_Info, "Destroyed Vulkan Instance!\n");
 }

@@ -27,7 +27,21 @@ struct shura_platform_presentation_surface
 void FillVulkanWin32SurfaceCreateInfo(shura_platform_presentation_surface *Surface);
 #endif
 
-SHU_EXPORT void LogOutput(const char *Format, ...);
+enum LogType
+{
+    // FATAL, ERROR, WARN, INFO, DEBUG, TRACE
+    LogType_Fatal,
+    LogType_Error,
+    LogType_Warn,
+    LogType_Info,
+    LogType_Debug,
+    LogType_Trace,
+    LogType_ValidationLayerInfo,
+
+    LogType_MaxCount
+};
+
+SHU_EXPORT void LogOutput(LogType LogType, const char *Format, ...);
 
 #ifdef __cplusplus
 }

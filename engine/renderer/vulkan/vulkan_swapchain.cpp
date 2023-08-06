@@ -48,7 +48,7 @@ SelectSwapchainImageCount(shura_vulkan_swapchain *Swapchain)
 
     if(SurfaceCapabilities->maxImageCount > 0)
     {
-        LogOutput("There is a limit to the number of images supported! Expected if Present Mode is anything other "
+        LogOutput(LogType_Info, "There is a limit to the number of images supported! Expected if Present Mode is anything other "
                   "than IMMEDIATE MODE!\n");
         if(ImageCount > SurfaceCapabilities->maxImageCount)
         {
@@ -94,7 +94,7 @@ SelectDesiredImageUsage(shura_vulkan_swapchain *Swapchain, VkImageUsageFlags Des
     if(ImageUsageFlags != DesiredImageUsageFlags)
     {
         // TODO)) Dont ASSERT this as this is non-essential. Figure out what to set this to.
-        LogOutput("All Desired Image Usages are not supported!\n");
+        LogOutput(LogType_Warn, "All Desired Image Usages are not supported!\n");
         // ImageUsageFlags = SurfaceCapabilities->supportedUsageFlags;
     }
 
@@ -178,7 +178,7 @@ SelectImageFormats(shura_vulkan_context *Context, VkFormat DesiredImageFormat, V
                 {
                     Context->Swapchain.ImageFormat.format = DesiredImageFormat;
                     Context->Swapchain.ImageFormat.colorSpace = SupportedFormat.colorSpace;
-                    LogOutput("Desired ColorSpace ImageFormat Combination was not found. Selecting the one with "
+                    LogOutput(LogType_Warn, "Desired ColorSpace ImageFormat Combination was not found. Selecting the one with "
                               "the same imageFormat.\n");
                     FormatFound = true;
                     break;
@@ -189,7 +189,7 @@ SelectImageFormats(shura_vulkan_context *Context, VkFormat DesiredImageFormat, V
             {
                 Context->Swapchain.ImageFormat.format = SupportedFormats[0].format;
                 Context->Swapchain.ImageFormat.colorSpace = SupportedFormats[0].colorSpace;
-                LogOutput("Desired ColorSpace ImageFormat Combination was not found. Selecting the first "
+                LogOutput(LogType_Warn, "Desired ColorSpace ImageFormat Combination was not found. Selecting the first "
                           "supported one!\n");
                 FormatFound = true;
             }
@@ -232,7 +232,7 @@ GetSwapchainImageHandles(shura_vulkan_context *Context)
 
     VK_CHECK(vkGetSwapchainImagesKHR(Context->Device.LogicalDevice, Context->Swapchain.SwapchainHandle,
                                      &SwapchainImageCount, Context->Swapchain.SwapchainImages));
-    LogOutput("Got the Swapchain Image Handles!\n");
+    LogOutput(LogType_Info, "Got the Swapchain Image Handles!\n");
 }
 
 void
@@ -273,7 +273,7 @@ CreateSwapchain(shura_vulkan_context *Context,
                                   &Context->Swapchain.SwapchainHandle));
     if(Context->Swapchain.SwapchainHandle == VK_NULL_HANDLE)
     {
-        LogOutput("There was a problem creating the swapchain!\n");
+        LogOutput(LogType_Error, "There was a problem creating the swapchain!\n");
     }
 
     if(OldSwapchain != VK_NULL_HANDLE)
@@ -281,8 +281,7 @@ CreateSwapchain(shura_vulkan_context *Context,
         vkDestroySwapchainKHR(Context->Device.LogicalDevice, OldSwapchain, 0);
     }
 
-    LogOutput("Swapchain Created!\n");
-
+    LogOutput(LogType_Info, "Swapchain Created!\n");
     GetSwapchainImageHandles(Context);
 }
 
@@ -296,7 +295,7 @@ CreatePresentationSurface(shura_vulkan_context *Context, VkSurfaceKHR *Surface)
     FillVulkanWin32SurfaceCreateInfo(&Win32Surface);
 
     VK_CHECK(vkCreateWin32SurfaceKHR(Context->Instance, &SurfaceCreateInfo, 0, Surface));
-    LogOutput("Created Presentation Surface!\n");
+    LogOutput(LogType_Info, "Created Presentation Surface!\n");
 #endif
 }
 
@@ -306,16 +305,18 @@ AcquireNextSwapchainImage(shura_vulkan_context *Context)
     u32 ImageIndex = 0;
 
     // NOTE: We can wait upto 2 seocnds to acquire the new swapchain image, if not throw an error.
-    VkResult AcquireResult = vkAcquireNextImageKHR(Context->Device.LogicalDevice, Context->Swapchain.SwapchainHandle, NANOSECONDS(2),
+    VkResult AcquireResult = vkAcquireNextImageKHR(Context->Device.LogicalDevice,
+                                                   Context->Swapchain.SwapchainHandle, NANOSECONDS(2),
                                                    Context->Semaphore, Context->Fence, &ImageIndex);
     if((AcquireResult != VK_SUCCESS) &&
        (AcquireResult != VK_SUBOPTIMAL_KHR))
     {
-        LogOutput("There was a problem acquiring a swapchain image!\n");
+        LogOutput(LogType_Error, "There was a problem acquiring a swapchain image!\n");
 
         if(AcquireResult == VK_ERROR_OUT_OF_DATE_KHR)
         {
-            LogOutput("You cannot use the images of this swapchain. Destroy the swapchain and recreate it again!\n");
+            LogOutput(LogType_Error, "You cannot use the images of this swapchain. Destroy the swapchain and "
+                                     "recreate it again!\n");
             return -1;
         }
     }
@@ -350,12 +351,12 @@ void
 DestroyPresentationSurface(shura_vulkan_context *Context)
 {
     vkDestroySurfaceKHR(Context->Instance, Context->Swapchain.Surface, 0);
-    LogOutput("Destroyed Presentation Surface!\n");
+    LogOutput(LogType_Info, "Destroyed Presentation Surface!\n");
 }
 
 void
 DestroySwapchain(shura_vulkan_context *Context)
 {
     vkDestroySwapchainKHR(Context->Device.LogicalDevice, Context->Swapchain.SwapchainHandle, 0);
-    LogOutput("Destroyed Swapchain!\n");
+    LogOutput(LogType_Info, "Destroyed Swapchain!\n");
 }

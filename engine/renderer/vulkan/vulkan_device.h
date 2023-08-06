@@ -8,6 +8,7 @@ enum shura_queue_type
     QueueType_Graphics,
     QueueType_Compute,
     QueueType_Transfer,
+
     // TODO)): Read more on Sparse and Protected Queues
     QueueType_Sparse,
     QueueType_Protected,
@@ -18,12 +19,16 @@ enum shura_queue_type
 struct shura_queue_info
 {
     shura_queue_type Type = QueueType_None;
-
-    u32 QueueCount = 2;
+    u32 QueueCount;
     // TODO)): Make this dynamic.
     f32 Priorities[2] = {1.0f, 1.0f};
-
     u32 FamilyIndex = -1;
+};
+
+struct shura_command_pool_create_info
+{
+    VkCommandPoolCreateFlags CreateFlags;
+    shura_queue_type QueueType;
 };
 
 struct shura_device_create_info
@@ -33,16 +38,14 @@ struct shura_device_create_info
     const VkPhysicalDeviceFeatures *DesiredFeatures;
     shura_queue_info *pQueueCreateInfos;
     const u32 QueueCreateInfoCount;
+
+    shura_command_pool_create_info *pCommandPoolCreateInfos;
+    u32 CommandPoolCount;
 };
 
-struct shura_vulkan_context;
-void CreateLogicalDeviceAndGetQueues(shura_vulkan_context *VulkanContext,
-                         shura_device_create_info *ShuraDeviceCreateInfo);
-void GetRequiredDeviceQueues(shura_vulkan_context *Context,
-                             const shura_queue_info *RequiredQueueInfos,
-                             const u32 RequiredQueueInfoCount);
-
-void DestroyLogicalDevice(shura_vulkan_context *VulkanContext);
+ void CreateDeviceNQueuesNCommandPool(struct shura_vulkan_context *VulkanContext,
+                                      shura_device_create_info *ShuraDeviceCreateInfo);
+ void DestroyLogicalDevice(struct shura_vulkan_device *RenderDevice);
 
 #define VULKAN_DEVICE_H
 #endif // VULKAN_DEVICE_H
