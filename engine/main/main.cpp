@@ -250,13 +250,18 @@ Win32PauseConsoleWindow()
 #endif
 
 void
-OutputColoredDebugString(LogType LogType, const char *message)
+OutputDebugStringColor(LogType LogType, const char *message)
 {
     static COLORREF Colors[] = {RGB(255, 0, 0), RGB(0, 255, 0), RGB(0, 0, 255), RGB(242, 188, 47),
-                                RGB(40, 130, 255), RGB(128, 128, 128)};
+                                RGB(40, 130, 255), RGB(128, 128, 128), RGB(96, 96, 96)};
     COLORREF Color = Colors[4];
     switch(LogType)
     {
+        case LogType_DebugReportCallbackInfo:
+        {
+            Color = Colors[6];
+        }
+        break;
         case LogType_ValidationLayerInfo:
         {
             Color = Colors[5];
@@ -292,7 +297,7 @@ OutputToConsole(LogType LogType, const char *Message)
     static u8 Levels[6] = {64, 4, 6, 2, 1, 8};
     SetConsoleTextAttribute(Console, Levels[LogType]);
 
-    OutputColoredDebugString(LogType, Message);
+    OutputDebugStringColor(LogType, Message);
 
     u64 Length = strlen(Message);
     LPDWORD NumberWritten = 0;

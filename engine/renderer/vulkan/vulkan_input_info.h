@@ -96,7 +96,7 @@ shura_vulkan_swapchain_create_info SwapchainInfo =
     .DesiredImageUsages = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
     .DesiredTransformFlagBits = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
 
-    .DesiredImageFormat = VK_FORMAT_R8G8B8A8_UNORM,
+    .DesiredImageFormat = VK_FORMAT_B8G8R8A8_UNORM,
     .DesiredImageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
 };
 

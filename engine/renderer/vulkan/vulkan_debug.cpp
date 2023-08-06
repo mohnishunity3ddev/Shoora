@@ -39,7 +39,33 @@ VulkanDebugReportCallback(VkDebugReportFlagsEXT Flags, VkDebugReportObjectTypeEX
     // if(Flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
     //     return VK_FALSE;
     // TODO)): Read more about how to use this.
-    // LogOutput("Debug Callback(%s): %s\n", pLayerPrefix, pMessage);
+    // VK_DEBUG_REPORT_INFORMATION_BIT_EXT
+    // VK_DEBUG_REPORT_WARNING_BIT_EXT
+    // VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT
+    // VK_DEBUG_REPORT_ERROR_BIT_EXT
+    // VK_DEBUG_REPORT_DEBUG_BIT_EXT
+    // VK_DEBUG_REPORT_FLAG_BITS_MAX_ENUM_EXT
+    if(Flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT)
+    {
+        LogOutput(LogType_DebugReportCallbackInfo, "DebugReport(%s)[INFO]: %s\n", pLayerPrefix, pMessage);
+    }
+    if(Flags & VK_DEBUG_REPORT_DEBUG_BIT_EXT)
+    {
+        LogOutput(LogType_DebugReportCallbackInfo, "DebugReport(%s)[DEBUG]: %s\n", pLayerPrefix, pMessage);
+    }
+    if(Flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
+    {
+        LogOutput(LogType_Warn, "DebugReport(%s)[PERFORMANCE]: %s\n", pLayerPrefix, pMessage);
+    }
+    if(Flags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
+    {
+        LogOutput(LogType_Warn, "DebugReport(%s)[WARN]: %s\n", pLayerPrefix, pMessage);
+    }
+    if (Flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
+    {
+        LogOutput(LogType_Error, "DebugReport(%s)[ERROR]: %s\n", pLayerPrefix, pMessage);
+    }
+
     return VK_FALSE;
 }
 

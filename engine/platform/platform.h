@@ -37,6 +37,7 @@ enum LogType
     LogType_Debug,
     LogType_Trace,
     LogType_ValidationLayerInfo,
+    LogType_DebugReportCallbackInfo,
 
     LogType_MaxCount
 };
