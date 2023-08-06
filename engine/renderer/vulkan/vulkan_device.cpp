@@ -219,6 +219,37 @@ PickPhysicalDevice(VkInstance Instance, shura_device_create_info *DeviceCreateIn
 }
 
 void
+FillQueueFamilyInfoForDevice(shura_vulkan_device *Device, shura_queue_info *QueueInfos, u32 QueueInfoCount)
+{
+    for(u32 Index = 0;
+        Index < QueueInfoCount;
+        ++Index)
+    {
+        shura_queue_info *Info = QueueInfos + Index;
+
+        switch(Info->Type)
+        {
+            case QueueType_Graphics:
+            {
+                Device->GraphicsQueueFamilyIndex = Info->FamilyIndex;
+                Device->GraphicsQueueCount = Info->QueueCount;
+            } break;
+            case QueueType_Compute:
+            {
+                Device->ComputeQueueFamilyIndex = Info->FamilyIndex;
+                Device->ComputeQueueCount = Info->QueueCount;
+            } break;
+            case QueueType_Transfer:
+            {
+                Device->TransferQueueFamilyIndex = Info->FamilyIndex;
+                Device->TransferQueueCount = Info->QueueCount;
+            } break;
+            default: {ASSERT(!"Queue Type not supported!")} break;
+        }
+    }
+}
+
+void
 FillRequiredDeviceQueueInfos(VkDeviceQueueCreateInfo *OutQueueCreateInfos, const shura_queue_info *DesiredQueueInfos,
                         const u32 DesiredQueueInfoCount)
 {
@@ -245,9 +276,9 @@ GetQueueHandleFromQueueInfo(shura_vulkan_context *Context, const shura_queue_inf
 
     switch(QueueInfo->Type)
     {
-        case QueueType_Graphics: { Result = &Context->GraphicsQueue; } break;
-        case QueueType_Compute:  { Result = &Context->ComputeQueue;  } break;
-        case QueueType_Transfer: { Result = &Context->TransferQueue; } break;
+        case QueueType_Graphics: { Result = &Context->Device.GraphicsQueue; } break;
+        case QueueType_Compute:  { Result = &Context->Device.ComputeQueue;  } break;
+        case QueueType_Transfer: { Result = &Context->Device.TransferQueue; } break;
         default: { ASSERT(!"Queue Type Not Supported right now!") } break;
     }
 
@@ -267,16 +298,19 @@ GetRequiredDeviceQueues(shura_vulkan_context *Context,
 
         VkQueue *QueueHandleDestination = GetQueueHandleFromQueueInfo(Context, QueueInfo);
 
-        vkGetDeviceQueue(Context->LogicalDevice, QueueInfo->FamilyIndex, 0, QueueHandleDestination);
+        vkGetDeviceQueue(Context->Device.LogicalDevice, QueueInfo->FamilyIndex, 0, QueueHandleDestination);
     }
 }
 
 void
-CreateLogicalDeviceAndGetQueues(shura_vulkan_context *VulkanContext,
+CreateLogicalDeviceAndGetQueues(shura_vulkan_context *Context,
                                 shura_device_create_info *ShuraDeviceCreateInfo)
 {
-    VkPhysicalDevice PhysicalDevice = PickPhysicalDevice(VulkanContext->Instance, ShuraDeviceCreateInfo);
-    VulkanContext->PhysicalDevice = PhysicalDevice;
+    VkPhysicalDevice PhysicalDevice = PickPhysicalDevice(Context->Instance, ShuraDeviceCreateInfo);
+    Context->Device.PhysicalDevice = PhysicalDevice;
+
+    FillQueueFamilyInfoForDevice(&Context->Device, ShuraDeviceCreateInfo->pQueueCreateInfos,
+                                 ShuraDeviceCreateInfo->QueueCreateInfoCount);
 
     VkDeviceQueueCreateInfo QueueCreateInfos[32];
     FillRequiredDeviceQueueInfos(QueueCreateInfos, ShuraDeviceCreateInfo->pQueueCreateInfos,
@@ -293,18 +327,18 @@ CreateLogicalDeviceAndGetQueues(shura_vulkan_context *VulkanContext,
     DeviceCreateInfo.ppEnabledExtensionNames = ShuraDeviceCreateInfo->ppRequiredExtensions;
     DeviceCreateInfo.pEnabledFeatures = ShuraDeviceCreateInfo->DesiredFeatures;
 
-    VK_CHECK(vkCreateDevice(PhysicalDevice, &DeviceCreateInfo, 0, &VulkanContext->LogicalDevice));
+    VK_CHECK(vkCreateDevice(PhysicalDevice, &DeviceCreateInfo, 0, &Context->Device.LogicalDevice));
 
     // Get Vulkan Requested Queues
-    GetRequiredDeviceQueues(VulkanContext, ShuraDeviceCreateInfo->pQueueCreateInfos,
+    GetRequiredDeviceQueues(Context, ShuraDeviceCreateInfo->pQueueCreateInfos,
                             ShuraDeviceCreateInfo->QueueCreateInfoCount);
 
     LogOutput("Created Vulkan Logical Device And Got the Device Queues.\n");
 }
 
 void
-DestroyLogicalDevice(shura_vulkan_context *VulkanContext)
+DestroyLogicalDevice(shura_vulkan_context *Context)
 {
-    vkDestroyDevice(VulkanContext->LogicalDevice, 0);
+    vkDestroyDevice(Context->Device.LogicalDevice, 0);
     LogOutput("Destroyed Vulkan Logical Device!\n");
 }

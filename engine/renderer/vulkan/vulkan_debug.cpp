@@ -46,6 +46,7 @@ SetupDebugCallbacks(shura_vulkan_context *Context, shura_vulkan_debug_create_inf
     VK_CHECK(vkCreateDebugReportCallbackEXT(Context->Instance, &ReportCallbackInfo, 0,
                                             &Context->Debug.ReportCallback));
 
+    LogOutput("Vulkan Debug Utils have been created!\n");
     return true;
 }
 
@@ -58,7 +59,7 @@ SetVkObjectName(shura_vulkan_context *Context, void *Object, VkObjectType Object
     NameInfo.objectHandle = (u64)Object;
     NameInfo.pObjectName = Name;
 
-    VK_CHECK(vkSetDebugUtilsObjectNameEXT(Context->LogicalDevice, &NameInfo));
+    VkResult Result = vkSetDebugUtilsObjectNameEXT(Context->Device.LogicalDevice, &NameInfo);
 
     return true;
 }

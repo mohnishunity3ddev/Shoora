@@ -6,14 +6,14 @@ CheckSupportedPresentModes(const shura_vulkan_context *Context, VkPresentModeKHR
 {
     b32 Result = false;
     u32 AvailablePresentModeCount = 0;
-    VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(Context->PhysicalDevice,
+    VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(Context->Device.PhysicalDevice,
                                                        Context->Swapchain.Surface,
                                                        &AvailablePresentModeCount, 0));
 
     ASSERT(AvailablePresentModeCount > 0 && AvailablePresentModeCount <= 16);
 
     VkPresentModeKHR SupportedPresentModes[16];
-    VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(Context->PhysicalDevice,
+    VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(Context->Device.PhysicalDevice,
                                                        Context->Swapchain.Surface,
                                                        &AvailablePresentModeCount, SupportedPresentModes));
 
@@ -35,7 +35,7 @@ CheckSupportedPresentModes(const shura_vulkan_context *Context, VkPresentModeKHR
 inline void
 GetSurfaceCapabilities(shura_vulkan_context *Context, VkSurfaceCapabilitiesKHR *SurfaceCapabilities)
 {
-    VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(Context->PhysicalDevice,
+    VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(Context->Device.PhysicalDevice,
                                                        Context->Swapchain.Surface,
                                                        SurfaceCapabilities));
 }
@@ -132,13 +132,13 @@ void
 SelectImageFormats(shura_vulkan_context *Context, VkFormat DesiredImageFormat, VkColorSpaceKHR DesiredColorSpace)
 {
     u32 FormatCount = 0;
-    VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(Context->PhysicalDevice, Context->Swapchain.Surface,
+    VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(Context->Device.PhysicalDevice, Context->Swapchain.Surface,
                                                   &FormatCount, 0));
 
     ASSERT(FormatCount > 0 && FormatCount <= 32);
 
     VkSurfaceFormatKHR SupportedFormats[32];
-    VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(Context->PhysicalDevice, Context->Swapchain.Surface,
+    VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(Context->Device.PhysicalDevice, Context->Swapchain.Surface,
                                                   &FormatCount, SupportedFormats));
 
     b32 FormatFound = false;
@@ -223,14 +223,14 @@ void
 GetSwapchainImageHandles(shura_vulkan_context *Context)
 {
     u32 SwapchainImageCount = 0;
-    VK_CHECK(vkGetSwapchainImagesKHR(Context->LogicalDevice, Context->Swapchain.SwapchainHandle,
+    VK_CHECK(vkGetSwapchainImagesKHR(Context->Device.LogicalDevice, Context->Swapchain.SwapchainHandle,
                                      &SwapchainImageCount, 0));
 
     // NOTE: Drivers can produce more images that were actually requested during swapchain creation.
     ASSERT((SwapchainImageCount >= Context->Swapchain.SwapchainImageCount) &&
            (SwapchainImageCount <= ARRAY_SIZE(Context->Swapchain.SwapchainImages)));
 
-    VK_CHECK(vkGetSwapchainImagesKHR(Context->LogicalDevice, Context->Swapchain.SwapchainHandle,
+    VK_CHECK(vkGetSwapchainImagesKHR(Context->Device.LogicalDevice, Context->Swapchain.SwapchainHandle,
                                      &SwapchainImageCount, Context->Swapchain.SwapchainImages));
     LogOutput("Got the Swapchain Image Handles!\n");
 }
@@ -269,7 +269,7 @@ CreateSwapchain(shura_vulkan_context *Context,
     VkSwapchainKHR OldSwapchain = Context->Swapchain.SwapchainHandle;
     CreateInfo.oldSwapchain = OldSwapchain;
 
-    VK_CHECK(vkCreateSwapchainKHR(Context->LogicalDevice, &CreateInfo, 0,
+    VK_CHECK(vkCreateSwapchainKHR(Context->Device.LogicalDevice, &CreateInfo, 0,
                                   &Context->Swapchain.SwapchainHandle));
     if(Context->Swapchain.SwapchainHandle == VK_NULL_HANDLE)
     {
@@ -278,7 +278,7 @@ CreateSwapchain(shura_vulkan_context *Context,
 
     if(OldSwapchain != VK_NULL_HANDLE)
     {
-        vkDestroySwapchainKHR(Context->LogicalDevice, OldSwapchain, 0);
+        vkDestroySwapchainKHR(Context->Device.LogicalDevice, OldSwapchain, 0);
     }
 
     LogOutput("Swapchain Created!\n");
@@ -306,7 +306,7 @@ AcquireNextSwapchainImage(shura_vulkan_context *Context)
     u32 ImageIndex = 0;
 
     // NOTE: We can wait upto 2 seocnds to acquire the new swapchain image, if not throw an error.
-    VkResult AcquireResult = vkAcquireNextImageKHR(Context->LogicalDevice, Context->Swapchain.SwapchainHandle, NANOSECONDS(2),
+    VkResult AcquireResult = vkAcquireNextImageKHR(Context->Device.LogicalDevice, Context->Swapchain.SwapchainHandle, NANOSECONDS(2),
                                                    Context->Semaphore, Context->Fence, &ImageIndex);
     if((AcquireResult != VK_SUCCESS) &&
        (AcquireResult != VK_SUBOPTIMAL_KHR))
@@ -356,6 +356,6 @@ DestroyPresentationSurface(shura_vulkan_context *Context)
 void
 DestroySwapchain(shura_vulkan_context *Context)
 {
-    vkDestroySwapchainKHR(Context->LogicalDevice, Context->Swapchain.SwapchainHandle, 0);
+    vkDestroySwapchainKHR(Context->Device.LogicalDevice, Context->Swapchain.SwapchainHandle, 0);
     LogOutput("Destroyed Swapchain!\n");
 }

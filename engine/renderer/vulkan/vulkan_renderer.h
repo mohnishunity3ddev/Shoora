@@ -28,20 +28,31 @@ struct shura_vulkan_swapchain
     u32 SwapchainImageCount;
 };
 
-struct shura_vulkan_context
+struct shura_vulkan_device
 {
-    VkInstance Instance;
-    shura_vulkan_debug Debug;
-
     VkPhysicalDevice PhysicalDevice;
     VkDevice LogicalDevice;
 
+    // TODO)): The Queues are actually arrays since there can be multiple queues from the same family which do a specific same task
     VkQueue GraphicsQueue;
+    u32 GraphicsQueueCount;
+    u32 GraphicsQueueFamilyIndex;
     VkQueue ComputeQueue;
+    u32 ComputeQueueCount;
+    u32 ComputeQueueFamilyIndex;
     VkQueue TransferQueue;
+    u32 TransferQueueCount;
+    u32 TransferQueueFamilyIndex;
+};
 
+struct shura_vulkan_context
+{
+    VkInstance Instance;
+    shura_vulkan_device Device;
+
+    shura_vulkan_debug Debug;
     shura_vulkan_swapchain Swapchain;
-    
+
     VkSemaphore Semaphore;
     VkFence Fence;
 };
