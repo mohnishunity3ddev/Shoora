@@ -43,9 +43,11 @@ struct shura_device_create_info
     u32 CommandPoolCount;
 };
 
- void CreateDeviceNQueuesNCommandPool(struct shura_vulkan_context *VulkanContext,
+ void CreateDeviceNQueuesNCommandPools(struct shura_vulkan_context *VulkanContext,
                                       shura_device_create_info *ShuraDeviceCreateInfo);
  void DestroyLogicalDevice(struct shura_vulkan_device *RenderDevice);
+ u32 GetQueueIndexFromType(shura_queue_type Type);
+ const char *GetQueueTypeName(shura_queue_type Type);
 
 #define VULKAN_DEVICE_H
 #endif // VULKAN_DEVICE_H

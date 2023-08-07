@@ -8,7 +8,7 @@
 #include "vulkan_instance.h"
 #include "vulkan_renderer.h"
 #include "vulkan_swapchain.h"
-
+#include "vulkan_command_buffer.h"
 
 const char *RequiredInstanceLayers[] =
 {
@@ -74,8 +74,16 @@ VkPhysicalDeviceFeatures DesiredFeatures =
 shura_command_pool_create_info CommandPoolCreateInfos[] =
 {
     {
-        .CreateFlags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
+        .CreateFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
         .QueueType = QueueType_Graphics
+    },
+    {
+        .CreateFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+        .QueueType = QueueType_Compute
+    },
+    {
+        .CreateFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+        .QueueType = QueueType_Transfer
     }
 };
 shura_device_create_info DeviceCreateInfo =
@@ -101,6 +109,36 @@ shura_vulkan_swapchain_create_info SwapchainInfo =
 };
 
 VkCommandPoolCreateFlags CommandPoolFlags = 0;
+shura_command_buffer_allocate_info Shu_BufferAllocInfos[] = {
+    {
+        .QueueType = QueueType_Graphics,
+        .Level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .BufferCount = 4
+    },
+    {
+        .QueueType = QueueType_Compute,
+        .Level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .BufferCount = 3
+    },
+    {
+        .QueueType = QueueType_Transfer,
+        .Level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .BufferCount = 6
+    }
+};
+
+// VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT:
+// If the command buffer will be submitted only once and then reset or
+// re-recorded
+//
+// VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT
+// If it is the secondary command buffer and is considered to be entirely
+// inside a render pass
+//
+// VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT
+// If the command buffer needs to be resubmitted to a queue while it is
+// still being executed on a device (before the previous submission of this
+// command buffer has ended).
 
 #define VULKAN_INPUT_INFO_H
 #endif

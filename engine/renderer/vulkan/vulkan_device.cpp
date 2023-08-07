@@ -17,6 +17,23 @@ const char *DeviceTypeNames[] =
     "CPU",
 };
 
+const char *QueueTypeNames[] =
+{
+    "None",
+    "Graphics",
+    "Compute",
+    "Transfer",
+    "Sparse",
+    "Protected"
+};
+
+const char *
+GetQueueTypeName(shura_queue_type Type)
+{
+    const char *TypeName = QueueTypeNames[(u32)Type];
+    return TypeName;
+}
+
 // TODO)): Read More About Transfer Queues, Sparse, Protected Queues
 b32
 CheckAvailableQueueFamilies(VkPhysicalDevice PhysicalDevice, shura_queue_info *InOutRequiredQueueFamilyInfos,
@@ -219,7 +236,7 @@ PickPhysicalDevice(VkInstance Instance, shura_device_create_info *DeviceCreateIn
     return SelectedDevice;
 }
 
-inline u32
+u32
 GetQueueIndexFromType(shura_queue_type Type)
 {
     u32 Result = (u32)Type - 1;
@@ -302,12 +319,12 @@ CreateCommandPools(shura_vulkan_device *RenderDevice, shura_command_pool_create_
 
         VK_CHECK(vkCreateCommandPool(RenderDevice->LogicalDevice, &CommandPoolCreateInfo, 0, CommandPool));
 
-        LogOutput(LogType_Info, "Created Command Pool!\n");
+        LogOutput(LogType_Info, "Created Command Pool for Queue(%s)!\n", GetQueueTypeName(CreateInfo->QueueType));
     }
 }
 
 void
-CreateDeviceNQueuesNCommandPool(shura_vulkan_context *Context, shura_device_create_info *ShuraDeviceCreateInfo)
+CreateDeviceNQueuesNCommandPools(shura_vulkan_context *Context, shura_device_create_info *ShuraDeviceCreateInfo)
 {
     VkPhysicalDevice PhysicalDevice = PickPhysicalDevice(Context->Instance, ShuraDeviceCreateInfo);
     Context->Device.PhysicalDevice = PhysicalDevice;

@@ -3,6 +3,11 @@
 #include "platform/platform.h"
 #include "volk/volk.h"
 #include "vulkan_defines.h"
+#include "vulkan_device.h"
+
+#define MAX_QUEUE_TYPE_COUNT 4
+#define MAX_SWAPCHAIN_IMAGE_COUNT 8
+#define MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT 8
 
 struct shura_vulkan_debug
 {
@@ -24,7 +29,7 @@ struct shura_vulkan_swapchain
     VkSwapchainKHR SwapchainHandle;
 
     // TODO)): Make this Dynamic!
-    VkImage SwapchainImages[8];
+    VkImage SwapchainImages[MAX_SWAPCHAIN_IMAGE_COUNT];
     u32 SwapchainImageCount;
 };
 
@@ -47,9 +52,18 @@ struct shura_vulkan_device
     VkDevice LogicalDevice;
 
     // TODO)): Make these Dynamic. Use Pointers instead.
-    shura_vulkan_queue Queues[8];
-    VkCommandPool CommandPools[8];
+    shura_vulkan_queue Queues[MAX_QUEUE_TYPE_COUNT];
+    VkCommandPool CommandPools[MAX_QUEUE_TYPE_COUNT];
     u32 QueueTypeCount;
+};
+
+struct shura_vulkan_command_buffer
+{
+    shura_queue_type QueueType;
+    VkCommandBufferLevel BufferLevel;
+    VkCommandBuffer BufferHandles[MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
+    b32 RecordingBuffers[MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
+    u32 BufferCount;
 };
 
 struct shura_vulkan_context
@@ -59,6 +73,7 @@ struct shura_vulkan_context
 
     shura_vulkan_debug Debug;
     shura_vulkan_swapchain Swapchain;
+    shura_vulkan_command_buffer CommandBuffers[MAX_QUEUE_TYPE_COUNT];
 
     VkSemaphore Semaphore;
     VkFence Fence;

@@ -15,10 +15,14 @@ InitializeVulkanRenderer(shura_vulkan_context *Context, shura_app_info *AppInfo)
 #endif
 
     CreatePresentationSurface(Context, &Context->Swapchain.Surface);
-    CreateDeviceNQueuesNCommandPool(Context, &DeviceCreateInfo);
+    CreateDeviceNQueuesNCommandPools(Context, &DeviceCreateInfo);
     volkLoadDevice(Context->Device.LogicalDevice);
 
     CreateSwapchain(Context, &SwapchainInfo);
+
+    AllocateCommandBuffers(Context, Shu_BufferAllocInfos, ARRAY_SIZE(Shu_BufferAllocInfos));
+    BeginCommandBuffer(&Context->CommandBuffers[0], 0, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    EndCommandBuffer(&Context->CommandBuffers[0], 0);
 }
 
 void
