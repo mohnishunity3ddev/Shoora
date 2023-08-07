@@ -21,8 +21,11 @@ InitializeVulkanRenderer(shura_vulkan_context *Context, shura_app_info *AppInfo)
     CreateSwapchain(Context, &SwapchainInfo);
 
     AllocateCommandBuffers(Context, Shu_BufferAllocInfos, ARRAY_SIZE(Shu_BufferAllocInfos));
-    BeginCommandBuffer(&Context->CommandBuffers[0], 0, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-    EndCommandBuffer(&Context->CommandBuffers[0], 0);
+
+    shura_vulkan_command_buffer *CmdBuffer = &Context->CommandBuffers[QueueType_Graphics];
+    u32 CmdBufferIndex = CmdBuffer->BufferCount - 1;
+    BeginCommandBuffer(CmdBuffer, CmdBufferIndex, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    EndCommandBuffer(CmdBuffer, CmdBufferIndex);
 }
 
 void

@@ -19,9 +19,8 @@ void BeginCommandBuffer(shura_vulkan_command_buffer *Buffer, u32 InternalBufferI
                         VkCommandBufferUsageFlags Usage);
 void EndCommandBuffer(shura_vulkan_command_buffer *Buffer, u32 InternalBufferIndex);
 
-void BeginCommandBuffer(VkCommandBuffer CommandBuffer, VkCommandBufferUsageFlags Usage,
-                        VkCommandBufferInheritanceInfo *pInheritanace, b32 *pIsRecording);
-void EndCommandBuffer(VkCommandBuffer Buffer, b32 *pIsRecording);
+void BeginCommandBuffer(shura_vulkan_command_buffer *Buffer, u32 InternalBufferIndex);
+void EndCommandBuffer(shura_vulkan_command_buffer_handle *CmdBuffer);
 
 #define VULKAN_COMMAND_BUFFER_H
 #endif // VULKAN_COMMAND_BUFFER_H

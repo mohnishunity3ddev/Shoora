@@ -57,11 +57,18 @@ struct shura_vulkan_device
     u32 QueueTypeCount;
 };
 
+struct shura_vulkan_command_buffer_handle
+{
+    VkCommandBuffer Handle;
+    b32 IsRecording;
+};
+
 struct shura_vulkan_command_buffer
 {
     shura_queue_type QueueType;
     VkCommandBufferLevel BufferLevel;
-    VkCommandBuffer BufferHandles[MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
+    // VkCommandBuffer BufferHandles[MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
+    shura_vulkan_command_buffer_handle BufferHandles[MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
     b32 RecordingBuffers[MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
     u32 BufferCount;
 };
