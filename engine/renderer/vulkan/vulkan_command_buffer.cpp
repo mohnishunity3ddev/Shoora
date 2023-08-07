@@ -2,6 +2,17 @@
 #include "platform/platform.h"
 #include "vulkan_device.h"
 
+shura_vulkan_command_buffer *
+GetCommandBufferGroupForQueue(shura_vulkan_context *Context, shura_queue_type Type)
+{
+    ASSERT(Type < MAX_QUEUE_TYPE_COUNT);
+    // NOTE: This will fire if during the vulkan device setup, this queue was not asked!
+    ASSERT(Type < Context->Device.QueueTypeCount);
+
+    shura_vulkan_command_buffer *pCmdBufferGroup = &Context->CommandBuffers[Type];
+    return pCmdBufferGroup;
+}
+
 void
 AllocateCommandBuffers(shura_vulkan_context *Context, shura_command_buffer_allocate_info *AllocInfos,
                        u32 AllocInfoCount)
@@ -69,10 +80,10 @@ BeginCommandBuffer(shura_vulkan_command_buffer_handle *CmdBuffer, VkCommandBuffe
 }
 
 void
-BeginCommandBuffer(shura_vulkan_command_buffer *Buffer, u32 InternalBufferIndex,
+BeginCommandBuffer(shura_vulkan_command_buffer *BufferGroup, u32 InternalBufferIndex,
                    VkCommandBufferUsageFlags Usage)
 {
-    ASSERT(InternalBufferIndex < Buffer->BufferCount);
+    ASSERT(InternalBufferIndex < BufferGroup->BufferCount);
 
     // Command Buffer should be in the reset state
     VkCommandBufferInheritanceInfo *pSecondaryBufferInfo = nullptr;
@@ -94,8 +105,9 @@ BeginCommandBuffer(shura_vulkan_command_buffer *Buffer, u32 InternalBufferIndex,
     }
 #endif
 
-    BeginCommandBuffer(&Buffer->BufferHandles[InternalBufferIndex], Usage, pSecondaryBufferInfo);
-    LogOutput(LogType_Info, "Command Buffer Has Begun Recording!\n");
+    BeginCommandBuffer(&BufferGroup->BufferHandles[InternalBufferIndex], Usage, pSecondaryBufferInfo);
+    LogOutput(LogType_Info, "Command Buffer associated with Queue(%s) Has Begun Recording!\n",
+              GetQueueTypeName(BufferGroup->QueueType));
 }
 
 void
@@ -106,9 +118,23 @@ EndCommandBuffer(shura_vulkan_command_buffer_handle *CmdBuffer)
 }
 
 void
-EndCommandBuffer(shura_vulkan_command_buffer *Buffer, u32 InternalBufferIndex)
+EndCommandBuffer(shura_vulkan_command_buffer *BufferGroup, u32 InternalBufferIndex)
 {
-    ASSERT(InternalBufferIndex < Buffer->BufferCount);
-    EndCommandBuffer(&Buffer->BufferHandles[InternalBufferIndex]);
-    LogOutput(LogType_Info, "Command Buffer Recording has ended!\n");
+    ASSERT(InternalBufferIndex < BufferGroup->BufferCount);
+    EndCommandBuffer(&BufferGroup->BufferHandles[InternalBufferIndex]);
+    LogOutput(LogType_Info, "Command Buffer associated with Queue(%s) Recording has ended!\n",
+              GetQueueTypeName(BufferGroup->QueueType));
+}
+
+void
+ResetCommandBuffer(shura_vulkan_command_buffer_handle *CmdBufferHandle, b32 ReleaseResources)
+{
+    VkCommandBufferResetFlags Flags = ReleaseResources ? VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT : 0;
+    VK_CHECK(vkResetCommandBuffer(CmdBufferHandle->Handle, Flags));
+}
+void
+ResetCommandBuffer(shura_vulkan_command_buffer *BufferGroup, u32 InternalBufferIndex, b32 ReleaseResources)
+{
+    ASSERT(InternalBufferIndex < BufferGroup->BufferCount);
+    ResetCommandBuffer(&BufferGroup->BufferHandles[InternalBufferIndex], ReleaseResources);
 }

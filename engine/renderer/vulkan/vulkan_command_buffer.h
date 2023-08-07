@@ -17,10 +17,16 @@ void AllocateCommandBuffers(shura_vulkan_context *Context, shura_command_buffer_
 
 void BeginCommandBuffer(shura_vulkan_command_buffer *Buffer, u32 InternalBufferIndex,
                         VkCommandBufferUsageFlags Usage);
-void EndCommandBuffer(shura_vulkan_command_buffer *Buffer, u32 InternalBufferIndex);
+void BeginCommandBuffer(shura_vulkan_command_buffer_handle *CmdBuffer, VkCommandBufferUsageFlags Usage,
+                        VkCommandBufferInheritanceInfo *pInheritanace);
 
-void BeginCommandBuffer(shura_vulkan_command_buffer *Buffer, u32 InternalBufferIndex);
+void EndCommandBuffer(shura_vulkan_command_buffer *Buffer, u32 InternalBufferIndex);
 void EndCommandBuffer(shura_vulkan_command_buffer_handle *CmdBuffer);
+
+void ResetCommandBuffer(shura_vulkan_command_buffer_handle *CmdBufferHandle, b32 ReleaseResources);
+void ResetCommandBuffer(shura_vulkan_command_buffer *Buffer, u32 InternalBufferIndex, b32 ReleaseResources);
+
+shura_vulkan_command_buffer *GetCommandBufferGroupForQueue(shura_vulkan_context *Context, shura_queue_type Type);
 
 #define VULKAN_COMMAND_BUFFER_H
 #endif // VULKAN_COMMAND_BUFFER_H

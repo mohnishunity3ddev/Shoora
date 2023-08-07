@@ -68,8 +68,8 @@ struct shura_vulkan_command_buffer
     shura_queue_type QueueType;
     VkCommandBufferLevel BufferLevel;
     // VkCommandBuffer BufferHandles[MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
+    // TODO)): Make these Dynamic!
     shura_vulkan_command_buffer_handle BufferHandles[MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
-    b32 RecordingBuffers[MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
     u32 BufferCount;
 };
 

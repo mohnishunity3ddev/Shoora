@@ -1,10 +1,10 @@
 #if !defined(VULKAN_DEVICE_H)
 
 #include "defines.h"
+struct shura_vulkan_device;
 
 enum shura_queue_type
 {
-    QueueType_None,
     QueueType_Graphics,
     QueueType_Compute,
     QueueType_Transfer,
@@ -18,7 +18,7 @@ enum shura_queue_type
 
 struct shura_queue_info
 {
-    shura_queue_type Type = QueueType_None;
+    shura_queue_type Type = QueueType_Count;
     u32 QueueCount;
     // TODO)): Make this dynamic.
     f32 Priorities[2] = {1.0f, 1.0f};
@@ -45,9 +45,12 @@ struct shura_device_create_info
 
  void CreateDeviceNQueuesNCommandPools(struct shura_vulkan_context *VulkanContext,
                                       shura_device_create_info *ShuraDeviceCreateInfo);
- void DestroyLogicalDevice(struct shura_vulkan_device *RenderDevice);
  u32 GetQueueIndexFromType(shura_queue_type Type);
  const char *GetQueueTypeName(shura_queue_type Type);
 
+ void ResetCommandPool(shura_vulkan_device *RenderDevice, u32 InternalIndex, b32 ReleaseResources);
+ void ResetAllCommandPools(shura_vulkan_device *RenderDevice, b32 ReleaseResources);
+
+void DestroyLogicalDevice(shura_vulkan_device *RenderDevice);
 #define VULKAN_DEVICE_H
 #endif // VULKAN_DEVICE_H

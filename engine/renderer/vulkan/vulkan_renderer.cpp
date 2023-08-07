@@ -22,10 +22,13 @@ InitializeVulkanRenderer(shura_vulkan_context *Context, shura_app_info *AppInfo)
 
     AllocateCommandBuffers(Context, Shu_BufferAllocInfos, ARRAY_SIZE(Shu_BufferAllocInfos));
 
-    shura_vulkan_command_buffer *CmdBuffer = &Context->CommandBuffers[QueueType_Graphics];
-    u32 CmdBufferIndex = CmdBuffer->BufferCount - 1;
-    BeginCommandBuffer(CmdBuffer, CmdBufferIndex, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-    EndCommandBuffer(CmdBuffer, CmdBufferIndex);
+    shura_vulkan_command_buffer *CmdBufferGroup = GetCommandBufferGroupForQueue(Context, QueueType_Graphics);
+    u32 CmdBufferInternalIndex = CmdBufferGroup->BufferCount - 1;
+
+    ResetAllCommandPools(&Context->Device, true);
+
+    BeginCommandBuffer(CmdBufferGroup, CmdBufferInternalIndex, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    EndCommandBuffer(CmdBufferGroup, CmdBufferInternalIndex);
 }
 
 void

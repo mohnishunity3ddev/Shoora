@@ -19,7 +19,6 @@ const char *DeviceTypeNames[] =
 
 const char *QueueTypeNames[] =
 {
-    "None",
     "Graphics",
     "Compute",
     "Transfer",
@@ -239,7 +238,7 @@ PickPhysicalDevice(VkInstance Instance, shura_device_create_info *DeviceCreateIn
 u32
 GetQueueIndexFromType(shura_queue_type Type)
 {
-    u32 Result = (u32)Type - 1;
+    u32 Result = (u32)Type;
     ASSERT(Result >= 0 && Result < 8);
     return Result;
 }
@@ -321,6 +320,28 @@ CreateCommandPools(shura_vulkan_device *RenderDevice, shura_command_pool_create_
 
         LogOutput(LogType_Info, "Created Command Pool for Queue(%s)!\n", GetQueueTypeName(CreateInfo->QueueType));
     }
+}
+
+void
+ResetCommandPool(shura_vulkan_device *RenderDevice, u32 InternalIndex, b32 ReleaseResources)
+{
+    VkCommandPool CommandPool = RenderDevice->CommandPools[InternalIndex];
+    VkCommandPoolResetFlags ResetFlags = ReleaseResources ? VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT : 0;
+    
+    VK_CHECK(vkResetCommandPool(RenderDevice->LogicalDevice, CommandPool, ResetFlags));
+    LogOutput(LogType_Info, "Command Pool associated with Queue(%s) has been reset!\n",
+              GetQueueTypeName((shura_queue_type)(InternalIndex)));
+}
+
+void
+ResetAllCommandPools(shura_vulkan_device *RenderDevice, b32 ReleaseResources)
+{
+    for (u32 Index = 0; Index < RenderDevice->QueueTypeCount; ++Index)
+    {
+        ResetCommandPool(RenderDevice, Index, ReleaseResources);
+    }
+
+    LogOutput(LogType_Info, "All Command Pools are Reset!\n");
 }
 
 void
