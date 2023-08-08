@@ -159,12 +159,23 @@ FreeAllCommandBuffers(shoora_vulkan_context *Context)
         shoora_vulkan_command_buffer *CmdBuffer = Context->CommandBuffers + QueueTypeIndex;
 
         ASSERT(CmdBuffer->BufferCount > 0);
+        ASSERT(CmdBuffer->QueueType == (shoora_queue_type)QueueTypeIndex);
 
         VkCommandBuffer IntermediateCommandBuffers[SHU_VK_MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
         for(u32 Index2 = 0;
             Index2 < CmdBuffer->BufferCount;
             ++Index2)
         {
+
+            // NOTE: A Command Buffer which is still recording commands and has not been ended should not be freed.
+            if(CmdBuffer->BufferHandles[Index2].IsRecording)
+            {
+                LogOutput(LogType_Warn,
+                          "Command Buffer for Queue(%s) Index(%d) has not been ended yet. Should "
+                          "not be allowed to be freed. Still doing it anyway. Check your code brother!\n",
+                          GetQueueTypeName(CmdBuffer->QueueType), Index2);
+            }
+
             IntermediateCommandBuffers[Index2] = CmdBuffer->BufferHandles[Index2].Handle;
         }
 
