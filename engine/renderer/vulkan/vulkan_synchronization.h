@@ -29,6 +29,7 @@ b32 WaitForAllFences(shoora_vulkan_device *RenderDevice, VkFence *Fences, u32 Fe
                      VkBool32 WaitForAll = VK_TRUE, u64 TimeoutInSeconds = 0);
 b32 AreFencesSafeToUse(shoora_vulkan_device *RenderDevice, VkFence *Fences, u32 FenceCount);
 void ResetFences(shoora_vulkan_device *RenderDevice, VkFence *Fences, u32 FenceCount);
+VkFence GetFirstUnsignaledFence(shoora_vulkan_synchronization *SyncHandles);
 
 #define VULKAN_SYNCHRONIZATION_H
 #endif // VULKAN_SYNCHRONIZATION_H

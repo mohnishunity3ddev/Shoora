@@ -5,6 +5,13 @@
 #include "vulkan_defines.h"
 #include "vulkan_device.h"
 
+struct shoora_vulkan_command_buffer_handle
+{
+    VkCommandBuffer Handle;
+    b32 IsRecording;
+    VkCommandPool *CommandPool;
+};
+
 struct shoora_vulkan_debug
 {
     VkDebugUtilsMessengerEXT Messenger;
@@ -31,6 +38,7 @@ struct shoora_vulkan_swapchain
 
 struct shoora_vulkan_queue
 {
+    // TODO: Shouldn't this be an array!
     VkQueue Handle;
     u32 Count;
     u32 FamilyIndex;
@@ -51,12 +59,6 @@ struct shoora_vulkan_device
     shoora_vulkan_queue Queues[SHU_VK_MAX_QUEUE_TYPE_COUNT];
     VkCommandPool CommandPools[SHU_VK_MAX_QUEUE_TYPE_COUNT];
     u32 QueueTypeCount;
-};
-
-struct shoora_vulkan_command_buffer_handle
-{
-    VkCommandBuffer Handle;
-    b32 IsRecording;
 };
 
 struct shoora_vulkan_command_buffer
@@ -84,7 +86,9 @@ struct shoora_vulkan_fence_handle
 struct shoora_vulkan_synchronization
 {
     shoora_vulkan_semaphore_handle Semaphores[SHU_VK_MAX_SEMAPHORE_COUNT];
+    u32 SemaphoreCount;
     shoora_vulkan_fence_handle Fences[SHU_VK_MAX_FENCE_COUNT];
+    u32 FenceCount;
 };
 
 struct shoora_vulkan_context
@@ -94,6 +98,9 @@ struct shoora_vulkan_context
 
     shoora_vulkan_device Device;
     shoora_vulkan_swapchain Swapchain;
+
+    // TODO)): Maybe we should move this information into the vulkan_device struct?
+    // since command buffers are associated with queues which are there in the device struct only.
     shoora_vulkan_command_buffer CommandBuffers[SHU_VK_MAX_QUEUE_TYPE_COUNT];
 
     shoora_vulkan_synchronization SyncHandles;

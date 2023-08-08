@@ -1,61 +1,5 @@
 #include "vulkan_input_info.h"
-
-struct shoora_wait_semaphore_info
-{
-    // Wait for this semaphore to be signaled
-    VkSemaphore Semaphore;
-    // The pipeline stage where the wait should occur IF the wait occurs.
-    VkPipelineStageFlags WaitingStage;
-};
-
-struct shoora_work_submit_info
-{
-    shoora_queue_type QueueTypeToSubmitTo;
-    shoora_wait_semaphore_info *WaitSemaphoreInfos; u32 WaitSemaphoreInfoCount;
-    shoora_vulkan_command_buffer_handle *CmdBufferHandles; u32 CmdBufferCount;
-    VkSemaphore *SignalSemaphores; u32 SignalSemaphoreCount;
-    VkFence Fence;
-};
-
-void
-SubmitWork(shoora_vulkan_context *Context, shoora_work_submit_info WorkInfo)
-{
-    VkQueue QueueHandle = GetQueueHandle(&Context->Device, WorkInfo.QueueTypeToSubmitTo);
-
-    // Command Buffers should be in a recording state.
-    for (u32 Index = 0; Index < WorkInfo.CmdBufferCount; ++Index)
-    {
-        shoora_vulkan_command_buffer_handle *CmdBuffer = WorkInfo.CmdBufferHandles + Index;
-        ASSERT(CmdBuffer->IsRecording);
-    }
-
-    VkSemaphore WaitSemaphores[16] = {};
-    VkPipelineStageFlags WaitingStages[16] = {};
-    for (u32 Index = 0; Index < WorkInfo.WaitSemaphoreInfoCount; ++Index)
-    {
-        WaitSemaphores[Index] = WorkInfo.WaitSemaphoreInfos[Index].Semaphore;
-        WaitingStages[Index] = WorkInfo.WaitSemaphoreInfos[Index].WaitingStage;
-    }
-
-    VkCommandBuffer CommandBuffers[16] = {};
-    for (u32 Index = 0; Index < WorkInfo.WaitSemaphoreInfoCount; ++Index)
-    {
-        CommandBuffers[Index] = WorkInfo.CmdBufferHandles[Index].Handle;
-    }
-
-
-    VkSubmitInfo SubmitInfo = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
-    SubmitInfo.pNext = nullptr;
-    SubmitInfo.waitSemaphoreCount = WorkInfo.WaitSemaphoreInfoCount;
-    SubmitInfo.pWaitSemaphores = WaitSemaphores;
-    SubmitInfo.pWaitDstStageMask = WaitingStages;
-    SubmitInfo.commandBufferCount = WorkInfo.CmdBufferCount;
-    SubmitInfo.pCommandBuffers = CommandBuffers;
-    SubmitInfo.signalSemaphoreCount = WorkInfo.SignalSemaphoreCount;
-    SubmitInfo.pSignalSemaphores = WorkInfo.SignalSemaphores;
-
-    VK_CHECK(vkQueueSubmit(QueueHandle, 1, &SubmitInfo, WorkInfo.Fence));
-}
+#include "vulkan_work_submission.h"
 
 void
 InitializeVulkanRenderer(shoora_vulkan_context *Context, shoora_app_info *AppInfo)
@@ -93,6 +37,8 @@ InitializeVulkanRenderer(shoora_vulkan_context *Context, shoora_app_info *AppInf
 void
 DestroyVulkanRenderer(shoora_vulkan_context *Context)
 {
+    DeviceWaitIdle(Context->Device.LogicalDevice);
+
     DestroyAllSemaphores(Context);
     DestroyAllFences(Context);
     DestroySwapchain(Context);

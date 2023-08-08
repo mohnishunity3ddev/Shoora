@@ -22,6 +22,7 @@ CreateSemaphore(shoora_vulkan_context *Context, u32 InternalIndex)
     shoora_vulkan_semaphore_handle *Semaphore = &Context->SyncHandles.Semaphores[InternalIndex];
     Semaphore->IsSignaled = false;
     CreateSemaphore(&Context->Device, &Semaphore->Handle);
+    ++Context->SyncHandles.SemaphoreCount;
     LogOutput(LogType_Info, "Semaphore[%d] Created!\n", InternalIndex);
 }
 void
@@ -30,6 +31,7 @@ DestroySemaphore(shoora_vulkan_context *Context, u32 InternalIndex)
     ASSERT(InternalIndex < ARRAY_SIZE(Context->SyncHandles.Semaphores));
     shoora_vulkan_semaphore_handle *Semaphore = &Context->SyncHandles.Semaphores[InternalIndex];
     DestroySemaphore(&Context->Device, &Semaphore->Handle);
+    --Context->SyncHandles.SemaphoreCount;
     LogOutput(LogType_Info, "Semaphore[%d] Destroyed!\n", InternalIndex);
 }
 void
@@ -82,6 +84,7 @@ CreateFence(shoora_vulkan_context *Context, u32 InternalIndex, b32 IsSignaled)
     shoora_vulkan_fence_handle *Fence = &Context->SyncHandles.Fences[InternalIndex];
     Fence->IsSignaled = IsSignaled;
     CreateFence(&Context->Device, &Fence->Handle, IsSignaled);
+    ++Context->SyncHandles.FenceCount;
     LogOutput(LogType_Info, "Fence[%d] Created!\n", InternalIndex);
 }
 void
@@ -90,6 +93,7 @@ DestroyFence(shoora_vulkan_context *Context, u32 InternalIndex)
     ASSERT(InternalIndex < ARRAY_SIZE(Context->SyncHandles.Fences));
     shoora_vulkan_fence_handle *Fence = &Context->SyncHandles.Fences[InternalIndex];
     DestroyFence(&Context->Device, &Fence->Handle);
+    --Context->SyncHandles.FenceCount;
     LogOutput(LogType_Info, "Fence[%d] Destroyed!\n", InternalIndex);
 }
 void
@@ -165,6 +169,25 @@ WaitForAllFences(shoora_vulkan_device *RenderDevice, VkFence *Fences, u32 FenceC
     return Result;
 }
 b32
+IsFenceSafeToUse(shoora_vulkan_device *RenderDevice, shoora_vulkan_fence_handle *FenceHandle)
+{
+    b32 Result = false;
+    VkResult WaitResult = vkWaitForFences(RenderDevice->LogicalDevice, 1, &FenceHandle->Handle, VK_TRUE, 1);
+
+    // NOTE: If Fences are safe to use if they are UNSignaled. They become Signaled when some operations are
+    // completed on the GPU It is our responsibility to reset them in order to use them again.
+    if (WaitResult != VK_SUCCESS)
+    {
+        Result = true;
+        ASSERT(FenceHandle->IsSignaled == false);
+    }
+    else
+    {
+        ASSERT(FenceHandle->IsSignaled);
+    }
+    return Result;
+}
+b32
 AreFencesSafeToUse(shoora_vulkan_device *RenderDevice, VkFence *Fences, u32 FenceCount)
 {
     b32 Result = false;
@@ -182,4 +205,26 @@ void
 ResetFences(shoora_vulkan_device *RenderDevice, VkFence *Fences, u32 FenceCount)
 {
     VK_CHECK(vkResetFences(RenderDevice->LogicalDevice, FenceCount, Fences));
+}
+VkFence
+GetFirstUnsignaledFence(shoora_vulkan_synchronization *SyncHandles)
+{
+    ASSERT(SyncHandles->FenceCount <= SHU_VK_MAX_FENCE_COUNT);
+    VkFence Result = VK_NULL_HANDLE;
+    for(u32 Index = 0;
+        Index < SyncHandles->FenceCount;
+        ++Index)
+    {
+        shoora_vulkan_fence_handle FenceHandle = SyncHandles->Fences[Index];
+        if(!FenceHandle.IsSignaled)
+        {
+            Result = FenceHandle.Handle;
+            break;
+        }
+    }
+    // TODO)): Right now, we make sure we have enough fences. Later on, if this fails, we should create a new fence
+    // and store it internally.
+    ASSERT(Result != VK_NULL_HANDLE);
+
+    return Result;
 }

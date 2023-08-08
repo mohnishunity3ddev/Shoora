@@ -58,8 +58,11 @@ AllocateCommandBuffers(shoora_vulkan_context *Context, shoora_command_buffer_all
             Index < AllocateInfo->BufferCount;
             ++Index)
         {
-            Shu_CommandBuffer->BufferHandles[Index].Handle = Buffers[Index];
-            Shu_CommandBuffer->BufferHandles[Index].IsRecording = false;
+
+            shoora_vulkan_command_buffer_handle *BufferHandle = &Shu_CommandBuffer->BufferHandles[Index];
+            BufferHandle->Handle = Buffers[Index];
+            BufferHandle->IsRecording = false;
+            BufferHandle->CommandPool = &RenderDevice->CommandPools[QueueIndex];
         }
 
         LogOutput(LogType_Info, "%d Command Buffers created for Queue: (%s)\n", Shu_CommandBuffer->BufferCount,
@@ -137,4 +140,35 @@ ResetCommandBuffer(shoora_vulkan_command_buffer *BufferGroup, u32 InternalBuffer
 {
     ASSERT(InternalBufferIndex < BufferGroup->BufferCount);
     ResetCommandBuffer(&BufferGroup->BufferHandles[InternalBufferIndex], ReleaseResources);
+}
+
+void
+FreeCommandBuffer(shoora_vulkan_device *RenderDevice, shoora_vulkan_command_buffer_handle *CmdBuffer)
+{
+    vkFreeCommandBuffers(RenderDevice->LogicalDevice, *CmdBuffer->CommandPool, 1, &CmdBuffer->Handle);
+}
+
+void
+FreeAllCommandBuffers(shoora_vulkan_context *Context)
+{
+    shoora_vulkan_device *RenderDevice = &Context->Device;
+    for(u32 QueueTypeIndex = 0;
+        QueueTypeIndex < RenderDevice->QueueTypeCount;
+        ++QueueTypeIndex)
+    {
+        shoora_vulkan_command_buffer *CmdBuffer = Context->CommandBuffers + QueueTypeIndex;
+
+        ASSERT(CmdBuffer->BufferCount > 0);
+
+        VkCommandBuffer IntermediateCommandBuffers[SHU_VK_MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
+        for(u32 Index2 = 0;
+            Index2 < CmdBuffer->BufferCount;
+            ++Index2)
+        {
+            IntermediateCommandBuffers[Index2] = CmdBuffer->BufferHandles[Index2].Handle;
+        }
+
+        vkFreeCommandBuffers(RenderDevice->LogicalDevice, RenderDevice->CommandPools[QueueTypeIndex],
+                             CmdBuffer->BufferCount, IntermediateCommandBuffers);
+    }
 }

@@ -28,5 +28,8 @@ void ResetCommandBuffer(shoora_vulkan_command_buffer *Buffer, u32 InternalBuffer
 
 shoora_vulkan_command_buffer *GetCommandBufferGroupForQueue(shoora_vulkan_context *Context, shoora_queue_type Type);
 
+void FreeCommandBuffer(shoora_vulkan_device *RenderDevice, shoora_vulkan_command_buffer_handle *CmdBuffer);
+void FreeAllCommandBuffers(shoora_vulkan_context *Context);
+
 #define VULKAN_COMMAND_BUFFER_H
 #endif // VULKAN_COMMAND_BUFFER_H
