@@ -5,17 +5,13 @@
 #include "vulkan_defines.h"
 #include "vulkan_device.h"
 
-#define MAX_QUEUE_TYPE_COUNT 4
-#define MAX_SWAPCHAIN_IMAGE_COUNT 8
-#define MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT 8
-
-struct shura_vulkan_debug
+struct shoora_vulkan_debug
 {
     VkDebugUtilsMessengerEXT Messenger;
     VkDebugReportCallbackEXT ReportCallback;
 };
 
-struct shura_vulkan_swapchain
+struct shoora_vulkan_swapchain
 {
     VkSurfaceKHR Surface;
     VkSurfaceCapabilitiesKHR SurfaceCapabilities;
@@ -29,11 +25,11 @@ struct shura_vulkan_swapchain
     VkSwapchainKHR SwapchainHandle;
 
     // TODO)): Make this Dynamic!
-    VkImage SwapchainImages[MAX_SWAPCHAIN_IMAGE_COUNT];
+    VkImage SwapchainImages[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
     u32 SwapchainImageCount;
 };
 
-struct shura_vulkan_queue
+struct shoora_vulkan_queue
 {
     VkQueue Handle;
     u32 Count;
@@ -46,48 +42,65 @@ struct shura_vulkan_queue
     };
 };
 
-struct shura_vulkan_device
+struct shoora_vulkan_device
 {
     VkPhysicalDevice PhysicalDevice;
     VkDevice LogicalDevice;
 
     // TODO)): Make these Dynamic. Use Pointers instead.
-    shura_vulkan_queue Queues[MAX_QUEUE_TYPE_COUNT];
-    VkCommandPool CommandPools[MAX_QUEUE_TYPE_COUNT];
+    shoora_vulkan_queue Queues[SHU_VK_MAX_QUEUE_TYPE_COUNT];
+    VkCommandPool CommandPools[SHU_VK_MAX_QUEUE_TYPE_COUNT];
     u32 QueueTypeCount;
 };
 
-struct shura_vulkan_command_buffer_handle
+struct shoora_vulkan_command_buffer_handle
 {
     VkCommandBuffer Handle;
     b32 IsRecording;
 };
 
-struct shura_vulkan_command_buffer
+struct shoora_vulkan_command_buffer
 {
-    shura_queue_type QueueType;
+    shoora_queue_type QueueType;
     VkCommandBufferLevel BufferLevel;
     // VkCommandBuffer BufferHandles[MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
     // TODO)): Make these Dynamic!
-    shura_vulkan_command_buffer_handle BufferHandles[MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
+    shoora_vulkan_command_buffer_handle BufferHandles[SHU_VK_MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
     u32 BufferCount;
 };
 
-struct shura_vulkan_context
+struct shoora_vulkan_semaphore_handle
 {
-    VkInstance Instance;
-    shura_vulkan_device Device;
-
-    shura_vulkan_debug Debug;
-    shura_vulkan_swapchain Swapchain;
-    shura_vulkan_command_buffer CommandBuffers[MAX_QUEUE_TYPE_COUNT];
-
-    VkSemaphore Semaphore;
-    VkFence Fence;
+    VkSemaphore Handle;
+    b32 IsSignaled;
 };
 
-void InitializeVulkanRenderer(shura_vulkan_context *VulkanContext, shura_app_info *AppInfo);
-void DestroyVulkanRenderer(shura_vulkan_context *Context);
+struct shoora_vulkan_fence_handle
+{
+    VkFence Handle;
+    b32 IsSignaled;
+};
+
+struct shoora_vulkan_synchronization
+{
+    shoora_vulkan_semaphore_handle Semaphores[SHU_VK_MAX_SEMAPHORE_COUNT];
+    shoora_vulkan_fence_handle Fences[SHU_VK_MAX_FENCE_COUNT];
+};
+
+struct shoora_vulkan_context
+{
+    VkInstance Instance;
+    shoora_vulkan_debug Debug;
+
+    shoora_vulkan_device Device;
+    shoora_vulkan_swapchain Swapchain;
+    shoora_vulkan_command_buffer CommandBuffers[SHU_VK_MAX_QUEUE_TYPE_COUNT];
+
+    shoora_vulkan_synchronization SyncHandles;
+};
+
+void InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo);
+void DestroyVulkanRenderer(shoora_vulkan_context *Context);
 
 #define _VULKAN_RENDERER_H
 #endif // _VULKAN_RENDERER_H

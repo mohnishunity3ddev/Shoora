@@ -3,7 +3,7 @@
 #include "defines.h"
 #include <volk/volk.h>
 
-struct shura_instance_create_info
+struct shoora_instance_create_info
 {
     const char *AppName;
     const char **ppRequiredInstanceExtensions;
@@ -12,10 +12,10 @@ struct shura_instance_create_info
     u32 RequiredInstanceLayerCount;
 };
 
-struct shura_vulkan_context;
+struct shoora_vulkan_context;
 
-b32 CreateVulkanInstance(shura_vulkan_context *VulkanContext, shura_instance_create_info *ShuraInstanceCreateInfo);
-void DestroyVulkanInstance(shura_vulkan_context *VulkanContext);
+b32 CreateVulkanInstance(shoora_vulkan_context *VulkanContext, shoora_instance_create_info *ShuraInstanceCreateInfo);
+void DestroyVulkanInstance(shoora_vulkan_context *VulkanContext);
 
 #define VULKAN_INSTANCE_H
 #endif // VULKAN_INSTANCE_H

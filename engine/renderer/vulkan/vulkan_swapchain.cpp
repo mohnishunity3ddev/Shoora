@@ -2,7 +2,7 @@
 #include "platform/platform.h"
 
 b32
-CheckSupportedPresentModes(const shura_vulkan_context *Context, VkPresentModeKHR DesiredPresentMode)
+CheckSupportedPresentModes(const shoora_vulkan_context *Context, VkPresentModeKHR DesiredPresentMode)
 {
     b32 Result = false;
     u32 AvailablePresentModeCount = 0;
@@ -33,7 +33,7 @@ CheckSupportedPresentModes(const shura_vulkan_context *Context, VkPresentModeKHR
 }
 
 inline void
-GetSurfaceCapabilities(shura_vulkan_context *Context, VkSurfaceCapabilitiesKHR *SurfaceCapabilities)
+GetSurfaceCapabilities(shoora_vulkan_context *Context, VkSurfaceCapabilitiesKHR *SurfaceCapabilities)
 {
     VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(Context->Device.PhysicalDevice,
                                                        Context->Swapchain.Surface,
@@ -41,7 +41,7 @@ GetSurfaceCapabilities(shura_vulkan_context *Context, VkSurfaceCapabilitiesKHR *
 }
 
 void
-SelectSwapchainImageCount(shura_vulkan_swapchain *Swapchain)
+SelectSwapchainImageCount(shoora_vulkan_swapchain *Swapchain)
 {
     VkSurfaceCapabilitiesKHR *SurfaceCapabilities = &Swapchain->SurfaceCapabilities;
     u32 ImageCount = SurfaceCapabilities->minImageCount + 1;
@@ -60,7 +60,7 @@ SelectSwapchainImageCount(shura_vulkan_swapchain *Swapchain)
 }
 
 void
-SelectSwapchainSize(shura_vulkan_swapchain *Swapchain)
+SelectSwapchainSize(shoora_vulkan_swapchain *Swapchain)
 {
     VkSurfaceCapabilitiesKHR *SurfaceCapabilities = &Swapchain->SurfaceCapabilities;
 
@@ -82,7 +82,7 @@ SelectSwapchainSize(shura_vulkan_swapchain *Swapchain)
 
 // Do we use them as render targets, or copy src/dest or sample from them for postprocessing
 void
-SelectDesiredImageUsage(shura_vulkan_swapchain *Swapchain, VkImageUsageFlags DesiredImageUsageFlags)
+SelectDesiredImageUsage(shoora_vulkan_swapchain *Swapchain, VkImageUsageFlags DesiredImageUsageFlags)
 {
     VkSurfaceCapabilitiesKHR *SurfaceCapabilities = &Swapchain->SurfaceCapabilities;
     VkImageUsageFlags ImageUsageFlags = 0;
@@ -103,7 +103,7 @@ SelectDesiredImageUsage(shura_vulkan_swapchain *Swapchain, VkImageUsageFlags Des
 
 // For Pre-Transform an image to landscape/Potrait before presenting it(In case of mobiles)
 void
-SelectImageTransforms(shura_vulkan_swapchain *Swapchain, VkSurfaceTransformFlagBitsKHR DesiredTransformFlagBits)
+SelectImageTransforms(shoora_vulkan_swapchain *Swapchain, VkSurfaceTransformFlagBitsKHR DesiredTransformFlagBits)
 {
     VkSurfaceCapabilitiesKHR *SurfaceCapabilities = &Swapchain->SurfaceCapabilities;
     if (SurfaceCapabilities->supportedTransforms & DesiredTransformFlagBits)
@@ -129,7 +129,7 @@ SelectImageTransforms(shura_vulkan_swapchain *Swapchain, VkSurfaceTransformFlagB
 }
 
 void
-SelectImageFormats(shura_vulkan_context *Context, VkFormat DesiredImageFormat, VkColorSpaceKHR DesiredColorSpace)
+SelectImageFormats(shoora_vulkan_context *Context, VkFormat DesiredImageFormat, VkColorSpaceKHR DesiredColorSpace)
 {
     u32 FormatCount = 0;
     VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(Context->Device.PhysicalDevice, Context->Swapchain.Surface,
@@ -200,8 +200,8 @@ SelectImageFormats(shura_vulkan_context *Context, VkFormat DesiredImageFormat, V
 }
 
 void
-PrepareForSwapchainCreation(shura_vulkan_context *Context,
-                            shura_vulkan_swapchain_create_info *ShuraSwapchainInfo)
+PrepareForSwapchainCreation(shoora_vulkan_context *Context,
+                            shoora_vulkan_swapchain_create_info *ShuraSwapchainInfo)
 {
     if (!CheckSupportedPresentModes(Context, ShuraSwapchainInfo->DesiredPresentMode))
     {
@@ -220,7 +220,7 @@ PrepareForSwapchainCreation(shura_vulkan_context *Context,
 }
 
 void
-GetSwapchainImageHandles(shura_vulkan_context *Context)
+GetSwapchainImageHandles(shoora_vulkan_context *Context)
 {
     u32 SwapchainImageCount = 0;
     VK_CHECK(vkGetSwapchainImagesKHR(Context->Device.LogicalDevice, Context->Swapchain.SwapchainHandle,
@@ -236,11 +236,11 @@ GetSwapchainImageHandles(shura_vulkan_context *Context)
 }
 
 void
-CreateSwapchain(shura_vulkan_context *Context,
-                shura_vulkan_swapchain_create_info *ShuraSwapchainInfo)
+CreateSwapchain(shoora_vulkan_context *Context,
+                shoora_vulkan_swapchain_create_info *ShuraSwapchainInfo)
 {
     PrepareForSwapchainCreation(Context, ShuraSwapchainInfo);
-    shura_vulkan_swapchain *SwapchainInfo = &Context->Swapchain;
+    shoora_vulkan_swapchain *SwapchainInfo = &Context->Swapchain;
 
     VkSwapchainCreateInfoKHR CreateInfo = {VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR};
     CreateInfo.pNext = 0;
@@ -286,12 +286,12 @@ CreateSwapchain(shura_vulkan_context *Context,
 }
 
 void
-CreatePresentationSurface(shura_vulkan_context *Context, VkSurfaceKHR *Surface)
+CreatePresentationSurface(shoora_vulkan_context *Context, VkSurfaceKHR *Surface)
 {
 #ifdef VK_USE_PLATFORM_WIN32_KHR
     VkWin32SurfaceCreateInfoKHR SurfaceCreateInfo = {};
 
-    shura_platform_presentation_surface Win32Surface = {&SurfaceCreateInfo};
+    shoora_platform_presentation_surface Win32Surface = {&SurfaceCreateInfo};
     FillVulkanWin32SurfaceCreateInfo(&Win32Surface);
 
     VK_CHECK(vkCreateWin32SurfaceKHR(Context->Instance, &SurfaceCreateInfo, 0, Surface));
@@ -300,14 +300,16 @@ CreatePresentationSurface(shura_vulkan_context *Context, VkSurfaceKHR *Surface)
 }
 
 u32
-AcquireNextSwapchainImage(shura_vulkan_context *Context)
+AcquireNextSwapchainImage(shoora_vulkan_context *Context, u32 SemaphoreInternalIndex, u32 FenceInternalIndex)
 {
     u32 ImageIndex = 0;
+    VkSemaphore SemaphoreHandle = Context->SyncHandles.Semaphores[SemaphoreInternalIndex].Handle;
+    VkFence FenceHandle = Context->SyncHandles.Fences[FenceInternalIndex].Handle;
 
     // NOTE: We can wait upto 2 seocnds to acquire the new swapchain image, if not throw an error.
     VkResult AcquireResult = vkAcquireNextImageKHR(Context->Device.LogicalDevice,
                                                    Context->Swapchain.SwapchainHandle, NANOSECONDS(2),
-                                                   Context->Semaphore, Context->Fence, &ImageIndex);
+                                                   SemaphoreHandle, FenceHandle, &ImageIndex);
     if((AcquireResult != VK_SUCCESS) &&
        (AcquireResult != VK_SUBOPTIMAL_KHR))
     {
@@ -326,7 +328,7 @@ AcquireNextSwapchainImage(shura_vulkan_context *Context)
 }
 
 void
-PresentImage(shura_vulkan_context *Context)
+PresentImage(shoora_vulkan_context *Context)
 {
     VkQueue PresentQueue;
 
@@ -348,14 +350,14 @@ PresentImage(shura_vulkan_context *Context)
 }
 
 void
-DestroyPresentationSurface(shura_vulkan_context *Context)
+DestroyPresentationSurface(shoora_vulkan_context *Context)
 {
     vkDestroySurfaceKHR(Context->Instance, Context->Swapchain.Surface, 0);
     LogOutput(LogType_Info, "Destroyed Presentation Surface!\n");
 }
 
 void
-DestroySwapchain(shura_vulkan_context *Context)
+DestroySwapchain(shoora_vulkan_context *Context)
 {
     vkDestroySwapchainKHR(Context->Device.LogicalDevice, Context->Swapchain.SwapchainHandle, 0);
     LogOutput(LogType_Info, "Destroyed Swapchain!\n");

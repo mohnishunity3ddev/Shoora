@@ -9,20 +9,21 @@
 #include "vulkan_renderer.h"
 #include "vulkan_swapchain.h"
 #include "vulkan_command_buffer.h"
+#include "vulkan_synchronization.h"
 
 const char *RequiredInstanceLayers[] =
 {
 #if _DEBUG
-    SHU_VULKAN_VALIDATION_KHRONOS
+    SHU_VK_VALIDATION_KHRONOS
 #endif
 };
 
 const char *RequiredInstanceExtensions[] =
 {
-    SHU_VULKAN_EXTENSION_SURFACE,
+    SHU_VK_EXTENSION_SURFACE,
 
 #if defined(WIN32)
-    SHU_VULKAN_EXTENSION_WIN32_SURFACE,
+    SHU_VK_EXTENSION_WIN32_SURFACE,
 #endif
 #if defined(__APPLE__)
     #SHU_VULKAN_EXTENSION_MACOS_SURFACE,
@@ -32,8 +33,8 @@ const char *RequiredInstanceExtensions[] =
 #endif
 
 #if defined(_DEBUG)
-    SHU_VULKAN_EXTENSION_DEBUG_UTILS,
-    SHU_VULKAN_EXTENSION_DEBUG_REPORT,
+    SHU_VK_EXTENSION_DEBUG_UTILS,
+    SHU_VK_EXTENSION_DEBUG_REPORT,
 #endif
 };
 
@@ -42,7 +43,7 @@ const char *RequiredDeviceExtensions[] =
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
-shura_vulkan_debug_create_info DebugCreateInfo = {.SeverityFlags = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
+shoora_vulkan_debug_create_info DebugCreateInfo = {.SeverityFlags = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
                                                                    VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
                                                                    VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
                                                                    VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT,
@@ -54,12 +55,12 @@ shura_vulkan_debug_create_info DebugCreateInfo = {.SeverityFlags = VK_DEBUG_UTIL
                                                                  VK_DEBUG_REPORT_ERROR_BIT_EXT |
                                                                  VK_DEBUG_REPORT_DEBUG_BIT_EXT};
 
-shura_instance_create_info ShuraInstanceCreateInfo = {.ppRequiredInstanceExtensions = RequiredInstanceExtensions,
+shoora_instance_create_info ShuraInstanceCreateInfo = {.ppRequiredInstanceExtensions = RequiredInstanceExtensions,
                                                       .RequiredInstanceExtensionCount = ARRAY_SIZE(RequiredInstanceExtensions),
                                                       .ppRequiredInstanceLayers = RequiredInstanceLayers,
                                                       .RequiredInstanceLayerCount = ARRAY_SIZE(RequiredInstanceLayers)};
 
-shura_queue_info QueueInfos[] =
+shoora_queue_info QueueInfos[] =
 {
     {.Type = QueueType_Graphics, .QueueCount = 1},
     {.Type = QueueType_Compute, .QueueCount = 1},
@@ -71,7 +72,7 @@ VkPhysicalDeviceFeatures DesiredFeatures =
     .samplerAnisotropy = VK_TRUE
 };
 // Different Threads should have their own Command Pools.
-shura_command_pool_create_info CommandPoolCreateInfos[] =
+shoora_command_pool_create_info CommandPoolCreateInfos[] =
 {
     {
         .CreateFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
@@ -86,7 +87,7 @@ shura_command_pool_create_info CommandPoolCreateInfos[] =
         .QueueType = QueueType_Transfer
     }
 };
-shura_device_create_info DeviceCreateInfo =
+shoora_device_create_info DeviceCreateInfo =
 {
     .ppRequiredExtensions = RequiredDeviceExtensions,
     .RequiredExtensionCount = ARRAY_SIZE(RequiredDeviceExtensions),
@@ -98,7 +99,7 @@ shura_device_create_info DeviceCreateInfo =
 };
 
 // Swapchain
-shura_vulkan_swapchain_create_info SwapchainInfo =
+shoora_vulkan_swapchain_create_info SwapchainInfo =
 {
     .DesiredPresentMode = VK_PRESENT_MODE_MAILBOX_KHR,
     .DesiredImageUsages = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
@@ -109,7 +110,7 @@ shura_vulkan_swapchain_create_info SwapchainInfo =
 };
 
 VkCommandPoolCreateFlags CommandPoolFlags = 0;
-shura_command_buffer_allocate_info Shu_BufferAllocInfos[] = {
+shoora_command_buffer_allocate_info Shu_BufferAllocInfos[] = {
     {
         .QueueType = QueueType_Graphics,
         .Level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,

@@ -9,11 +9,11 @@
 struct renderer_context
 {
 #if defined SHU_RENDERER_BACKEND_VULKAN
-    shura_vulkan_context VulkanContext;
+    shoora_vulkan_context VulkanContext;
 #endif
 };
 
-void InitializeRenderer(renderer_context *RendererContext, shura_app_info *AppInfo);
+void InitializeRenderer(renderer_context *RendererContext, shoora_app_info *AppInfo);
 void DestroyRenderer(renderer_context *RendererContext);
 
 #define RENDERER_FRONTEND_H

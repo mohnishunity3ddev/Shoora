@@ -70,7 +70,7 @@ VulkanDebugReportCallback(VkDebugReportFlagsEXT Flags, VkDebugReportObjectTypeEX
 }
 
 b32
-SetupDebugCallbacks(shura_vulkan_context *Context, shura_vulkan_debug_create_info DebugCreateInfo)
+SetupDebugCallbacks(shoora_vulkan_context *Context, shoora_vulkan_debug_create_info DebugCreateInfo)
 {
     VkDebugUtilsMessengerCreateInfoEXT MessengerCreateInfo = {};
     MessengerCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -97,7 +97,7 @@ SetupDebugCallbacks(shura_vulkan_context *Context, shura_vulkan_debug_create_inf
 }
 
 b32
-SetVkObjectName(shura_vulkan_context *Context, void *Object, VkObjectType ObjectType, const char *Name)
+SetVkObjectName(shoora_vulkan_context *Context, void *Object, VkObjectType ObjectType, const char *Name)
 {
     VkDebugUtilsObjectNameInfoEXT NameInfo = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
     NameInfo.pNext = 0;
@@ -111,7 +111,7 @@ SetVkObjectName(shura_vulkan_context *Context, void *Object, VkObjectType Object
 }
 
 void
-DestroyDebugUtilHandles(shura_vulkan_context *Context)
+DestroyDebugUtilHandles(shoora_vulkan_context *Context)
 {
     vkDestroyDebugUtilsMessengerEXT(Context->Instance, Context->Debug.Messenger, 0);
     vkDestroyDebugReportCallbackEXT(Context->Instance, Context->Debug.ReportCallback, 0);

@@ -2,44 +2,44 @@
 #include "platform/platform.h"
 #include "vulkan_device.h"
 
-shura_vulkan_command_buffer *
-GetCommandBufferGroupForQueue(shura_vulkan_context *Context, shura_queue_type Type)
+shoora_vulkan_command_buffer *
+GetCommandBufferGroupForQueue(shoora_vulkan_context *Context, shoora_queue_type Type)
 {
-    ASSERT(Type < MAX_QUEUE_TYPE_COUNT);
+    ASSERT(Type < SHU_VK_MAX_QUEUE_TYPE_COUNT);
     // NOTE: This will fire if during the vulkan device setup, this queue was not asked!
     ASSERT(Type < Context->Device.QueueTypeCount);
 
-    shura_vulkan_command_buffer *pCmdBufferGroup = &Context->CommandBuffers[Type];
+    shoora_vulkan_command_buffer *pCmdBufferGroup = &Context->CommandBuffers[Type];
     return pCmdBufferGroup;
 }
 
 void
-AllocateCommandBuffers(shura_vulkan_context *Context, shura_command_buffer_allocate_info *AllocInfos,
+AllocateCommandBuffers(shoora_vulkan_context *Context, shoora_command_buffer_allocate_info *AllocInfos,
                        u32 AllocInfoCount)
 {
-    ASSERT(AllocInfoCount < MAX_QUEUE_TYPE_COUNT);
+    ASSERT(AllocInfoCount < SHU_VK_MAX_QUEUE_TYPE_COUNT);
 
     for(u32 Index = 0;
         Index < AllocInfoCount;
         ++Index)
     {
-        shura_command_buffer_allocate_info *AllocateInfo = AllocInfos + Index;
-        ASSERT(AllocateInfo->BufferCount < MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT);
+        shoora_command_buffer_allocate_info *AllocateInfo = AllocInfos + Index;
+        ASSERT(AllocateInfo->BufferCount < SHU_VK_MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT);
 
-        u32 QueueIndex = GetQueueIndexFromType((shura_queue_type)AllocateInfo->QueueType);
-        shura_vulkan_device *RenderDevice = &Context->Device;
+        u32 QueueIndex = GetQueueIndexFromType((shoora_queue_type)AllocateInfo->QueueType);
+        shoora_vulkan_device *RenderDevice = &Context->Device;
 
         VkCommandBufferAllocateInfo VkAllocInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
         VkAllocInfo.commandPool = RenderDevice->CommandPools[QueueIndex];
         VkAllocInfo.level = AllocateInfo->Level;
         VkAllocInfo.commandBufferCount = AllocateInfo->BufferCount;
 
-        shura_vulkan_command_buffer *Shu_CommandBuffer = Context->CommandBuffers + QueueIndex;
+        shoora_vulkan_command_buffer *Shu_CommandBuffer = Context->CommandBuffers + QueueIndex;
         Shu_CommandBuffer->QueueType = AllocateInfo->QueueType;
         Shu_CommandBuffer->BufferCount = AllocateInfo->BufferCount;
         Shu_CommandBuffer->BufferLevel = AllocateInfo->Level;
 
-        VkCommandBuffer Buffers[MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
+        VkCommandBuffer Buffers[SHU_VK_MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
         for(u32 Index = 0;
             Index < AllocateInfo->BufferCount;
             ++Index)
@@ -68,7 +68,7 @@ AllocateCommandBuffers(shura_vulkan_context *Context, shura_command_buffer_alloc
 }
 
 void
-BeginCommandBuffer(shura_vulkan_command_buffer_handle *CmdBuffer, VkCommandBufferUsageFlags Usage,
+BeginCommandBuffer(shoora_vulkan_command_buffer_handle *CmdBuffer, VkCommandBufferUsageFlags Usage,
                    VkCommandBufferInheritanceInfo *pInheritanace)
 {
     VkCommandBufferBeginInfo BeginInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
@@ -80,7 +80,7 @@ BeginCommandBuffer(shura_vulkan_command_buffer_handle *CmdBuffer, VkCommandBuffe
 }
 
 void
-BeginCommandBuffer(shura_vulkan_command_buffer *BufferGroup, u32 InternalBufferIndex,
+BeginCommandBuffer(shoora_vulkan_command_buffer *BufferGroup, u32 InternalBufferIndex,
                    VkCommandBufferUsageFlags Usage)
 {
     ASSERT(InternalBufferIndex < BufferGroup->BufferCount);
@@ -111,14 +111,14 @@ BeginCommandBuffer(shura_vulkan_command_buffer *BufferGroup, u32 InternalBufferI
 }
 
 void
-EndCommandBuffer(shura_vulkan_command_buffer_handle *CmdBuffer)
+EndCommandBuffer(shoora_vulkan_command_buffer_handle *CmdBuffer)
 {
     VK_CHECK(vkEndCommandBuffer(CmdBuffer->Handle));
     CmdBuffer->IsRecording = false;
 }
 
 void
-EndCommandBuffer(shura_vulkan_command_buffer *BufferGroup, u32 InternalBufferIndex)
+EndCommandBuffer(shoora_vulkan_command_buffer *BufferGroup, u32 InternalBufferIndex)
 {
     ASSERT(InternalBufferIndex < BufferGroup->BufferCount);
     EndCommandBuffer(&BufferGroup->BufferHandles[InternalBufferIndex]);
@@ -127,13 +127,13 @@ EndCommandBuffer(shura_vulkan_command_buffer *BufferGroup, u32 InternalBufferInd
 }
 
 void
-ResetCommandBuffer(shura_vulkan_command_buffer_handle *CmdBufferHandle, b32 ReleaseResources)
+ResetCommandBuffer(shoora_vulkan_command_buffer_handle *CmdBufferHandle, b32 ReleaseResources)
 {
     VkCommandBufferResetFlags Flags = ReleaseResources ? VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT : 0;
     VK_CHECK(vkResetCommandBuffer(CmdBufferHandle->Handle, Flags));
 }
 void
-ResetCommandBuffer(shura_vulkan_command_buffer *BufferGroup, u32 InternalBufferIndex, b32 ReleaseResources)
+ResetCommandBuffer(shoora_vulkan_command_buffer *BufferGroup, u32 InternalBufferIndex, b32 ReleaseResources)
 {
     ASSERT(InternalBufferIndex < BufferGroup->BufferCount);
     ResetCommandBuffer(&BufferGroup->BufferHandles[InternalBufferIndex], ReleaseResources);

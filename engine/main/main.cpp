@@ -423,7 +423,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
 #if SHU_CREATE_EXTERNAL_CONSOLE_WINDOW
     Win32SetConsoleHandle();
 #endif
-    const wchar_t CLASS_NAME[] = L"Shura Engine";
+    const wchar_t CLASS_NAME[] = L"Shoora Engine";
 
     WNDCLASS WinClass = {};
     WinClass.lpfnWndProc = Win32WindowCallback;
@@ -434,12 +434,8 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     RegisterClass(&WinClass);
 
     DWORD Style = WS_OVERLAPPEDWINDOW;
-    HWND WindowHandle = CreateWindowEx(0, CLASS_NAME, L"Shura", Style,
-                                       CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-                                       NULL,
-                                       NULL,
-                                       hInstance,
-                                       NULL);
+    HWND WindowHandle = CreateWindowEx(0, CLASS_NAME, L"Shoora", Style, CW_USEDEFAULT, CW_USEDEFAULT,
+                                       CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
 
     GlobalWin32WindowContext.Handle = WindowHandle;
     GlobalWin32WindowContext.ClearColor = CreateSolidBrush(RGB(48, 10, 36));
@@ -450,7 +446,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     platform_input_state *OldInputState = InputState;
     platform_input_state *NewInputState = InputState + 1;
 
-    shura_app_info AppInfo = {.AppName = "Placeholder App Name"};
+    shoora_app_info AppInfo = {.AppName = "Placeholder App Name"};
 
     renderer_context RendererContext = {};
     // TODO)): Get the AppName from the game dll.
@@ -526,7 +522,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
 
 #ifdef SHU_RENDERER_BACKEND_VULKAN
 void
-FillVulkanWin32SurfaceCreateInfo(shura_platform_presentation_surface *Surface)
+FillVulkanWin32SurfaceCreateInfo(shoora_platform_presentation_surface *Surface)
 {
 #ifdef WIN32
     VkWin32SurfaceCreateInfoKHR *SurfaceCreateInfo = Surface->Win32SurfaceCreateInfo;

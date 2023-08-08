@@ -83,7 +83,7 @@ CheckAvailableInstanceLayers(const char **ppRequiredLayers, u32 RequiredLayerCou
 }
 
 b32
-CreateVulkanInstance(shura_vulkan_context *VulkanContext, shura_instance_create_info *ShuraInstanceCreateInfo)
+CreateVulkanInstance(shoora_vulkan_context *VulkanContext, shoora_instance_create_info *ShuraInstanceCreateInfo)
 {
     const char *AppName = ShuraInstanceCreateInfo->AppName;
     const char **ppRequiredInstanceExtensions = ShuraInstanceCreateInfo->ppRequiredInstanceExtensions;
@@ -125,7 +125,7 @@ CreateVulkanInstance(shura_vulkan_context *VulkanContext, shura_instance_create_
 }
 
 void
-DestroyVulkanInstance(shura_vulkan_context *VulkanContext)
+DestroyVulkanInstance(shoora_vulkan_context *VulkanContext)
 {
     vkDestroyInstance(VulkanContext->Instance, 0);
     LogOutput(LogType_Info, "Destroyed Vulkan Instance!\n");

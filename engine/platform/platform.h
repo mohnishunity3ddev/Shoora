@@ -9,12 +9,12 @@
 extern "C" {
 #endif
 
-struct shura_app_info
+struct shoora_app_info
 {
     const char *AppName;
 };
 
-struct shura_platform_presentation_surface
+struct shoora_platform_presentation_surface
 {
 #ifdef SHU_RENDERER_BACKEND_VULKAN
 #ifdef VK_USE_PLATFORM_WIN32_KHR
@@ -24,7 +24,7 @@ struct shura_platform_presentation_surface
 };
 
 #if defined(SHU_RENDERER_BACKEND_VULKAN) && defined(VK_USE_PLATFORM_WIN32_KHR)
-void FillVulkanWin32SurfaceCreateInfo(shura_platform_presentation_surface *Surface);
+void FillVulkanWin32SurfaceCreateInfo(shoora_platform_presentation_surface *Surface);
 #endif
 
 enum LogType

@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.22.0)
-project(ShuraEngine)
+project(ShooraEngine)
 
 include(../cmake_macros/prac.cmake)
 include_directories(external)
 
-SETUP_WIN32_APP(ShuraEngine "ShuraEngine")
+SETUP_WIN32_APP(ShooraEngine "ShooraEngine")
 
 
 ####NOTE: Get all files from a particular path
@@ -18,4 +18,4 @@ add_library(extern STATIC IMPORTED)
 set_target_properties(extern PROPERTIES IMPORTED_LOCATION ${LIBS_DIR}/volk/volk.lib)
 
 # add_library(volk STATIC external/volk/volk.c external/volk/volk.h)
-target_link_libraries(ShuraEngine PRIVATE extern)
+target_link_libraries(ShooraEngine PRIVATE extern)

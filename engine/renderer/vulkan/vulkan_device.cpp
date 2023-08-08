@@ -27,15 +27,25 @@ const char *QueueTypeNames[] =
 };
 
 const char *
-GetQueueTypeName(shura_queue_type Type)
+GetQueueTypeName(shoora_queue_type Type)
 {
     const char *TypeName = QueueTypeNames[(u32)Type];
     return TypeName;
 }
 
+VkQueue
+GetQueueHandle(shoora_vulkan_device *RenderDevice, shoora_queue_type QueueType)
+{
+    ASSERT(QueueType < QueueType_Count);
+
+    VkQueue Result = RenderDevice->Queues[QueueType].Handle;
+    ASSERT(Result != VK_NULL_HANDLE);
+    return Result;
+}
+
 // TODO)): Read More About Transfer Queues, Sparse, Protected Queues
 b32
-CheckAvailableQueueFamilies(VkPhysicalDevice PhysicalDevice, shura_queue_info *InOutRequiredQueueFamilyInfos,
+CheckAvailableQueueFamilies(VkPhysicalDevice PhysicalDevice, shoora_queue_info *InOutRequiredQueueFamilyInfos,
                             const u32 RequiredQueueFamilyCount)
 {
     u32 AvailableQueueFamilyCount;
@@ -50,7 +60,7 @@ CheckAvailableQueueFamilies(VkPhysicalDevice PhysicalDevice, shura_queue_info *I
          RequiredQueueIndex < RequiredQueueFamilyCount;
          ++RequiredQueueIndex)
     {
-        shura_queue_info *RequiredInfo = InOutRequiredQueueFamilyInfos + RequiredQueueIndex;
+        shoora_queue_info *RequiredInfo = InOutRequiredQueueFamilyInfos + RequiredQueueIndex;
 
         // NOTE: starts from FoundQueueCOunt since we want dedicated Queue Families.
         for(u32 AvlQueueFamilyIndex = FoundQueueCount;
@@ -157,12 +167,12 @@ CheckForDedicatedGPU(const VkPhysicalDeviceProperties *DeviceProperties)
 }
 
 VkPhysicalDevice
-PickPhysicalDevice(VkInstance Instance, shura_device_create_info *DeviceCreateInfo)
+PickPhysicalDevice(VkInstance Instance, shoora_device_create_info *DeviceCreateInfo)
 {
     const char **DesiredDeviceExtensions = DeviceCreateInfo->ppRequiredExtensions;
     const u32 DesiredDeviceExtensionCount = DeviceCreateInfo->RequiredExtensionCount;
     const VkPhysicalDeviceFeatures *DesiredFeatures = DeviceCreateInfo->DesiredFeatures;
-    shura_queue_info *DesiredQueueFamilyInfos = DeviceCreateInfo->pQueueCreateInfos;
+    shoora_queue_info *DesiredQueueFamilyInfos = DeviceCreateInfo->pQueueCreateInfos;
     const u32 RequiredQueueFamilyCount  = DeviceCreateInfo->QueueCreateInfoCount;
 
     // NOTE: It is highly unlikely that a system has more than 64 GPUs.
@@ -236,26 +246,26 @@ PickPhysicalDevice(VkInstance Instance, shura_device_create_info *DeviceCreateIn
 }
 
 u32
-GetQueueIndexFromType(shura_queue_type Type)
+GetQueueIndexFromType(shoora_queue_type Type)
 {
     u32 Result = (u32)Type;
     ASSERT(Result >= 0 && Result < 8);
     return Result;
 }
 
-inline shura_vulkan_queue *
-GetQueueFromType(shura_vulkan_device *RenderDevice, shura_queue_type Type)
+inline shoora_vulkan_queue *
+GetQueueFromType(shoora_vulkan_device *RenderDevice, shoora_queue_type Type)
 {
     u32 QueueIndex = GetQueueIndexFromType(Type);
 
-    shura_vulkan_queue *Queue = RenderDevice->Queues + QueueIndex;
+    shoora_vulkan_queue *Queue = RenderDevice->Queues + QueueIndex;
 
     ASSERT(Queue);
     return Queue;
 }
 
 void
-FillRequiredDeviceQueueInfos(shura_vulkan_device *RenderDevice, shura_queue_info *QueueInfos, u32 QueueInfoCount,
+FillRequiredDeviceQueueInfos(shoora_vulkan_device *RenderDevice, shoora_queue_info *QueueInfos, u32 QueueInfoCount,
                              VkDeviceQueueCreateInfo *OutQueueCreateInfos)
 {
     RenderDevice->QueueTypeCount = QueueInfoCount;
@@ -264,10 +274,10 @@ FillRequiredDeviceQueueInfos(shura_vulkan_device *RenderDevice, shura_queue_info
         Index < RenderDevice->QueueTypeCount;
         ++Index)
     {
-        shura_queue_info *Info = QueueInfos + Index;
+        shoora_queue_info *Info = QueueInfos + Index;
         u32 DeviceQueueIndex = GetQueueIndexFromType(Info->Type);
 
-        shura_vulkan_queue *Queue = &RenderDevice->Queues[DeviceQueueIndex];
+        shoora_vulkan_queue *Queue = &RenderDevice->Queues[DeviceQueueIndex];
         Queue->Count = Info->QueueCount;
         Queue->FamilyIndex = Info->FamilyIndex;
         Queue->Handle = VK_NULL_HANDLE;
@@ -281,26 +291,26 @@ FillRequiredDeviceQueueInfos(shura_vulkan_device *RenderDevice, shura_queue_info
 }
 
 void
-AcquireRequiredDeviceQueueHandles(shura_vulkan_device *RenderDevice)
+AcquireRequiredDeviceQueueHandles(shoora_vulkan_device *RenderDevice)
 {
     for(u32 Index = 0;
         Index < RenderDevice->QueueTypeCount;
         ++Index)
     {
-        shura_vulkan_queue DeviceQueue = RenderDevice->Queues[Index];
+        shoora_vulkan_queue DeviceQueue = RenderDevice->Queues[Index];
         vkGetDeviceQueue(RenderDevice->LogicalDevice, DeviceQueue.FamilyIndex, 0, &DeviceQueue.Handle);
     }
 }
 
 void
-CreateCommandPools(shura_vulkan_device *RenderDevice, shura_command_pool_create_info *CommandPoolInfos,
+CreateCommandPools(shoora_vulkan_device *RenderDevice, shoora_command_pool_create_info *CommandPoolInfos,
                    u32 CommandPoolCount)
 {
     for(u32 Index = 0;
         Index < CommandPoolCount;
         ++Index)
     {
-        shura_command_pool_create_info *CreateInfo = CommandPoolInfos + Index;
+        shoora_command_pool_create_info *CreateInfo = CommandPoolInfos + Index;
 
         u32 QueueFamilyIndex = -1UL;
         VkCommandPool *CommandPool = 0;
@@ -323,18 +333,19 @@ CreateCommandPools(shura_vulkan_device *RenderDevice, shura_command_pool_create_
 }
 
 void
-ResetCommandPool(shura_vulkan_device *RenderDevice, u32 InternalIndex, b32 ReleaseResources)
+ResetCommandPool(shoora_vulkan_device *RenderDevice, u32 InternalIndex, b32 ReleaseResources)
 {
     VkCommandPool CommandPool = RenderDevice->CommandPools[InternalIndex];
     VkCommandPoolResetFlags ResetFlags = ReleaseResources ? VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT : 0;
-    
+
     VK_CHECK(vkResetCommandPool(RenderDevice->LogicalDevice, CommandPool, ResetFlags));
     LogOutput(LogType_Info, "Command Pool associated with Queue(%s) has been reset!\n",
-              GetQueueTypeName((shura_queue_type)(InternalIndex)));
+              GetQueueTypeName((shoora_queue_type)(InternalIndex)));
 }
 
+// Resets all the command buffers allocated from this pool!
 void
-ResetAllCommandPools(shura_vulkan_device *RenderDevice, b32 ReleaseResources)
+ResetAllCommandPools(shoora_vulkan_device *RenderDevice, b32 ReleaseResources)
 {
     for (u32 Index = 0; Index < RenderDevice->QueueTypeCount; ++Index)
     {
@@ -345,7 +356,7 @@ ResetAllCommandPools(shura_vulkan_device *RenderDevice, b32 ReleaseResources)
 }
 
 void
-CreateDeviceNQueuesNCommandPools(shura_vulkan_context *Context, shura_device_create_info *ShuraDeviceCreateInfo)
+CreateDeviceNQueuesNCommandPools(shoora_vulkan_context *Context, shoora_device_create_info *ShuraDeviceCreateInfo)
 {
     VkPhysicalDevice PhysicalDevice = PickPhysicalDevice(Context->Instance, ShuraDeviceCreateInfo);
     Context->Device.PhysicalDevice = PhysicalDevice;
@@ -376,7 +387,7 @@ CreateDeviceNQueuesNCommandPools(shura_vulkan_context *Context, shura_device_cre
     LogOutput(LogType_Info, "Created Vulkan Logical Device, Got the Device Queues And Command Pool Created!\n");
 }
 
-void DestroyCommandPools(shura_vulkan_device *RenderDevice)
+void DestroyCommandPools(shoora_vulkan_device *RenderDevice)
 {
     for(u32 Index = 0;
         Index < RenderDevice->QueueTypeCount;
@@ -394,7 +405,7 @@ void DestroyCommandPools(shura_vulkan_device *RenderDevice)
 }
 
 void
-DestroyLogicalDevice(shura_vulkan_device *RenderDevice)
+DestroyLogicalDevice(shoora_vulkan_device *RenderDevice)
 {
     DestroyCommandPools(RenderDevice);
 

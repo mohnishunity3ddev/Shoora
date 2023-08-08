@@ -22,7 +22,7 @@ typedef int64_t int64;
 typedef float f32;
 typedef double f64;
 
-#define SHU_ENGINE_NAME "Shura Game Engine"
+#define SHU_ENGINE_NAME "Shoora Game Engine"
 #define SHU_RENDERER_BACKEND_VULKAN
 #define SHU_CREATE_EXTERNAL_CONSOLE_WINDOW 0
 
