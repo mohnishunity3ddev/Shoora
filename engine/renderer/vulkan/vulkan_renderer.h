@@ -53,6 +53,9 @@ struct shoora_vulkan_queue
 struct shoora_vulkan_device
 {
     VkPhysicalDevice PhysicalDevice;
+    VkPhysicalDeviceProperties DeviceProperties;
+    VkPhysicalDeviceFeatures DeviceFeatures;
+
     VkDevice LogicalDevice;
 
     // TODO)): Make these Dynamic. Use Pointers instead.

@@ -360,6 +360,8 @@ CreateDeviceNQueuesNCommandPools(shoora_vulkan_context *Context, shoora_device_c
 {
     VkPhysicalDevice PhysicalDevice = PickPhysicalDevice(Context->Instance, ShuraDeviceCreateInfo);
     Context->Device.PhysicalDevice = PhysicalDevice;
+    vkGetPhysicalDeviceProperties(PhysicalDevice, &Context->Device.DeviceProperties);
+    vkGetPhysicalDeviceFeatures(PhysicalDevice, &Context->Device.DeviceFeatures);
 
     VkDeviceQueueCreateInfo QueueCreateInfos[32] = {};
     FillRequiredDeviceQueueInfos(&Context->Device, ShuraDeviceCreateInfo->pQueueCreateInfos,

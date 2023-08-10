@@ -1,0 +1,90 @@
+#if !defined(VULKAN_DESCRIPTOR_SETS_H)
+
+// descriptors represent shader resources.
+
+#include "defines.h"
+#include "volk/volk.h"
+#include "vulkan_renderer.h"
+
+struct shoora_sampler_mipmap_info
+{
+    VkSamplerMipmapMode MipmapMode;
+    f32 mipLodBias;
+    f32 MinLod;
+    f32 MaxLod;
+};
+
+struct shoora_sampler_create_info
+{
+    // For Linear Filtering
+    VkFilter SamplerFilter;
+    // Behavior for sampler when we sample outside the bounds of the image.
+    VkSamplerAddressMode AddressMode;
+    // If the AddressingMode was set to ClampToBorder, then this color is returned by the sampler when the image is
+    // sampled beyond its borders.
+    VkBorderColor BorderColor;
+    // For Anisotropic filtering.
+    b32 HasAnisotropy;
+    // Should check against the max limit of the physical device selected.
+    shoora_quality AnisotropyQuality;
+    // Sampled values are checked against some reference value.
+    b32 ShouldCompare;
+    // The Operation involved. Like Less, Greater etc.
+    VkCompareOp ComparisonOp;
+    // If we create Mipmaps for the image.
+    b32 HasMipMaps;
+    shoora_sampler_mipmap_info MipMapInfo;
+
+    // The Coordinates for all images sampled through this sampler is done by converting the UV in the range 0-1
+    b32 HasNormalizedCoordinates;
+};
+
+// IMPORTANT: NOTE:
+//
+
+// NOTE: For Samplers and all kinds of image descriptors.
+struct shoora_image_description_info
+{
+    VkDescriptorSet TargetDescriptorSet;
+    u32 TargetDescriptorBinding;
+    u32 TargetArrayElement;
+    VkDescriptorType TargetDescriptorType;
+    VkDescriptorImageInfo ImageInfos[8];
+    u32 ImageInfoCount;
+};
+
+// NOTE: For Uniform and Storage Buffers and their dynamic variations
+struct shoora_buffer_description_info
+{
+    VkDescriptorSet TargetDescriptorSet;
+    u32 TargetDescriptorBinding;
+    u32 TargetArrayElement;
+    VkDescriptorType TargetDescriptorType;
+    VkDescriptorBufferInfo BufferInfos[8];
+};
+
+// NOTE: For uniform and storage texel buffers
+struct shoora_texel_buffer_description_info
+{
+    VkDescriptorSet TargetDescriptorSet;
+    u32 TargetDescriptorBinding;
+    u32 TargetArrayElement;
+    VkDescriptorType TargetDescriptorType;
+    VkBufferView TexelBufferViews[8];
+};
+
+// NOTE: This is different than the descriptor infos defined above. This is used when we want to copy the data of
+// an already updated desciptor set into a new one.
+struct shoora_copy_description_info
+{
+    VkDescriptorSet TargetDescriptorSet;
+    u32 TargetDescriptorBinding;
+    u32 TargetArrayElement;
+    VkDescriptorSet SourceDescriptorSet;
+    u32 SourceDescriptorBinding;
+    u32 SourceArrayElement;
+    u32 DescriptorCount;
+};
+
+#define VULKAN_DESCRIPTOR_SETS_H
+#endif // VULKAN_DESCRIPTOR_SETS_H

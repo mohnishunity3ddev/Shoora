@@ -28,6 +28,15 @@ typedef double f64;
 
 #define ARRAY_SIZE(Arr) sizeof(Arr) / sizeof(Arr[0])
 
+enum shoora_quality
+{
+    Quality_Low,
+    Quality_Medium,
+    Quality_High,
+
+    Quality_Count
+};
+
 #define ASSERT(Expression)                                                                                        \
     if (!(Expression))                                                                                            \
     {                                                                                                             \

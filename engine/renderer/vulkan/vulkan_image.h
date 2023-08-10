@@ -20,5 +20,11 @@ struct shoora_image_transition
     VkImageAspectFlags Aspect;
 };
 
+struct shoora_image_create_info
+{
+    VkFormat Format;
+    
+};
+
 #define VULKAN_IMAGE_H
 #endif // VULKAN_IMAGE_H

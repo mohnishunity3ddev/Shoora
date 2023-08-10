@@ -36,6 +36,12 @@ CreateImage(shoora_vulkan_device *RenderDevice)
     ASSERT(Image != VK_NULL_HANDLE);
 }
 
+void
+CreateSampledImage2D(shoora_vulkan_device *RenderDevice)
+{
+    
+}
+
 // TODO)): Refactor!
 void
 BindAllocateMemoryToImage(shoora_vulkan_device *RenderDevice)
