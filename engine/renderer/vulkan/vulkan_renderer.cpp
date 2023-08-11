@@ -1,5 +1,6 @@
 #include "vulkan_input_info.h"
 #include "vulkan_work_submission.h"
+#include "vulkan_descriptor_sets.h"
 
 void
 InitializeVulkanRenderer(shoora_vulkan_context *Context, shoora_app_info *AppInfo)
@@ -21,7 +22,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *Context, shoora_app_info *AppInf
     CreateSwapchain(Context, &SwapchainInfo);
 
     AllocateCommandBuffers(Context, Shu_BufferAllocInfos, ARRAY_SIZE(Shu_BufferAllocInfos));
-
+    
     shoora_vulkan_command_buffer *CmdBufferGroup = GetCommandBufferGroupForQueue(Context, QueueType_Graphics);
     u32 CmdBufferInternalIndex = CmdBufferGroup->BufferCount - 1;
 
@@ -29,6 +30,8 @@ InitializeVulkanRenderer(shoora_vulkan_context *Context, shoora_app_info *AppInf
 
     BeginCommandBuffer(CmdBufferGroup, CmdBufferInternalIndex, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     EndCommandBuffer(CmdBufferGroup, CmdBufferInternalIndex);
+
+    CreateTextureAndUniformBufferDescriptor(&Context->Device);
 
     CreateAllSemaphores(Context);
     CreateAllFences(Context);

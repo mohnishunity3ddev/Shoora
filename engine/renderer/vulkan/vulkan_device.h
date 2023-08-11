@@ -47,6 +47,8 @@ struct shoora_device_create_info
                                       shoora_device_create_info *ShuraDeviceCreateInfo);
  u32 GetQueueIndexFromType(shoora_queue_type Type);
  const char *GetQueueTypeName(shoora_queue_type Type);
+ i32 GetDeviceMemoryType(shoora_vulkan_device *RenderDevice, u32 DesiredMemoryTypeBits,
+                         VkMemoryPropertyFlags DesiredMemoryProperties);
 
  void ResetCommandPool(shoora_vulkan_device *RenderDevice, u32 InternalIndex, b32 ReleaseResources);
  void ResetAllCommandPools(shoora_vulkan_device *RenderDevice, b32 ReleaseResources);

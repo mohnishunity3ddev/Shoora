@@ -43,6 +43,30 @@ GetQueueHandle(shoora_vulkan_device *RenderDevice, shoora_queue_type QueueType)
     return Result;
 }
 
+i32
+GetDeviceMemoryType(shoora_vulkan_device *RenderDevice, u32 DesiredMemoryTypeBits,
+                    VkMemoryPropertyFlags DesiredMemoryProperties)
+{
+    i32 Result = -1;
+
+    // Iterate over Physical Device Memory Properties to see if the memory requirements for our buffer are
+    // satisfied.
+    for(u32 MemoryType = 0;
+        MemoryType < RenderDevice->MemoryProperties.memoryTypeCount;
+        ++MemoryType)
+    {
+        if((DesiredMemoryTypeBits & (1 << MemoryType)) &&
+           ((RenderDevice->MemoryProperties.memoryTypes[MemoryType].propertyFlags & DesiredMemoryProperties) ==
+             DesiredMemoryProperties))
+        {
+            Result = MemoryType;
+        }
+    }
+
+    ASSERT(Result != -1);
+
+    return Result;
+}
 // TODO)): Read More About Transfer Queues, Sparse, Protected Queues
 b32
 CheckAvailableQueueFamilies(VkPhysicalDevice PhysicalDevice, shoora_queue_info *InOutRequiredQueueFamilyInfos,
@@ -361,7 +385,8 @@ CreateDeviceNQueuesNCommandPools(shoora_vulkan_context *Context, shoora_device_c
     VkPhysicalDevice PhysicalDevice = PickPhysicalDevice(Context->Instance, ShuraDeviceCreateInfo);
     Context->Device.PhysicalDevice = PhysicalDevice;
     vkGetPhysicalDeviceProperties(PhysicalDevice, &Context->Device.DeviceProperties);
-    vkGetPhysicalDeviceFeatures(PhysicalDevice, &Context->Device.DeviceFeatures);
+    vkGetPhysicalDeviceFeatures(PhysicalDevice, &Context->Device.Features);
+    vkGetPhysicalDeviceMemoryProperties(PhysicalDevice, &Context->Device.MemoryProperties);
 
     VkDeviceQueueCreateInfo QueueCreateInfos[32] = {};
     FillRequiredDeviceQueueInfos(&Context->Device, ShuraDeviceCreateInfo->pQueueCreateInfos,

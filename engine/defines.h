@@ -24,6 +24,7 @@ typedef double f64;
 
 #define SHU_ENGINE_NAME "Shoora Game Engine"
 #define SHU_RENDERER_BACKEND_VULKAN
+#define SHU_VULKAN_EXAMPLE 1
 #define SHU_CREATE_EXTERNAL_CONSOLE_WINDOW 0
 
 #define ARRAY_SIZE(Arr) sizeof(Arr) / sizeof(Arr[0])
@@ -69,6 +70,8 @@ enum shoora_quality
     }
 
 #define NANOSECONDS(Seconds) Seconds * 1000000000
+#define MAX(A, B) (A) > (B) ? A : B
+#define MIN(A, B) (A) < (B) ? A : B
 
 inline u32
 ClampToRange(u32 Value, u32 Min, u32 Max)

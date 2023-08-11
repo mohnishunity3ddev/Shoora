@@ -1,4 +1,6 @@
 #include "vulkan_descriptor_sets.h"
+#include "vulkan_image.h"
+#include <stb_image.h>
 
 // NOTE: descriptors represent shader resources. THey are organized into sets.
 // their contents are specified by descirptor set layout.
@@ -26,18 +28,27 @@ CreateSampler(shoora_vulkan_device *RenderDevice, shoora_sampler_create_info ShC
     {
         CreateInfo.borderColor = ShCreateInfo.BorderColor;
     }
+    else
+    {
+        CreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+    }
 
-    if(ShCreateInfo.HasAnisotropy && RenderDevice->DeviceFeatures.samplerAnisotropy)
+    if(ShCreateInfo.HasAnisotropy && RenderDevice->Features.samplerAnisotropy)
     {
         CreateInfo.anisotropyEnable = true;
 
         u32 MaxAnisotropyAvailable = RenderDevice->DeviceProperties.limits.maxSamplerAnisotropy;
-        f32 AnisotropyQuality = (f32)(ShCreateInfo.AnisotropyQuality + 1.0f);
+        f32 AnisotropyQuality = (f32)(ShCreateInfo.AnisotropyQuality) + 1.0f;
         f32 MaxQuality = (f32)(shoora_quality::Quality_Count);
         f32 Coeff = (AnisotropyQuality / MaxQuality);
         ASSERT(Coeff <= 1.0f);
 
         CreateInfo.maxAnisotropy = MaxAnisotropyAvailable * Coeff;
+    }
+    else
+    {
+        CreateInfo.anisotropyEnable = false;
+        CreateInfo.maxAnisotropy = 1.0f;
     }
 
     CreateInfo.unnormalizedCoordinates = !ShCreateInfo.HasNormalizedCoordinates;
@@ -47,6 +58,11 @@ CreateSampler(shoora_vulkan_device *RenderDevice, shoora_sampler_create_info ShC
         CreateInfo.compareEnable = true;
         CreateInfo.compareOp = ShCreateInfo.ComparisonOp;
     }
+    else
+    {
+        CreateInfo.compareEnable = false;
+        CreateInfo.compareOp = VK_COMPARE_OP_NEVER;
+    }
 
     if (ShCreateInfo.HasMipMaps)
     {
@@ -54,6 +70,12 @@ CreateSampler(shoora_vulkan_device *RenderDevice, shoora_sampler_create_info ShC
         CreateInfo.mipLodBias = ShCreateInfo.MipMapInfo.mipLodBias;
         CreateInfo.minLod = ShCreateInfo.MipMapInfo.MinLod;
         CreateInfo.maxLod = ShCreateInfo.MipMapInfo.MaxLod;
+    }
+    else
+    {
+        CreateInfo.mipLodBias = 0.0f;
+        CreateInfo.minLod = 0.0f;
+        CreateInfo.maxLod = 0.0f;
     }
 
     VK_CHECK(vkCreateSampler(RenderDevice->LogicalDevice, &CreateInfo, 0, Sampler));
@@ -63,7 +85,7 @@ CreateSampler(shoora_vulkan_device *RenderDevice, shoora_sampler_create_info ShC
 
 // NOTE: Sampeld Images are used as a source of image data inside shaders.
 b32
-CreateSampledImage(shoora_vulkan_device *RenderDevice, VkImage ImageHandle, VkFormat ImageFormat, b32 IsLinearTiling)
+CreateSampledImage(shoora_vulkan_device *RenderDevice, VkImage ImageHandle, VkFormat ImageFormat, b32 IsLinearFiltering)
 {
     ASSERT(ImageHandle != VK_NULL_HANDLE);
 
@@ -77,7 +99,7 @@ CreateSampledImage(shoora_vulkan_device *RenderDevice, VkImage ImageHandle, VkFo
         return false;
     }
 
-    if(IsLinearTiling &&
+    if(IsLinearFiltering &&
        (!(FormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)))
     {
         return false;
@@ -91,6 +113,7 @@ CreateSampledImage(shoora_vulkan_device *RenderDevice, VkImage ImageHandle, VkFo
     // Before we can use the texture/image as a source of data inside of shaders, we need to set the image layout to
     // VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     // This can happen right now or later when we actually use this image inside the shader.
+    return true;
 }
 
 b32
@@ -160,6 +183,7 @@ CreateUniformTexelBuffer(shoora_vulkan_device *RenderDevice)
 
     VkBufferView UniformTexelBufferView;
     // TODO)): Create the buffer view.
+    return true;
 }
 
 // Like Uniform Texel Buffers they can be read from in shaders
@@ -334,6 +358,8 @@ CreateDescriptorPool(shoora_vulkan_device *RenderDevice)
     VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
     vkCreateDescriptorPool(RenderDevice->LogicalDevice, &CreateInfo, 0, &DescriptorPool);
     ASSERT(DescriptorPool != VK_NULL_HANDLE);
+
+    return true;
 }
 
 // NOTE: Descritptor sets gather shader resources in one container object. Its contents, resource types and the
@@ -434,6 +460,55 @@ BindDescriptorSet(shoora_vulkan_device *RenderDevice, VkCommandBuffer CmdBuffer)
     return true;
 }
 
+
+
+
+
+// IMPORTANT: Example
+#include "utils/utils.h"
+#include <memory.h>
+
+u32
+GetMaxImageMipLevels(u32 ImageWidth, u32 ImageHeight)
+{
+    u32 Max = ImageWidth;
+    if (ImageHeight > Max)
+    {
+        Max = ImageHeight;
+    }
+    u32 Result = LogBase2(Max);
+    return Result;
+}
+
+void
+Create2DVulkanImageForSampling(shoora_vulkan_device *RenderDevice, u32 ImageWidth, u32 ImageHeight,
+                               VkFormat ImageFormat, VkImageUsageFlags UsageFlags, u32 MipMapCount, b32 GenerateMipMaps,
+                               VkImage *ImageHandle)
+{
+    VkImageCreateInfo ImageCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+    ImageCreateInfo.pNext = nullptr;
+    ImageCreateInfo.flags = 0;
+    ImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    ImageCreateInfo.format = ImageFormat;
+    ImageCreateInfo.extent = {.width = ImageWidth, .height = ImageHeight, .depth = 1};
+    ImageCreateInfo.mipLevels = MipMapCount;
+    ImageCreateInfo.arrayLayers = 1;
+    ImageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    // TODO)): Ask for a tiling. If it is linear tiling then we have to make sure we dnt make a staging buffer to
+    // upload to the GPU since we can use it directly. Linear tiling means the data is laid out linearly which is
+    // easier to read for the CPU. But GPU will have a hard time.
+    ImageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    // NOTE: Since we transfer the image data from staging buffer to the image, we set its usage to be a
+    // destination of image data.
+    ImageCreateInfo.usage = UsageFlags;
+    ImageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    ImageCreateInfo.queueFamilyIndexCount = 0;
+    ImageCreateInfo.pQueueFamilyIndices = nullptr;
+    ImageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    VK_CHECK(vkCreateImage(RenderDevice->LogicalDevice, &ImageCreateInfo, 0, ImageHandle));
+}
+
 // NOTE: We create a combined image sampler and a uniform buffer
 // 1. Prepare a descriptor set layout mentioning that the descriptors will have an image sampler and a uniform buffer.
 // 2. Create a Descriptor Pool to allocate descriptor sets out of.
@@ -443,6 +518,158 @@ BindDescriptorSet(shoora_vulkan_device *RenderDevice, VkCommandBuffer CmdBuffer)
 b32
 CreateTextureAndUniformBufferDescriptor(shoora_vulkan_device *RenderDevice)
 {
+    // TODO)): Implement the rest of these.
+    // NOTE: Create a combined Image Sampler(Image, ImageView, Sampler)
+
+    // Image Data
+    i32 ImageWidth;
+    i32 ImageHeight;
+    i32 BytesPerPixel;
+    u8 *pImageData = stbi_load("images/cyberpunk_keanu_03.jpg", &ImageWidth, &ImageHeight, &BytesPerPixel, 0);
+    // GenerateMipMaps("images/cyberpunk_person_mask.jpg");
+    u64 MipOffsets[16] = {};
+    GenerateMipMaps("images/cyberpunk_keanu_02.jpg", "images/generated_mips.jpg", 8, 100, MipOffsets);
+    VkDeviceSize ImageSizeInBytes = ImageWidth*ImageHeight*BytesPerPixel;
+
+
+    // Setup staging buffer to upload image data from CPU to the GPU
+    VkBuffer StagingBuffer;
+    VkBufferCreateInfo StagingBufferCreateInfo = {};
+    StagingBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    StagingBufferCreateInfo.pNext = nullptr;
+    StagingBufferCreateInfo.flags = 0;
+    StagingBufferCreateInfo.size = ImageSizeInBytes;
+    StagingBufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    StagingBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    StagingBufferCreateInfo.queueFamilyIndexCount = 0;
+    StagingBufferCreateInfo.pQueueFamilyIndices = nullptr;
+    VK_CHECK(vkCreateBuffer(RenderDevice->LogicalDevice, &StagingBufferCreateInfo, nullptr, &StagingBuffer));
+
+    VkDeviceMemory StagingMemory;
+    VkMemoryRequirements StagingBufferMemoryRequirements;
+    vkGetBufferMemoryRequirements(RenderDevice->LogicalDevice, StagingBuffer, &StagingBufferMemoryRequirements);
+    VkMemoryAllocateInfo StagingMemoryAllocInfo;
+    StagingMemoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    StagingMemoryAllocInfo.pNext = nullptr;
+    StagingMemoryAllocInfo.allocationSize = StagingBufferMemoryRequirements.size;
+    StagingMemoryAllocInfo.memoryTypeIndex = GetDeviceMemoryType(RenderDevice,
+                                                                 StagingBufferMemoryRequirements.memoryTypeBits,
+                                                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    VK_CHECK(vkAllocateMemory(RenderDevice->LogicalDevice, &StagingMemoryAllocInfo, nullptr, &StagingMemory));
+    VK_CHECK(vkBindBufferMemory(RenderDevice->LogicalDevice, StagingBuffer, StagingMemory, 0));
+
+    // Store ImageData to the stageing buffer
+    u8 *pImageDataMappedPtr;
+    VK_CHECK(vkMapMemory(RenderDevice->LogicalDevice, StagingMemory, 0, StagingBufferMemoryRequirements.size, 0,
+                         (void **)&pImageDataMappedPtr));
+    memcpy(pImageDataMappedPtr, pImageData, ImageSizeInBytes);
+    vkUnmapMemory(RenderDevice->LogicalDevice, StagingMemory);
+
+    // TODO)): Remove this and implement mipmapping
+    u32 MipMapCount = 1;
+    // u32 MipMapCount = GetMaxImageMipLevels(ImageWidth, ImageHeight) + 1;
+
+    // Now we need to make the bufferCopyRegions for each mip level, so that it can be copied from the buffer to the image
+    ASSERT(MipMapCount <= 32);
+    VkBufferImageCopy BufferCopyRegions[32];
+    for(u32 MipLevel = 0;
+        MipLevel < MipMapCount;
+        ++MipLevel)
+    {
+        VkBufferImageCopy Region = BufferCopyRegions[MipLevel];
+        Region = {};
+
+        u32 Width = MAX(1U, ImageWidth >> MipLevel);
+        u32 Height = MAX(1U, ImageHeight >> MipLevel);
+
+        // TODO)): Figure out to these offsets for different mip levels when mipmapping was done!
+        u32 MipOffset = 0;
+
+        Region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        Region.imageSubresource.baseArrayLayer = 0;
+        Region.imageSubresource.layerCount = 1;
+        Region.imageSubresource.mipLevel = MipLevel;
+        Region.imageExtent.width = Width;
+        Region.imageExtent.height = Height;
+        Region.imageExtent.depth = 1;
+
+        Region.bufferOffset = MipOffset;
+    }
+
+    // Create a VkImage Handle
+    VkImage ImageHandle = VK_NULL_HANDLE;
+    VkFormat ImageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    Create2DVulkanImageForSampling(RenderDevice, ImageWidth, ImageHeight, ImageFormat,
+                                   VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, MipMapCount,
+                                   false, &ImageHandle);
+    ASSERT(ImageHandle != VK_NULL_HANDLE);
+
+    // Getting Memory for the Image on the GPU memory
+    VkMemoryRequirements ImageMemoryReqs = {};
+    vkGetImageMemoryRequirements(RenderDevice->LogicalDevice, ImageHandle, &ImageMemoryReqs);
+    VkMemoryAllocateInfo ImageMemoryAllocInfo = {};
+    ImageMemoryAllocInfo.pNext = nullptr;
+    ImageMemoryAllocInfo.allocationSize = ImageMemoryReqs.size;
+    ImageMemoryAllocInfo.memoryTypeIndex = GetDeviceMemoryType(RenderDevice, ImageMemoryReqs.memoryTypeBits,
+                                                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    VkDeviceMemory ImageMemory;
+    VK_CHECK(vkAllocateMemory(RenderDevice->LogicalDevice, &ImageMemoryAllocInfo, nullptr, &ImageMemory));
+    VK_CHECK(vkBindImageMemory(RenderDevice->LogicalDevice, ImageHandle, ImageMemory, 0));
+
+    // NOTEL At this point, we have made the iamge and the staging buffer which is filled with image data we had from the
+    // file.
+    // Now, we want to upload the data to the GPU memory(Image)
+    // But first we want to transition the layout of the image to be TRANSFER_DST_BIT so that it is optimal for us to
+    // treat it as a destination in a transfer op.
+    VkImageSubresourceRange SubresourceRange = {};
+    SubresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    SubresourceRange.baseMipLevel = 0; // Mipmap level to start at
+    SubresourceRange.levelCount = 1;   // TODO)): Do Mipmapping later. leaving this as 1 for now
+    SubresourceRange.layerCount = 1;
+    VkImageMemoryBarrier ImageMemoryBarrier = {};
+    ImageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    ImageMemoryBarrier.pNext = nullptr;
+    ImageMemoryBarrier.srcAccessMask = 0;
+    ImageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    ImageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    ImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    ImageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    ImageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    ImageMemoryBarrier.image = ImageHandle;
+    ImageMemoryBarrier.subresourceRange = SubresourceRange;
+    // TODO)): Get this Command Buffer from the device.
+    VkCommandBuffer CommandBuffer = VK_NULL_HANDLE;
+    // NOTE: VK_PIPELINE_STAGE_HOST_BIT pseudostage communicates there will be memory domain transfers between host
+    // and device.
+    vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr,
+                         0, nullptr, 1, &ImageMemoryBarrier);
+
+    // NOTE: Now, After doing the synchronization to make sure that before the GPU starts the transfer, all CPU stuff is
+    // completed!
+    // Now, we start the Transfer from the Buffer which contains image data to the device local memory for the image.
+    vkCmdCopyBufferToImage(CommandBuffer, StagingBuffer, ImageHandle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                           MipMapCount, BufferCopyRegions);
+
+    // NOTE: Now we want to synchronize the transfer and the shader read, since this image will be sampled from in
+    // the fragment shader. we want change the image layout and also make sure the transfer has been completed
+    // before the fragment shader uses the image.
+    ImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    ImageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    ImageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    ImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    // The synchronization starts frmo the transfer pipeline stage and ends at fragment shader stage.
+    // The kind of accesses at these respective stages are "Transfer_Write" and "Shader_Read"
+    // We also specify the image layout based on the kind of uage its going to go through.
+    vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+                         0, nullptr, 0, nullptr, 1, &ImageMemoryBarrier);
+
+    // NOTE: Now that the transfer is complete, and the image is there in GPU memory with the correct usage in the pipeline
+    // and the layout done, we can get rid of the staging buffer.
+    vkFreeMemory(RenderDevice->LogicalDevice, StagingMemory, nullptr);
+    vkDestroyBuffer(RenderDevice->LogicalDevice, StagingBuffer, nullptr);
+    StagingBuffer = VK_NULL_HANDLE;
+
+    // NOTE: Create the Sampler for the Image so that it can be sampled from in the fragment shader.
     VkSampler ImageSampler = VK_NULL_HANDLE;
     shoora_sampler_create_info SamplerCreateInfo = {};
     SamplerCreateInfo.SamplerFilter = VK_FILTER_LINEAR;
@@ -451,24 +678,216 @@ CreateTextureAndUniformBufferDescriptor(shoora_vulkan_device *RenderDevice)
     SamplerCreateInfo.HasNormalizedCoordinates = true;
     CreateSampler(RenderDevice, SamplerCreateInfo, &ImageSampler);
 
+    // NOTE: Create Image View
+    VkImageView ImageView = VK_NULL_HANDLE;
 
-    // TODO)): Implement the rest of these.
-    // NOTE: Create a combined Image Sampler(Image, ImageView, Sampler)
-    VkImageType ImageType = VK_IMAGE_TYPE_2D;
-    VkFormat ImageFormat = VK_FORMAT_R8G8B8A8_UNORM;
-    VkImageAspectFlags ImageAspect = VK_IMAGE_ASPECT_COLOR_BIT;
-    
+    VkImageViewCreateInfo ImageViewCreateInfo = {};
+    VkImageSubresourceRange ImageSubresourceRange = {};
+    ImageSubresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    ImageSubresourceRange.baseMipLevel = 0;
+    ImageSubresourceRange.levelCount = 1; // 1 mipmap
+    ImageSubresourceRange.baseArrayLayer = 0;
+    ImageSubresourceRange.layerCount = 1;
+
+    ImageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    ImageViewCreateInfo.pNext = nullptr;
+    ImageViewCreateInfo.flags = 0;
+    ImageViewCreateInfo.image = ImageHandle;
+    ImageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    ImageViewCreateInfo.format = ImageFormat;
+    ImageViewCreateInfo.components = {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B,
+                                      VK_COMPONENT_SWIZZLE_A};
+
+    ImageViewCreateInfo.subresourceRange = ImageSubresourceRange;
+    vkCreateImageView(RenderDevice->LogicalDevice, &ImageViewCreateInfo, nullptr, &ImageView);
+    ASSERT(ImageView != VK_NULL_HANDLE);
+
+    // -------------------------------------------------------------------------------------------------------------
+    // UNIFORM BUFFER ----------------------------------------------------------------------------------------------
+    // -------------------------------------------------------------------------------------------------------------
+    VkBuffer UniformBuffer = VK_NULL_HANDLE;
+    VkDeviceSize UniformBufferSize = 1024;
+    void *UniformBufferData = nullptr;
+
+    VkBufferCreateInfo BufferCreateInfo = {};
+    BufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    BufferCreateInfo.pNext = nullptr;
+    BufferCreateInfo.size = UniformBufferSize;
+    BufferCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    BufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    VK_CHECK(vkCreateBuffer(RenderDevice->LogicalDevice, &BufferCreateInfo, nullptr, &UniformBuffer));
+
+    VkMemoryRequirements BufferMemoryReqs = {};
+    VkMemoryPropertyFlags BufferMemoryProps = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    vkGetBufferMemoryRequirements(RenderDevice->LogicalDevice, UniformBuffer, &BufferMemoryReqs);
+    VkDeviceMemory UniformBufferMemory;
+    VkMemoryAllocateInfo BufferAllocInfo = {};
+    BufferAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    BufferAllocInfo.pNext = nullptr;
+    BufferAllocInfo.allocationSize = BufferMemoryReqs.size;
+    BufferAllocInfo.memoryTypeIndex = GetDeviceMemoryType(RenderDevice, BufferMemoryReqs.memoryTypeBits,
+                                                          BufferMemoryProps);
+
+    VK_CHECK(vkAllocateMemory(RenderDevice->LogicalDevice, &BufferAllocInfo, nullptr, &UniformBufferMemory));
+    VK_CHECK(vkBindBufferMemory(RenderDevice->LogicalDevice, UniformBuffer, UniformBufferMemory, 0));
+
+    // Store the Buffer Data to its pointer.
+    if(UniformBufferData != nullptr)
+    {
+        void *BufferMappedPtr;
+        VK_CHECK(vkMapMemory(RenderDevice->LogicalDevice, UniformBufferMemory, 0, UniformBufferSize,
+                             0, &BufferMappedPtr));
+        ASSERT(BufferMappedPtr);
+
+        memcpy(BufferMappedPtr, UniformBufferData, UniformBufferSize);
+
+        // NOTE: If the memory type that we got DOES NOT have Host Coherency bit, then we have to flush the
+        // buffer so that the updated data is visible to the GPU as well instantly. otherwise there is no guarantee
+        // that the GPU will be able to view these changes.
+        if((BufferMemoryProps & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0)
+        {
+            VkMappedMemoryRange MemRange = {};
+            MemRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+            MemRange.pNext = nullptr;
+            MemRange.memory = UniformBufferMemory;
+            MemRange.offset = 0;
+            MemRange.size = UniformBufferSize;
+
+            vkFlushMappedMemoryRanges(RenderDevice->LogicalDevice, 1, &MemRange);
+        }
+
+        vkUnmapMemory(RenderDevice->LogicalDevice, UniformBufferMemory);
+        BufferMappedPtr = nullptr;
+    }
+
+    // ----------------------------------------------------------------------------------------------------------
+    // NOTE: Bind Shader Resources to Descriptors and Descriptor sets and do all that jazz associated with it.
+    // -------------------------------------------------------------------------------------------------------------
+    VkDescriptorSetLayoutBinding Bindings[2];
+    u32 BindingCount = 2;
+
+    // binding for the image sampler to be used in the fragment shader.
+    Bindings[0].binding = 0;
+    Bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    Bindings[0].descriptorCount = 1;
+    Bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    // Uniform Buffer binding for Vertex shader uniforms
+    Bindings[1].binding = 1;
+    Bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    Bindings[1].descriptorCount = 1;
+    Bindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    // Create the Descriptor set layout
+    VkDescriptorSetLayoutCreateInfo DescriptorSetLayoutCreateInfo = {};
+    DescriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    DescriptorSetLayoutCreateInfo.pNext = nullptr;
+    DescriptorSetLayoutCreateInfo.bindingCount = 2;
+    DescriptorSetLayoutCreateInfo.pBindings = Bindings;
+
+    VkDescriptorSetLayout DescriptorSetLayout = VK_NULL_HANDLE;
+    VK_CHECK(vkCreateDescriptorSetLayout(RenderDevice->LogicalDevice, &DescriptorSetLayoutCreateInfo, nullptr,
+                                         &DescriptorSetLayout));
+
+    // Setup Descriptor Pool from where the descriptor sets will be allocated.
+    VkDescriptorPoolSize DescriptorTypes[2];
+    DescriptorTypes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    DescriptorTypes[0].descriptorCount = 1;
+    DescriptorTypes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    DescriptorTypes[1].descriptorCount = 1;
+
+    VkDescriptorPoolCreateInfo PoolCreateInfo = {};
+    PoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+    PoolCreateInfo.pNext = nullptr;
+    PoolCreateInfo.maxSets = 2;
+    PoolCreateInfo.poolSizeCount = 2;
+    PoolCreateInfo.pPoolSizes = DescriptorTypes;
+
+    VkDescriptorPool DescriptorPool;
+    vkCreateDescriptorPool(RenderDevice->LogicalDevice, &PoolCreateInfo, nullptr, &DescriptorPool);
+    // ----------------------------------------------------------------------------------------------------------
+
+    // -------------------------------------------------------------------------------------------------------------
+    // NOTEL Make the Descriptor Set based on the Descriptor set layout we defined above.
+    // -------------------------------------------------------------------------------------------------------------
+    VkDescriptorSet DescriptorSets[1];
+    VkDescriptorSetAllocateInfo DescriptorSetAllocInfo;
+    DescriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    DescriptorSetAllocInfo.pNext = nullptr;
+    DescriptorSetAllocInfo.descriptorPool = DescriptorPool;
+    DescriptorSetAllocInfo.descriptorSetCount = 1;
+    DescriptorSetAllocInfo.pSetLayouts = &DescriptorSetLayout;
+    VK_CHECK(vkAllocateDescriptorSets(RenderDevice->LogicalDevice, &DescriptorSetAllocInfo, DescriptorSets));
+
+    // Update the Descriptor sets to bind them to actual data resources
+    VkWriteDescriptorSet WriteDescriptorSets[2];
+    // Sampled Image Descriptor
+    VkDescriptorImageInfo ImageDescriptorInfo;
+    ImageDescriptorInfo.sampler = ImageSampler;
+    ImageDescriptorInfo.imageView = ImageView;
+    ImageDescriptorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    WriteDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    WriteDescriptorSets[0].pNext = nullptr;
+    WriteDescriptorSets[0].dstSet = DescriptorSets[0];
+    WriteDescriptorSets[0].dstBinding = 0;
+    WriteDescriptorSets[0].descriptorCount = 1;
+    WriteDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    WriteDescriptorSets[0].pImageInfo = &ImageDescriptorInfo;
+    WriteDescriptorSets[0].pBufferInfo = nullptr;
+    WriteDescriptorSets[0].pTexelBufferView = nullptr;
+
+    // Uniform Buffer Descriptor Set.
+    VkDescriptorBufferInfo BufferDescriptorInfo;
+    BufferDescriptorInfo.buffer = UniformBuffer;
+    BufferDescriptorInfo.offset = 0;
+    BufferDescriptorInfo.range = VK_WHOLE_SIZE;
+    WriteDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    WriteDescriptorSets[1].pNext = nullptr;
+    WriteDescriptorSets[1].dstSet = DescriptorSets[0];
+    WriteDescriptorSets[1].dstBinding = 1;
+    WriteDescriptorSets[1].descriptorCount = 1;
+    WriteDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    WriteDescriptorSets[1].pImageInfo = nullptr;
+    WriteDescriptorSets[1].pBufferInfo = &BufferDescriptorInfo;
+    WriteDescriptorSets[1].pTexelBufferView = nullptr;
+
+    vkUpdateDescriptorSets(RenderDevice->LogicalDevice, 2, WriteDescriptorSets, 0, nullptr);
+
+    // -------------------------------------------------------------------------------------------------------------
+    // Free Descriptor Sets ----------------------------------------------------------------------------------------
+    // NOTE: Only descriptor sets allocated from descriptor pool with flag VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT
+    // can be allowed to be freed individually. Otherwise the individual descriptor are not allowerd to be freed. They are
+    // freed when we reset the desciptor pool or destroy it.
+    // -------------------------------------------------------------------------------------------------------------
+    VK_CHECK(vkFreeDescriptorSets(RenderDevice->LogicalDevice, DescriptorPool, 1, DescriptorSets));
+
+    // -------------------------------------------------------------------------------------------------------------
+    // Reset the Descriptor Pool -----------------------------------------------------------------------------------
+    // NOTE: Free all the descriptor sets allocated from this pool.
+    // -------------------------------------------------------------------------------------------------------------
+    VK_CHECK(vkResetDescriptorPool(RenderDevice->LogicalDevice, DescriptorPool, 0));
 
 
-    VkImage SampledImage = VK_NULL_HANDLE;
+    // -------------------------------------------------------------------------------------------------------------
+    // Destroy Command Pool
+    // NOTE: All Descriptor sets allocated from this are freed. We have to make sure all the descriptor sets allocated
+    // from this are not being referenced at this point by any of the commands that are being processed at the moment.
+    // -------------------------------------------------------------------------------------------------------------
+    vkDestroyDescriptorPool(RenderDevice->LogicalDevice, DescriptorPool, nullptr);
+    DescriptorPool = VK_NULL_HANDLE;
 
 
-    VkImageViewType ImageViewType = VK_IMAGE_VIEW_TYPE_2D;
-    VkImageView SampledImageView = VK_NULL_HANDLE;
-    // TODO)): Create2DImageForSampling
-    // TODO)): Create Corresponding Image View
+    // -------------------------------------------------------------------------------------------------------------
+    // Destroy DescriptorSet Layout --------------------------------------------------------------------------------
+    // -------------------------------------------------------------------------------------------------------------
+    vkDestroyDescriptorSetLayout(RenderDevice->LogicalDevice, DescriptorSetLayout, nullptr);
+    DescriptorSetLayout = VK_NULL_HANDLE;
 
-    VkBuffer UniformBuffer;
+    // -------------------------------------------------------------------------------------------------------------
+    // Destroy Image Sampler ---------------------------------------------------------------------------------------
+    // -------------------------------------------------------------------------------------------------------------
+    vkDestroySampler(RenderDevice->LogicalDevice, ImageSampler, nullptr);
 
-
+    return true;
 }

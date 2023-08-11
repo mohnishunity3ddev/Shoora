@@ -19,3 +19,16 @@ GetMaxValueIndex(u32 *NumsArray, u32 NumsCount)
 
     return MaxIndex;
 }
+
+u32
+LogBase2(u32 Num)
+{
+    f32 FNum = (f32)Num;
+    u32 Result = 0;
+    while (FNum > 1.0f)
+    {
+        FNum /= 2;
+        ++Result;
+    }
+    return Result;
+}

@@ -54,7 +54,8 @@ struct shoora_vulkan_device
 {
     VkPhysicalDevice PhysicalDevice;
     VkPhysicalDeviceProperties DeviceProperties;
-    VkPhysicalDeviceFeatures DeviceFeatures;
+    VkPhysicalDeviceFeatures Features;
+    VkPhysicalDeviceMemoryProperties MemoryProperties;
 
     VkDevice LogicalDevice;
 

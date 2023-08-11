@@ -86,5 +86,7 @@ struct shoora_copy_description_info
     u32 DescriptorCount;
 };
 
+b32 CreateTextureAndUniformBufferDescriptor(shoora_vulkan_device *RenderDevice);
+
 #define VULKAN_DESCRIPTOR_SETS_H
 #endif // VULKAN_DESCRIPTOR_SETS_H
