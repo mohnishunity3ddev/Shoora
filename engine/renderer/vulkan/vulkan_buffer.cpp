@@ -36,7 +36,7 @@ AllocateBufferMemory(shoora_vulkan_device *RenderDevice)
     VkBuffer Buffer;
     VkMemoryRequirements MemoryRequirements = {};
     vkGetBufferMemoryRequirements(RenderDevice->LogicalDevice, Buffer, &MemoryRequirements);
-
+    
     VkDeviceMemory DeviceMemory = VK_NULL_HANDLE;
     VkMemoryPropertyFlagBits MemoryProperties = {};
 
@@ -162,5 +162,5 @@ CopyDataBetweenBuffers()
 
     vkCmdCopyBuffer(CommandBuffer, SourceBuffer, DestinationBuffer, 1, &Region);
 
-    
+
 }

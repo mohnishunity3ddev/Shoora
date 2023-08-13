@@ -117,7 +117,7 @@ CreateImage(shoora_vulkan_device *RenderDevice)
 {
     VkImageType ImageType = {};
     VkFormat Format;
-    
+
     VkExtent3D Size;
     u32 MipMapCount = 1;
     // NOTE: If the Image is a cubemap then this layer count should be 6.
@@ -577,7 +577,7 @@ b32 DestroyBufferView(shoora_vulkan_device *RenderDevice, VkBufferView View)
         View = VK_NULL_HANDLE;
         Result = true;
     }
-
+    
     return Result;
 }
 
