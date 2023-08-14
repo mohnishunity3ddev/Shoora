@@ -9,11 +9,6 @@
 extern "C" {
 #endif
 
-struct shoora_app_info
-{
-    const char *AppName;
-};
-
 struct shoora_platform_presentation_surface
 {
 #ifdef SHU_RENDERER_BACKEND_VULKAN
@@ -24,8 +19,16 @@ struct shoora_platform_presentation_surface
 };
 
 #if defined(SHU_RENDERER_BACKEND_VULKAN) && defined(VK_USE_PLATFORM_WIN32_KHR)
+typedef void func_window_resize(u32 Width, u32 Height);
+
 void FillVulkanWin32SurfaceCreateInfo(shoora_platform_presentation_surface *Surface);
 #endif
+
+struct shoora_app_info
+{
+    const char *AppName;
+    func_window_resize *WindowResizeCallback;
+};
 
 enum LogType
 {

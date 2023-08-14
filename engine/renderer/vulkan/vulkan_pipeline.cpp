@@ -73,7 +73,7 @@ SpecifyVertexAttributes(shoora_vulkan_device *RenderDevice)
     NormalAttribute->location = 1;
     NormalAttribute->format = VK_FORMAT_R32G32B32_SFLOAT;
     NormalAttribute->offset = 3*sizeof(f32);
-    VkVertexInputAttributeDescription *NormalAttribute = &Attributes[2];
+    VkVertexInputAttributeDescription *TexCoordAttribute = &Attributes[2];
     NormalAttribute->binding = 0;
     NormalAttribute->location = 2;
     NormalAttribute->format = VK_FORMAT_R32G32_SFLOAT;

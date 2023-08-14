@@ -22,6 +22,14 @@ static win32_window_context GlobalWin32WindowContext = {};
 static WINDOWPLACEMENT GlobalWin32WindowPosition = {sizeof(GlobalWin32WindowPosition)};
 static b8 Win32GlobalRunning = false;
 
+void DummyWinResize(u32 Width, u32 Height) {}
+
+static shoora_app_info AppInfo =
+{
+    .AppName = "Placeholder App Name",
+    .WindowResizeCallback = &DummyWinResize
+};
+
 RECT
 Win32GetWindowRect(HWND WindowHandle)
 {
@@ -100,6 +108,8 @@ struct platform_input_state
     };
 };
 
+
+
 LRESULT CALLBACK
 Win32WindowCallback(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam)
 {
@@ -115,10 +125,9 @@ Win32WindowCallback(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LPara
 
         case WM_SIZE:
         {
-#if 0
             i32 Width = LOWORD(LParam);
             i32 Height = HIWORD(LParam);
-#endif
+            AppInfo.WindowResizeCallback(Width, Height);
         } break;
 
         case WM_SYSKEYDOWN:
@@ -445,8 +454,6 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     platform_input_state InputState[2] = {};
     platform_input_state *OldInputState = InputState;
     platform_input_state *NewInputState = InputState + 1;
-
-    shoora_app_info AppInfo = {.AppName = "Placeholder App Name"};
 
     renderer_context RendererContext = {};
     // TODO)): Get the AppName from the game dll.
