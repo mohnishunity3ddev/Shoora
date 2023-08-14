@@ -22,7 +22,7 @@ CreateShaderModule(shoora_vulkan_device *RenderDevice, const char *ShaderFile, V
 void
 SpecifyShaderStages(shoora_vulkan_device *RenderDevice)
 {
-    VkPipelineShaderStageCreateInfo StageCreateInfos[32];g
+    VkPipelineShaderStageCreateInfo StageCreateInfos[32];
 
     VkShaderModule VertexShader;
     CreateShaderModule(RenderDevice, "vertex_shader.vert", &VertexShader);
