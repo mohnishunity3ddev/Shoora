@@ -542,6 +542,7 @@ AcquireRequiredDeviceQueueHandles(shoora_vulkan_device *RenderDevice)
     {
         shoora_vulkan_queue *DeviceQueue = RenderDevice->QueueFamilies + Index;
         vkGetDeviceQueue(RenderDevice->LogicalDevice, DeviceQueue->FamilyIndex, 0, &DeviceQueue->Handle);
+        ASSERT(DeviceQueue->Handle != VK_NULL_HANDLE);
     }
 }
 
@@ -627,7 +628,7 @@ CreateDeviceNQueuesNCommandPools(shoora_vulkan_context *Context, shoora_device_c
     // Get Vulkan Requested Queues
     AcquireRequiredDeviceQueueHandles(&Context->Device);
 
-g    CreateCommandPools(&Context->Device);
+    CreateCommandPools(&Context->Device);
 
     LogOutput(LogType_Info, "Created Vulkan Logical Device, Got the Device Queues And Command Pool Created!\n");
 }
