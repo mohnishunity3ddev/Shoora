@@ -5,9 +5,9 @@
 shoora_vulkan_command_buffer *
 GetCommandBufferGroupForQueue(shoora_vulkan_context *Context, shoora_queue_type Type)
 {
-    ASSERT(Type < SHU_VK_MAX_QUEUE_TYPE_COUNT);
+    ASSERT(Type < SHU_VK_MAX_QUEUE_FAMILY_COUNT);
     // NOTE: This will fire if during the vulkan device setup, this queue was not asked!
-    ASSERT(Type < Context->Device.QueueTypeCount);
+    ASSERT(Type < Context->Device.QueueFamilyCount);
 
     shoora_vulkan_command_buffer *pCmdBufferGroup = &Context->CommandBuffers[Type];
     return pCmdBufferGroup;
@@ -17,57 +17,57 @@ void
 AllocateCommandBuffers(shoora_vulkan_context *Context, shoora_command_buffer_allocate_info *AllocInfos,
                        u32 AllocInfoCount)
 {
-    ASSERT(AllocInfoCount < SHU_VK_MAX_QUEUE_TYPE_COUNT);
+    // ASSERT(AllocInfoCount < SHU_VK_MAX_QUEUE_FAMILY_COUNT);
 
-    for(u32 Index = 0;
-        Index < AllocInfoCount;
-        ++Index)
-    {
-        shoora_command_buffer_allocate_info *AllocateInfo = AllocInfos + Index;
-        ASSERT(AllocateInfo->BufferCount < SHU_VK_MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT);
+    // for(u32 Index = 0;
+    //     Index < AllocInfoCount;
+    //     ++Index)
+    // {
+    //     shoora_command_buffer_allocate_info *AllocateInfo = AllocInfos + Index;
+    //     ASSERT(AllocateInfo->BufferCount < SHU_VK_MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT);
 
-        u32 QueueIndex = GetQueueIndexFromType((shoora_queue_type)AllocateInfo->QueueType);
-        shoora_vulkan_device *RenderDevice = &Context->Device;
+    //     u32 QueueIndex = GetQueueIndexFromType((shoora_queue_type)AllocateInfo->QueueType);
+    //     shoora_vulkan_device *RenderDevice = &Context->Device;
 
-        VkCommandBufferAllocateInfo VkAllocInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
-        VkAllocInfo.commandPool = RenderDevice->CommandPools[QueueIndex];
-        VkAllocInfo.level = AllocateInfo->Level;
-        VkAllocInfo.commandBufferCount = AllocateInfo->BufferCount;
+    //     VkCommandBufferAllocateInfo VkAllocInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+    //     VkAllocInfo.commandPool = RenderDevice->CommandPools[QueueIndex];
+    //     VkAllocInfo.level = AllocateInfo->Level;
+    //     VkAllocInfo.commandBufferCount = AllocateInfo->BufferCount;
 
-        shoora_vulkan_command_buffer *Shu_CommandBuffer = Context->CommandBuffers + QueueIndex;
-        Shu_CommandBuffer->QueueType = AllocateInfo->QueueType;
-        Shu_CommandBuffer->BufferCount = AllocateInfo->BufferCount;
-        Shu_CommandBuffer->BufferLevel = AllocateInfo->Level;
+    //     shoora_vulkan_command_buffer *Shu_CommandBuffer = Context->CommandBuffers + QueueIndex;
+    //     Shu_CommandBuffer->QueueType = AllocateInfo->QueueType;
+    //     Shu_CommandBuffer->BufferCount = AllocateInfo->BufferCount;
+    //     Shu_CommandBuffer->BufferLevel = AllocateInfo->Level;
 
-        VkCommandBuffer Buffers[SHU_VK_MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
-        for(u32 Index = 0;
-            Index < AllocateInfo->BufferCount;
-            ++Index)
-        {
-            Buffers[Index] = Shu_CommandBuffer->BufferHandles[Index].Handle;
-        }
+    //     VkCommandBuffer Buffers[SHU_VK_MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
+    //     for(u32 Index = 0;
+    //         Index < AllocateInfo->BufferCount;
+    //         ++Index)
+    //     {
+    //         Buffers[Index] = Shu_CommandBuffer->BufferHandles[Index].Handle;
+    //     }
 
-        // NOTE: vkAllocateCommandBuffers expects an array of just VkCommandBuffer handles. But we have an array of a struct
-        // which also has the recording state of this command buffer. That's why I need to have this Buffers Intermediate array
-        // of just VkCommandBuffer/
-        // TODO)): Check if there is a better way without using this intermediate array.
-        VK_CHECK(vkAllocateCommandBuffers(RenderDevice->LogicalDevice, &VkAllocInfo,
-                                          Buffers));
+    //     // NOTE: vkAllocateCommandBuffers expects an array of just VkCommandBuffer handles. But we have an array of a struct
+    //     // which also has the recording state of this command buffer. That's why I need to have this Buffers Intermediate array
+    //     // of just VkCommandBuffer/
+    //     // TODO)): Check if there is a better way without using this intermediate array.
+    //     VK_CHECK(vkAllocateCommandBuffers(RenderDevice->LogicalDevice, &VkAllocInfo,
+    //                                       Buffers));
 
-        for(u32 Index = 0;
-            Index < AllocateInfo->BufferCount;
-            ++Index)
-        {
+    //     for(u32 Index = 0;
+    //         Index < AllocateInfo->BufferCount;
+    //         ++Index)
+    //     {
 
-            shoora_vulkan_command_buffer_handle *BufferHandle = &Shu_CommandBuffer->BufferHandles[Index];
-            BufferHandle->Handle = Buffers[Index];
-            BufferHandle->IsRecording = false;
-            BufferHandle->CommandPool = &RenderDevice->CommandPools[QueueIndex];
-        }
+    //         shoora_vulkan_command_buffer_handle *BufferHandle = &Shu_CommandBuffer->BufferHandles[Index];
+    //         BufferHandle->Handle = Buffers[Index];
+    //         BufferHandle->IsRecording = false;
+    //         BufferHandle->CommandPool = &RenderDevice->CommandPools[QueueIndex];
+    //     }
 
-        LogOutput(LogType_Info, "%d Command Buffers created for Queue: (%s)\n", Shu_CommandBuffer->BufferCount,
-                  GetQueueTypeName(AllocateInfo->QueueType));
-    }
+    //     LogOutput(LogType_Info, "%d Command Buffers created for Queue: (%s)\n", Shu_CommandBuffer->BufferCount,
+    //               GetQueueTypeName(AllocateInfo->QueueType));
+    // }
 }
 
 void
@@ -151,35 +151,35 @@ FreeCommandBuffer(shoora_vulkan_device *RenderDevice, shoora_vulkan_command_buff
 void
 FreeAllCommandBuffers(shoora_vulkan_context *Context)
 {
-    shoora_vulkan_device *RenderDevice = &Context->Device;
-    for(u32 QueueTypeIndex = 0;
-        QueueTypeIndex < RenderDevice->QueueTypeCount;
-        ++QueueTypeIndex)
-    {
-        shoora_vulkan_command_buffer *CmdBuffer = Context->CommandBuffers + QueueTypeIndex;
+    // shoora_vulkan_device *RenderDevice = &Context->Device;
+    // for(u32 QueueTypeIndex = 0;
+    //     QueueTypeIndex < RenderDevice->QueueFamilyCount;
+    //     ++QueueTypeIndex)
+    // {
+    //     shoora_vulkan_command_buffer *CmdBuffer = Context->CommandBuffers + QueueTypeIndex;
 
-        ASSERT(CmdBuffer->BufferCount > 0);
-        ASSERT(CmdBuffer->QueueType == (shoora_queue_type)QueueTypeIndex);
+    //     ASSERT(CmdBuffer->BufferCount > 0);
+    //     ASSERT(CmdBuffer->QueueType == (shoora_queue_type)QueueTypeIndex);
 
-        VkCommandBuffer IntermediateCommandBuffers[SHU_VK_MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
-        for(u32 Index2 = 0;
-            Index2 < CmdBuffer->BufferCount;
-            ++Index2)
-        {
+    //     VkCommandBuffer IntermediateCommandBuffers[SHU_VK_MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
+    //     for(u32 Index2 = 0;
+    //         Index2 < CmdBuffer->BufferCount;
+    //         ++Index2)
+    //     {
 
-            // NOTE: A Command Buffer which is still recording commands and has not been ended should not be freed.
-            if(CmdBuffer->BufferHandles[Index2].IsRecording)
-            {
-                LogOutput(LogType_Warn,
-                          "Command Buffer for Queue(%s) Index(%d) has not been ended yet. Should "
-                          "not be allowed to be freed. Still doing it anyway. Check your code brother!\n",
-                          GetQueueTypeName(CmdBuffer->QueueType), Index2);
-            }
+    //         // NOTE: A Command Buffer which is still recording commands and has not been ended should not be freed.
+    //         if(CmdBuffer->BufferHandles[Index2].IsRecording)
+    //         {
+    //             LogOutput(LogType_Warn,
+    //                       "Command Buffer for Queue(%s) Index(%d) has not been ended yet. Should "
+    //                       "not be allowed to be freed. Still doing it anyway. Check your code brother!\n",
+    //                       GetQueueTypeName(CmdBuffer->QueueType), Index2);
+    //         }
 
-            IntermediateCommandBuffers[Index2] = CmdBuffer->BufferHandles[Index2].Handle;
-        }
+    //         IntermediateCommandBuffers[Index2] = CmdBuffer->BufferHandles[Index2].Handle;
+    //     }
 
-        vkFreeCommandBuffers(RenderDevice->LogicalDevice, RenderDevice->CommandPools[QueueTypeIndex],
-                             CmdBuffer->BufferCount, IntermediateCommandBuffers);
-    }
+    //     vkFreeCommandBuffers(RenderDevice->LogicalDevice, RenderDevice->CommandPools[QueueTypeIndex],
+    //                          CmdBuffer->BufferCount, IntermediateCommandBuffers);
+    // }
 }

@@ -40,6 +40,7 @@ struct shoora_vulkan_queue
 {
     // TODO: Shouldn't this be an array!
     VkQueue Handle;
+    shoora_queue_type Type;
     u32 Count;
     u32 FamilyIndex;
     // TODO)): Make this Dynamic
@@ -48,6 +49,12 @@ struct shoora_vulkan_queue
         1.0f, 1.0f, 1.0f, 1.0f,
         1.0f, 1.0f, 1.0f, 1.0f
     };
+};
+
+struct shoora_vulkan_command_pool
+{
+    VkCommandPool Handle;
+    shoora_queue_type Type;
 };
 
 struct shoora_vulkan_device
@@ -61,9 +68,16 @@ struct shoora_vulkan_device
 
     // TODO)): Make these Dynamic. Use Pointers instead.
     u32 PresentationQueueIndex;
-    shoora_vulkan_queue Queues[SHU_VK_MAX_QUEUE_TYPE_COUNT];
-    VkCommandPool CommandPools[SHU_VK_MAX_QUEUE_TYPE_COUNT];
-    u32 QueueTypeCount;
+    b32 IsGraphicsQueueForPresentation;
+
+    u32 GraphicsQueueFamilyInternalIndex;
+    u32 TransferQueueFamilyInternalIndex;
+    u32 ComputeQueueFamilyInternalIndex;
+    shoora_vulkan_queue QueueFamilies[SHU_VK_MAX_QUEUE_FAMILY_COUNT];
+    // For short-lived commands.
+    shoora_vulkan_command_pool TransientCommandPools[SHU_VK_MAX_QUEUE_FAMILY_COUNT];
+    shoora_vulkan_command_pool CommandPools[SHU_VK_MAX_QUEUE_FAMILY_COUNT];
+    u32 QueueFamilyCount;
 };
 
 struct shoora_vulkan_command_buffer
@@ -106,7 +120,7 @@ struct shoora_vulkan_context
 
     // TODO)): Maybe we should move this information into the vulkan_device struct?
     // since command buffers are associated with queues which are there in the device struct only.
-    shoora_vulkan_command_buffer CommandBuffers[SHU_VK_MAX_QUEUE_TYPE_COUNT];
+    shoora_vulkan_command_buffer CommandBuffers[SHU_VK_MAX_QUEUE_FAMILY_COUNT];
 
     shoora_vulkan_synchronization SyncHandles;
 };

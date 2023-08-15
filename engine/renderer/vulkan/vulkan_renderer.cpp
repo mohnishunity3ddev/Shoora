@@ -23,18 +23,18 @@ InitializeVulkanRenderer(shoora_vulkan_context *Context, shoora_app_info *AppInf
     CreatePresentationSurface(Context, &Context->Swapchain.Surface);
     CreateDeviceNQueuesNCommandPools(Context, &DeviceCreateInfo);
     volkLoadDevice(Context->Device.LogicalDevice);
-    
+
     CreateSwapchain(Context, &SwapchainInfo);
 
-    AllocateCommandBuffers(Context, Shu_BufferAllocInfos, ARRAY_SIZE(Shu_BufferAllocInfos));
+    // AllocateCommandBuffers(Context, Shu_BufferAllocInfos, ARRAY_SIZE(Shu_BufferAllocInfos));
 
-    shoora_vulkan_command_buffer *CmdBufferGroup = GetCommandBufferGroupForQueue(Context, QueueType_Graphics);
-    u32 CmdBufferInternalIndex = CmdBufferGroup->BufferCount - 1;
+    // shoora_vulkan_command_buffer *CmdBufferGroup = GetCommandBufferGroupForQueue(Context, QueueType_Graphics);
+    // u32 CmdBufferInternalIndex = CmdBufferGroup->BufferCount - 1;
 
-    ResetAllCommandPools(&Context->Device, true);
+    // ResetAllCommandPools(&Context->Device, true);
 
-    BeginCommandBuffer(CmdBufferGroup, CmdBufferInternalIndex, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-    EndCommandBuffer(CmdBufferGroup, CmdBufferInternalIndex);
+    // BeginCommandBuffer(CmdBufferGroup, CmdBufferInternalIndex, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    // EndCommandBuffer(CmdBufferGroup, CmdBufferInternalIndex);
 
     // CreateTextureAndUniformBufferDescriptor(&Context->Device);
 

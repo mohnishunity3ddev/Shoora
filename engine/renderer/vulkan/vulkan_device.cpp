@@ -33,13 +33,72 @@ GetQueueTypeName(shoora_queue_type Type)
     return TypeName;
 }
 
-VkQueue
-GetQueueHandle(shoora_vulkan_device *RenderDevice, shoora_queue_type QueueType)
+inline shoora_vulkan_queue *
+GetQueueFromType(shoora_vulkan_device *RenderDevice, shoora_queue_type Type)
 {
-    ASSERT(QueueType < QueueType_Count);
+    ASSERT(Type < QueueType_Count);
 
-    VkQueue Result = RenderDevice->Queues[QueueType].Handle;
+    shoora_vulkan_queue *Result = nullptr;
+
+    for(u32 Index = 0;
+        Index < RenderDevice->QueueFamilyCount;
+        ++Index)
+    {
+        if (RenderDevice->QueueFamilies[Index].Type == Type)
+        {
+            Result = &RenderDevice->QueueFamilies[Index];
+            break;
+        }
+    }
+
+    ASSERT(Result != nullptr);
+    return Result;
+}
+
+inline u32
+GetInternalQueueFamilyFromType(shoora_vulkan_device *RenderDevice, shoora_queue_type Type)
+{
+    ASSERT(Type < QueueType_Count);
+
+    u32 Result = -1UL;
+
+    for(u32 Index = 0;
+        Index < RenderDevice->QueueFamilyCount;
+        ++Index)
+    {
+        if (RenderDevice->QueueFamilies[Index].Type == Type)
+        {
+            Result = Index;
+            break;
+        }
+    }
+
+    ASSERT(Result != -1UL);
+    return Result;
+}
+
+VkQueue
+GetQueueHandle(shoora_vulkan_device *RenderDevice, shoora_queue_type Type)
+{
+    ASSERT(Type < QueueType_Count);
+
+    VkQueue Result = VK_NULL_HANDLE;
+    Result = GetQueueFromType(RenderDevice, Type)->Handle;
+
     ASSERT(Result != VK_NULL_HANDLE);
+    return Result;
+}
+
+u32
+GetQueueFamilyIndexFromType(shoora_vulkan_device *RenderDevice, shoora_queue_type Type)
+{
+    ASSERT(Type < QueueType_Count);
+
+    u32 Result = -1UL;
+
+    Result = GetQueueFromType(RenderDevice, Type)->FamilyIndex;
+
+    ASSERT(Result != -1UL);
     return Result;
 }
 
@@ -80,10 +139,9 @@ CheckSurfaceSupport(VkPhysicalDevice PhysicalDevice, u32 QueueFamilyIndex, VkSur
 // TODO)): Read More About Transfer Queues, Sparse, Protected Queues
 b32
 CheckAvailableQueueFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR AvailableSurface,
-                            shoora_queue_info *InOutRequiredQueueFamilyInfos, const u32 RequiredQueueFamilyCount,
-                            u32 *PresentationQueueFamilyIndex)
+                            shoora_queue_info *InOutRequiredQueueFamilyInfos, const u32 RequiredQueueFamilyCount)
 {
-    u32 LocalPresentationQueueFamily = -1UL;
+    b32 IsSurfaceSupported = false;
     u32 AvailableQueueFamilyCount;
     vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &AvailableQueueFamilyCount, 0);
     ASSERT((AvailableQueueFamilyCount > 0) && (AvailableQueueFamilyCount <= 16));
@@ -92,12 +150,63 @@ CheckAvailableQueueFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Availa
     vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &AvailableQueueFamilyCount, AvailableQueueFamilies);
 
     u32 FoundQueueCount = 0;
-    //? Look for Dedicated Queues. Look for a queue which supports presentation and is NOT a graphics queue.
     for (u32 RequiredQueueIndex = 0;
          RequiredQueueIndex < RequiredQueueFamilyCount;
          ++RequiredQueueIndex)
     {
         shoora_queue_info *RequiredInfo = InOutRequiredQueueFamilyInfos + RequiredQueueIndex;
+
+        // NOTE: starts from FoundQueueCOunt since we want dedicated Queue Families.
+        for(u32 AvlQueueFamilyIndex = 0;
+            AvlQueueFamilyIndex < AvailableQueueFamilyCount;
+            ++AvlQueueFamilyIndex)
+        {
+            VkQueueFamilyProperties AvlQueueFamily = AvailableQueueFamilies[AvlQueueFamilyIndex];
+
+            if((AvlQueueFamily.queueCount > 0))
+            {
+                if (((RequiredInfo->Type == QueueType_Graphics) && (AvlQueueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)) ||
+                    ((RequiredInfo->Type == QueueType_Transfer) && (AvlQueueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT)) ||
+                    ((RequiredInfo->Type == QueueType_Compute) && (AvlQueueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)))
+                {
+                    ++FoundQueueCount;
+                    IsSurfaceSupported = CheckSurfaceSupport(PhysicalDevice, AvlQueueFamilyIndex,
+                                                             AvailableSurface);
+                    if(FoundQueueCount >= RequiredQueueFamilyCount && IsSurfaceSupported)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    b32 Result = ((FoundQueueCount >= RequiredQueueFamilyCount) && IsSurfaceSupported);
+    return Result;
+}
+
+void
+GetQueueFamiliesInfo(shoora_vulkan_device *RenderDevice, VkSurfaceKHR AvailableSurface,
+                     shoora_queue_info *InOutRequiredQueueFamilyInfos, const u32 RequiredQueueFamilyCount)
+{
+    RenderDevice->QueueFamilyCount = RequiredQueueFamilyCount;
+
+    u32 LocalPresentationQueueFamily = -1UL;
+    u32 AvailableQueueFamilyCount;
+    vkGetPhysicalDeviceQueueFamilyProperties(RenderDevice->PhysicalDevice, &AvailableQueueFamilyCount, 0);
+    ASSERT((AvailableQueueFamilyCount > 0) && (AvailableQueueFamilyCount <= 16));
+
+    VkQueueFamilyProperties AvailableQueueFamilies[16];
+    vkGetPhysicalDeviceQueueFamilyProperties(RenderDevice->PhysicalDevice, &AvailableQueueFamilyCount, AvailableQueueFamilies);
+
+    u32 FoundQueueCount = 0;
+    //? Look for Dedicated Queues. Look for a queue which supports presentation and is NOT a graphics queue.
+    for (u32 QueueIndex = 0;
+         QueueIndex < RequiredQueueFamilyCount;
+         ++QueueIndex)
+    {
+        shoora_queue_info *RequiredInfo = InOutRequiredQueueFamilyInfos + QueueIndex;
+        shoora_vulkan_queue *Queue = RenderDevice->QueueFamilies + QueueIndex;
 
         // NOTE: starts from FoundQueueCOunt since we want dedicated Queue Families.
         for(u32 AvlQueueFamilyIndex = 0;
@@ -117,20 +226,39 @@ CheckAvailableQueueFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Availa
                      (AvlQueueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) &&
                      !(AvlQueueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)))
                 {
-                    RequiredInfo->FamilyIndex = AvlQueueFamilyIndex;
+                    Queue->FamilyIndex = AvlQueueFamilyIndex;
                     if(AvlQueueFamily.queueCount < RequiredInfo->QueueCount)
                     {
-                        RequiredInfo->QueueCount = AvlQueueFamily.queueCount;
+                        Queue->Count = AvlQueueFamily.queueCount;
                     }
+                    else
+                    {
+                        Queue->Count = RequiredInfo->QueueCount;
+                    }
+                    Queue->Type = RequiredInfo->Type;
 
                     if(RequiredInfo->Type != QueueType_Graphics)
                     {
-                        b32 IsSurfaceSupported = CheckSurfaceSupport(PhysicalDevice, AvlQueueFamilyIndex,
-                                                                     AvailableSurface);
+                        b32 IsSurfaceSupported = CheckSurfaceSupport(RenderDevice->PhysicalDevice,
+                                                                     AvlQueueFamilyIndex, AvailableSurface);
                         if (IsSurfaceSupported)
                         {
                             LocalPresentationQueueFamily = AvlQueueFamilyIndex;
+                            RenderDevice->IsGraphicsQueueForPresentation = false;
                         }
+                    }
+
+                    if(RequiredInfo->Type == QueueType_Graphics)
+                    {
+                        RenderDevice->GraphicsQueueFamilyInternalIndex = QueueIndex;
+                    }
+                    else if(RequiredInfo->Type == QueueType_Transfer)
+                    {
+                        RenderDevice->TransferQueueFamilyInternalIndex = QueueIndex;
+                    }
+                    else if(RequiredInfo->Type == QueueType_Compute)
+                    {
+                        RenderDevice->ComputeQueueFamilyInternalIndex = QueueIndex;
                     }
 
                     ++FoundQueueCount;
@@ -143,14 +271,14 @@ CheckAvailableQueueFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Availa
     //? Could not find dedicated queues.
     if(FoundQueueCount < RequiredQueueFamilyCount || LocalPresentationQueueFamily == -1UL)
     {
-        for(u32 RequiredQueueIndex = 0;
-            RequiredQueueIndex < RequiredQueueFamilyCount;
-            ++RequiredQueueIndex)
+        for(u32 QueueIndex = 0;
+            QueueIndex < RequiredQueueFamilyCount;
+            ++QueueIndex)
         {
-            shoora_queue_info *RequiredInfo = InOutRequiredQueueFamilyInfos + RequiredQueueIndex;
+            shoora_queue_info *RequiredInfo = InOutRequiredQueueFamilyInfos + QueueIndex;
+            shoora_vulkan_queue *Queue = RenderDevice->QueueFamilies + QueueIndex;
 
-            if((RequiredInfo->FamilyIndex != -1UL) ||
-               (RequiredInfo->QueueCount <= 0))
+            if((Queue->FamilyIndex != -1UL) || (Queue->Count <= 0))
             {
                 continue;
             }
@@ -167,20 +295,39 @@ CheckAvailableQueueFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Availa
                         ((RequiredInfo->Type == QueueType_Transfer) && (AvlQueueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT)) ||
                         ((RequiredInfo->Type == QueueType_Compute) && (AvlQueueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)))
                     {
-                        RequiredInfo->FamilyIndex = AvlQueueFamilyIndex;
+                        Queue->FamilyIndex = AvlQueueFamilyIndex;
                         if (AvlQueueFamily.queueCount < RequiredInfo->QueueCount)
                         {
-                            RequiredInfo->QueueCount = AvlQueueFamily.queueCount;
+                            Queue->Count = AvlQueueFamily.queueCount;
                         }
+                        else
+                        {
+                            Queue->Count = RequiredInfo->QueueCount;
+                        }
+                        Queue->Type = RequiredInfo->Type;
 
                         if(LocalPresentationQueueFamily == -1UL)
                         {
-                            b32 IsSurfaceSupported = CheckSurfaceSupport(PhysicalDevice, AvlQueueFamilyIndex,
-                                                                         AvailableSurface);
+                            b32 IsSurfaceSupported = CheckSurfaceSupport(RenderDevice->PhysicalDevice,
+                                                                         AvlQueueFamilyIndex, AvailableSurface);
                             if (IsSurfaceSupported)
                             {
                                 LocalPresentationQueueFamily = AvlQueueFamilyIndex;
+                                RenderDevice->IsGraphicsQueueForPresentation = true;
                             }
+                        }
+
+                        if (RequiredInfo->Type == QueueType_Graphics)
+                        {
+                            RenderDevice->GraphicsQueueFamilyInternalIndex = QueueIndex;
+                        }
+                        else if (RequiredInfo->Type == QueueType_Transfer)
+                        {
+                            RenderDevice->TransferQueueFamilyInternalIndex = QueueIndex;
+                        }
+                        else if (RequiredInfo->Type == QueueType_Compute)
+                        {
+                            RenderDevice->ComputeQueueFamilyInternalIndex = QueueIndex;
                         }
 
                         ++FoundQueueCount;
@@ -193,10 +340,7 @@ CheckAvailableQueueFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Availa
 
     ASSERT(LocalPresentationQueueFamily != -1UL);
 
-    *PresentationQueueFamilyIndex = LocalPresentationQueueFamily;
-
-    b32 Result = (FoundQueueCount == RequiredQueueFamilyCount);
-    return Result;
+    RenderDevice->PresentationQueueIndex = LocalPresentationQueueFamily;
 }
 
 b32
@@ -270,6 +414,20 @@ CheckForDedicatedGPU(const VkPhysicalDeviceProperties *DeviceProperties)
     return Result;
 }
 
+b32
+CheckForBasicSwapchainSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
+{
+    u32 SupportedFormatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(PhysicalDevice, Surface, &SupportedFormatCount, nullptr);
+
+    u32  SupportedPresentModeCount;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(PhysicalDevice, Surface, &SupportedPresentModeCount, nullptr);
+
+    b32 Result = (SupportedFormatCount > 0) && (SupportedPresentModeCount > 0);
+
+    return Result;
+}
+
 VkPhysicalDevice
 PickPhysicalDevice(VkInstance Instance, shoora_device_create_info *DeviceCreateInfo, VkSurfaceKHR Surface,
                    u32 *PresentationFamily)
@@ -316,8 +474,7 @@ PickPhysicalDevice(VkInstance Instance, shoora_device_create_info *DeviceCreateI
             ++PhysicalDeviceScores[PhysicalDeviceIndex];
         }
 
-        if (CheckAvailableQueueFamilies(PhysicalDevice, Surface, DesiredQueueFamilyInfos, RequiredQueueFamilyCount,
-                                        PresentationFamily))
+        if(CheckAvailableQueueFamilies(PhysicalDevice, Surface, DesiredQueueFamilyInfos, RequiredQueueFamilyCount))
         {
             ++PhysicalDeviceScores[PhysicalDeviceIndex];
         }
@@ -325,6 +482,11 @@ PickPhysicalDevice(VkInstance Instance, shoora_device_create_info *DeviceCreateI
         if(CheckForDedicatedGPU(&Properties))
         {
             PhysicalDeviceScores[PhysicalDeviceIndex] += 2;
+        }
+
+        if(CheckForBasicSwapchainSupport(PhysicalDevice, Surface))
+        {
+            ++PhysicalDeviceScores[PhysicalDeviceIndex];
         }
 
         if(PhysicalDeviceScores[PhysicalDeviceIndex] > MaxScore)
@@ -351,41 +513,16 @@ PickPhysicalDevice(VkInstance Instance, shoora_device_create_info *DeviceCreateI
     return SelectedDevice;
 }
 
-u32
-GetQueueIndexFromType(shoora_queue_type Type)
-{
-    u32 Result = (u32)Type;
-    ASSERT(Result >= 0 && Result < 8);
-    return Result;
-}
-
-inline shoora_vulkan_queue *
-GetQueueFromType(shoora_vulkan_device *RenderDevice, shoora_queue_type Type)
-{
-    u32 QueueIndex = GetQueueIndexFromType(Type);
-
-    shoora_vulkan_queue *Queue = RenderDevice->Queues + QueueIndex;
-
-    ASSERT(Queue);
-    return Queue;
-}
-
 void
-FillRequiredDeviceQueueInfos(shoora_vulkan_device *RenderDevice, shoora_queue_info *QueueInfos, u32 QueueInfoCount,
-                             VkDeviceQueueCreateInfo *OutQueueCreateInfos)
+FillRequiredDeviceQueueInfos(shoora_vulkan_device *RenderDevice, VkDeviceQueueCreateInfo *OutQueueCreateInfos)
 {
-    RenderDevice->QueueTypeCount = QueueInfoCount;
-
     for(u32 Index = 0;
-        Index < RenderDevice->QueueTypeCount;
+        Index < RenderDevice->QueueFamilyCount;
         ++Index)
     {
-        shoora_queue_info *Info = QueueInfos + Index;
-        u32 DeviceQueueIndex = GetQueueIndexFromType(Info->Type);
+        shoora_vulkan_queue *Queue = RenderDevice->QueueFamilies + Index;
+        // u32 DeviceQueueIndex = GetQueueIndexFromType(Info->Type);
 
-        shoora_vulkan_queue *Queue = &RenderDevice->Queues[DeviceQueueIndex];
-        Queue->Count = Info->QueueCount;
-        Queue->FamilyIndex = Info->FamilyIndex;
         Queue->Handle = VK_NULL_HANDLE;
 
         VkDeviceQueueCreateInfo *QueueCreateInfo = OutQueueCreateInfos + Index;
@@ -400,62 +537,58 @@ void
 AcquireRequiredDeviceQueueHandles(shoora_vulkan_device *RenderDevice)
 {
     for(u32 Index = 0;
-        Index < RenderDevice->QueueTypeCount;
+        Index < RenderDevice->QueueFamilyCount;
         ++Index)
     {
-        shoora_vulkan_queue DeviceQueue = RenderDevice->Queues[Index];
-        vkGetDeviceQueue(RenderDevice->LogicalDevice, DeviceQueue.FamilyIndex, 0, &DeviceQueue.Handle);
+        shoora_vulkan_queue *DeviceQueue = RenderDevice->QueueFamilies + Index;
+        vkGetDeviceQueue(RenderDevice->LogicalDevice, DeviceQueue->FamilyIndex, 0, &DeviceQueue->Handle);
     }
 }
 
 void
-CreateCommandPools(shoora_vulkan_device *RenderDevice, shoora_command_pool_create_info *CommandPoolInfos,
-                   u32 CommandPoolCount)
+CreateCommandPools(shoora_vulkan_device *RenderDevice)
 {
     for(u32 Index = 0;
-        Index < CommandPoolCount;
+        Index < RenderDevice->QueueFamilyCount;
         ++Index)
     {
-        shoora_command_pool_create_info *CreateInfo = CommandPoolInfos + Index;
+        shoora_vulkan_command_pool *ShCmdPool = RenderDevice->CommandPools + Index;
+        shoora_vulkan_command_pool *ShTransientCmdPool = RenderDevice->TransientCommandPools + Index;
+        shoora_vulkan_queue *QueueFamily = RenderDevice->QueueFamilies + Index;
+        ShCmdPool->Type = QueueFamily->Type;
+        ShTransientCmdPool->Type = QueueFamily->Type;
 
-        u32 QueueFamilyIndex = -1UL;
-        VkCommandPool *CommandPool = 0;
-
-        u32 QueueIndex = GetQueueIndexFromType(CreateInfo->QueueType);
-        CommandPool = RenderDevice->CommandPools + Index;
-
-        QueueFamilyIndex = RenderDevice->Queues[QueueIndex].FamilyIndex;
+        u32 QueueFamilyIndex = QueueFamily->FamilyIndex;
         ASSERT(QueueFamilyIndex >= 0);
 
         VkCommandPoolCreateInfo CommandPoolCreateInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
         CommandPoolCreateInfo.pNext = nullptr;
-        CommandPoolCreateInfo.flags = CreateInfo->CreateFlags;
+        CommandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         CommandPoolCreateInfo.queueFamilyIndex = QueueFamilyIndex;
 
-        VK_CHECK(vkCreateCommandPool(RenderDevice->LogicalDevice, &CommandPoolCreateInfo, 0, CommandPool));
+        VK_CHECK(vkCreateCommandPool(RenderDevice->LogicalDevice, &CommandPoolCreateInfo, 0, &ShCmdPool->Handle));
 
-        LogOutput(LogType_Info, "Created Command Pool for Queue(%s)!\n", GetQueueTypeName(CreateInfo->QueueType));
+        CommandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+        VK_CHECK(vkCreateCommandPool(RenderDevice->LogicalDevice, &CommandPoolCreateInfo, 0, &ShTransientCmdPool->Handle));
+
+        LogOutput(LogType_Info, "Created Reset and Transient Command Pool for Queue(%s)!\n",
+                  GetQueueTypeName(QueueFamily->Type));
     }
-}
-
-void
-ResetCommandPool(shoora_vulkan_device *RenderDevice, u32 InternalIndex, b32 ReleaseResources)
-{
-    VkCommandPool CommandPool = RenderDevice->CommandPools[InternalIndex];
-    VkCommandPoolResetFlags ResetFlags = ReleaseResources ? VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT : 0;
-
-    VK_CHECK(vkResetCommandPool(RenderDevice->LogicalDevice, CommandPool, ResetFlags));
-    LogOutput(LogType_Info, "Command Pool associated with Queue(%s) has been reset!\n",
-              GetQueueTypeName((shoora_queue_type)(InternalIndex)));
 }
 
 // Resets all the command buffers allocated from this pool!
 void
 ResetAllCommandPools(shoora_vulkan_device *RenderDevice, b32 ReleaseResources)
 {
-    for (u32 Index = 0; Index < RenderDevice->QueueTypeCount; ++Index)
+    for(u32 Index = 0;
+        Index < RenderDevice->QueueFamilyCount;
+        ++Index)
     {
-        ResetCommandPool(RenderDevice, Index, ReleaseResources);
+        VkCommandPoolResetFlags ResetFlags = ReleaseResources ? VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT : 0;
+        VK_CHECK(vkResetCommandPool(RenderDevice->LogicalDevice, RenderDevice->CommandPools[Index].Handle,
+                                    ResetFlags));
+        VK_CHECK(vkResetCommandPool(RenderDevice->LogicalDevice, RenderDevice->TransientCommandPools[Index].Handle,
+                                    ResetFlags));
     }
 
     LogOutput(LogType_Info, "All Command Pools are Reset!\n");
@@ -468,18 +601,20 @@ CreateDeviceNQueuesNCommandPools(shoora_vulkan_context *Context, shoora_device_c
                                                          Context->Swapchain.Surface,
                                                          &Context->Device.PresentationQueueIndex);
     Context->Device.PhysicalDevice = PhysicalDevice;
+    GetQueueFamiliesInfo(&Context->Device, Context->Swapchain.Surface, ShuraDeviceCreateInfo->pQueueCreateInfos,
+                         ShuraDeviceCreateInfo->QueueCreateInfoCount);
+
     vkGetPhysicalDeviceProperties(PhysicalDevice, &Context->Device.DeviceProperties);
     vkGetPhysicalDeviceFeatures(PhysicalDevice, &Context->Device.Features);
     vkGetPhysicalDeviceMemoryProperties(PhysicalDevice, &Context->Device.MemoryProperties);
 
     VkDeviceQueueCreateInfo QueueCreateInfos[32] = {};
-    FillRequiredDeviceQueueInfos(&Context->Device, ShuraDeviceCreateInfo->pQueueCreateInfos,
-                                 ShuraDeviceCreateInfo->QueueCreateInfoCount, QueueCreateInfos);
+    FillRequiredDeviceQueueInfos(&Context->Device, &QueueCreateInfos[0]);
 
     VkDeviceCreateInfo DeviceCreateInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
     DeviceCreateInfo.pNext = 0;
     DeviceCreateInfo.flags = 0;
-    DeviceCreateInfo.queueCreateInfoCount = ShuraDeviceCreateInfo->QueueCreateInfoCount;
+    DeviceCreateInfo.queueCreateInfoCount = Context->Device.QueueFamilyCount;
     DeviceCreateInfo.pQueueCreateInfos = QueueCreateInfos;
     DeviceCreateInfo.enabledLayerCount = 0;
     DeviceCreateInfo.ppEnabledLayerNames = 0;
@@ -492,8 +627,7 @@ CreateDeviceNQueuesNCommandPools(shoora_vulkan_context *Context, shoora_device_c
     // Get Vulkan Requested Queues
     AcquireRequiredDeviceQueueHandles(&Context->Device);
 
-    CreateCommandPools(&Context->Device, ShuraDeviceCreateInfo->pCommandPoolCreateInfos,
-                       ShuraDeviceCreateInfo->CommandPoolCount);
+g    CreateCommandPools(&Context->Device);
 
     LogOutput(LogType_Info, "Created Vulkan Logical Device, Got the Device Queues And Command Pool Created!\n");
 }
@@ -501,18 +635,23 @@ CreateDeviceNQueuesNCommandPools(shoora_vulkan_context *Context, shoora_device_c
 void DestroyCommandPools(shoora_vulkan_device *RenderDevice)
 {
     for(u32 Index = 0;
-        Index < RenderDevice->QueueTypeCount;
+        Index < RenderDevice->QueueFamilyCount;
         ++Index)
     {
-        VkCommandPool CommandPool = RenderDevice->CommandPools[Index];
-
+        VkCommandPool CommandPool = RenderDevice->CommandPools[Index].Handle;
         if (CommandPool != VK_NULL_HANDLE)
         {
             vkDestroyCommandPool(RenderDevice->LogicalDevice, CommandPool, 0);
         }
+
+        VkCommandPool TransientCommandPool = RenderDevice->TransientCommandPools[Index].Handle;
+        if (TransientCommandPool != VK_NULL_HANDLE)
+        {
+            vkDestroyCommandPool(RenderDevice->LogicalDevice, TransientCommandPool, 0);
+        }
     }
 
-    LogOutput(LogType_Info, "%d Command Pools Destroyed!\n", RenderDevice->QueueTypeCount);
+    LogOutput(LogType_Info, "%d Command Pools Destroyed!\n", RenderDevice->QueueFamilyCount);
 }
 
 void

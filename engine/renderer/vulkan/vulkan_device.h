@@ -20,9 +20,6 @@ struct shoora_queue_info
 {
     shoora_queue_type Type = QueueType_Count;
     u32 QueueCount;
-    // TODO)): Make this dynamic.
-    f32 Priorities[2] = {1.0f, 1.0f};
-    u32 FamilyIndex = -1;
 };
 
 struct shoora_command_pool_create_info
@@ -45,7 +42,6 @@ struct shoora_device_create_info
 
  void CreateDeviceNQueuesNCommandPools(struct shoora_vulkan_context *VulkanContext,
                                       shoora_device_create_info *ShuraDeviceCreateInfo);
- u32 GetQueueIndexFromType(shoora_queue_type Type);
  const char *GetQueueTypeName(shoora_queue_type Type);
  i32 GetDeviceMemoryType(shoora_vulkan_device *RenderDevice, u32 DesiredMemoryTypeBits,
                          VkMemoryPropertyFlags DesiredMemoryProperties);

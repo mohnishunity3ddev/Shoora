@@ -89,7 +89,7 @@ SelectDesiredImageUsage(shoora_vulkan_swapchain *Swapchain, VkImageUsageFlags De
 
     u32 NumberOfBitsToCheck = (u32)(sizeof(VkImageUsageFlags) * 8);
     SET_FLAG_BITS_IF_EQUAL(ImageUsageFlags, DesiredImageUsageFlags,
-                       SurfaceCapabilities->supportedUsageFlags, NumberOfBitsToCheck);
+                           SurfaceCapabilities->supportedUsageFlags, NumberOfBitsToCheck);
 
     if(ImageUsageFlags != DesiredImageUsageFlags)
     {
