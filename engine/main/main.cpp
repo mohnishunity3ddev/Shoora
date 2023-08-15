@@ -127,6 +127,8 @@ Win32WindowCallback(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LPara
         {
             i32 Width = LOWORD(LParam);
             i32 Height = HIWORD(LParam);
+            AppInfo.WindowWidth = Width;
+            AppInfo.WindowHeight = Height;
             AppInfo.WindowResizeCallback(Width, Height);
         } break;
 
