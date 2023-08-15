@@ -67,11 +67,23 @@ GetDeviceMemoryType(shoora_vulkan_device *RenderDevice, u32 DesiredMemoryTypeBit
 
     return Result;
 }
+
+b32
+CheckSurfaceSupport(VkPhysicalDevice PhysicalDevice, u32 QueueFamilyIndex, VkSurfaceKHR Surface)
+{
+    VkBool32 SurfaceSupported;
+    VK_CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(PhysicalDevice, QueueFamilyIndex, Surface, &SurfaceSupported));
+
+    return SurfaceSupported;
+}
+
 // TODO)): Read More About Transfer Queues, Sparse, Protected Queues
 b32
-CheckAvailableQueueFamilies(VkPhysicalDevice PhysicalDevice, shoora_queue_info *InOutRequiredQueueFamilyInfos,
-                            const u32 RequiredQueueFamilyCount)
+CheckAvailableQueueFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR AvailableSurface,
+                            shoora_queue_info *InOutRequiredQueueFamilyInfos, const u32 RequiredQueueFamilyCount,
+                            u32 *PresentationQueueFamilyIndex)
 {
+    u32 LocalPresentationQueueFamily = -1UL;
     u32 AvailableQueueFamilyCount;
     vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &AvailableQueueFamilyCount, 0);
     ASSERT((AvailableQueueFamilyCount > 0) && (AvailableQueueFamilyCount <= 16));
@@ -80,6 +92,7 @@ CheckAvailableQueueFamilies(VkPhysicalDevice PhysicalDevice, shoora_queue_info *
     vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &AvailableQueueFamilyCount, AvailableQueueFamilies);
 
     u32 FoundQueueCount = 0;
+    //? Look for Dedicated Queues. Look for a queue which supports presentation and is NOT a graphics queue.
     for (u32 RequiredQueueIndex = 0;
          RequiredQueueIndex < RequiredQueueFamilyCount;
          ++RequiredQueueIndex)
@@ -87,7 +100,7 @@ CheckAvailableQueueFamilies(VkPhysicalDevice PhysicalDevice, shoora_queue_info *
         shoora_queue_info *RequiredInfo = InOutRequiredQueueFamilyInfos + RequiredQueueIndex;
 
         // NOTE: starts from FoundQueueCOunt since we want dedicated Queue Families.
-        for(u32 AvlQueueFamilyIndex = FoundQueueCount;
+        for(u32 AvlQueueFamilyIndex = 0;
             AvlQueueFamilyIndex < AvailableQueueFamilyCount;
             ++AvlQueueFamilyIndex)
         {
@@ -95,12 +108,13 @@ CheckAvailableQueueFamilies(VkPhysicalDevice PhysicalDevice, shoora_queue_info *
 
             if((AvlQueueFamily.queueCount > 0))
             {
-                if (((RequiredInfo->Type == QueueType_Graphics) &&
-                     (AvlQueueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)) ||
-                    ((RequiredInfo->Type == QueueType_Compute) &&
-                     (AvlQueueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)) ||
+                if (((RequiredInfo->Type == QueueType_Graphics) && (AvlQueueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)) ||
                     ((RequiredInfo->Type == QueueType_Transfer) &&
                      (AvlQueueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT) &&
+                     !(AvlQueueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) &&
+                     !(AvlQueueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)) ||
+                    ((RequiredInfo->Type == QueueType_Compute) &&
+                     (AvlQueueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) &&
                      !(AvlQueueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)))
                 {
                     RequiredInfo->FamilyIndex = AvlQueueFamilyIndex;
@@ -108,12 +122,78 @@ CheckAvailableQueueFamilies(VkPhysicalDevice PhysicalDevice, shoora_queue_info *
                     {
                         RequiredInfo->QueueCount = AvlQueueFamily.queueCount;
                     }
+
+                    if(RequiredInfo->Type != QueueType_Graphics)
+                    {
+                        b32 IsSurfaceSupported = CheckSurfaceSupport(PhysicalDevice, AvlQueueFamilyIndex,
+                                                                     AvailableSurface);
+                        if (IsSurfaceSupported)
+                        {
+                            LocalPresentationQueueFamily = AvlQueueFamilyIndex;
+                        }
+                    }
+
                     ++FoundQueueCount;
                     break;
                 }
             }
         }
     }
+
+    //? Could not find dedicated queues.
+    if(FoundQueueCount < RequiredQueueFamilyCount || LocalPresentationQueueFamily == -1UL)
+    {
+        for(u32 RequiredQueueIndex = 0;
+            RequiredQueueIndex < RequiredQueueFamilyCount;
+            ++RequiredQueueIndex)
+        {
+            shoora_queue_info *RequiredInfo = InOutRequiredQueueFamilyInfos + RequiredQueueIndex;
+
+            if((RequiredInfo->FamilyIndex != -1UL) ||
+               (RequiredInfo->QueueCount <= 0))
+            {
+                continue;
+            }
+
+            for(u32 AvlQueueFamilyIndex = 0;
+                AvlQueueFamilyIndex < AvailableQueueFamilyCount;
+                ++AvlQueueFamilyIndex)
+            {
+                VkQueueFamilyProperties AvlQueueFamily = AvailableQueueFamilies[AvlQueueFamilyIndex];
+
+                if(AvlQueueFamily.queueCount > 0)
+                {
+                    if (((RequiredInfo->Type == QueueType_Graphics) && (AvlQueueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)) ||
+                        ((RequiredInfo->Type == QueueType_Transfer) && (AvlQueueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT)) ||
+                        ((RequiredInfo->Type == QueueType_Compute) && (AvlQueueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)))
+                    {
+                        RequiredInfo->FamilyIndex = AvlQueueFamilyIndex;
+                        if (AvlQueueFamily.queueCount < RequiredInfo->QueueCount)
+                        {
+                            RequiredInfo->QueueCount = AvlQueueFamily.queueCount;
+                        }
+
+                        if(LocalPresentationQueueFamily == -1UL)
+                        {
+                            b32 IsSurfaceSupported = CheckSurfaceSupport(PhysicalDevice, AvlQueueFamilyIndex,
+                                                                         AvailableSurface);
+                            if (IsSurfaceSupported)
+                            {
+                                LocalPresentationQueueFamily = AvlQueueFamilyIndex;
+                            }
+                        }
+
+                        ++FoundQueueCount;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    ASSERT(LocalPresentationQueueFamily != -1UL);
+
+    *PresentationQueueFamilyIndex = LocalPresentationQueueFamily;
 
     b32 Result = (FoundQueueCount == RequiredQueueFamilyCount);
     return Result;
@@ -191,7 +271,8 @@ CheckForDedicatedGPU(const VkPhysicalDeviceProperties *DeviceProperties)
 }
 
 VkPhysicalDevice
-PickPhysicalDevice(VkInstance Instance, shoora_device_create_info *DeviceCreateInfo)
+PickPhysicalDevice(VkInstance Instance, shoora_device_create_info *DeviceCreateInfo, VkSurfaceKHR Surface,
+                   u32 *PresentationFamily)
 {
     const char **DesiredDeviceExtensions = DeviceCreateInfo->ppRequiredExtensions;
     const u32 DesiredDeviceExtensionCount = DeviceCreateInfo->RequiredExtensionCount;
@@ -235,7 +316,8 @@ PickPhysicalDevice(VkInstance Instance, shoora_device_create_info *DeviceCreateI
             ++PhysicalDeviceScores[PhysicalDeviceIndex];
         }
 
-        if(CheckAvailableQueueFamilies(PhysicalDevice, DesiredQueueFamilyInfos, RequiredQueueFamilyCount))
+        if (CheckAvailableQueueFamilies(PhysicalDevice, Surface, DesiredQueueFamilyInfos, RequiredQueueFamilyCount,
+                                        PresentationFamily))
         {
             ++PhysicalDeviceScores[PhysicalDeviceIndex];
         }
@@ -382,7 +464,9 @@ ResetAllCommandPools(shoora_vulkan_device *RenderDevice, b32 ReleaseResources)
 void
 CreateDeviceNQueuesNCommandPools(shoora_vulkan_context *Context, shoora_device_create_info *ShuraDeviceCreateInfo)
 {
-    VkPhysicalDevice PhysicalDevice = PickPhysicalDevice(Context->Instance, ShuraDeviceCreateInfo);
+    VkPhysicalDevice PhysicalDevice = PickPhysicalDevice(Context->Instance, ShuraDeviceCreateInfo,
+                                                         Context->Swapchain.Surface,
+                                                         &Context->Device.PresentationQueueIndex);
     Context->Device.PhysicalDevice = PhysicalDevice;
     vkGetPhysicalDeviceProperties(PhysicalDevice, &Context->Device.DeviceProperties);
     vkGetPhysicalDeviceFeatures(PhysicalDevice, &Context->Device.Features);

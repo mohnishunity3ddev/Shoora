@@ -2,7 +2,7 @@
 #include "vulkan_work_submission.h"
 #include "vulkan_descriptor_sets.h"
 
-void VulkanWindowResizeCallback(u32 Width, u32 Height)
+void WindowResizedCallback(u32 Width, u32 Height)
 {
     LogOutput(LogType_Debug, "Window Resized to {%d, %d}\n", Width, Height);
 }
@@ -23,7 +23,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *Context, shoora_app_info *AppInf
     CreatePresentationSurface(Context, &Context->Swapchain.Surface);
     CreateDeviceNQueuesNCommandPools(Context, &DeviceCreateInfo);
     volkLoadDevice(Context->Device.LogicalDevice);
-
+    
     CreateSwapchain(Context, &SwapchainInfo);
 
     AllocateCommandBuffers(Context, Shu_BufferAllocInfos, ARRAY_SIZE(Shu_BufferAllocInfos));
@@ -41,7 +41,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *Context, shoora_app_info *AppInf
     CreateAllSemaphores(Context);
     CreateAllFences(Context);
 
-    AppInfo->WindowResizeCallback = &VulkanWindowResizeCallback;
+    AppInfo->WindowResizeCallback = &WindowResizedCallback;
 }
 
 void

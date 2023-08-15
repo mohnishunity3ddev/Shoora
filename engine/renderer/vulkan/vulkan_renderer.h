@@ -60,6 +60,7 @@ struct shoora_vulkan_device
     VkDevice LogicalDevice;
 
     // TODO)): Make these Dynamic. Use Pointers instead.
+    u32 PresentationQueueIndex;
     shoora_vulkan_queue Queues[SHU_VK_MAX_QUEUE_TYPE_COUNT];
     VkCommandPool CommandPools[SHU_VK_MAX_QUEUE_TYPE_COUNT];
     u32 QueueTypeCount;

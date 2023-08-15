@@ -56,22 +56,23 @@ shoora_vulkan_debug_create_info DebugCreateInfo = {.SeverityFlags = VK_DEBUG_UTI
                                                                  VK_DEBUG_REPORT_DEBUG_BIT_EXT};
 
 shoora_instance_create_info ShuraInstanceCreateInfo = {.ppRequiredInstanceExtensions = RequiredInstanceExtensions,
-                                                      .RequiredInstanceExtensionCount = ARRAY_SIZE(RequiredInstanceExtensions),
-                                                      .ppRequiredInstanceLayers = RequiredInstanceLayers,
-                                                      .RequiredInstanceLayerCount = ARRAY_SIZE(RequiredInstanceLayers)};
+                                                       .RequiredInstanceExtensionCount = ARRAY_SIZE(RequiredInstanceExtensions),
+                                                       .ppRequiredInstanceLayers = RequiredInstanceLayers,
+                                                       .RequiredInstanceLayerCount = ARRAY_SIZE(RequiredInstanceLayers)};
 
 shoora_queue_info QueueInfos[] =
 {
     {.Type = QueueType_Graphics, .QueueCount = 1},
-    {.Type = QueueType_Compute, .QueueCount = 1},
+    {.Type = QueueType_Compute,  .QueueCount = 1},
     {.Type = QueueType_Transfer, .QueueCount = 1},
 };
+
 VkPhysicalDeviceFeatures DesiredFeatures =
 {
     .geometryShader = VK_TRUE,
     .samplerAnisotropy = VK_TRUE
 };
-// Different Threads should have their own Command Pools.
+
 shoora_command_pool_create_info CommandPoolCreateInfos[] =
 {
     {
@@ -87,6 +88,7 @@ shoora_command_pool_create_info CommandPoolCreateInfos[] =
         .QueueType = QueueType_Transfer
     }
 };
+
 shoora_device_create_info DeviceCreateInfo =
 {
     .ppRequiredExtensions = RequiredDeviceExtensions,
@@ -104,7 +106,6 @@ shoora_vulkan_swapchain_create_info SwapchainInfo =
     .DesiredPresentMode = VK_PRESENT_MODE_MAILBOX_KHR,
     .DesiredImageUsages = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
     .DesiredTransformFlagBits = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
-
     .DesiredImageFormat = VK_FORMAT_B8G8R8A8_UNORM,
     .DesiredImageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
 };
@@ -127,19 +128,6 @@ shoora_command_buffer_allocate_info Shu_BufferAllocInfos[] = {
         .BufferCount = 6
     }
 };
-
-// VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT:
-// If the command buffer will be submitted only once and then reset or
-// re-recorded
-//
-// VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT
-// If it is the secondary command buffer and is considered to be entirely
-// inside a render pass
-//
-// VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT
-// If the command buffer needs to be resubmitted to a queue while it is
-// still being executed on a device (before the previous submission of this
-// command buffer has ended).
 
 #define VULKAN_INPUT_INFO_H
 #endif
