@@ -443,8 +443,14 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     RegisterClass(&WinClass);
 
     DWORD Style = WS_OVERLAPPEDWINDOW;
+    u32 StartingWindowWidth = 1600;
+    u32 StartingWindowHeight = 900;
     HWND WindowHandle = CreateWindowEx(0, CLASS_NAME, L"Shoora", Style, CW_USEDEFAULT, CW_USEDEFAULT,
-                                       CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
+                                       StartingWindowWidth, StartingWindowHeight, NULL, NULL, hInstance, NULL);
+
+    RECT WindowRect = Win32GetWindowRect(WindowHandle);
+    AppInfo.WindowWidth = WindowRect.right - WindowRect.left;
+    AppInfo.WindowHeight = WindowRect.bottom - WindowRect.top;
 
     GlobalWin32WindowContext.Handle = WindowHandle;
     GlobalWin32WindowContext.ClearColor = CreateSolidBrush(RGB(48, 10, 36));

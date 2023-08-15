@@ -305,7 +305,7 @@ DestroySwapchainImageViews(shoora_vulkan_device *RenderDevice, shoora_vulkan_swa
 }
 
 void
-CreateSwapchain(shoora_vulkan_context *Context,
+CreateSwapchain(shoora_vulkan_context *Context, u32 WindowWidth, u32 WindowHeight,
                 shoora_vulkan_swapchain_create_info *ShuraSwapchainInfo)
 {
     if(Context->Swapchain.SwapchainHandle == VK_NULL_HANDLE)
@@ -320,6 +320,8 @@ CreateSwapchain(shoora_vulkan_context *Context,
     }
 
     shoora_vulkan_swapchain *SwapchainInfo = &Context->Swapchain;
+    SwapchainInfo->ImageDimensions = {WindowWidth, WindowHeight};
+
     VkSwapchainCreateInfoKHR CreateInfo = {VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR};
     CreateInfo.pNext = 0;
     CreateInfo.flags = 0;
@@ -377,7 +379,7 @@ CreatePresentationSurface(shoora_vulkan_context *Context, VkSurfaceKHR *Surface)
 
     shoora_platform_presentation_surface Win32Surface = {&SurfaceCreateInfo};
     FillVulkanWin32SurfaceCreateInfo(&Win32Surface);
-
+    
     VK_CHECK(vkCreateWin32SurfaceKHR(Context->Instance, &SurfaceCreateInfo, 0, Surface));
     LogOutput(LogType_Info, "Created Presentation Surface!\n");
 #endif

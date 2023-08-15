@@ -10,7 +10,7 @@ void WindowResizedCallback(u32 Width, u32 Height)
 
     if(VulkanContext && (Width > 0 && Height > 0))
     {
-        CreateSwapchain(VulkanContext);
+        CreateSwapchain(VulkanContext, Width, Height);
     }
 }
 
@@ -21,18 +21,19 @@ InitializeVulkanRenderer(shoora_vulkan_context *Context, shoora_app_info *AppInf
     VK_CHECK(volkInitialize());
 
     ShuraInstanceCreateInfo.AppName = AppInfo->AppName;
+
     CreateVulkanInstance(Context, &ShuraInstanceCreateInfo);
     volkLoadInstance(Context->Instance);
 
 #ifdef _DEBUG
     SetupDebugCallbacks(Context, DebugCreateInfo);
 #endif
-
+    
     CreatePresentationSurface(Context, &Context->Swapchain.Surface);
     CreateDeviceNQueuesNCommandPools(Context, &DeviceCreateInfo);
     volkLoadDevice(Context->Device.LogicalDevice);
 
-    CreateSwapchain(Context, &SwapchainInfo);
+    CreateSwapchain(Context, AppInfo->WindowWidth, AppInfo->WindowHeight, &SwapchainInfo);
 
     // AllocateCommandBuffers(Context, Shu_BufferAllocInfos, ARRAY_SIZE(Shu_BufferAllocInfos));
 

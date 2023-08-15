@@ -27,6 +27,10 @@ void FillVulkanWin32SurfaceCreateInfo(shoora_platform_presentation_surface *Surf
 struct shoora_app_info
 {
     const char *AppName;
+
+    u32 WindowWidth;
+    u32 WindowHeight;
+
     func_window_resize *WindowResizeCallback;
 };
 
