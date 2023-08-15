@@ -2,10 +2,18 @@
 #include "vulkan_work_submission.h"
 #include "vulkan_descriptor_sets.h"
 
+static shoora_vulkan_context *VulkanContext = nullptr;
+
 void WindowResizedCallback(u32 Width, u32 Height)
 {
     LogOutput(LogType_Debug, "Window Resized to {%d, %d}\n", Width, Height);
+
+    if(VulkanContext && (Width > 0 && Height > 0))
+    {
+        CreateSwapchain(VulkanContext);
+    }
 }
+
 
 void
 InitializeVulkanRenderer(shoora_vulkan_context *Context, shoora_app_info *AppInfo)
@@ -42,6 +50,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *Context, shoora_app_info *AppInf
     CreateAllFences(Context);
 
     AppInfo->WindowResizeCallback = &WindowResizedCallback;
+    VulkanContext = Context;
 }
 
 void

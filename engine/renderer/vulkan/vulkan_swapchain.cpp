@@ -56,7 +56,7 @@ SelectSwapchainImageCount(shoora_vulkan_swapchain *Swapchain)
         }
     }
 
-    Swapchain->SwapchainImageCount = ImageCount;
+    Swapchain->ImageCount = ImageCount;
 }
 
 void
@@ -64,20 +64,20 @@ SelectSwapchainSize(shoora_vulkan_swapchain *Swapchain)
 {
     VkSurfaceCapabilitiesKHR *SurfaceCapabilities = &Swapchain->SurfaceCapabilities;
 
-    Swapchain->ImageSize = SurfaceCapabilities->currentExtent;
+    Swapchain->ImageDimensions = SurfaceCapabilities->currentExtent;
     // Checking if size of the images determine size of the window.
-    if(Swapchain->ImageSize.width == -1UL)
+    if(Swapchain->ImageDimensions.width == -1UL)
     {
-        Swapchain->ImageSize.width = ClampToRange(Swapchain->ImageSize.width,
+        Swapchain->ImageDimensions.width = ClampToRange(Swapchain->ImageDimensions.width,
                                                   SurfaceCapabilities->minImageExtent.width,
                                                   SurfaceCapabilities->maxImageExtent.width);
-        Swapchain->ImageSize.height = ClampToRange(Swapchain->ImageSize.height,
+        Swapchain->ImageDimensions.height = ClampToRange(Swapchain->ImageDimensions.height,
                                                    SurfaceCapabilities->minImageExtent.height,
                                                    SurfaceCapabilities->maxImageExtent.height);
     }
 
-    ASSERT((Swapchain->ImageSize.width > 0) &&
-           (Swapchain->ImageSize.width > 0));
+    ASSERT((Swapchain->ImageDimensions.width > 0) &&
+           (Swapchain->ImageDimensions.width > 0));
 }
 
 // Do we use them as render targets, or copy src/dest or sample from them for postprocessing
@@ -146,8 +146,8 @@ SelectImageFormats(shoora_vulkan_context *Context, VkFormat DesiredImageFormat, 
     if((FormatCount == 1) &&
        (SupportedFormats[0].format == VK_FORMAT_UNDEFINED))
     {
-        Context->Swapchain.ImageFormat.colorSpace = DesiredColorSpace;
-        Context->Swapchain.ImageFormat.format = DesiredImageFormat;
+        Context->Swapchain.SurfaceFormat.colorSpace = DesiredColorSpace;
+        Context->Swapchain.SurfaceFormat.format = DesiredImageFormat;
     }
     else if(FormatCount > 1)
     {
@@ -160,8 +160,8 @@ SelectImageFormats(shoora_vulkan_context *Context, VkFormat DesiredImageFormat, 
             if ((SupportedFormat.format == DesiredImageFormat) &&
                 (SupportedFormat.colorSpace == DesiredColorSpace))
             {
-                Context->Swapchain.ImageFormat.colorSpace = SupportedFormat.colorSpace;
-                Context->Swapchain.ImageFormat.format = SupportedFormat.format;
+                Context->Swapchain.SurfaceFormat.colorSpace = SupportedFormat.colorSpace;
+                Context->Swapchain.SurfaceFormat.format = SupportedFormat.format;
                 FormatFound = true;
                 break;
             }
@@ -176,8 +176,8 @@ SelectImageFormats(shoora_vulkan_context *Context, VkFormat DesiredImageFormat, 
                 VkSurfaceFormatKHR SupportedFormat = SupportedFormats[Index];
                 if (SupportedFormat.format == DesiredImageFormat)
                 {
-                    Context->Swapchain.ImageFormat.format = DesiredImageFormat;
-                    Context->Swapchain.ImageFormat.colorSpace = SupportedFormat.colorSpace;
+                    Context->Swapchain.SurfaceFormat.format = DesiredImageFormat;
+                    Context->Swapchain.SurfaceFormat.colorSpace = SupportedFormat.colorSpace;
                     LogOutput(LogType_Warn, "Desired ColorSpace ImageFormat Combination was not found. Selecting the one with "
                               "the same imageFormat.\n");
                     FormatFound = true;
@@ -187,8 +187,8 @@ SelectImageFormats(shoora_vulkan_context *Context, VkFormat DesiredImageFormat, 
 
             if(!FormatFound)
             {
-                Context->Swapchain.ImageFormat.format = SupportedFormats[0].format;
-                Context->Swapchain.ImageFormat.colorSpace = SupportedFormats[0].colorSpace;
+                Context->Swapchain.SurfaceFormat.format = SupportedFormats[0].format;
+                Context->Swapchain.SurfaceFormat.colorSpace = SupportedFormats[0].colorSpace;
                 LogOutput(LogType_Warn, "Desired ColorSpace ImageFormat Combination was not found. Selecting the first "
                           "supported one!\n");
                 FormatFound = true;
@@ -227,29 +227,107 @@ GetSwapchainImageHandles(shoora_vulkan_context *Context)
                                      &SwapchainImageCount, 0));
 
     // NOTE: Drivers can produce more images that were actually requested during swapchain creation.
-    ASSERT((SwapchainImageCount >= Context->Swapchain.SwapchainImageCount) &&
-           (SwapchainImageCount <= ARRAY_SIZE(Context->Swapchain.SwapchainImages)));
+    ASSERT((SwapchainImageCount >= Context->Swapchain.ImageCount) &&
+           (SwapchainImageCount <= ARRAY_SIZE(Context->Swapchain.Images)));
 
     VK_CHECK(vkGetSwapchainImagesKHR(Context->Device.LogicalDevice, Context->Swapchain.SwapchainHandle,
-                                     &SwapchainImageCount, Context->Swapchain.SwapchainImages));
+                                     &SwapchainImageCount, Context->Swapchain.Images));
     LogOutput(LogType_Info, "Got the Swapchain Image Handles!\n");
+}
+
+void
+CreateSwapchainImageViews(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain)
+{
+    for(u32 ImageIndex = 0;
+        ImageIndex < Swapchain->ImageCount;
+        ++ImageIndex)
+    {
+        VkImageViewCreateInfo CreateInfo;
+        CreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        CreateInfo.pNext = nullptr;
+        CreateInfo.flags = 0;
+        CreateInfo.image = Swapchain->Images[ImageIndex];
+        CreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        CreateInfo.format = Swapchain->SurfaceFormat.format;
+        CreateInfo.components = {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
+                                 VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY};
+
+        VkImageSubresourceRange SubresourceRange;
+        SubresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        SubresourceRange.baseMipLevel = 0;
+        SubresourceRange.levelCount = 1;
+        SubresourceRange.baseArrayLayer = 0;
+        SubresourceRange.layerCount = 1;
+
+        CreateInfo.subresourceRange = SubresourceRange;
+
+        VK_CHECK(vkCreateImageView(RenderDevice->LogicalDevice, &CreateInfo, nullptr,
+                                   &Swapchain->ImageViews[ImageIndex]));
+    }
+
+    LogOutput(LogType_Info, "Created all Swapchain Image Views!\n");
+}
+
+void
+CreateSwapchainFramebuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain)
+{
+    // for(u32 ImageIndex = 0;
+    //     ImageIndex < Swapchain->ImageCount;
+    //     ++ImageIndex)
+    // {
+    //     VkFramebufferCreateInfo CreateInfo;
+    //     CreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    //     CreateInfo.pNext = nullptr;
+    //     CreateInfo.flags = 0;
+    //     CreateInfo.renderPass = ;
+    //     CreateInfo.attachmentCount = ;
+    //     CreateInfo.pAttachments = ;
+    //     CreateInfo.width = ;
+    //     CreateInfo.height = ;
+    //     CreateInfo.layers = ;
+
+    //     VK_CHECK(vkCreateFramebuffer(RenderDevice->LogicalDevice, &CreateInfo, nullptr,
+    //                                  &Swapchain->Framebuffers[ImageIndex]));
+    // }
+}
+
+void
+DestroySwapchainImageViews(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain)
+{
+    for(u32 Index = 0;
+        Index < Swapchain->ImageCount;
+        ++Index)
+    {
+        vkDestroyImageView(RenderDevice->LogicalDevice, Swapchain->ImageViews[Index], nullptr);
+    }
+
+    LogOutput(LogType_Warn, "Swapchain Image Views are destroyed!\n");
 }
 
 void
 CreateSwapchain(shoora_vulkan_context *Context,
                 shoora_vulkan_swapchain_create_info *ShuraSwapchainInfo)
 {
-    PrepareForSwapchainCreation(Context, ShuraSwapchainInfo);
-    shoora_vulkan_swapchain *SwapchainInfo = &Context->Swapchain;
+    if(Context->Swapchain.SwapchainHandle == VK_NULL_HANDLE)
+    {
+        ASSERT(ShuraSwapchainInfo != nullptr);
+        PrepareForSwapchainCreation(Context, ShuraSwapchainInfo);
+    }
+    else
+    {
+        DestroySwapchainImageViews(&Context->Device, &Context->Swapchain);
+        // TODO)): Destroy Swapchain Framebuffers
+    }
 
+    shoora_vulkan_swapchain *SwapchainInfo = &Context->Swapchain;
     VkSwapchainCreateInfoKHR CreateInfo = {VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR};
     CreateInfo.pNext = 0;
     CreateInfo.flags = 0;
     CreateInfo.surface = SwapchainInfo->Surface;
-    CreateInfo.minImageCount = SwapchainInfo->SwapchainImageCount;
-    CreateInfo.imageFormat = SwapchainInfo->ImageFormat.format;
-    CreateInfo.imageColorSpace = SwapchainInfo->ImageFormat.colorSpace;
-    CreateInfo.imageExtent = SwapchainInfo->ImageSize;
+    CreateInfo.minImageCount = SwapchainInfo->ImageCount;
+    CreateInfo.imageFormat = SwapchainInfo->SurfaceFormat.format;
+    CreateInfo.imageColorSpace = SwapchainInfo->SurfaceFormat.colorSpace;
+    CreateInfo.imageExtent = SwapchainInfo->ImageDimensions;
 
     // NOTE: More than 1 if we are doing layered/stereoscopic rendering
     CreateInfo.imageArrayLayers = 1;
@@ -271,6 +349,8 @@ CreateSwapchain(shoora_vulkan_context *Context,
 
     VK_CHECK(vkCreateSwapchainKHR(Context->Device.LogicalDevice, &CreateInfo, 0,
                                   &Context->Swapchain.SwapchainHandle));
+    Context->Swapchain.SurfaceFormat = SwapchainInfo->SurfaceFormat;
+
     if(Context->Swapchain.SwapchainHandle == VK_NULL_HANDLE)
     {
         LogOutput(LogType_Error, "There was a problem creating the swapchain!\n");
@@ -279,10 +359,14 @@ CreateSwapchain(shoora_vulkan_context *Context,
     if(OldSwapchain != VK_NULL_HANDLE)
     {
         vkDestroySwapchainKHR(Context->Device.LogicalDevice, OldSwapchain, 0);
+        LogOutput(LogType_Warn, "Destroyed Old Swapchain!\n");
     }
 
     LogOutput(LogType_Info, "Swapchain Created!\n");
     GetSwapchainImageHandles(Context);
+    CreateSwapchainImageViews(&Context->Device, &Context->Swapchain);
+    // TODO)): Have to create a renderpass to create these framebuffers
+    CreateSwapchainFramebuffers(&Context->Device, &Context->Swapchain);
 }
 
 void
@@ -323,7 +407,7 @@ AcquireNextSwapchainImage(shoora_vulkan_context *Context, u32 SemaphoreInternalI
         }
     }
 
-    ASSERT(ImageIndex >= 0 && ImageIndex < Context->Swapchain.SwapchainImageCount);
+    ASSERT(ImageIndex >= 0 && ImageIndex < Context->Swapchain.ImageCount);
     return ImageIndex;
 }
 
@@ -359,6 +443,7 @@ DestroyPresentationSurface(shoora_vulkan_context *Context)
 void
 DestroySwapchain(shoora_vulkan_context *Context)
 {
+    DestroySwapchainImageViews(&Context->Device, &Context->Swapchain);
     vkDestroySwapchainKHR(Context->Device.LogicalDevice, Context->Swapchain.SwapchainHandle, 0);
-    LogOutput(LogType_Info, "Destroyed Swapchain!\n");
+    LogOutput(LogType_Warn, "Destroyed Swapchain!\n");
 }

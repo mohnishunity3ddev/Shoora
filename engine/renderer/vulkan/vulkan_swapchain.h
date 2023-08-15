@@ -21,7 +21,7 @@ struct shoora_vulkan_image_present_info
 };
 
 void CreatePresentationSurface(shoora_vulkan_context *Context, VkSurfaceKHR *Surface);
-void CreateSwapchain(shoora_vulkan_context *Context, shoora_vulkan_swapchain_create_info *ShuraSwapchainInfo);
+void CreateSwapchain(shoora_vulkan_context *Context, shoora_vulkan_swapchain_create_info *ShuraSwapchainInfo = nullptr);
 
 u32 AcquireNextSwapchainImage(shoora_vulkan_context *Context, u32 SemaphoreInternalIndex, u32 FenceInternalIndex);
 

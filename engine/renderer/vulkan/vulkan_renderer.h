@@ -23,8 +23,8 @@ struct shoora_vulkan_swapchain
     VkSurfaceKHR Surface;
     VkSurfaceCapabilitiesKHR SurfaceCapabilities;
 
-    VkSurfaceFormatKHR ImageFormat;
-    VkExtent2D ImageSize;
+    VkSurfaceFormatKHR SurfaceFormat;
+    VkExtent2D ImageDimensions;
     VkImageUsageFlags ImageUsageFlags;
     VkPresentModeKHR PresentMode;
     VkSurfaceTransformFlagBitsKHR TransformFlagBits;
@@ -32,8 +32,10 @@ struct shoora_vulkan_swapchain
     VkSwapchainKHR SwapchainHandle;
 
     // TODO)): Make this Dynamic!
-    VkImage SwapchainImages[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
-    u32 SwapchainImageCount;
+    VkImage Images[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
+    VkImageView ImageViews[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
+    VkFramebuffer Framebuffers[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
+    u32 ImageCount;
 };
 
 struct shoora_vulkan_queue
