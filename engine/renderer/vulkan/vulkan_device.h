@@ -46,7 +46,6 @@ struct shoora_device_create_info
  i32 GetDeviceMemoryType(shoora_vulkan_device *RenderDevice, u32 DesiredMemoryTypeBits,
                          VkMemoryPropertyFlags DesiredMemoryProperties);
 
- void ResetCommandPool(shoora_vulkan_device *RenderDevice, u32 InternalIndex, b32 ReleaseResources);
  void ResetAllCommandPools(shoora_vulkan_device *RenderDevice, b32 ReleaseResources);
 
  VkQueue GetQueueHandle(shoora_vulkan_device *RenderDevice, shoora_queue_type QueueType);

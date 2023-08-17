@@ -1,6 +1,8 @@
 #include "vulkan_input_info.h"
 #include "vulkan_work_submission.h"
 #include "vulkan_descriptor_sets.h"
+#include "vulkan_render_pass.h"
+#include "vulkan_pipeline.h"
 
 static shoora_vulkan_context *VulkanContext = nullptr;
 
@@ -28,12 +30,14 @@ InitializeVulkanRenderer(shoora_vulkan_context *Context, shoora_app_info *AppInf
 #ifdef _DEBUG
     SetupDebugCallbacks(Context, DebugCreateInfo);
 #endif
-    
+
     CreatePresentationSurface(Context, &Context->Swapchain.Surface);
     CreateDeviceNQueuesNCommandPools(Context, &DeviceCreateInfo);
     volkLoadDevice(Context->Device.LogicalDevice);
 
     CreateSwapchain(Context, AppInfo->WindowWidth, AppInfo->WindowHeight, &SwapchainInfo);
+    CreateRenderPass(&Context->Device, &Context->Swapchain, &Context->RenderPass);
+    CreateGraphicsPipeline(Context, "shaders/spirv/triangle.vert.spv", "shaders/spirv/triangle.frag.spv");
 
     // AllocateCommandBuffers(Context, Shu_BufferAllocInfos, ARRAY_SIZE(Shu_BufferAllocInfos));
 
@@ -61,6 +65,8 @@ DestroyVulkanRenderer(shoora_vulkan_context *Context)
 
     DestroyAllSemaphores(Context);
     DestroyAllFences(Context);
+    DestroyPipeline(&Context->Device, &Context->Pipeline);
+    DestroyRenderPass(&Context->Device, Context->RenderPass);
     DestroySwapchain(Context);
     DestroyPresentationSurface(Context);
     DestroyLogicalDevice(&Context->Device);

@@ -629,11 +629,12 @@ CreateDeviceNQueuesNCommandPools(shoora_vulkan_context *Context, shoora_device_c
     AcquireRequiredDeviceQueueHandles(&Context->Device);
 
     CreateCommandPools(&Context->Device);
-    
+
     LogOutput(LogType_Info, "Created Vulkan Logical Device, Got the Device Queues And Command Pool Created!\n");
 }
 
-void DestroyCommandPools(shoora_vulkan_device *RenderDevice)
+void
+DestroyCommandPools(shoora_vulkan_device *RenderDevice)
 {
     for(u32 Index = 0;
         Index < RenderDevice->QueueFamilyCount;

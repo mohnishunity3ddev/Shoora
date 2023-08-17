@@ -24,6 +24,8 @@ struct shoora_vulkan_swapchain
     VkSurfaceCapabilitiesKHR SurfaceCapabilities;
 
     VkSurfaceFormatKHR SurfaceFormat;
+    VkFormat DepthFormat;
+
     VkExtent2D ImageDimensions;
     VkImageUsageFlags ImageUsageFlags;
     VkPresentModeKHR PresentMode;
@@ -112,6 +114,12 @@ struct shoora_vulkan_synchronization
     u32 FenceCount;
 };
 
+struct shoora_vulkan_pipeline
+{
+    VkPipelineLayout PipelineLayout;
+    VkPipeline GraphicsPipeline;
+};
+
 struct shoora_vulkan_context
 {
     VkInstance Instance;
@@ -119,6 +127,10 @@ struct shoora_vulkan_context
 
     shoora_vulkan_device Device;
     shoora_vulkan_swapchain Swapchain;
+
+    VkRenderPass RenderPass;
+
+    shoora_vulkan_pipeline Pipeline;
 
     // TODO)): Maybe we should move this information into the vulkan_device struct?
     // since command buffers are associated with queues which are there in the device struct only.

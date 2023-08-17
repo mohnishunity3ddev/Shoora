@@ -44,6 +44,8 @@ enum shoora_quality
         *((int volatile *)0) = 0;                                                                                 \
     }
 
+#define OFFSET_OF(Var, Member) (u64)(&(((Var *)0)->Member))
+
 #define VK_CHECK(Call)                                                                                            \
     {                                                                                                             \
         ASSERT(Call == VK_SUCCESS);                                                                               \

@@ -12,6 +12,42 @@
 #define STB_IMPORT
 #endif
 
+VkFormat
+GetSuitableImageFormat(shoora_vulkan_device *RenderDevice, VkFormat *FormatCandidates, u32 FormatCount,
+                       VkImageTiling Tiling, VkFormatFeatureFlags FormatUsage)
+{
+    VkFormat Result = VK_FORMAT_UNDEFINED;
+    for (u32 Index = 0; Index < FormatCount; ++Index)
+    {
+        VkFormat Candidate = FormatCandidates[Index];
+
+        VkFormatProperties FormatProps;
+        vkGetPhysicalDeviceFormatProperties(RenderDevice->PhysicalDevice, Candidate, &FormatProps);
+
+        if ((Tiling == VK_IMAGE_TILING_LINEAR &&
+             ((FormatProps.linearTilingFeatures & FormatUsage) == FormatUsage)) ||
+            (Tiling == VK_IMAGE_TILING_OPTIMAL &&
+             ((FormatProps.optimalTilingFeatures & FormatUsage) == FormatUsage)))
+        {
+            Result = Candidate;
+            break;
+        }
+    }
+
+    return Result;
+}
+
+VkFormat
+GetSuitableDepthAttachmentFormat(shoora_vulkan_device *RenderDevice)
+{
+    VkFormat DepthFormats[] = {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT};
+
+    VkFormat DepthFormat = GetSuitableImageFormat(RenderDevice, DepthFormats, ARRAY_SIZE(DepthFormats),
+                                                  VK_IMAGE_TILING_OPTIMAL,
+                                                  VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    return DepthFormat;
+}
+
 void
 GenerateMipMaps(const char *InputFilename, const char *OutputFilename, i32 MipLevelCount, i32 Quality,
                 u64 *MipOffsets, b32 CapImageToFullHD)
@@ -577,7 +613,7 @@ b32 DestroyBufferView(shoora_vulkan_device *RenderDevice, VkBufferView View)
         View = VK_NULL_HANDLE;
         Result = true;
     }
-    
+
     return Result;
 }
 

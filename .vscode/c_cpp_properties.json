@@ -8,7 +8,7 @@
                 // "${CPP_LIBRARIES}\\glfw\\include",
                 // "${CPP_LIBRARIES}\\glm",
                 "${CPP_LIBRARIES}\\volk",
-                // "${CPP_LIBRARIES}\\stb",
+                "${CPP_LIBRARIES}\\stb",
                 "${workspaceFolder}/engine"
             ],
             "defines": [

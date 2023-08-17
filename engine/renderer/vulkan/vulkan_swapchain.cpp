@@ -1,5 +1,6 @@
 #include "vulkan_swapchain.h"
 #include "platform/platform.h"
+#include "vulkan_image.h"
 
 b32
 CheckSupportedPresentModes(const shoora_vulkan_context *Context, VkPresentModeKHR DesiredPresentMode)
@@ -129,16 +130,23 @@ SelectImageTransforms(shoora_vulkan_swapchain *Swapchain, VkSurfaceTransformFlag
 }
 
 void
-SelectImageFormats(shoora_vulkan_context *Context, VkFormat DesiredImageFormat, VkColorSpaceKHR DesiredColorSpace)
+SetSwapchainDepthFormat(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain)
+{
+    Swapchain->DepthFormat = GetSuitableDepthAttachmentFormat(RenderDevice);
+}
+
+void
+SelectImageFormats(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
+                   VkFormat DesiredImageFormat, VkColorSpaceKHR DesiredColorSpace)
 {
     u32 FormatCount = 0;
-    VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(Context->Device.PhysicalDevice, Context->Swapchain.Surface,
+    VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(RenderDevice->PhysicalDevice, Swapchain->Surface,
                                                   &FormatCount, 0));
 
     ASSERT(FormatCount > 0 && FormatCount <= 32);
 
     VkSurfaceFormatKHR SupportedFormats[32];
-    VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(Context->Device.PhysicalDevice, Context->Swapchain.Surface,
+    VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(RenderDevice->PhysicalDevice, Swapchain->Surface,
                                                   &FormatCount, SupportedFormats));
 
     b32 FormatFound = false;
@@ -146,8 +154,8 @@ SelectImageFormats(shoora_vulkan_context *Context, VkFormat DesiredImageFormat, 
     if((FormatCount == 1) &&
        (SupportedFormats[0].format == VK_FORMAT_UNDEFINED))
     {
-        Context->Swapchain.SurfaceFormat.colorSpace = DesiredColorSpace;
-        Context->Swapchain.SurfaceFormat.format = DesiredImageFormat;
+        Swapchain->SurfaceFormat.colorSpace = DesiredColorSpace;
+        Swapchain->SurfaceFormat.format = DesiredImageFormat;
     }
     else if(FormatCount > 1)
     {
@@ -160,8 +168,8 @@ SelectImageFormats(shoora_vulkan_context *Context, VkFormat DesiredImageFormat, 
             if ((SupportedFormat.format == DesiredImageFormat) &&
                 (SupportedFormat.colorSpace == DesiredColorSpace))
             {
-                Context->Swapchain.SurfaceFormat.colorSpace = SupportedFormat.colorSpace;
-                Context->Swapchain.SurfaceFormat.format = SupportedFormat.format;
+                Swapchain->SurfaceFormat.colorSpace = SupportedFormat.colorSpace;
+                Swapchain->SurfaceFormat.format = SupportedFormat.format;
                 FormatFound = true;
                 break;
             }
@@ -176,8 +184,8 @@ SelectImageFormats(shoora_vulkan_context *Context, VkFormat DesiredImageFormat, 
                 VkSurfaceFormatKHR SupportedFormat = SupportedFormats[Index];
                 if (SupportedFormat.format == DesiredImageFormat)
                 {
-                    Context->Swapchain.SurfaceFormat.format = DesiredImageFormat;
-                    Context->Swapchain.SurfaceFormat.colorSpace = SupportedFormat.colorSpace;
+                    Swapchain->SurfaceFormat.format = DesiredImageFormat;
+                    Swapchain->SurfaceFormat.colorSpace = SupportedFormat.colorSpace;
                     LogOutput(LogType_Warn, "Desired ColorSpace ImageFormat Combination was not found. Selecting the one with "
                               "the same imageFormat.\n");
                     FormatFound = true;
@@ -187,8 +195,8 @@ SelectImageFormats(shoora_vulkan_context *Context, VkFormat DesiredImageFormat, 
 
             if(!FormatFound)
             {
-                Context->Swapchain.SurfaceFormat.format = SupportedFormats[0].format;
-                Context->Swapchain.SurfaceFormat.colorSpace = SupportedFormats[0].colorSpace;
+                Swapchain->SurfaceFormat.format = SupportedFormats[0].format;
+                Swapchain->SurfaceFormat.colorSpace = SupportedFormats[0].colorSpace;
                 LogOutput(LogType_Warn, "Desired ColorSpace ImageFormat Combination was not found. Selecting the first "
                           "supported one!\n");
                 FormatFound = true;
@@ -197,6 +205,8 @@ SelectImageFormats(shoora_vulkan_context *Context, VkFormat DesiredImageFormat, 
     }
 
     ASSERT(FormatFound);
+
+    SetSwapchainDepthFormat(RenderDevice, Swapchain);
 }
 
 void
@@ -215,7 +225,7 @@ PrepareForSwapchainCreation(shoora_vulkan_context *Context,
     SelectSwapchainSize(&Context->Swapchain);
     SelectDesiredImageUsage(&Context->Swapchain, ShuraSwapchainInfo->DesiredImageUsages);
     SelectImageTransforms(&Context->Swapchain, ShuraSwapchainInfo->DesiredTransformFlagBits);
-    SelectImageFormats(Context, ShuraSwapchainInfo->DesiredImageFormat,
+    SelectImageFormats(&Context->Device, &Context->Swapchain, ShuraSwapchainInfo->DesiredImageFormat,
                        ShuraSwapchainInfo->DesiredImageColorSpace);
 }
 
@@ -348,9 +358,11 @@ CreateSwapchain(shoora_vulkan_context *Context, u32 WindowWidth, u32 WindowHeigh
 
     VkSwapchainKHR OldSwapchain = Context->Swapchain.SwapchainHandle;
     CreateInfo.oldSwapchain = OldSwapchain;
-
+    
     VK_CHECK(vkCreateSwapchainKHR(Context->Device.LogicalDevice, &CreateInfo, 0,
                                   &Context->Swapchain.SwapchainHandle));
+
+    // TODO)): Maybe this has been set before! Check this!
     Context->Swapchain.SurfaceFormat = SwapchainInfo->SurfaceFormat;
 
     if(Context->Swapchain.SwapchainHandle == VK_NULL_HANDLE)
@@ -369,6 +381,7 @@ CreateSwapchain(shoora_vulkan_context *Context, u32 WindowWidth, u32 WindowHeigh
     CreateSwapchainImageViews(&Context->Device, &Context->Swapchain);
     // TODO)): Have to create a renderpass to create these framebuffers
     CreateSwapchainFramebuffers(&Context->Device, &Context->Swapchain);
+
 }
 
 void
@@ -379,7 +392,7 @@ CreatePresentationSurface(shoora_vulkan_context *Context, VkSurfaceKHR *Surface)
 
     shoora_platform_presentation_surface Win32Surface = {&SurfaceCreateInfo};
     FillVulkanWin32SurfaceCreateInfo(&Win32Surface);
-    
+
     VK_CHECK(vkCreateWin32SurfaceKHR(Context->Instance, &SurfaceCreateInfo, 0, Surface));
     LogOutput(LogType_Info, "Created Presentation Surface!\n");
 #endif
