@@ -40,15 +40,18 @@ struct shoora_device_create_info
     u32 CommandPoolCount;
 };
 
- void CreateDeviceNQueuesNCommandPools(struct shoora_vulkan_context *VulkanContext,
+ void CreateDeviceAndQueues(struct shoora_vulkan_context *VulkanContext,
                                       shoora_device_create_info *ShuraDeviceCreateInfo);
+
  const char *GetQueueTypeName(shoora_queue_type Type);
  i32 GetDeviceMemoryType(shoora_vulkan_device *RenderDevice, u32 DesiredMemoryTypeBits,
                          VkMemoryPropertyFlags DesiredMemoryProperties);
 
+ void CreateCommandPools(shoora_vulkan_device *RenderDevice);
  void ResetAllCommandPools(shoora_vulkan_device *RenderDevice, b32 ReleaseResources);
 
  VkQueue GetQueueHandle(shoora_vulkan_device *RenderDevice, shoora_queue_type QueueType);
  void DestroyLogicalDevice(shoora_vulkan_device *RenderDevice);
+
 #define VULKAN_DEVICE_H
 #endif // VULKAN_DEVICE_H

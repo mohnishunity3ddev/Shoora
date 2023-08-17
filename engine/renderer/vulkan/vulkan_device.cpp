@@ -555,6 +555,7 @@ CreateCommandPools(shoora_vulkan_device *RenderDevice)
     {
         shoora_vulkan_command_pool *ShCmdPool = RenderDevice->CommandPools + Index;
         shoora_vulkan_command_pool *ShTransientCmdPool = RenderDevice->TransientCommandPools + Index;
+
         shoora_vulkan_queue *QueueFamily = RenderDevice->QueueFamilies + Index;
         ShCmdPool->Type = QueueFamily->Type;
         ShTransientCmdPool->Type = QueueFamily->Type;
@@ -568,13 +569,50 @@ CreateCommandPools(shoora_vulkan_device *RenderDevice)
         CommandPoolCreateInfo.queueFamilyIndex = QueueFamilyIndex;
 
         VK_CHECK(vkCreateCommandPool(RenderDevice->LogicalDevice, &CommandPoolCreateInfo, 0, &ShCmdPool->Handle));
+        ShCmdPool->IsTransient = false;
 
         CommandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
         VK_CHECK(vkCreateCommandPool(RenderDevice->LogicalDevice, &CommandPoolCreateInfo, 0, &ShTransientCmdPool->Handle));
+        ShTransientCmdPool->IsTransient = true;
+
+        if(QueueFamily->Type == QueueType_Graphics)
+        {
+            RenderDevice->GraphicsCommandPool = ShCmdPool->Handle;
+            RenderDevice->GraphicsCommandPoolTransient = ShTransientCmdPool->Handle;
+        }
+        else if(QueueFamily->Type == QueueType_Transfer)
+        {
+            RenderDevice->TransferCommandPool = ShCmdPool->Handle;
+            RenderDevice->TransferCommandPoolTransient = ShTransientCmdPool->Handle;
+        }
 
         LogOutput(LogType_Info, "Created Reset and Transient Command Pool for Queue(%s)!\n",
                   GetQueueTypeName(QueueFamily->Type));
     }
+}
+
+VkCommandPool
+GetCommandPoolByQueueType(shoora_vulkan_device *RenderDevice, shoora_queue_type QueueType, b32 IsTransient)
+{
+    VkCommandPool Result = VK_NULL_HANDLE;
+    shoora_vulkan_command_pool *pCmdPools = IsTransient ? RenderDevice->TransientCommandPools
+                                                        : RenderDevice->CommandPools;
+
+    for(u32 Index = 0;
+        Index < RenderDevice->QueueFamilyCount;
+        ++Index)
+    {
+        shoora_vulkan_command_pool Pool = pCmdPools[Index];
+        if(Pool.Type == QueueType)
+        {
+            ASSERT(Pool.IsTransient == IsTransient);
+            Result = Pool.Handle;
+        }
+    }
+
+    ASSERT(Result != VK_NULL_HANDLE);
+
+    return Result;
 }
 
 // Resets all the command buffers allocated from this pool!
@@ -596,7 +634,7 @@ ResetAllCommandPools(shoora_vulkan_device *RenderDevice, b32 ReleaseResources)
 }
 
 void
-CreateDeviceNQueuesNCommandPools(shoora_vulkan_context *Context, shoora_device_create_info *ShuraDeviceCreateInfo)
+CreateDeviceAndQueues(shoora_vulkan_context *Context, shoora_device_create_info *ShuraDeviceCreateInfo)
 {
     VkPhysicalDevice PhysicalDevice = PickPhysicalDevice(Context->Instance, ShuraDeviceCreateInfo,
                                                          Context->Swapchain.Surface,
@@ -627,8 +665,6 @@ CreateDeviceNQueuesNCommandPools(shoora_vulkan_context *Context, shoora_device_c
 
     // Get Vulkan Requested Queues
     AcquireRequiredDeviceQueueHandles(&Context->Device);
-
-    CreateCommandPools(&Context->Device);
 
     LogOutput(LogType_Info, "Created Vulkan Logical Device, Got the Device Queues And Command Pool Created!\n");
 }

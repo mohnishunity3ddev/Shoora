@@ -16,7 +16,6 @@ void WindowResizedCallback(u32 Width, u32 Height)
     }
 }
 
-
 void
 InitializeVulkanRenderer(shoora_vulkan_context *Context, shoora_app_info *AppInfo)
 {
@@ -32,27 +31,15 @@ InitializeVulkanRenderer(shoora_vulkan_context *Context, shoora_app_info *AppInf
 #endif
 
     CreatePresentationSurface(Context, &Context->Swapchain.Surface);
-    CreateDeviceNQueuesNCommandPools(Context, &DeviceCreateInfo);
+    CreateDeviceAndQueues(Context, &DeviceCreateInfo);
     volkLoadDevice(Context->Device.LogicalDevice);
 
     CreateSwapchain(Context, AppInfo->WindowWidth, AppInfo->WindowHeight, &SwapchainInfo);
     CreateRenderPass(&Context->Device, &Context->Swapchain, &Context->RenderPass);
     CreateGraphicsPipeline(Context, "shaders/spirv/triangle.vert.spv", "shaders/spirv/triangle.frag.spv");
+    CreateSwapchainFramebuffers(&Context->Device, &Context->Swapchain, Context->RenderPass);
 
-    // AllocateCommandBuffers(Context, Shu_BufferAllocInfos, ARRAY_SIZE(Shu_BufferAllocInfos));
-
-    // shoora_vulkan_command_buffer *CmdBufferGroup = GetCommandBufferGroupForQueue(Context, QueueType_Graphics);
-    // u32 CmdBufferInternalIndex = CmdBufferGroup->BufferCount - 1;
-
-    // ResetAllCommandPools(&Context->Device, true);
-
-    // BeginCommandBuffer(CmdBufferGroup, CmdBufferInternalIndex, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-    // EndCommandBuffer(CmdBufferGroup, CmdBufferInternalIndex);
-
-    // CreateTextureAndUniformBufferDescriptor(&Context->Device);
-
-    CreateAllSemaphores(Context);
-    CreateAllFences(Context);
+    CreateCommandPools(&Context->Device);
 
     AppInfo->WindowResizeCallback = &WindowResizedCallback;
     VulkanContext = Context;
@@ -63,8 +50,8 @@ DestroyVulkanRenderer(shoora_vulkan_context *Context)
 {
     DeviceWaitIdle(Context->Device.LogicalDevice);
 
-    DestroyAllSemaphores(Context);
-    DestroyAllFences(Context);
+    // DestroyAllSemaphores(Context);
+    // DestroyAllFences(Context);
     DestroyPipeline(&Context->Device, &Context->Pipeline);
     DestroyRenderPass(&Context->Device, Context->RenderPass);
     DestroySwapchain(Context);

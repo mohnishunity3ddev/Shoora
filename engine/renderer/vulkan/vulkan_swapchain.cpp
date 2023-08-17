@@ -279,26 +279,30 @@ CreateSwapchainImageViews(shoora_vulkan_device *RenderDevice, shoora_vulkan_swap
 }
 
 void
-CreateSwapchainFramebuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain)
+CreateSwapchainFramebuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, VkRenderPass RenderPass)
 {
-    // for(u32 ImageIndex = 0;
-    //     ImageIndex < Swapchain->ImageCount;
-    //     ++ImageIndex)
-    // {
-    //     VkFramebufferCreateInfo CreateInfo;
-    //     CreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    //     CreateInfo.pNext = nullptr;
-    //     CreateInfo.flags = 0;
-    //     CreateInfo.renderPass = ;
-    //     CreateInfo.attachmentCount = ;
-    //     CreateInfo.pAttachments = ;
-    //     CreateInfo.width = ;
-    //     CreateInfo.height = ;
-    //     CreateInfo.layers = ;
+    ASSERT(Swapchain->ImageCount <= ARRAY_SIZE(Swapchain->Framebuffers))
 
-    //     VK_CHECK(vkCreateFramebuffer(RenderDevice->LogicalDevice, &CreateInfo, nullptr,
-    //                                  &Swapchain->Framebuffers[ImageIndex]));
-    // }
+    for(u32 Index = 0;
+        Index < Swapchain->ImageCount;
+        ++Index)
+    {
+        VkFramebufferCreateInfo CreateInfo;
+        CreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        CreateInfo.pNext = nullptr;
+        CreateInfo.flags = 0;
+        CreateInfo.renderPass = RenderPass;
+        CreateInfo.attachmentCount = 1;
+        CreateInfo.pAttachments = &Swapchain->ImageViews[Index];
+        CreateInfo.width = Swapchain->ImageDimensions.width;
+        CreateInfo.height = Swapchain->ImageDimensions.height;
+        CreateInfo.layers = 1;
+
+        VK_CHECK(vkCreateFramebuffer(RenderDevice->LogicalDevice, &CreateInfo, nullptr,
+                                     &Swapchain->Framebuffers[Index]));
+
+        LogOutput(LogType_Info, "Created Swapchain Framebuffer[%d]\n", Index);
+    }
 }
 
 void
@@ -358,7 +362,7 @@ CreateSwapchain(shoora_vulkan_context *Context, u32 WindowWidth, u32 WindowHeigh
 
     VkSwapchainKHR OldSwapchain = Context->Swapchain.SwapchainHandle;
     CreateInfo.oldSwapchain = OldSwapchain;
-    
+
     VK_CHECK(vkCreateSwapchainKHR(Context->Device.LogicalDevice, &CreateInfo, 0,
                                   &Context->Swapchain.SwapchainHandle));
 
@@ -379,9 +383,6 @@ CreateSwapchain(shoora_vulkan_context *Context, u32 WindowWidth, u32 WindowHeigh
     LogOutput(LogType_Info, "Swapchain Created!\n");
     GetSwapchainImageHandles(Context);
     CreateSwapchainImageViews(&Context->Device, &Context->Swapchain);
-    // TODO)): Have to create a renderpass to create these framebuffers
-    CreateSwapchainFramebuffers(&Context->Device, &Context->Swapchain);
-
 }
 
 void
@@ -456,8 +457,24 @@ DestroyPresentationSurface(shoora_vulkan_context *Context)
 }
 
 void
+DestroySwapchainFramebuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain)
+{
+    for(u32 Index = 0;
+        Index < Swapchain->ImageCount;
+        ++Index)
+    {
+        VkFramebuffer FrameBuffer = Swapchain->Framebuffers[Index];
+        ASSERT(FrameBuffer != VK_NULL_HANDLE);
+        vkDestroyFramebuffer(RenderDevice->LogicalDevice, FrameBuffer, nullptr);
+    }
+
+    LogOutput(LogType_Warn, "Destroyed Swapchain Framebuffers!\n");
+}
+
+void
 DestroySwapchain(shoora_vulkan_context *Context)
 {
+    DestroySwapchainFramebuffers(&Context->Device, &Context->Swapchain);
     DestroySwapchainImageViews(&Context->Device, &Context->Swapchain);
     vkDestroySwapchainKHR(Context->Device.LogicalDevice, Context->Swapchain.SwapchainHandle, 0);
     LogOutput(LogType_Warn, "Destroyed Swapchain!\n");

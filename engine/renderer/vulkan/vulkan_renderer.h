@@ -5,12 +5,7 @@
 #include "vulkan_defines.h"
 #include "vulkan_device.h"
 
-struct shoora_vulkan_command_buffer_handle
-{
-    VkCommandBuffer Handle;
-    b32 IsRecording;
-    VkCommandPool *CommandPool;
-};
+
 
 struct shoora_vulkan_debug
 {
@@ -59,6 +54,14 @@ struct shoora_vulkan_command_pool
 {
     VkCommandPool Handle;
     shoora_queue_type Type;
+    b32 IsTransient;
+};
+
+struct shoora_vulkan_command_buffer_handle
+{
+    VkCommandBuffer Handle;
+    b32 IsRecording;
+    VkCommandPool *CommandPool;
 };
 
 struct shoora_vulkan_device
@@ -79,6 +82,11 @@ struct shoora_vulkan_device
     u32 ComputeQueueFamilyInternalIndex;
     shoora_vulkan_queue QueueFamilies[SHU_VK_MAX_QUEUE_FAMILY_COUNT];
     // For short-lived commands.
+
+    VkCommandPool GraphicsCommandPoolTransient;
+    VkCommandPool GraphicsCommandPool;
+    VkCommandPool TransferCommandPoolTransient;
+    VkCommandPool TransferCommandPool;
     shoora_vulkan_command_pool TransientCommandPools[SHU_VK_MAX_QUEUE_FAMILY_COUNT];
     shoora_vulkan_command_pool CommandPools[SHU_VK_MAX_QUEUE_FAMILY_COUNT];
     u32 QueueFamilyCount;
