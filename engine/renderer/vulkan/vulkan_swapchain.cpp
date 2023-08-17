@@ -211,22 +211,22 @@ SelectImageFormats(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *
 
 void
 PrepareForSwapchainCreation(shoora_vulkan_context *Context,
-                            shoora_vulkan_swapchain_create_info *ShuraSwapchainInfo)
+                            shoora_vulkan_swapchain_create_info *ShooraSwapchainInfo)
 {
-    if (!CheckSupportedPresentModes(Context, ShuraSwapchainInfo->DesiredPresentMode))
+    if (!CheckSupportedPresentModes(Context, ShooraSwapchainInfo->DesiredPresentMode))
     {
         // NOTE: Vulkan Makes sure Atleast FIFO is supported!
-        ShuraSwapchainInfo->DesiredPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+        ShooraSwapchainInfo->DesiredPresentMode = VK_PRESENT_MODE_FIFO_KHR;
     }
-    Context->Swapchain.PresentMode = ShuraSwapchainInfo->DesiredPresentMode;
+    Context->Swapchain.PresentMode = ShooraSwapchainInfo->DesiredPresentMode;
 
     GetSurfaceCapabilities(Context, &Context->Swapchain.SurfaceCapabilities);
     SelectSwapchainImageCount(&Context->Swapchain);
     SelectSwapchainSize(&Context->Swapchain);
-    SelectDesiredImageUsage(&Context->Swapchain, ShuraSwapchainInfo->DesiredImageUsages);
-    SelectImageTransforms(&Context->Swapchain, ShuraSwapchainInfo->DesiredTransformFlagBits);
-    SelectImageFormats(&Context->Device, &Context->Swapchain, ShuraSwapchainInfo->DesiredImageFormat,
-                       ShuraSwapchainInfo->DesiredImageColorSpace);
+    SelectDesiredImageUsage(&Context->Swapchain, ShooraSwapchainInfo->DesiredImageUsages);
+    SelectImageTransforms(&Context->Swapchain, ShooraSwapchainInfo->DesiredTransformFlagBits);
+    SelectImageFormats(&Context->Device, &Context->Swapchain, ShooraSwapchainInfo->DesiredImageFormat,
+                       ShooraSwapchainInfo->DesiredImageColorSpace);
 }
 
 void
@@ -336,14 +336,14 @@ DestroySwapchainImageViews(shoora_vulkan_device *RenderDevice, shoora_vulkan_swa
 
 void
 CreateSwapchain(shoora_vulkan_context *Context, u32 WindowWidth, u32 WindowHeight,
-                shoora_vulkan_swapchain_create_info *ShuraSwapchainInfo)
+                shoora_vulkan_swapchain_create_info *ShooraSwapchainInfo)
 {
     VkSwapchainKHR OldSwapchain = Context->Swapchain.SwapchainHandle;
     b32 IsWindowResized = OldSwapchain != VK_NULL_HANDLE;
     if(!IsWindowResized)
     {
-        ASSERT(ShuraSwapchainInfo != nullptr);
-        PrepareForSwapchainCreation(Context, ShuraSwapchainInfo);
+        ASSERT(ShooraSwapchainInfo != nullptr);
+        PrepareForSwapchainCreation(Context, ShooraSwapchainInfo);
     }
 
     shoora_vulkan_swapchain *SwapchainInfo = &Context->Swapchain;
