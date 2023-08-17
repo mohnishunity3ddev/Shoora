@@ -306,6 +306,21 @@ CreateSwapchainFramebuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_sw
 }
 
 void
+DestroySwapchainFramebuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain)
+{
+    for(u32 Index = 0;
+        Index < Swapchain->ImageCount;
+        ++Index)
+    {
+        VkFramebuffer FrameBuffer = Swapchain->Framebuffers[Index];
+        ASSERT(FrameBuffer != VK_NULL_HANDLE);
+        vkDestroyFramebuffer(RenderDevice->LogicalDevice, FrameBuffer, nullptr);
+    }
+
+    LogOutput(LogType_Warn, "Destroyed Swapchain Framebuffers!\n");
+}
+
+void
 DestroySwapchainImageViews(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain)
 {
     for(u32 Index = 0;
@@ -313,6 +328,7 @@ DestroySwapchainImageViews(shoora_vulkan_device *RenderDevice, shoora_vulkan_swa
         ++Index)
     {
         vkDestroyImageView(RenderDevice->LogicalDevice, Swapchain->ImageViews[Index], nullptr);
+        Swapchain->ImageViews[Index] = VK_NULL_HANDLE;
     }
 
     LogOutput(LogType_Warn, "Swapchain Image Views are destroyed!\n");
@@ -322,15 +338,12 @@ void
 CreateSwapchain(shoora_vulkan_context *Context, u32 WindowWidth, u32 WindowHeight,
                 shoora_vulkan_swapchain_create_info *ShuraSwapchainInfo)
 {
-    if(Context->Swapchain.SwapchainHandle == VK_NULL_HANDLE)
+    VkSwapchainKHR OldSwapchain = Context->Swapchain.SwapchainHandle;
+    b32 IsWindowResized = OldSwapchain != VK_NULL_HANDLE;
+    if(!IsWindowResized)
     {
         ASSERT(ShuraSwapchainInfo != nullptr);
         PrepareForSwapchainCreation(Context, ShuraSwapchainInfo);
-    }
-    else
-    {
-        DestroySwapchainImageViews(&Context->Device, &Context->Swapchain);
-        // TODO)): Destroy Swapchain Framebuffers
     }
 
     shoora_vulkan_swapchain *SwapchainInfo = &Context->Swapchain;
@@ -360,7 +373,6 @@ CreateSwapchain(shoora_vulkan_context *Context, u32 WindowWidth, u32 WindowHeigh
     CreateInfo.presentMode = SwapchainInfo->PresentMode;
     CreateInfo.clipped = VK_TRUE;
 
-    VkSwapchainKHR OldSwapchain = Context->Swapchain.SwapchainHandle;
     CreateInfo.oldSwapchain = OldSwapchain;
 
     VK_CHECK(vkCreateSwapchainKHR(Context->Device.LogicalDevice, &CreateInfo, 0,
@@ -374,15 +386,23 @@ CreateSwapchain(shoora_vulkan_context *Context, u32 WindowWidth, u32 WindowHeigh
         LogOutput(LogType_Error, "There was a problem creating the swapchain!\n");
     }
 
-    if(OldSwapchain != VK_NULL_HANDLE)
+    if(IsWindowResized)
     {
+        DestroySwapchainFramebuffers(&Context->Device, &Context->Swapchain);
+        DestroySwapchainImageViews(&Context->Device, &Context->Swapchain);
         vkDestroySwapchainKHR(Context->Device.LogicalDevice, OldSwapchain, 0);
+
         LogOutput(LogType_Warn, "Destroyed Old Swapchain!\n");
     }
 
     LogOutput(LogType_Info, "Swapchain Created!\n");
     GetSwapchainImageHandles(Context);
     CreateSwapchainImageViews(&Context->Device, &Context->Swapchain);
+
+    if(IsWindowResized && (Context->RenderPass != VK_NULL_HANDLE))
+    {
+        CreateSwapchainFramebuffers(&Context->Device, &Context->Swapchain, Context->RenderPass);
+    }
 }
 
 void
@@ -454,21 +474,6 @@ DestroyPresentationSurface(shoora_vulkan_context *Context)
 {
     vkDestroySurfaceKHR(Context->Instance, Context->Swapchain.Surface, 0);
     LogOutput(LogType_Info, "Destroyed Presentation Surface!\n");
-}
-
-void
-DestroySwapchainFramebuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain)
-{
-    for(u32 Index = 0;
-        Index < Swapchain->ImageCount;
-        ++Index)
-    {
-        VkFramebuffer FrameBuffer = Swapchain->Framebuffers[Index];
-        ASSERT(FrameBuffer != VK_NULL_HANDLE);
-        vkDestroyFramebuffer(RenderDevice->LogicalDevice, FrameBuffer, nullptr);
-    }
-
-    LogOutput(LogType_Warn, "Destroyed Swapchain Framebuffers!\n");
 }
 
 void
