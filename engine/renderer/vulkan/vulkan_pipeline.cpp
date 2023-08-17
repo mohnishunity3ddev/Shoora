@@ -649,7 +649,7 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
     GraphicsPipelineCreateInfo.pColorBlendState = &ColorBlendInfo;
     GraphicsPipelineCreateInfo.pDynamicState = &DynamicsInfo;
     GraphicsPipelineCreateInfo.layout = Pipeline->PipelineLayout;
-    GraphicsPipelineCreateInfo.renderPass = Context->RenderPass;
+    GraphicsPipelineCreateInfo.renderPass = Context->GraphicsRenderPass;
     GraphicsPipelineCreateInfo.subpass = 0;
     GraphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
     GraphicsPipelineCreateInfo.basePipelineIndex = -1;

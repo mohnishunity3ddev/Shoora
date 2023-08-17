@@ -3,6 +3,7 @@
 #include "defines.h"
 #include "volk/volk.h"
 #include "vulkan_renderer.h"
+#include "vulkan_vertex_definitions.h"
 
 struct shoora_buffer_transition_info
 {
@@ -15,6 +16,18 @@ struct shoora_buffer_transition_info
     u32 CurrentQueueFamily;
     u32 NewQueueFamily;
 };
+
+struct shoora_buffer_info
+{
+    VkBuffer Buffer;
+    VkDeviceMemory Memory;
+};
+
+void CreateVertexBuffer(shoora_vulkan_device *RenderDevice, shoora_vertex_info *Vertices, u32 VertexCount,
+                        u32 *Indices, u32 IndexCount, shoora_vulkan_buffer *outVertexBuffer,
+                        shoora_vulkan_buffer *outIndexBuffer);
+void DestroyVertexBuffer(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *pVertexBuffer,
+                         shoora_vulkan_buffer *pIndexBuffer);
 
 #define VULKAN_BUFFER_H
 #endif // VULKAN_BUFFER_H

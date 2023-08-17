@@ -2,7 +2,6 @@
 
 #include "defines.h"
 #include "volk/volk.h"
-#include "math/math.h"
 #include "vulkan_renderer.h"
 
 void CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderFile,

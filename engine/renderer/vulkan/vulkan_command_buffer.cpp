@@ -5,12 +5,13 @@
 shoora_vulkan_command_buffer *
 GetCommandBufferGroupForQueue(shoora_vulkan_context *Context, shoora_queue_type Type)
 {
-    ASSERT(Type < SHU_VK_MAX_QUEUE_FAMILY_COUNT);
+    // ASSERT(Type < SHU_VK_MAX_QUEUE_FAMILY_COUNT);
     // NOTE: This will fire if during the vulkan device setup, this queue was not asked!
-    ASSERT(Type < Context->Device.QueueFamilyCount);
+    // ASSERT(Type < Context->Device.QueueFamilyCount);
 
-    shoora_vulkan_command_buffer *pCmdBufferGroup = &Context->CommandBuffers[Type];
-    return pCmdBufferGroup;
+    // shoora_vulkan_command_buffer *pCmdBufferGroup = &Context->CommandBuffers[Type];
+    // return pCmdBufferGroup;
+    return nullptr;
 }
 
 void

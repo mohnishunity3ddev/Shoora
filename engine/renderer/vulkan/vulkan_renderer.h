@@ -4,35 +4,12 @@
 #include "volk/volk.h"
 #include "vulkan_defines.h"
 #include "vulkan_device.h"
-
-
+#include "math/math.h"
 
 struct shoora_vulkan_debug
 {
     VkDebugUtilsMessengerEXT Messenger;
     VkDebugReportCallbackEXT ReportCallback;
-};
-
-struct shoora_vulkan_swapchain
-{
-    VkSurfaceKHR Surface;
-    VkSurfaceCapabilitiesKHR SurfaceCapabilities;
-
-    VkSurfaceFormatKHR SurfaceFormat;
-    VkFormat DepthFormat;
-
-    VkExtent2D ImageDimensions;
-    VkImageUsageFlags ImageUsageFlags;
-    VkPresentModeKHR PresentMode;
-    VkSurfaceTransformFlagBitsKHR TransformFlagBits;
-
-    VkSwapchainKHR SwapchainHandle;
-
-    // TODO)): Make this Dynamic!
-    VkImage Images[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
-    VkImageView ImageViews[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
-    VkFramebuffer Framebuffers[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
-    u32 ImageCount;
 };
 
 struct shoora_vulkan_queue
@@ -89,9 +66,36 @@ struct shoora_vulkan_device
     VkCommandPool TransferCommandPool;
     shoora_vulkan_command_pool TransientCommandPools[SHU_VK_MAX_QUEUE_FAMILY_COUNT];
     shoora_vulkan_command_pool CommandPools[SHU_VK_MAX_QUEUE_FAMILY_COUNT];
+
     u32 QueueFamilyCount;
 };
 
+struct shoora_vulkan_swapchain
+{
+    VkSurfaceKHR Surface;
+    VkSurfaceCapabilitiesKHR SurfaceCapabilities;
+
+    VkSurfaceFormatKHR SurfaceFormat;
+    VkFormat DepthFormat;
+
+    VkExtent2D ImageDimensions;
+    VkImageUsageFlags ImageUsageFlags;
+    VkPresentModeKHR PresentMode;
+    VkSurfaceTransformFlagBitsKHR TransformFlagBits;
+
+    VkSwapchainKHR SwapchainHandle;
+
+    // TODO)): Make this Dynamic!
+    VkImage Images[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
+    VkImageView ImageViews[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
+    VkFramebuffer Framebuffers[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
+    u32 ImageCount;
+
+    shoora_vulkan_command_buffer_handle DrawCommandBuffers[SHU_MAX_FRAMES_IN_FLIGHT];
+};
+
+
+// TODO)): Remove this?
 struct shoora_vulkan_command_buffer
 {
     shoora_queue_type QueueType;
@@ -100,6 +104,12 @@ struct shoora_vulkan_command_buffer
     // TODO)): Make these Dynamic!
     shoora_vulkan_command_buffer_handle BufferHandles[SHU_VK_MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
     u32 BufferCount;
+};
+
+struct shoora_vulkan_buffer
+{
+    VkBuffer Buffer;
+    VkDeviceMemory Memory;
 };
 
 struct shoora_vulkan_semaphore_handle
@@ -136,13 +146,12 @@ struct shoora_vulkan_context
     shoora_vulkan_device Device;
     shoora_vulkan_swapchain Swapchain;
 
-    VkRenderPass RenderPass;
+    VkRenderPass GraphicsRenderPass;
 
     shoora_vulkan_pipeline Pipeline;
 
-    // TODO)): Maybe we should move this information into the vulkan_device struct?
-    // since command buffers are associated with queues which are there in the device struct only.
-    shoora_vulkan_command_buffer CommandBuffers[SHU_VK_MAX_QUEUE_FAMILY_COUNT];
+    shoora_vulkan_buffer VertexBuffer;
+    shoora_vulkan_buffer IndexBuffer;
 
     shoora_vulkan_synchronization SyncHandles;
 };

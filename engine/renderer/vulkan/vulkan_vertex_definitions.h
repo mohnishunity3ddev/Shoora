@@ -1,9 +1,9 @@
 #if !defined(VULKAN_VERTEX_DEFINITIONS_H)
 #include "defines.h"
 #include "volk/volk.h"
-#include "math/math.h"
+#include "vulkan_renderer.h"
 
-struct shoora_vertex
+struct shoora_vertex_info
 {
     vec2 VertexPos;
     vec3 VertexColor;

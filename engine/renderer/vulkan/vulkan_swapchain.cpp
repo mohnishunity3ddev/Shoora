@@ -334,6 +334,64 @@ DestroySwapchainImageViews(shoora_vulkan_device *RenderDevice, shoora_vulkan_swa
     LogOutput(LogType_Warn, "Swapchain Image Views are destroyed!\n");
 }
 
+
+void
+AllocateDrawCommandBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain)
+{
+    VkCommandBuffer BuffersToAllocate[ARRAY_SIZE(Swapchain->DrawCommandBuffers)] = {};
+
+    for(u32 Index = 0;
+        Index < ARRAY_SIZE(Swapchain->DrawCommandBuffers);
+        ++Index)
+    {
+        shoora_vulkan_command_buffer_handle *ShuCmdBuffer = &Swapchain->DrawCommandBuffers[Index];
+        BuffersToAllocate[Index] = ShuCmdBuffer->Handle;
+        ShuCmdBuffer->IsRecording = false;
+        ShuCmdBuffer->CommandPool = &RenderDevice->GraphicsCommandPool;
+    }
+
+    VkCommandBufferAllocateInfo AllocInfo;
+    AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    AllocInfo.pNext = nullptr;
+    AllocInfo.commandPool = RenderDevice->GraphicsCommandPool;
+    AllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    AllocInfo.commandBufferCount = ARRAY_SIZE(Swapchain->DrawCommandBuffers);
+
+    VK_CHECK(vkAllocateCommandBuffers(RenderDevice->LogicalDevice, &AllocInfo, BuffersToAllocate));
+
+    for(u32 Index = 0;
+        Index < ARRAY_SIZE(Swapchain->DrawCommandBuffers);
+        ++Index)
+    {
+        shoora_vulkan_command_buffer_handle *ShuCmdBuffer = &Swapchain->DrawCommandBuffers[Index];
+        ShuCmdBuffer->Handle = BuffersToAllocate[Index];
+    }
+
+    LogOutput(LogType_Info, "Draw Command buffers have been allocated!\n");
+}
+
+void
+FreeDrawCommandBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain)
+{
+    u32 CommandBufferCount = ARRAY_SIZE(Swapchain->DrawCommandBuffers);
+    VkCommandBuffer BuffersToFree[SHU_MAX_FRAMES_IN_FLIGHT + 1];
+
+    for(u32 Index = 0;
+        Index < CommandBufferCount;
+        ++Index)
+    {
+        shoora_vulkan_command_buffer_handle *ShuCmdBuffer = &Swapchain->DrawCommandBuffers[Index];
+        ASSERT(!ShuCmdBuffer->IsRecording);
+        BuffersToFree[Index] = ShuCmdBuffer->Handle;
+        ShuCmdBuffer->CommandPool = nullptr;
+    }
+
+    vkFreeCommandBuffers(RenderDevice->LogicalDevice, RenderDevice->GraphicsCommandPool, CommandBufferCount,
+                         BuffersToFree);
+
+    LogOutput(LogType_Warn, "Draw Command Buffers have been Freed!\n");
+}
+
 void
 CreateSwapchain(shoora_vulkan_context *Context, u32 WindowWidth, u32 WindowHeight,
                 shoora_vulkan_swapchain_create_info *ShooraSwapchainInfo)
@@ -390,19 +448,23 @@ CreateSwapchain(shoora_vulkan_context *Context, u32 WindowWidth, u32 WindowHeigh
     {
         DestroySwapchainFramebuffers(&Context->Device, &Context->Swapchain);
         DestroySwapchainImageViews(&Context->Device, &Context->Swapchain);
+        FreeDrawCommandBuffers(&Context->Device, &Context->Swapchain);
         vkDestroySwapchainKHR(Context->Device.LogicalDevice, OldSwapchain, 0);
 
         LogOutput(LogType_Warn, "Destroyed Old Swapchain!\n");
     }
 
-    LogOutput(LogType_Info, "Swapchain Created!\n");
     GetSwapchainImageHandles(Context);
     CreateSwapchainImageViews(&Context->Device, &Context->Swapchain);
 
-    if(IsWindowResized && (Context->RenderPass != VK_NULL_HANDLE))
+    if(IsWindowResized && (Context->GraphicsRenderPass != VK_NULL_HANDLE))
     {
-        CreateSwapchainFramebuffers(&Context->Device, &Context->Swapchain, Context->RenderPass);
+        CreateSwapchainFramebuffers(&Context->Device, &Context->Swapchain, Context->GraphicsRenderPass);
     }
+
+    AllocateDrawCommandBuffers(&Context->Device, &Context->Swapchain);
+
+    LogOutput(LogType_Info, "Swapchain Created!\n");
 }
 
 void
