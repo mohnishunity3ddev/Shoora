@@ -149,7 +149,18 @@ void DrawFrameInVulkan()
         Scissor.extent = Context->Swapchain.ImageDimensions;
         vkCmdSetScissor(DrawCmdBuffer, 0, 1, &Scissor);
 
-        vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->Pipeline.GraphicsPipeline);
+        b32 WireframeMode = ((Context->FrameCounter / 600) % 2);
+
+        if(WireframeMode)
+        {
+            vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            Context->Pipeline.WireframeGraphicsPipeline);
+        }
+        else
+        {
+            vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                              Context->Pipeline.GraphicsPipeline);
+        }
 
         VkDeviceSize offsets[1] = {0};
         vkCmdBindVertexBuffers(DrawCmdBuffer, 0, 1, &Context->VertexBuffer.Buffer, offsets);

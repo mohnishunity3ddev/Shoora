@@ -70,7 +70,8 @@ shoora_queue_info QueueInfos[] =
 VkPhysicalDeviceFeatures DesiredFeatures =
 {
     .geometryShader = VK_TRUE,
-    .samplerAnisotropy = VK_TRUE
+    .fillModeNonSolid = VK_TRUE,
+    .samplerAnisotropy = VK_TRUE,
 };
 
 shoora_command_pool_create_info CommandPoolCreateInfos[] =

@@ -83,7 +83,7 @@ struct shoora_vulkan_swapchain
     VkImageUsageFlags ImageUsageFlags;
     VkPresentModeKHR PresentMode;
     VkSurfaceTransformFlagBitsKHR TransformFlagBits;
-    
+
     VkSwapchainKHR SwapchainHandle;
 
     // TODO)): Make this Dynamic!
@@ -124,6 +124,7 @@ struct shoora_vulkan_pipeline
 {
     VkPipelineLayout PipelineLayout;
     VkPipeline GraphicsPipeline;
+    VkPipeline WireframeGraphicsPipeline;
 };
 
 struct shoora_vulkan_context

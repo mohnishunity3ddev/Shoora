@@ -455,6 +455,7 @@ void
 DestroyPipeline(shoora_vulkan_device *RenderDevice, shoora_vulkan_pipeline *Pipeline)
 {
     vkDestroyPipeline(RenderDevice->LogicalDevice, Pipeline->GraphicsPipeline, nullptr);
+    vkDestroyPipeline(RenderDevice->LogicalDevice, Pipeline->WireframeGraphicsPipeline, nullptr);
     DestroyPipelineLayout(RenderDevice, Pipeline->PipelineLayout);
     LogOutput(LogType_Warn, "Graphics Pipeline Destroyed!\n");
 }
@@ -623,25 +624,38 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
     DynamicsInfo.dynamicStateCount = ARRAY_SIZE(DynamicStates);
     DynamicsInfo.pDynamicStates = DynamicStates;
 
-    VkGraphicsPipelineCreateInfo GraphicsPipelineCreateInfo = {};
-    GraphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    GraphicsPipelineCreateInfo.stageCount = ARRAY_SIZE(ShaderStageInfos);
-    GraphicsPipelineCreateInfo.pStages = ShaderStageInfos;
-    GraphicsPipelineCreateInfo.pVertexInputState = &VertexInputInfo;
-    GraphicsPipelineCreateInfo.pInputAssemblyState = &InputAssemblyInfo;
-    GraphicsPipelineCreateInfo.pViewportState = &ViewportInfo;
-    GraphicsPipelineCreateInfo.pRasterizationState = &RasterizerInfo;
-    GraphicsPipelineCreateInfo.pMultisampleState = &MultisampleInfo;
-    GraphicsPipelineCreateInfo.pColorBlendState = &ColorBlendInfo;
-    GraphicsPipelineCreateInfo.pDynamicState = &DynamicsInfo;
-    GraphicsPipelineCreateInfo.layout = Pipeline->PipelineLayout;
-    GraphicsPipelineCreateInfo.renderPass = Context->GraphicsRenderPass;
-    GraphicsPipelineCreateInfo.subpass = 0;
-    GraphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
-    GraphicsPipelineCreateInfo.basePipelineIndex = -1;
 
-    VK_CHECK(vkCreateGraphicsPipelines(RenderDevice->LogicalDevice, VK_NULL_HANDLE, 1, &GraphicsPipelineCreateInfo,
-                                       nullptr, &Pipeline->GraphicsPipeline));
+
+    VkGraphicsPipelineCreateInfo GraphicsPipelineCreateInfos[2] = {};
+    GraphicsPipelineCreateInfos[0].sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    GraphicsPipelineCreateInfos[0].stageCount = ARRAY_SIZE(ShaderStageInfos);
+    GraphicsPipelineCreateInfos[0].pStages = ShaderStageInfos;
+    GraphicsPipelineCreateInfos[0].pVertexInputState = &VertexInputInfo;
+    GraphicsPipelineCreateInfos[0].pInputAssemblyState = &InputAssemblyInfo;
+    GraphicsPipelineCreateInfos[0].pViewportState = &ViewportInfo;
+    GraphicsPipelineCreateInfos[0].pRasterizationState = &RasterizerInfo;
+    GraphicsPipelineCreateInfos[0].pMultisampleState = &MultisampleInfo;
+    GraphicsPipelineCreateInfos[0].pColorBlendState = &ColorBlendInfo;
+    GraphicsPipelineCreateInfos[0].pDynamicState = &DynamicsInfo;
+    GraphicsPipelineCreateInfos[0].layout = Pipeline->PipelineLayout;
+    GraphicsPipelineCreateInfos[0].renderPass = Context->GraphicsRenderPass;
+    GraphicsPipelineCreateInfos[0].subpass = 0;
+    GraphicsPipelineCreateInfos[0].basePipelineHandle = VK_NULL_HANDLE;
+    GraphicsPipelineCreateInfos[0].basePipelineIndex = -1;
+
+    VkPipelineRasterizationStateCreateInfo WireframeRasterizerInfo = RasterizerInfo;
+    WireframeRasterizerInfo.polygonMode = VK_POLYGON_MODE_LINE;
+    GraphicsPipelineCreateInfos[1] = GraphicsPipelineCreateInfos[0];
+    GraphicsPipelineCreateInfos[1].pRasterizationState = &WireframeRasterizerInfo;
+
+    VkPipeline Pipelines[2];
+
+    VK_CHECK(vkCreateGraphicsPipelines(RenderDevice->LogicalDevice, VK_NULL_HANDLE,
+                                       ARRAY_SIZE(GraphicsPipelineCreateInfos), GraphicsPipelineCreateInfos,
+                                       nullptr, Pipelines));
+    Context->Pipeline.GraphicsPipeline = Pipelines[0];
+    Context->Pipeline.WireframeGraphicsPipeline = Pipelines[1];
+
     LogOutput(LogType_Debug, "Created Graphics Pipeline!\n");
 
     vkDestroyShaderModule(RenderDevice->LogicalDevice, VertexShader, nullptr);
