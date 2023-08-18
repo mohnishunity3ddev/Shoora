@@ -1,5 +1,6 @@
 #include "vulkan_drawing.h"
 
+#if 0
 void
 ClearColorImage(VkCommandBuffer CmdBuffer)
 {
@@ -76,4 +77,4 @@ BindVertexBuffers()
 
 }
 
-
+#endif

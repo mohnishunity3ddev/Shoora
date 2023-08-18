@@ -24,7 +24,9 @@ VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT MessageSeverityFlags,
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
         {
             LogOutput(LogType_Error, "Validation Layer[ERROR]: %s\n", pCallbackData->pMessage);
-        } break;
+            ASSERT(0);
+        }
+        break;
         default: {} break;
     }
 
@@ -64,6 +66,7 @@ VulkanDebugReportCallback(VkDebugReportFlagsEXT Flags, VkDebugReportObjectTypeEX
     if (Flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
     {
         LogOutput(LogType_Error, "DebugReport(%s)[ERROR]: %s\n", pLayerPrefix, pMessage);
+        ASSERT(0);
     }
 
     return VK_FALSE;

@@ -2,14 +2,15 @@
 #include "platform/platform.h"
 #include "vulkan_device.h"
 
-shoora_vulkan_command_buffer *
+#if 0
+shoora_vulkan_command_buffer_handle *
 GetCommandBufferGroupForQueue(shoora_vulkan_context *Context, shoora_queue_type Type)
 {
     // ASSERT(Type < SHU_VK_MAX_QUEUE_FAMILY_COUNT);
     // NOTE: This will fire if during the vulkan device setup, this queue was not asked!
     // ASSERT(Type < Context->Device.QueueFamilyCount);
 
-    // shoora_vulkan_command_buffer *pCmdBufferGroup = &Context->CommandBuffers[Type];
+    // shoora_vulkan_command_buffer_handle *pCmdBufferGroup = &Context->CommandBuffers[Type];
     // return pCmdBufferGroup;
     return nullptr;
 }
@@ -35,7 +36,7 @@ AllocateCommandBuffers(shoora_vulkan_context *Context, shoora_command_buffer_all
     //     VkAllocInfo.level = AllocateInfo->Level;
     //     VkAllocInfo.commandBufferCount = AllocateInfo->BufferCount;
 
-    //     shoora_vulkan_command_buffer *Shu_CommandBuffer = Context->CommandBuffers + QueueIndex;
+    //     shoora_vulkan_command_buffer_handle *Shu_CommandBuffer = Context->CommandBuffers + QueueIndex;
     //     Shu_CommandBuffer->QueueType = AllocateInfo->QueueType;
     //     Shu_CommandBuffer->BufferCount = AllocateInfo->BufferCount;
     //     Shu_CommandBuffer->BufferLevel = AllocateInfo->Level;
@@ -60,7 +61,7 @@ AllocateCommandBuffers(shoora_vulkan_context *Context, shoora_command_buffer_all
     //         ++Index)
     //     {
 
-    //         shoora_vulkan_command_buffer_handle *BufferHandle = &Shu_CommandBuffer->BufferHandles[Index];
+    //         shoora_vulkan_command_buffer_handle_handle *BufferHandle = &Shu_CommandBuffer->BufferHandles[Index];
     //         BufferHandle->Handle = Buffers[Index];
     //         BufferHandle->IsRecording = false;
     //         BufferHandle->CommandPool = &RenderDevice->CommandPools[QueueIndex];
@@ -136,6 +137,7 @@ ResetCommandBuffer(shoora_vulkan_command_buffer_handle *CmdBufferHandle, b32 Rel
     VkCommandBufferResetFlags Flags = ReleaseResources ? VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT : 0;
     VK_CHECK(vkResetCommandBuffer(CmdBufferHandle->Handle, Flags));
 }
+
 void
 ResetCommandBuffer(shoora_vulkan_command_buffer *BufferGroup, u32 InternalBufferIndex, b32 ReleaseResources)
 {
@@ -184,3 +186,4 @@ FreeAllCommandBuffers(shoora_vulkan_context *Context)
     //                          CmdBuffer->BufferCount, IntermediateCommandBuffers);
     // }
 }
+#endif

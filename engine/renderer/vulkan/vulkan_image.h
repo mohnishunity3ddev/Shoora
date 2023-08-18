@@ -27,7 +27,9 @@ struct shoora_image_create_info
 
 };
 
+#if 0
 VkFormat GetSuitableDepthAttachmentFormat(shoora_vulkan_device *RenderDevice);
+#endif
 
 void Create2DVulkanImageForSampling(shoora_vulkan_device *RenderDevice, u32 ImageWidth, u32 ImageHeight,
                                     VkFormat ImageFormat, VkImageUsageFlags UsageFlags, b32 GenerateMipMaps,

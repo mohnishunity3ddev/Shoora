@@ -2,6 +2,53 @@
 #include "vulkan_image.h"
 #include <memory>
 
+void
+CreateRenderPass(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, VkRenderPass *RenderPass)
+{
+    VkAttachmentDescription ColorAttachment;
+    ColorAttachment.flags = 0;
+    ColorAttachment.format = Swapchain->SurfaceFormat.format;
+    ColorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    ColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    ColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    ColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    ColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    ColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    ColorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    VkAttachmentReference ColorAttachmentRef;
+    ColorAttachmentRef.attachment = 0;
+    ColorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkSubpassDescription Subpass = {};
+    Subpass.flags = 0;
+    Subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    Subpass.colorAttachmentCount = 1;
+    Subpass.pColorAttachments = &ColorAttachmentRef;
+
+    VkAttachmentDescription Attachments[] = {ColorAttachment};
+
+    VkRenderPassCreateInfo RenderPassCreateInfo = {};
+    RenderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    RenderPassCreateInfo.pNext = nullptr;
+    RenderPassCreateInfo.flags = 0;
+    RenderPassCreateInfo.attachmentCount = ARRAY_SIZE(Attachments);
+    RenderPassCreateInfo.pAttachments = Attachments;
+    RenderPassCreateInfo.subpassCount = 1;
+    RenderPassCreateInfo.pSubpasses = &Subpass;
+
+    VK_CHECK(vkCreateRenderPass(RenderDevice->LogicalDevice, &RenderPassCreateInfo, nullptr, RenderPass));
+    LogOutput(LogType_Info, "RenderPass Created!\n");
+}
+
+void
+DestroyRenderPass(shoora_vulkan_device *RenderDevice, VkRenderPass RenderPass)
+{
+    vkDestroyRenderPass(RenderDevice->LogicalDevice, RenderPass, nullptr);
+    LogOutput(LogType_Warn, "Renderpass Destroyed!\n");
+}
+
+#if 0
 // ---------------------------------------------------------------------------------------------------------------
 //? Attachment Descriptions -                                                                                    |
 //  Renderpasses represent a set of resources(images) called attachments which are used                          |
@@ -707,74 +754,4 @@ DestroyFramebuffer(shoora_vulkan_device *RenderDevice, VkFramebuffer Framebuffer
 {
     vkDestroyFramebuffer(RenderDevice->LogicalDevice, Framebuffer, nullptr);
 }
-
-void
-DestroyRenderPass(shoora_vulkan_device *RenderDevice, VkRenderPass RenderPass)
-{
-    vkDestroyRenderPass(RenderDevice->LogicalDevice, RenderPass, nullptr);
-    LogOutput(LogType_Warn, "Renderpass Destroyed!\n");
-}
-
-void
-CreateRenderPass(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, VkRenderPass *RenderPass)
-{
-    VkAttachmentDescription ColorAttachment;
-    ColorAttachment.flags = 0;
-    ColorAttachment.format = Swapchain->SurfaceFormat.format;
-    ColorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    ColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    ColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    ColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    ColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    ColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    ColorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-    VkAttachmentReference ColorAttachmentRef;
-    ColorAttachmentRef.attachment = 0;
-    ColorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkSubpassDescription Subpass;
-    Subpass.flags = 0;
-    Subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    Subpass.inputAttachmentCount = 0;
-    Subpass.pInputAttachments = nullptr;
-    Subpass.colorAttachmentCount = 1;
-    Subpass.pColorAttachments = &ColorAttachmentRef;
-    Subpass.pResolveAttachments = 0;
-    Subpass.pDepthStencilAttachment = nullptr;
-    Subpass.preserveAttachmentCount = 0;
-    Subpass.pPreserveAttachments = nullptr;
-
-    //? NOTE:
-    //* We don't actually need this subpass dependency since this is the only subpass that will ever execute.
-    //* We only specify VK_SUBPASS_EXTERNAL in a subpass dependency when there are multiple subpasses writing to
-    //color
-    //* attachment.
-    VkSubpassDependency SubpassDependency;
-    SubpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    SubpassDependency.dstSubpass = 0;
-    SubpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                                     VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    SubpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                                     VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    SubpassDependency.srcAccessMask = 0;
-    SubpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                                      VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    SubpassDependency.dependencyFlags = 0;
-
-    VkAttachmentDescription Attachments[] = {ColorAttachment};
-
-    VkRenderPassCreateInfo RenderPassCreateInfo;
-    RenderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    RenderPassCreateInfo.pNext = nullptr;
-    RenderPassCreateInfo.flags = 0;
-    RenderPassCreateInfo.attachmentCount = ARRAY_SIZE(Attachments);
-    RenderPassCreateInfo.pAttachments = Attachments;
-    RenderPassCreateInfo.subpassCount = 1;
-    RenderPassCreateInfo.pSubpasses = &Subpass;
-    RenderPassCreateInfo.dependencyCount = 1;
-    RenderPassCreateInfo.pDependencies = &SubpassDependency;
-
-    VK_CHECK(vkCreateRenderPass(RenderDevice->LogicalDevice, &RenderPassCreateInfo, nullptr, RenderPass));
-    LogOutput(LogType_Info, "RenderPass Created!\n");
-}
+#endif

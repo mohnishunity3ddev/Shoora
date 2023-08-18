@@ -12,6 +12,7 @@ struct shoora_command_buffer_allocate_info
     u32 BufferCount;
 };
 
+#if 0
 void AllocateCommandBuffers(shoora_vulkan_context *Context, shoora_command_buffer_allocate_info *AllocInfos,
                             u32 AllocInfoCount);
 
@@ -30,6 +31,7 @@ shoora_vulkan_command_buffer *GetCommandBufferGroupForQueue(shoora_vulkan_contex
 
 void FreeCommandBuffer(shoora_vulkan_device *RenderDevice, shoora_vulkan_command_buffer_handle *CmdBuffer);
 void FreeAllCommandBuffers(shoora_vulkan_context *Context);
+#endif
 
 #define VULKAN_COMMAND_BUFFER_H
 #endif // VULKAN_COMMAND_BUFFER_H

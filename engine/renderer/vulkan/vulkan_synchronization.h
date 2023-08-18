@@ -38,5 +38,9 @@ void CreateSynchronizationPrimitives(shoora_vulkan_device *RenderDevice,
 void DestroyAllSynchronizationPrimitives(shoora_vulkan_device *RenderDevice,
                                          shoora_vulkan_synchronization *SyncObjects);
 
+shoora_vulkan_fence_handle *GetCurrentFrameFencePtr(shoora_vulkan_synchronization *SyncHandles, u32 FrameIndex);
+shoora_vulkan_semaphore_handle *GetImageAvailableSemaphorePtr(shoora_vulkan_synchronization *SyncHandles, u32 FrameIndex);
+shoora_vulkan_semaphore_handle *GetRenderFinishedSemaphorePtr(shoora_vulkan_synchronization *SyncHandles, u32 FrameIndex);
+
 #define VULKAN_SYNCHRONIZATION_H
 #endif // VULKAN_SYNCHRONIZATION_H

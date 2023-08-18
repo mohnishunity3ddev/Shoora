@@ -25,7 +25,8 @@ void CreateSwapchain(shoora_vulkan_context *Context, u32 WindowWidth, u32 Window
 void CreateSwapchainFramebuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
                                  VkRenderPass RenderPass);
 
-u32 AcquireNextSwapchainImage(shoora_vulkan_context *Context, u32 SemaphoreInternalIndex, u32 FenceInternalIndex);
+void AcquireNextSwapchainImage(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
+                               shoora_vulkan_semaphore_handle *SignalSemaphore);
 
 void DestroyPresentationSurface(shoora_vulkan_context *Context);
 void DestroySwapchain(shoora_vulkan_context *Context);

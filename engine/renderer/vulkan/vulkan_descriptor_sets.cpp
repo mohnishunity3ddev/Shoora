@@ -2,6 +2,7 @@
 #include "vulkan_image.h"
 #include <stb_image.h>
 
+#if 0
 // NOTE: descriptors represent shader resources. THey are organized into sets.
 // their contents are specified by descirptor set layout.
 // We being desciprotr sets to the pipeline.
@@ -891,3 +892,4 @@ CreateTextureAndUniformBufferDescriptor(shoora_vulkan_device *RenderDevice)
 
     return true;
 }
+#endif

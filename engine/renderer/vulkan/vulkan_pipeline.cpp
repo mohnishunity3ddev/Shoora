@@ -160,7 +160,7 @@ SpecifyPipelineRasterizationState()
     // MODE_LINE and _POINTS requires a fillModeNonSolid Feature
     RasterizerCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
     // Back face culling
-    RasterizerCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+    RasterizerCreateInfo.cullMode = VK_CULL_MODE_NONE;
     // vertices specified in clockwise fashion are the font faces.
     RasterizerCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
     // if depth values need to be offset by a value
@@ -522,13 +522,11 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
     //? Viewport Info
     u32 Width = Context->Swapchain.ImageDimensions.width;
     u32 Height = Context->Swapchain.ImageDimensions.height;
-    VkViewport Viewport;
+    VkViewport Viewport = {};
     Viewport.x = 0;
     Viewport.y = 0;
     Viewport.width = (f32)Width;
     Viewport.height = (f32)Height;
-    Viewport.minDepth = 0.0f;
-    Viewport.maxDepth = 1.0f;
     VkRect2D Scissor = {
         .offset = {0, 0},
         .extent = {.width = Width, .height = Height}
@@ -571,21 +569,21 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
     MultisampleInfo.alphaToCoverageEnable = VK_FALSE;
     MultisampleInfo.alphaToOneEnable = VK_FALSE;
 
+#if 0
     //? Depth Stencil Info
     VkPipelineDepthStencilStateCreateInfo DepthStencilInfo = {};
     DepthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
     DepthStencilInfo.pNext = nullptr;
     DepthStencilInfo.flags = 0;
-    DepthStencilInfo.depthTestEnable = VK_TRUE;
-    DepthStencilInfo.depthWriteEnable = VK_TRUE;
-    DepthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+    DepthStencilInfo.depthTestEnable = VK_FALSE;
+    DepthStencilInfo.depthWriteEnable = VK_FALSE;
     DepthStencilInfo.depthBoundsTestEnable = VK_FALSE;
     DepthStencilInfo.stencilTestEnable = VK_FALSE;
     // DepthStencilInfo.front = 0;
     // DepthStencilInfo.back = 0;
     DepthStencilInfo.minDepthBounds = 0.0f;
     DepthStencilInfo.maxDepthBounds = 1.0f;
-
+#endif
     //? Color Blend Info
     VkPipelineColorBlendAttachmentState BlendAttachment;
     BlendAttachment.blendEnable = VK_FALSE;
@@ -613,39 +611,27 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
     ColorBlendInfo.blendConstants[3] = 0.0f;
 
     //? Pipeline Layout
-    VkPipelineLayoutCreateInfo PipelineLayoutInfo;
+    VkPipelineLayoutCreateInfo PipelineLayoutInfo = {};
     PipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    PipelineLayoutInfo.pNext = nullptr;
-    PipelineLayoutInfo.flags = 0;
-    PipelineLayoutInfo.setLayoutCount = 0;
-    PipelineLayoutInfo.pSetLayouts = nullptr;
-    PipelineLayoutInfo.pushConstantRangeCount = 0;
-    PipelineLayoutInfo.pPushConstantRanges = nullptr;
     VK_CHECK(vkCreatePipelineLayout(RenderDevice->LogicalDevice, &PipelineLayoutInfo, nullptr,
                                     &Pipeline->PipelineLayout));
 
     //? Dynamic State
     VkDynamicState DynamicStates[] = {VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT};
-    VkPipelineDynamicStateCreateInfo DynamicsInfo;
+    VkPipelineDynamicStateCreateInfo DynamicsInfo = {};
     DynamicsInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    DynamicsInfo.pNext = nullptr;
-    DynamicsInfo.flags = 0;
     DynamicsInfo.dynamicStateCount = ARRAY_SIZE(DynamicStates);
     DynamicsInfo.pDynamicStates = DynamicStates;
 
-    VkGraphicsPipelineCreateInfo GraphicsPipelineCreateInfo;
+    VkGraphicsPipelineCreateInfo GraphicsPipelineCreateInfo = {};
     GraphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    GraphicsPipelineCreateInfo.pNext = nullptr;
-    GraphicsPipelineCreateInfo.flags = 0;
     GraphicsPipelineCreateInfo.stageCount = ARRAY_SIZE(ShaderStageInfos);
     GraphicsPipelineCreateInfo.pStages = ShaderStageInfos;
     GraphicsPipelineCreateInfo.pVertexInputState = &VertexInputInfo;
     GraphicsPipelineCreateInfo.pInputAssemblyState = &InputAssemblyInfo;
-    GraphicsPipelineCreateInfo.pTessellationState = nullptr;
     GraphicsPipelineCreateInfo.pViewportState = &ViewportInfo;
     GraphicsPipelineCreateInfo.pRasterizationState = &RasterizerInfo;
     GraphicsPipelineCreateInfo.pMultisampleState = &MultisampleInfo;
-    GraphicsPipelineCreateInfo.pDepthStencilState = &DepthStencilInfo;
     GraphicsPipelineCreateInfo.pColorBlendState = &ColorBlendInfo;
     GraphicsPipelineCreateInfo.pDynamicState = &DynamicsInfo;
     GraphicsPipelineCreateInfo.layout = Pipeline->PipelineLayout;

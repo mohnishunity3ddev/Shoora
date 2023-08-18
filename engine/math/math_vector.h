@@ -55,8 +55,8 @@ struct vec3
     inline vec3 operator/=(f32 A);
 };
 
-inline vec3 Vec3(int x, int y, int z);
-inline vec3 Vec3(vec2 xy, int z);
+inline vec3 Vec3(f32 x, f32 y, f32 z);
+inline vec3 Vec3(vec2 xy, f32 z);
 inline vec3 ToVec3(vec2 A);
 inline vec2 ToVec2(vec3 A);
 
@@ -179,7 +179,7 @@ vec2::operator/=(f32 A)
 // Vec3
 // ----------------------------------------------------------------------------------------------------------------
 inline vec3
-Vec3(int x, int y, int z)
+Vec3(f32 x, f32 y, f32 z)
 {
     vec3 Result;
 
@@ -191,7 +191,7 @@ Vec3(int x, int y, int z)
 }
 
 inline vec3
-Vec3(vec2 xy, int z)
+Vec3(vec2 xy, f32 z)
 {
     vec3 Result = Vec3(xy.x, xy.y, z);
 

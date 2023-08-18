@@ -288,3 +288,32 @@ DestroyAllSynchronizationPrimitives(shoora_vulkan_device *RenderDevice, shoora_v
         Fence->IsSignaled = false;
     }
 }
+
+shoora_vulkan_fence_handle *
+GetCurrentFrameFencePtr(shoora_vulkan_synchronization *SyncHandles, u32 FrameIndex)
+{
+    ASSERT(FrameIndex >= 0 && FrameIndex < SHU_MAX_FRAMES_IN_FLIGHT);
+    shoora_vulkan_fence_handle *pFenceHandle = (shoora_vulkan_fence_handle *)&SyncHandles->Fences[FrameIndex];
+    ASSERT(pFenceHandle != nullptr && pFenceHandle->Handle != VK_NULL_HANDLE);
+    return pFenceHandle;
+}
+
+shoora_vulkan_semaphore_handle *
+GetImageAvailableSemaphorePtr(shoora_vulkan_synchronization *SyncHandles, u32 FrameIndex)
+{
+    ASSERT(FrameIndex >= 0 && FrameIndex < SHU_MAX_FRAMES_IN_FLIGHT);
+    shoora_vulkan_semaphore_handle *pImageAvailableSemaphore = &SyncHandles->ImageAvailableSemaphores[FrameIndex];
+    ASSERT(pImageAvailableSemaphore && pImageAvailableSemaphore->Handle != VK_NULL_HANDLE);
+
+    return pImageAvailableSemaphore;
+}
+
+shoora_vulkan_semaphore_handle *
+GetRenderFinishedSemaphorePtr(shoora_vulkan_synchronization *SyncHandles, u32 FrameIndex)
+{
+    ASSERT(FrameIndex >= 0 && FrameIndex < SHU_MAX_FRAMES_IN_FLIGHT);
+    shoora_vulkan_semaphore_handle *pRenderFinishedSemaphore = &SyncHandles->RenderFinishedSemaphores[FrameIndex];
+
+    ASSERT(pRenderFinishedSemaphore && pRenderFinishedSemaphore->Handle != VK_NULL_HANDLE);
+    return pRenderFinishedSemaphore;
+}

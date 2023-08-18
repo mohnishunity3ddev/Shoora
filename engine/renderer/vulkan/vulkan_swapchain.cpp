@@ -57,6 +57,11 @@ SelectSwapchainImageCount(shoora_vulkan_swapchain *Swapchain)
         }
     }
 
+    if(ImageCount > SHU_MAX_FRAMES_IN_FLIGHT)
+    {
+        ImageCount = SHU_MAX_FRAMES_IN_FLIGHT;
+    }
+
     Swapchain->ImageCount = ImageCount;
 }
 
@@ -129,11 +134,13 @@ SelectImageTransforms(shoora_vulkan_swapchain *Swapchain, VkSurfaceTransformFlag
     // }
 }
 
+#if 0
 void
 SetSwapchainDepthFormat(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain)
 {
     Swapchain->DepthFormat = GetSuitableDepthAttachmentFormat(RenderDevice);
 }
+#endif
 
 void
 SelectImageFormats(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
@@ -206,7 +213,9 @@ SelectImageFormats(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *
 
     ASSERT(FormatFound);
 
+#if 0
     SetSwapchainDepthFormat(RenderDevice, Swapchain);
+#endif
 }
 
 void
@@ -341,7 +350,7 @@ AllocateDrawCommandBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_swa
     VkCommandBuffer BuffersToAllocate[ARRAY_SIZE(Swapchain->DrawCommandBuffers)] = {};
 
     for(u32 Index = 0;
-        Index < ARRAY_SIZE(Swapchain->DrawCommandBuffers);
+        Index < SHU_MAX_FRAMES_IN_FLIGHT;
         ++Index)
     {
         shoora_vulkan_command_buffer_handle *ShuCmdBuffer = &Swapchain->DrawCommandBuffers[Index];
@@ -481,35 +490,38 @@ CreatePresentationSurface(shoora_vulkan_context *Context, VkSurfaceKHR *Surface)
 #endif
 }
 
-#if 0
-u32
-AcquireNextSwapchainImage(shoora_vulkan_context *Context, u32 SemaphoreInternalIndex, u32 FenceInternalIndex)
+void
+AcquireNextSwapchainImage(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
+                          shoora_vulkan_semaphore_handle *SignalSemaphore)
 {
-    u32 ImageIndex = 0;
-    VkSemaphore SemaphoreHandle = Context->SyncHandles.Semaphores[SemaphoreInternalIndex].Handle;
-    VkFence FenceHandle = Context->SyncHandles.Fences[FenceInternalIndex].Handle;
+    u32 ImageIndex = -1UL;
+    ASSERT(SignalSemaphore != VK_NULL_HANDLE);
 
     // NOTE: We can wait upto 2 seocnds to acquire the new swapchain image, if not throw an error.
-    VkResult AcquireResult = vkAcquireNextImageKHR(Context->Device.LogicalDevice,
-                                                   Context->Swapchain.SwapchainHandle, NANOSECONDS(2),
-                                                   SemaphoreHandle, FenceHandle, &ImageIndex);
+    VkResult AcquireResult = vkAcquireNextImageKHR(RenderDevice->LogicalDevice,
+                                                   Swapchain->SwapchainHandle, NANOSECONDS(2),
+                                                   SignalSemaphore->Handle, VK_NULL_HANDLE, &ImageIndex);
     if((AcquireResult != VK_SUCCESS) &&
        (AcquireResult != VK_SUBOPTIMAL_KHR))
     {
         LogOutput(LogType_Error, "There was a problem acquiring a swapchain image!\n");
-
-        if(AcquireResult == VK_ERROR_OUT_OF_DATE_KHR)
-        {
-            LogOutput(LogType_Error, "You cannot use the images of this swapchain. Destroy the swapchain and "
-                                     "recreate it again!\n");
-            return -1;
-        }
+        ImageIndex = -1UL;
+    }
+    else if (AcquireResult == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        LogOutput(LogType_Error, "You cannot use the images of this swapchain. Destroy the swapchain and "
+                                 "recreate it again!\n");
+        ImageIndex = -1UL;
+    }
+    else if(AcquireResult == VK_SUCCESS || AcquireResult == VK_SUBOPTIMAL_KHR)
+    {
+        SignalSemaphore->IsSignaled = true;
     }
 
-    ASSERT(ImageIndex >= 0 && ImageIndex < Context->Swapchain.ImageCount);
-    return ImageIndex;
+    ASSERT(ImageIndex >= 0 && ImageIndex < Swapchain->ImageCount);
+
+    Swapchain->CurrentImageIndex = ImageIndex;
 }
-#endif
 
 void
 PresentImage(shoora_vulkan_context *Context)

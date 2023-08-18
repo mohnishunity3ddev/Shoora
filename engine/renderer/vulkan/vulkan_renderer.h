@@ -78,11 +78,12 @@ struct shoora_vulkan_swapchain
     VkSurfaceFormatKHR SurfaceFormat;
     VkFormat DepthFormat;
 
+    u32 CurrentImageIndex;
     VkExtent2D ImageDimensions;
     VkImageUsageFlags ImageUsageFlags;
     VkPresentModeKHR PresentMode;
     VkSurfaceTransformFlagBitsKHR TransformFlagBits;
-
+    
     VkSwapchainKHR SwapchainHandle;
 
     // TODO)): Make this Dynamic!
@@ -92,18 +93,6 @@ struct shoora_vulkan_swapchain
     u32 ImageCount;
 
     shoora_vulkan_command_buffer_handle DrawCommandBuffers[SHU_MAX_FRAMES_IN_FLIGHT];
-};
-
-
-// TODO)): Remove this?
-struct shoora_vulkan_command_buffer
-{
-    shoora_queue_type QueueType;
-    VkCommandBufferLevel BufferLevel;
-    // VkCommandBuffer BufferHandles[MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
-    // TODO)): Make these Dynamic!
-    shoora_vulkan_command_buffer_handle BufferHandles[SHU_VK_MAX_COMMAND_BUFFERS_PER_QUEUE_COUNT];
-    u32 BufferCount;
 };
 
 struct shoora_vulkan_buffer
@@ -151,6 +140,7 @@ struct shoora_vulkan_context
 
     b32 IsInitialized;
     u32 CurrentFrame;
+    u32 FrameCounter;
 };
 
 void InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo);

@@ -37,6 +37,7 @@ GetSuitableImageFormat(shoora_vulkan_device *RenderDevice, VkFormat *FormatCandi
     return Result;
 }
 
+#if 0
 VkFormat
 GetSuitableDepthAttachmentFormat(shoora_vulkan_device *RenderDevice)
 {
@@ -47,6 +48,7 @@ GetSuitableDepthAttachmentFormat(shoora_vulkan_device *RenderDevice)
                                                   VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     return DepthFormat;
 }
+#endif
 
 void
 GenerateMipMaps(const char *InputFilename, const char *OutputFilename, i32 MipLevelCount, i32 Quality,
