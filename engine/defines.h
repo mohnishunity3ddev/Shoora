@@ -25,7 +25,6 @@ typedef double f64;
 #define SHU_ENGINE_NAME "Shoora Game Engine"
 #define SHU_RENDERER_BACKEND_VULKAN
 #define SHU_VULKAN_EXAMPLE 1
-#define SHU_CREATE_EXTERNAL_CONSOLE_WINDOW 0
 #define SHU_DEFAULT_FENCE_TIMEOUT 100000000000
 #define ARRAY_SIZE(Arr) sizeof(Arr) / sizeof(Arr[0])
 

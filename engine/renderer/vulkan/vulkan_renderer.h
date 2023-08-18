@@ -126,10 +126,9 @@ struct shoora_vulkan_fence_handle
 
 struct shoora_vulkan_synchronization
 {
-    shoora_vulkan_semaphore_handle Semaphores[SHU_VK_MAX_SEMAPHORE_COUNT];
-    u32 SemaphoreCount;
-    shoora_vulkan_fence_handle Fences[SHU_VK_MAX_FENCE_COUNT];
-    u32 FenceCount;
+    shoora_vulkan_semaphore_handle ImageAvailableSemaphores[SHU_MAX_FRAMES_IN_FLIGHT];
+    shoora_vulkan_semaphore_handle RenderFinishedSemaphores[SHU_MAX_FRAMES_IN_FLIGHT];
+    shoora_vulkan_fence_handle Fences[SHU_MAX_FRAMES_IN_FLIGHT];
 };
 
 struct shoora_vulkan_pipeline
@@ -142,21 +141,20 @@ struct shoora_vulkan_context
 {
     VkInstance Instance;
     shoora_vulkan_debug Debug;
-
     shoora_vulkan_device Device;
     shoora_vulkan_swapchain Swapchain;
-
     VkRenderPass GraphicsRenderPass;
-
     shoora_vulkan_pipeline Pipeline;
-
     shoora_vulkan_buffer VertexBuffer;
     shoora_vulkan_buffer IndexBuffer;
-
     shoora_vulkan_synchronization SyncHandles;
+
+    b32 IsInitialized;
+    u32 FrameIndex;
 };
 
 void InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo);
+void DrawFrameInVulkan();
 void DestroyVulkanRenderer(shoora_vulkan_context *Context);
 
 #define _VULKAN_RENDERER_H

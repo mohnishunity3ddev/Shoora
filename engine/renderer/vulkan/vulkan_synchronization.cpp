@@ -1,5 +1,6 @@
 #include "vulkan_synchronization.h"
 
+#if 0
 // -------------------------------------------------------------------------------------------------------
 // SEMAPHORES --------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------------
@@ -227,4 +228,63 @@ GetFirstUnsignaledFence(shoora_vulkan_synchronization *SyncHandles)
     ASSERT(Result != VK_NULL_HANDLE);
 
     return Result;
+}
+#endif
+
+void
+CreateSynchronizationPrimitives(shoora_vulkan_device *RenderDevice, shoora_vulkan_synchronization *SyncObjects)
+{
+    VkSemaphoreCreateInfo SemaphoreCreateInfo;
+    SemaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    SemaphoreCreateInfo.pNext = nullptr;
+    SemaphoreCreateInfo.flags = 0;
+
+    VkFenceCreateInfo FenceCreateInfo;
+    FenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    FenceCreateInfo.pNext = nullptr;
+    FenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    for(u32 Index = 0;
+        Index < SHU_MAX_FRAMES_IN_FLIGHT;
+        ++Index)
+    {
+        VK_CHECK(vkCreateSemaphore(RenderDevice->LogicalDevice, &SemaphoreCreateInfo, nullptr,
+                                   &SyncObjects->ImageAvailableSemaphores[Index].Handle));
+
+        VK_CHECK(vkCreateSemaphore(RenderDevice->LogicalDevice, &SemaphoreCreateInfo, nullptr,
+                                   &SyncObjects->RenderFinishedSemaphores[Index].Handle));
+
+        VK_CHECK(vkCreateFence(RenderDevice->LogicalDevice, &FenceCreateInfo, nullptr,
+                               &SyncObjects->Fences[Index].Handle));
+        SyncObjects->Fences[Index].IsSignaled = true;
+    }
+
+    LogOutput(LogType_Info, "Created all Synchronization Primitives!\n");
+}
+
+void
+DestroyAllSynchronizationPrimitives(shoora_vulkan_device *RenderDevice, shoora_vulkan_synchronization *SyncObjects)
+{
+    for(u32 Index = 0;
+        Index < SHU_MAX_FRAMES_IN_FLIGHT;
+        ++Index)
+    {
+        shoora_vulkan_semaphore_handle *Semaphore = nullptr;
+
+        Semaphore = SyncObjects->ImageAvailableSemaphores + Index;
+        vkDestroySemaphore(RenderDevice->LogicalDevice, Semaphore->Handle, nullptr);
+        Semaphore->IsSignaled = false;
+        Semaphore->Handle = VK_NULL_HANDLE;
+
+        Semaphore = SyncObjects->RenderFinishedSemaphores + Index;
+        vkDestroySemaphore(RenderDevice->LogicalDevice, Semaphore->Handle, nullptr);
+        Semaphore->IsSignaled = false;
+        Semaphore->Handle = VK_NULL_HANDLE;
+        Semaphore = nullptr;
+
+        shoora_vulkan_fence_handle *Fence = &SyncObjects->Fences[Index];
+        vkDestroyFence(RenderDevice->LogicalDevice, Fence->Handle, nullptr);
+        Fence->Handle = VK_NULL_HANDLE;
+        Fence->IsSignaled = false;
+    }
 }

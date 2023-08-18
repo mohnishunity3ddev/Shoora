@@ -6,6 +6,7 @@
 #include "platform/platform.h"
 #include "platform/windows/win_platform.h"
 #include <Windows.h>
+#include <shellapi.h>
 
 #include "renderer/renderer_frontend.h"
 
@@ -205,7 +206,6 @@ Win32LogLastError()
     }
 }
 
-#if SHU_CREATE_EXTERNAL_CONSOLE_WINDOW
 void
 Win32SetConsoleHandle()
 {
@@ -258,7 +258,6 @@ Win32PauseConsoleWindow()
     }
 }
 
-#endif
 
 void
 OutputDebugStringColor(LogType LogType, const char *message)
@@ -305,7 +304,7 @@ OutputToConsole(LogType LogType, const char *Message)
 {
     HANDLE Console = GlobalWin32WindowContext.ConsoleHandle;
 
-    static u8 Levels[6] = {64, 4, 6, 2, 1, 8};
+    static u8 Levels[] = {64, 4, 6, 2, 1, 8, 8, 8};
     SetConsoleTextAttribute(Console, Levels[LogType]);
 
     OutputDebugStringColor(LogType, Message);
@@ -337,6 +336,12 @@ LogOutput(LogType LogType, const char *Format, ...)
         // OutputDebugStringA(Buffer);
         OutputToConsole(LogType, Buffer);
     }
+}
+
+void
+LogString(const char *String)
+{
+    OutputDebugStringA(String);
 }
 
 void
@@ -426,14 +431,40 @@ Win32ProcessWindowsMessageQueue(HWND WindowHandle, platform_input_state *Input)
     }
 }
 
+b32
+ShouldCreateConsole(PWSTR pCmdLine)
+{
+    i32 Argc;
+    LPWSTR *Argv = CommandLineToArgvW(pCmdLine, &Argc);
+
+    if (Argv)
+    {
+        for(i32 Index = 0; Index < Argc; ++Index)
+        {
+                wchar_t *Arg = Argv[Index];
+                if (wcscmp(Arg, L"vscode") == 0)
+                {
+                    return false;
+                }
+        }
+        LocalFree(Argv);
+    }
+
+    return true;
+}
+
 // TODO)): Right now this is the only entry point since win32 is the only platform right now.
 // TODO)): Have to implement multiple entrypoints for all platforms.
 i32 WINAPI
 wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdShow)
 {
-#if SHU_CREATE_EXTERNAL_CONSOLE_WINDOW
-    Win32SetConsoleHandle();
-#endif
+    b32 CreateConsole = ShouldCreateConsole(pCmdLine);
+
+    if(CreateConsole)
+    {
+        Win32SetConsoleHandle();
+    }
+
     const wchar_t CLASS_NAME[] = L"Shoora Engine";
 
     WNDCLASS WinClass = {};
@@ -523,14 +554,18 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         platform_input_state *Temp = NewInputState;
         NewInputState = OldInputState;
         OldInputState = Temp;
+
+        // NOTE: Game Update
+        DrawFrame();
     }
 
     DestroyRenderer(&RendererContext);
     CloseWindow(GlobalWin32WindowContext.Handle);
 
-#if SHU_CREATE_EXTERNAL_CONSOLE_WINDOW
-    Win32PauseConsoleWindow();
-#endif
+    if(CreateConsole)
+    {
+        Win32PauseConsoleWindow();
+    }
 
     return 0;
 }

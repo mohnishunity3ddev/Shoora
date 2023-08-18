@@ -21,6 +21,15 @@ InitializeRenderer(renderer_context *RendererContext, shoora_app_info *AppInfo)
 }
 
 void
+DrawFrame()
+{
+#if defined(SHU_RENDERER_BACKEND_VULKAN)
+    DrawFrameInVulkan();
+#else
+#endif
+}
+
+void
 DestroyRenderer(renderer_context *RendererContext)
 {
 #if defined(SHU_RENDERER_BACKEND_VULKAN)

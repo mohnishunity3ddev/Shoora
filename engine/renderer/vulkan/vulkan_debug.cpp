@@ -105,7 +105,7 @@ SetVkObjectName(shoora_vulkan_context *Context, void *Object, VkObjectType Objec
     NameInfo.objectHandle = (u64)Object;
     NameInfo.pObjectName = Name;
 
-    VkResult Result = vkSetDebugUtilsObjectNameEXT(Context->Device.LogicalDevice, &NameInfo);
+    // VkResult Result = vkSetDebugUtilsObjectNameEXT(Context->Device.LogicalDevice, &NameInfo);
 
     return true;
 }

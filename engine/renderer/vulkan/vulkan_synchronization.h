@@ -4,6 +4,7 @@
 #include "volk/volk.h"
 #include "vulkan_renderer.h"
 
+#if 0
 // -------------------------------------------------------------------------------------------------------
 // SEMAPHORES --------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------------
@@ -30,6 +31,12 @@ b32 WaitForAllFences(shoora_vulkan_device *RenderDevice, VkFence *Fences, u32 Fe
 b32 AreFencesSafeToUse(shoora_vulkan_device *RenderDevice, VkFence *Fences, u32 FenceCount);
 void ResetFences(shoora_vulkan_device *RenderDevice, VkFence *Fences, u32 FenceCount);
 VkFence GetFirstUnsignaledFence(shoora_vulkan_synchronization *SyncHandles);
+#endif
+
+void CreateSynchronizationPrimitives(shoora_vulkan_device *RenderDevice,
+                                     shoora_vulkan_synchronization *SyncObjects);
+void DestroyAllSynchronizationPrimitives(shoora_vulkan_device *RenderDevice,
+                                         shoora_vulkan_synchronization *SyncObjects);
 
 #define VULKAN_SYNCHRONIZATION_H
 #endif // VULKAN_SYNCHRONIZATION_H

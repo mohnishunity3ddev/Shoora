@@ -1,5 +1,6 @@
 #include "vulkan_work_submission.h"
 
+#if 0
 // content of vulkan_work_submission.cpp goes here
 // It is the caller's responsibility to set the Fence's IsRecoding state internally.
 void
@@ -106,3 +107,4 @@ DeviceWaitIdle(VkDevice Device)
 {
     VK_CHECK(vkDeviceWaitIdle(Device));
 }
+#endif

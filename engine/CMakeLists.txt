@@ -19,3 +19,5 @@ set_target_properties(extern PROPERTIES IMPORTED_LOCATION ${LIBS_DIR}/volk/volk.
 
 # add_library(volk STATIC external/volk/volk.c external/volk/volk.h)
 target_link_libraries(ShooraEngine PRIVATE extern)
+
+# target_compile_options(ShooraEngine PRIVATE -Wall -Wpedantic -Werror -Wno-gnu-anonymous-struct -Wno-nested-anon-types)

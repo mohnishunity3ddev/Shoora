@@ -481,6 +481,7 @@ CreatePresentationSurface(shoora_vulkan_context *Context, VkSurfaceKHR *Surface)
 #endif
 }
 
+#if 0
 u32
 AcquireNextSwapchainImage(shoora_vulkan_context *Context, u32 SemaphoreInternalIndex, u32 FenceInternalIndex)
 {
@@ -508,6 +509,7 @@ AcquireNextSwapchainImage(shoora_vulkan_context *Context, u32 SemaphoreInternalI
     ASSERT(ImageIndex >= 0 && ImageIndex < Context->Swapchain.ImageCount);
     return ImageIndex;
 }
+#endif
 
 void
 PresentImage(shoora_vulkan_context *Context)

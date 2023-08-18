@@ -50,6 +50,8 @@ enum LogType
 };
 
 SHU_EXPORT void LogOutput(LogType LogType, const char *Format, ...);
+SHU_EXPORT void LogString(const char *String);
+
 
 #ifdef __cplusplus
 }

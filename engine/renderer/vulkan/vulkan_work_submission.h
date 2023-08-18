@@ -4,6 +4,7 @@
 #include "vulkan_renderer.h"
 #include "vulkan_synchronization.h"
 
+#if 0
 struct shoora_wait_semaphore_info
 {
     // Wait for this semaphore to be signaled
@@ -40,6 +41,7 @@ void QueueWaitIdle(VkQueue QueueHandle);
 // Performance Implications!
 // NOTE: Usually called before exiting the application!
 void DeviceWaitIdle(VkDevice Device);
+#endif
 
 #define VULKAN_WORK_SUBMISSION_H
 #endif // VULKAN_WORK_SUBMISSION_H

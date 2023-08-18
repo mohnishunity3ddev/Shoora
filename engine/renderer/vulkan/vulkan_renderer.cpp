@@ -20,6 +20,7 @@ void WindowResizedCallback(u32 Width, u32 Height)
 
     if(VulkanContext && (Width > 0 && Height > 0))
     {
+        ASSERT(VulkanContext->IsInitialized);
         CreateSwapchain(VulkanContext, Width, Height);
     }
 }
@@ -50,16 +51,26 @@ InitializeVulkanRenderer(shoora_vulkan_context *Context, shoora_app_info *AppInf
     CreateGraphicsPipeline(Context, "shaders/spirv/triangle.vert.spv", "shaders/spirv/triangle.frag.spv");
     CreateVertexBuffer(&Context->Device, Vertices, ARRAY_SIZE(Vertices), Indices, ARRAY_SIZE(Indices),
                        &Context->VertexBuffer, &Context->IndexBuffer);
+    CreateSynchronizationPrimitives(&Context->Device, &Context->SyncHandles);
 
     AppInfo->WindowResizeCallback = &WindowResizedCallback;
+
+    Context->FrameIndex = 0;
+    Context->IsInitialized = true;
     VulkanContext = Context;
+}
+
+void DrawFrameInVulkan()
+{
+    LogOutput(LogType_Trace, "[VULKAN_RENDERER]: Inside Update\n");
 }
 
 void
 DestroyVulkanRenderer(shoora_vulkan_context *Context)
 {
-    DeviceWaitIdle(Context->Device.LogicalDevice);
+    VK_CHECK(vkDeviceWaitIdle(Context->Device.LogicalDevice));
 
+    DestroyAllSynchronizationPrimitives(&Context->Device, &Context->SyncHandles);
     DestroyVertexBuffer(&Context->Device, &Context->VertexBuffer, &Context->IndexBuffer);
     // DestroyAllSemaphores(Context);
     // DestroyAllFences(Context);
