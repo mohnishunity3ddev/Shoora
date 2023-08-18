@@ -13,6 +13,7 @@ static shoora_vertex_info Vertices[] =
     {.VertexPos = Vec2(0, 0), .VertexColor = Vec3(1,1,1)}
 };
 static u32 Indices[] = {0, 1, 2};
+static exit_application *QuitApplication;
 
 void WindowResizedCallback(u32 Width, u32 Height)
 {
@@ -54,15 +55,24 @@ InitializeVulkanRenderer(shoora_vulkan_context *Context, shoora_app_info *AppInf
     CreateSynchronizationPrimitives(&Context->Device, &Context->SyncHandles);
 
     AppInfo->WindowResizeCallback = &WindowResizedCallback;
+    QuitApplication = AppInfo->ExitApplication;
+    ASSERT(QuitApplication);
 
-    Context->FrameIndex = 0;
+    Context->CurrentFrame = 3;
     Context->IsInitialized = true;
     VulkanContext = Context;
 }
 
 void DrawFrameInVulkan()
 {
-    LogOutput(LogType_Trace, "[VULKAN_RENDERER]: Inside Update\n");
+    if(!VulkanContext->IsInitialized || VulkanContext->CurrentFrame >= SHU_MAX_FRAMES_IN_FLIGHT)
+    {
+        QuitApplication("[RENDERER]: Either the render is not initialized or there was some "
+                        "problem with the current "
+                        "frame counter.\n");
+    }
+
+    
 }
 
 void

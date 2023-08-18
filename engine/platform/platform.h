@@ -18,22 +18,6 @@ struct shoora_platform_presentation_surface
 #endif
 };
 
-#if defined(SHU_RENDERER_BACKEND_VULKAN) && defined(VK_USE_PLATFORM_WIN32_KHR)
-typedef void func_window_resize(u32 Width, u32 Height);
-
-void FillVulkanWin32SurfaceCreateInfo(shoora_platform_presentation_surface *Surface);
-#endif
-
-struct shoora_app_info
-{
-    const char *AppName;
-
-    u32 WindowWidth;
-    u32 WindowHeight;
-
-    func_window_resize *WindowResizeCallback;
-};
-
 enum LogType
 {
     // FATAL, ERROR, WARN, INFO, DEBUG, TRACE
@@ -47,6 +31,24 @@ enum LogType
     LogType_DebugReportCallbackInfo,
 
     LogType_MaxCount
+};
+
+#if defined(SHU_RENDERER_BACKEND_VULKAN) && defined(VK_USE_PLATFORM_WIN32_KHR)
+typedef void func_window_resize(u32 Width, u32 Height);
+typedef void exit_application(const char *Reason);
+
+void FillVulkanWin32SurfaceCreateInfo(shoora_platform_presentation_surface *Surface);
+#endif
+
+struct shoora_app_info
+{
+    const char *AppName;
+
+    u32 WindowWidth;
+    u32 WindowHeight;
+
+    func_window_resize *WindowResizeCallback;
+    exit_application *ExitApplication;
 };
 
 SHU_EXPORT void LogOutput(LogType LogType, const char *Format, ...);

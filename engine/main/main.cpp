@@ -28,7 +28,7 @@ void DummyWinResize(u32 Width, u32 Height) {}
 static shoora_app_info AppInfo =
 {
     .AppName = "Placeholder App Name",
-    .WindowResizeCallback = &DummyWinResize
+    .WindowResizeCallback = &DummyWinResize,
 };
 
 RECT
@@ -339,6 +339,14 @@ LogOutput(LogType LogType, const char *Format, ...)
 }
 
 void
+ExitApplication(const char *Reason)
+{
+    LogOutput(LogType_Fatal, Reason);
+
+    Win32GlobalRunning = false;
+}
+
+void
 LogString(const char *String)
 {
     OutputDebugStringA(String);
@@ -464,6 +472,8 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     {
         Win32SetConsoleHandle();
     }
+
+    AppInfo.ExitApplication = &ExitApplication;
 
     const wchar_t CLASS_NAME[] = L"Shoora Engine";
 

@@ -150,7 +150,7 @@ struct shoora_vulkan_context
     shoora_vulkan_synchronization SyncHandles;
 
     b32 IsInitialized;
-    u32 FrameIndex;
+    u32 CurrentFrame;
 };
 
 void InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo);
