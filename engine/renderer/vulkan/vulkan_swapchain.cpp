@@ -588,13 +588,12 @@ PresentImage(shoora_vulkan_context *Context)
 
 void
 CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
-                                size_t RequiredSize, VkPipelineLayout PipelineLayout)
+                                size_t RequiredSize, VkPipelineLayout *pPipelineLayout)
 {
     CreateUniformBuffers(RenderDevice, Swapchain->UniformBuffers, Swapchain->ImageCount, RequiredSize);
     CreateUniformDescriptors(RenderDevice, VK_SHADER_STAGE_VERTEX_BIT, &Swapchain->UniformSetLayout, 0, nullptr,
                              SHU_MAX_FRAMES_IN_FLIGHT, Swapchain->UniformBuffers, Swapchain->UniformDescriptorSets,
-                             &Swapchain->UniformPipelineLayout, &Swapchain->UniformDescriptorPool);
-    PipelineLayout = Swapchain->UniformPipelineLayout;
+                             pPipelineLayout, &Swapchain->UniformDescriptorPool);
 }
 
 void
@@ -606,10 +605,6 @@ DestroySwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulk
     }
 
     vkDestroyDescriptorSetLayout(RenderDevice->LogicalDevice, Swapchain->UniformSetLayout, nullptr);
-
-    // TODO)): This layout needs to be removed from the swapchain struct.
-    vkDestroyPipelineLayout(RenderDevice->LogicalDevice, Swapchain->UniformPipelineLayout, nullptr);
-
     vkDestroyDescriptorPool(RenderDevice->LogicalDevice, Swapchain->UniformDescriptorPool, nullptr);
 
     // VkDescriptorSet UniformDescriptorSets[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];

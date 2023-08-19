@@ -101,8 +101,7 @@ struct shoora_vulkan_swapchain
     VkFramebuffer ImageFramebuffers[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
 
     VkDescriptorSetLayout UniformSetLayout;
-    // TODO)): This pipeline layout needs to be removed from here!
-    VkPipelineLayout UniformPipelineLayout;
+
     VkDescriptorPool UniformDescriptorPool;
     VkDescriptorSet UniformDescriptorSets[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
     shoora_vulkan_buffer UniformBuffers[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];

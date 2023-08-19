@@ -2,6 +2,7 @@
 #include "vulkan_shaders.h"
 #include "vulkan_vertex_definitions.h"
 
+#if 0
 void
 CreateShaderModule(shoora_vulkan_device *RenderDevice, const char *ShaderFile, VkShaderModule *Module)
 {
@@ -436,13 +437,12 @@ BindPipelineObject(VkCommandBuffer CmdBuffer, VkPipeline Pipeline)
     vkCmdBindPipeline(CmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
 }
 
-
-
 void
 DestroyPipelineCache(shoora_vulkan_device *RenderDevice, VkPipelineCache PipelineCache)
 {
     vkDestroyPipelineCache(RenderDevice->LogicalDevice, PipelineCache, nullptr);
 }
+#endif
 
 void
 DestroyPipelineLayout(shoora_vulkan_device *RenderDevice, VkPipelineLayout PipelineLayout)
@@ -484,8 +484,10 @@ GetShaderStageInfo(VkShaderModule Shader, VkShaderStageFlagBits StageFlags, cons
 
 void
 CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderFile,
-                       const char *FragmentShaderFile, VkPipelineLayout *pPipelineLayout)
+                       const char *FragmentShaderFile, shoora_vulkan_pipeline *pPipeline)
 {
+    ASSERT(pPipeline != nullptr);
+
     shoora_vulkan_device *RenderDevice = &Context->Device;
 
     //? Shader Stages
@@ -613,13 +615,7 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
     ColorBlendInfo.blendConstants[3] = 0.0f;
 
     //? Pipeline Layout
-    if(pPipelineLayout == nullptr)
-    {
-        VkPipelineLayoutCreateInfo PipelineLayoutInfo = {};
-        PipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        VK_CHECK(vkCreatePipelineLayout(RenderDevice->LogicalDevice, &PipelineLayoutInfo, nullptr,
-                                        pPipelineLayout));
-    }
+    ASSERT((pPipeline->GraphicsPipelineLayout != VK_NULL_HANDLE));
 
     //? Dynamic State
     VkDynamicState DynamicStates[] = {VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT};
@@ -628,31 +624,25 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
     DynamicsInfo.dynamicStateCount = ARRAY_SIZE(DynamicStates);
     DynamicsInfo.pDynamicStates = DynamicStates;
 
+    VkGraphicsPipelineCreateInfo PipelineCreateInfo = {};
+    PipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    PipelineCreateInfo.stageCount = ARRAY_SIZE(ShaderStageInfos);
+    PipelineCreateInfo.pStages = ShaderStageInfos;
+    PipelineCreateInfo.pVertexInputState = &VertexInputInfo;
+    PipelineCreateInfo.pInputAssemblyState = &InputAssemblyInfo;
+    PipelineCreateInfo.pViewportState = &ViewportInfo;
+    PipelineCreateInfo.pRasterizationState = &RasterizerInfo;
+    PipelineCreateInfo.pMultisampleState = &MultisampleInfo;
+    PipelineCreateInfo.pColorBlendState = &ColorBlendInfo;
+    PipelineCreateInfo.pDynamicState = &DynamicsInfo;
+    PipelineCreateInfo.layout = pPipeline->GraphicsPipelineLayout;
+    PipelineCreateInfo.renderPass = Context->GraphicsRenderPass;
+    PipelineCreateInfo.subpass = 0;
+    PipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+    PipelineCreateInfo.basePipelineIndex = -1;
 
-
-    VkGraphicsPipelineCreateInfo GraphicsPipelineCreateInfos[1] = {};
-    GraphicsPipelineCreateInfos[0].sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    GraphicsPipelineCreateInfos[0].stageCount = ARRAY_SIZE(ShaderStageInfos);
-    GraphicsPipelineCreateInfos[0].pStages = ShaderStageInfos;
-    GraphicsPipelineCreateInfos[0].pVertexInputState = &VertexInputInfo;
-    GraphicsPipelineCreateInfos[0].pInputAssemblyState = &InputAssemblyInfo;
-    GraphicsPipelineCreateInfos[0].pViewportState = &ViewportInfo;
-    GraphicsPipelineCreateInfos[0].pRasterizationState = &RasterizerInfo;
-    GraphicsPipelineCreateInfos[0].pMultisampleState = &MultisampleInfo;
-    GraphicsPipelineCreateInfos[0].pColorBlendState = &ColorBlendInfo;
-    GraphicsPipelineCreateInfos[0].pDynamicState = &DynamicsInfo;
-    GraphicsPipelineCreateInfos[0].layout = *pPipelineLayout;
-    GraphicsPipelineCreateInfos[0].renderPass = Context->GraphicsRenderPass;
-    GraphicsPipelineCreateInfos[0].subpass = 0;
-    GraphicsPipelineCreateInfos[0].basePipelineHandle = VK_NULL_HANDLE;
-    GraphicsPipelineCreateInfos[0].basePipelineIndex = -1;
-
-    VkPipeline Pipelines[1];
-
-    VK_CHECK(vkCreateGraphicsPipelines(RenderDevice->LogicalDevice, VK_NULL_HANDLE,
-                                       ARRAY_SIZE(GraphicsPipelineCreateInfos), GraphicsPipelineCreateInfos,
-                                       nullptr, Pipelines));
-    Context->Pipeline.GraphicsPipeline = Pipelines[0];
+    VK_CHECK(vkCreateGraphicsPipelines(RenderDevice->LogicalDevice, VK_NULL_HANDLE, 1, &PipelineCreateInfo,
+                                       nullptr, &pPipeline->GraphicsPipeline));
 
     LogOutput(LogType_Debug, "Created Graphics Pipeline!\n");
 

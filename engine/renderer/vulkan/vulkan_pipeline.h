@@ -5,7 +5,8 @@
 #include "vulkan_renderer.h"
 
 void CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderFile,
-                            const char *FragmentShaderFile, VkPipelineLayout *pPipelineLayout = nullptr);
+                            const char *FragmentShaderFile, shoora_vulkan_pipeline *pPipeline);
+
 void CreateWireframePipeline(shoora_vulkan_context *Context, const char *VertexShaderFile,
                              const char *FragmentShaderFile);
 

@@ -62,7 +62,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
 
     shoora_vulkan_device *RenderDevice = &VulkanContext->Device;
     shoora_vulkan_swapchain *Swapchain = &VulkanContext->Swapchain;
-
+    
     CreatePresentationSurface(VulkanContext, &Swapchain->Surface);
     CreateDeviceAndQueues(VulkanContext, &DeviceCreateInfo);
     volkLoadDevice(RenderDevice->LogicalDevice);
@@ -76,9 +76,9 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     CreateVertexBuffer(RenderDevice, RectVertices, ARRAY_SIZE(RectVertices), RectIndices, ARRAY_SIZE(RectIndices),
                        &VulkanContext->VertexBuffer, &VulkanContext->IndexBuffer);
 
-    CreateSwapchainUniformResources(RenderDevice, Swapchain, sizeof(uniform_data), VulkanContext->Pipeline.GraphicsPipelineLayout);
+    CreateSwapchainUniformResources(RenderDevice, Swapchain, sizeof(uniform_data), &VulkanContext->Pipeline.GraphicsPipelineLayout);
     CreateGraphicsPipeline(VulkanContext, "shaders/spirv/triangle.vert.spv", "shaders/spirv/triangle.frag.spv",
-                           &Swapchain->UniformPipelineLayout);
+                           &VulkanContext->Pipeline);
     CreateWireframePipeline(VulkanContext, "shaders/spirv/wireframe.vert.spv", "shaders/spirv/wireframe.frag.spv");
     CreateSynchronizationPrimitives(&VulkanContext->Device, &VulkanContext->SyncHandles);
 
@@ -174,7 +174,7 @@ void DrawFrameInVulkan()
         vkCmdSetScissor(DrawCmdBuffer, 0, 1, &Scissor);
 
         vkCmdBindDescriptorSets(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                Context->Swapchain.UniformPipelineLayout, 0, 1,
+                                Context->Pipeline.GraphicsPipelineLayout, 0, 1,
                                 &Context->Swapchain.UniformDescriptorSets[ImageIndex], 0,
                                 nullptr);
         vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->Pipeline.GraphicsPipeline);

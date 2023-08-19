@@ -34,7 +34,7 @@ void CreateSwapchainFramebuffers(shoora_vulkan_device *RenderDevice, shoora_vulk
 void AcquireNextSwapchainImage(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
                                shoora_vulkan_semaphore_handle *SignalSemaphore);
 void CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
-                                     size_t RequiredSize, VkPipelineLayout pLayout);
+                                     size_t RequiredSize, VkPipelineLayout *pLayout);
 void DestroySwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain);
 
 void DestroyPresentationSurface(shoora_vulkan_context *Context);
