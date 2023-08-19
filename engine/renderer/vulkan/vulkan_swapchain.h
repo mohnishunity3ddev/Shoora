@@ -22,8 +22,12 @@ struct shoora_vulkan_image_present_info
 };
 
 void CreatePresentationSurface(shoora_vulkan_context *Context, VkSurfaceKHR *Surface);
-void CreateSwapchain(shoora_vulkan_context *Context, u32 WindowWidth, u32 WindowHeight,
-                     shoora_vulkan_swapchain_create_info *ShuraSwapchainInfo = nullptr, size_t UniformDataSize = 0);
+void WindowResized(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, VkRenderPass RenderPass,
+                   vec2 ScreenDim);
+
+void CreateSwapchain(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, vec2 ScreenDim,
+                     shoora_vulkan_swapchain_create_info *ShooraSwapchainInfo);
+
 void CreateSwapchainFramebuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
                                  VkRenderPass RenderPass);
 

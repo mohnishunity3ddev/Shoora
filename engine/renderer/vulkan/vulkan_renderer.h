@@ -92,7 +92,7 @@ struct shoora_vulkan_swapchain
     VkPresentModeKHR PresentMode;
     VkSurfaceTransformFlagBitsKHR TransformFlagBits;
 
-    VkSwapchainKHR SwapchainHandle;
+    VkSwapchainKHR Handle;
 
     // TODO)): Make this Dynamic!
     u32 ImageCount;
@@ -106,7 +106,6 @@ struct shoora_vulkan_swapchain
     VkDescriptorPool UniformDescriptorPool;
     VkDescriptorSet UniformDescriptorSets[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
     shoora_vulkan_buffer UniformBuffers[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
-    u32 UniformDataSize;
 
     shoora_vulkan_command_buffer_handle DrawCommandBuffers[SHU_MAX_FRAMES_IN_FLIGHT];
 };

@@ -42,7 +42,7 @@ void WindowResizedCallback(u32 Width, u32 Height)
     if(Context && (Width > 0 && Height > 0))
     {
         ASSERT(Context->IsInitialized);
-        CreateSwapchain(Context, Width, Height);
+        WindowResized(&Context->Device, &Context->Swapchain, Context->GraphicsRenderPass, Vec2(Width, Height));
     }
 }
 
@@ -68,7 +68,8 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     volkLoadDevice(RenderDevice->LogicalDevice);
     CreateCommandPools(RenderDevice);
 
-    CreateSwapchain(VulkanContext, AppInfo->WindowWidth, AppInfo->WindowHeight, &SwapchainInfo, sizeof(uniform_data));
+    vec2 ScreenDim = Vec2(AppInfo->WindowWidth, AppInfo->WindowHeight);
+    CreateSwapchain(&VulkanContext->Device, &VulkanContext->Swapchain, ScreenDim, &SwapchainInfo);
     CreateRenderPass(RenderDevice, Swapchain, &VulkanContext->GraphicsRenderPass);
     CreateSwapchainFramebuffers(RenderDevice, Swapchain, VulkanContext->GraphicsRenderPass);
 
@@ -217,7 +218,7 @@ void DrawFrameInVulkan()
     PresentInfo.waitSemaphoreCount = 1;
     PresentInfo.pWaitSemaphores = &pCurrentFramePresentCompleteSemaphore->Handle;
     PresentInfo.swapchainCount = 1;
-    PresentInfo.pSwapchains = &Context->Swapchain.SwapchainHandle;
+    PresentInfo.pSwapchains = &Context->Swapchain.Handle;
     PresentInfo.pImageIndices = &Context->Swapchain.CurrentImageIndex;
     VK_CHECK(vkQueuePresentKHR(GraphicsQueue, &PresentInfo));
 

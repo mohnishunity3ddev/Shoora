@@ -4,19 +4,20 @@
 #include "vulkan_descriptor_sets.h"
 
 b32
-CheckSupportedPresentModes(const shoora_vulkan_context *Context, VkPresentModeKHR DesiredPresentMode)
+CheckSupportedPresentModes(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
+                           VkPresentModeKHR DesiredPresentMode)
 {
     b32 Result = false;
     u32 AvailablePresentModeCount = 0;
-    VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(Context->Device.PhysicalDevice,
-                                                       Context->Swapchain.Surface,
+    VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(RenderDevice->PhysicalDevice,
+                                                       Swapchain->Surface,
                                                        &AvailablePresentModeCount, 0));
 
     ASSERT(AvailablePresentModeCount > 0 && AvailablePresentModeCount <= 16);
 
     VkPresentModeKHR SupportedPresentModes[16];
-    VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(Context->Device.PhysicalDevice,
-                                                       Context->Swapchain.Surface,
+    VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(RenderDevice->PhysicalDevice,
+                                                       Swapchain->Surface,
                                                        &AvailablePresentModeCount, SupportedPresentModes));
 
     for(u32 Index = 0;
@@ -35,10 +36,11 @@ CheckSupportedPresentModes(const shoora_vulkan_context *Context, VkPresentModeKH
 }
 
 inline void
-GetSurfaceCapabilities(shoora_vulkan_context *Context, VkSurfaceCapabilitiesKHR *SurfaceCapabilities)
+GetSurfaceCapabilities(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
+                       VkSurfaceCapabilitiesKHR *SurfaceCapabilities)
 {
-    VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(Context->Device.PhysicalDevice,
-                                                       Context->Swapchain.Surface,
+    VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(RenderDevice->PhysicalDevice,
+                                                       Swapchain->Surface,
                                                        SurfaceCapabilities));
 }
 
@@ -220,39 +222,37 @@ SelectImageFormats(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *
 }
 
 void
-PrepareForSwapchainCreation(shoora_vulkan_context *Context,
-                            shoora_vulkan_swapchain_create_info *ShooraSwapchainInfo, u32 UniformDataSize)
+PrepareForSwapchainCreation(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
+                            shoora_vulkan_swapchain_create_info *ShooraSwapchainInfo)
 {
-    if (!CheckSupportedPresentModes(Context, ShooraSwapchainInfo->DesiredPresentMode))
+    if (!CheckSupportedPresentModes(RenderDevice, Swapchain, ShooraSwapchainInfo->DesiredPresentMode))
     {
         // NOTE: Vulkan Makes sure Atleast FIFO is supported!
         ShooraSwapchainInfo->DesiredPresentMode = VK_PRESENT_MODE_FIFO_KHR;
     }
-    Context->Swapchain.PresentMode = ShooraSwapchainInfo->DesiredPresentMode;
-    Context->Swapchain.UniformDataSize = UniformDataSize;
+    Swapchain->PresentMode = ShooraSwapchainInfo->DesiredPresentMode;
 
-    GetSurfaceCapabilities(Context, &Context->Swapchain.SurfaceCapabilities);
-    SelectSwapchainImageCount(&Context->Swapchain);
-    SelectSwapchainSize(&Context->Swapchain);
-    SelectDesiredImageUsage(&Context->Swapchain, ShooraSwapchainInfo->DesiredImageUsages);
-    SelectImageTransforms(&Context->Swapchain, ShooraSwapchainInfo->DesiredTransformFlagBits);
-    SelectImageFormats(&Context->Device, &Context->Swapchain, ShooraSwapchainInfo->DesiredImageFormat,
+    GetSurfaceCapabilities(RenderDevice, Swapchain, &Swapchain->SurfaceCapabilities);
+    SelectSwapchainImageCount(Swapchain);
+    SelectSwapchainSize(Swapchain);
+    SelectDesiredImageUsage(Swapchain, ShooraSwapchainInfo->DesiredImageUsages);
+    SelectImageTransforms(Swapchain, ShooraSwapchainInfo->DesiredTransformFlagBits);
+    SelectImageFormats(RenderDevice, Swapchain, ShooraSwapchainInfo->DesiredImageFormat,
                        ShooraSwapchainInfo->DesiredImageColorSpace);
 }
 
 void
-GetSwapchainImageHandles(shoora_vulkan_context *Context)
+GetSwapchainImageHandles(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain)
 {
     u32 SwapchainImageCount = 0;
-    VK_CHECK(vkGetSwapchainImagesKHR(Context->Device.LogicalDevice, Context->Swapchain.SwapchainHandle,
-                                     &SwapchainImageCount, 0));
+    VK_CHECK(vkGetSwapchainImagesKHR(RenderDevice->LogicalDevice, Swapchain->Handle, &SwapchainImageCount, 0));
 
     // NOTE: Drivers can produce more images that were actually requested during swapchain creation.
-    ASSERT((SwapchainImageCount >= Context->Swapchain.ImageCount) &&
-           (SwapchainImageCount <= ARRAY_SIZE(Context->Swapchain.Images)));
+    ASSERT((SwapchainImageCount >= Swapchain->ImageCount) &&
+           (SwapchainImageCount <= ARRAY_SIZE(Swapchain->Images)));
 
-    VK_CHECK(vkGetSwapchainImagesKHR(Context->Device.LogicalDevice, Context->Swapchain.SwapchainHandle,
-                                     &SwapchainImageCount, Context->Swapchain.Images));
+    VK_CHECK(vkGetSwapchainImagesKHR(RenderDevice->LogicalDevice, Swapchain->Handle,
+                                     &SwapchainImageCount, Swapchain->Images));
     LogOutput(LogType_Info, "Got the Swapchain Image Handles!\n");
 }
 
@@ -392,7 +392,8 @@ FreeDrawCommandBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapcha
         ++Index)
     {
         shoora_vulkan_command_buffer_handle *ShuCmdBuffer = &Swapchain->DrawCommandBuffers[Index];
-        ASSERT(!ShuCmdBuffer->IsRecording);
+        // TODO)): Complete command buffer status tracking. Then add this assert afterwards!
+        // ASSERT(!ShuCmdBuffer->IsRecording);
         BuffersToFree[Index] = ShuCmdBuffer->Handle;
         ShuCmdBuffer->CommandPool = nullptr;
     }
@@ -404,19 +405,77 @@ FreeDrawCommandBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapcha
 }
 
 void
-CreateSwapchain(shoora_vulkan_context *Context, u32 WindowWidth, u32 WindowHeight,
-                shoora_vulkan_swapchain_create_info *ShooraSwapchainInfo, size_t UniformDataSize)
+WindowResized(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, VkRenderPass RenderPass,
+              vec2 ScreenDim)
 {
-    VkSwapchainKHR OldSwapchain = Context->Swapchain.SwapchainHandle;
-    b32 IsWindowResized = OldSwapchain != VK_NULL_HANDLE;
-    if(!IsWindowResized)
+    VK_CHECK(vkDeviceWaitIdle(RenderDevice->LogicalDevice));
+
+
+    Swapchain->ImageDimensions = {(u32)ScreenDim.x, (u32)ScreenDim.y};
+
+    VkSwapchainCreateInfoKHR CreateInfo = {VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR};
+    CreateInfo.pNext = 0;
+    CreateInfo.flags = 0;
+    CreateInfo.surface = Swapchain->Surface;
+    CreateInfo.minImageCount = Swapchain->ImageCount;
+    CreateInfo.imageFormat = Swapchain->SurfaceFormat.format;
+    CreateInfo.imageColorSpace = Swapchain->SurfaceFormat.colorSpace;
+    CreateInfo.imageExtent = Swapchain->ImageDimensions;
+
+    // NOTE: More than 1 if we are doing layered/stereoscopic rendering
+    CreateInfo.imageArrayLayers = 1;
+
+    CreateInfo.imageUsage = Swapchain->ImageUsageFlags;
+    CreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    CreateInfo.queueFamilyIndexCount = 0;
+    CreateInfo.pQueueFamilyIndices = 0;
+    CreateInfo.preTransform = Swapchain->TransformFlagBits;
+
+    // TODO)): Read More about this!
+    CreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+
+    CreateInfo.presentMode = Swapchain->PresentMode;
+    CreateInfo.clipped = VK_TRUE;
+
+    VkSwapchainKHR OldSwapchain = Swapchain->Handle;
+    if(OldSwapchain != VK_NULL_HANDLE)
     {
-        ASSERT(ShooraSwapchainInfo != nullptr);
-        PrepareForSwapchainCreation(Context, ShooraSwapchainInfo, UniformDataSize);
+        CreateInfo.oldSwapchain = OldSwapchain;
     }
 
-    shoora_vulkan_swapchain *SwapchainInfo = &Context->Swapchain;
-    SwapchainInfo->ImageDimensions = {WindowWidth, WindowHeight};
+    VK_CHECK(vkCreateSwapchainKHR(RenderDevice->LogicalDevice, &CreateInfo, 0, &Swapchain->Handle));
+
+    if(Swapchain->Handle == VK_NULL_HANDLE)
+    {
+        LogOutput(LogType_Error, "There was a problem creating the swapchain!\n");
+    }
+
+    // DestroySwapchainUniformResources(&Context->Device, &Context->Swapchain);
+    DestroySwapchainFramebuffers(RenderDevice, Swapchain);
+    DestroySwapchainImageViews(RenderDevice, Swapchain);
+    FreeDrawCommandBuffers(RenderDevice, Swapchain);
+    vkDestroySwapchainKHR(RenderDevice->LogicalDevice, OldSwapchain, 0);
+
+    LogOutput(LogType_Warn, "Destroyed Old Swapchain!\n");
+
+    GetSwapchainImageHandles(RenderDevice, Swapchain);
+    CreateSwapchainImageViews(RenderDevice, Swapchain);
+    ASSERT(RenderPass != VK_NULL_HANDLE);
+    CreateSwapchainFramebuffers(RenderDevice, Swapchain, RenderPass);
+
+    AllocateDrawCommandBuffers(RenderDevice, Swapchain);
+
+    LogOutput(LogType_Info, "Swapchain Created!\n");
+}
+
+void
+CreateSwapchain(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, vec2 ScreenDim,
+                shoora_vulkan_swapchain_create_info *ShooraSwapchainInfo)
+{
+    PrepareForSwapchainCreation(RenderDevice, Swapchain, ShooraSwapchainInfo);
+
+    shoora_vulkan_swapchain *SwapchainInfo = Swapchain;
+    SwapchainInfo->ImageDimensions = {(u32)ScreenDim.x, (u32)ScreenDim.y};
 
     VkSwapchainCreateInfoKHR CreateInfo = {VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR};
     CreateInfo.pNext = 0;
@@ -442,42 +501,18 @@ CreateSwapchain(shoora_vulkan_context *Context, u32 WindowWidth, u32 WindowHeigh
     CreateInfo.presentMode = SwapchainInfo->PresentMode;
     CreateInfo.clipped = VK_TRUE;
 
-    CreateInfo.oldSwapchain = OldSwapchain;
-
-    VK_CHECK(vkCreateSwapchainKHR(Context->Device.LogicalDevice, &CreateInfo, 0,
-                                  &Context->Swapchain.SwapchainHandle));
-
-    // TODO)): Maybe this has been set before! Check this!
-    Context->Swapchain.SurfaceFormat = SwapchainInfo->SurfaceFormat;
-
-    if(Context->Swapchain.SwapchainHandle == VK_NULL_HANDLE)
+    VK_CHECK(vkCreateSwapchainKHR(RenderDevice->LogicalDevice, &CreateInfo, 0,
+                                  &Swapchain->Handle));
+    if(Swapchain->Handle == VK_NULL_HANDLE)
     {
         LogOutput(LogType_Error, "There was a problem creating the swapchain!\n");
     }
 
-    if(IsWindowResized)
-    {
-        // DestroySwapchainUniformResources(&Context->Device, &Context->Swapchain);
-        DestroySwapchainFramebuffers(&Context->Device, &Context->Swapchain);
-        DestroySwapchainImageViews(&Context->Device, &Context->Swapchain);
-        FreeDrawCommandBuffers(&Context->Device, &Context->Swapchain);
-        vkDestroySwapchainKHR(Context->Device.LogicalDevice, OldSwapchain, 0);
+    Swapchain->SurfaceFormat = SwapchainInfo->SurfaceFormat;
 
-        LogOutput(LogType_Warn, "Destroyed Old Swapchain!\n");
-    }
-
-    GetSwapchainImageHandles(Context);
-    CreateSwapchainImageViews(&Context->Device, &Context->Swapchain);
-
-    if(IsWindowResized && (Context->GraphicsRenderPass != VK_NULL_HANDLE))
-    {
-        CreateSwapchainFramebuffers(&Context->Device, &Context->Swapchain, Context->GraphicsRenderPass);
-        // TODO)): Do this!!
-        // CreateSwapchainUniformResources(&Context->Device, &Context->Swapchain,
-        //                                 Context->Swapchain.ImageCount, Context->Swapchain.UniformDataSize);
-    }
-
-    AllocateDrawCommandBuffers(&Context->Device, &Context->Swapchain);
+    GetSwapchainImageHandles(RenderDevice, Swapchain);
+    CreateSwapchainImageViews(RenderDevice, Swapchain);
+    AllocateDrawCommandBuffers(RenderDevice, Swapchain);
 
     LogOutput(LogType_Info, "Swapchain Created!\n");
 }
@@ -505,7 +540,7 @@ AcquireNextSwapchainImage(shoora_vulkan_device *RenderDevice, shoora_vulkan_swap
 
     // NOTE: We can wait upto 2 seocnds to acquire the new swapchain image, if not throw an error.
     VkResult AcquireResult = vkAcquireNextImageKHR(RenderDevice->LogicalDevice,
-                                                   Swapchain->SwapchainHandle, NANOSECONDS(2),
+                                                   Swapchain->Handle, NANOSECONDS(2),
                                                    SignalSemaphore->Handle, VK_NULL_HANDLE, &ImageIndex);
     if((AcquireResult != VK_SUCCESS) &&
        (AcquireResult != VK_SUBOPTIMAL_KHR))
@@ -592,6 +627,6 @@ DestroySwapchain(shoora_vulkan_context *Context)
 {
     DestroySwapchainFramebuffers(&Context->Device, &Context->Swapchain);
     DestroySwapchainImageViews(&Context->Device, &Context->Swapchain);
-    vkDestroySwapchainKHR(Context->Device.LogicalDevice, Context->Swapchain.SwapchainHandle, 0);
+    vkDestroySwapchainKHR(Context->Device.LogicalDevice, Context->Swapchain.Handle, 0);
     LogOutput(LogType_Warn, "Destroyed Swapchain!\n");
 }
