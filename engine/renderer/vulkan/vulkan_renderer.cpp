@@ -29,8 +29,8 @@ struct uniform_data
 {
     vec3 Color;
 };
-
 uniform_data UniformData = {};
+static b32 WireframeMode = true;
 
 static exit_application *QuitApplication;
 
@@ -132,11 +132,11 @@ void DrawFrameInVulkan()
         &Context->Swapchain.DrawCommandBuffers[ImageIndex];
     VkCommandBuffer DrawCmdBuffer = pDrawCmdBuffer->Handle;
 
-    f32 RedColor = (f32)(Context->FrameCounter % 600) / 600.0f;
-    f32 GreenColor = (f32)(Context->FrameCounter % 1200) / 1200.0f;
-    f32 BlueColor = (f32)(Context->FrameCounter % 900) / 900.0f;
+    // f32 RedColor = (f32)(Context->FrameCounter % 600) / 600.0f;
+    // f32 GreenColor = (f32)(Context->FrameCounter % 1200) / 1200.0f;
+    // f32 BlueColor = (f32)(Context->FrameCounter % 900) / 900.0f;
 
-    UniformData.Color = Vec3(RedColor, GreenColor, BlueColor);
+    UniformData.Color = Vec3(1, 1, 0);
     memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &UniformData,
            sizeof(UniformData));
 
@@ -177,30 +177,18 @@ void DrawFrameInVulkan()
                                 nullptr);
         vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->Pipeline.GraphicsPipeline);
 
-#if 0
-        b32 WireframeMode = ((Context->FrameCounter / 600) % 2);
-
-        if(WireframeMode)
-        {
-            vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            Context->Pipeline.WireframeGraphicsPipeline);
-        }
-        else
-        {
-            vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                              Context->Pipeline.GraphicsPipeline);
-        }
-#endif
-
         VkDeviceSize offsets[1] = {0};
         vkCmdBindVertexBuffers(DrawCmdBuffer, 0, 1, &Context->VertexBuffer.Handle, offsets);
         vkCmdBindIndexBuffer(DrawCmdBuffer, Context->IndexBuffer.Handle, 0, VK_INDEX_TYPE_UINT32);
 
         vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(Indices), 1, 0, 0, 1);
 
-        // vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-        //                   Context->Pipeline.WireframeGraphicsPipeline);
-        // vkCmdDrawIndexed(DrawCmdBuffer, sizeof(Indices), 1, 0, 0, 1);
+        if(WireframeMode)
+        {
+            vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            Context->Pipeline.WireframeGraphicsPipeline);
+            vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(Indices), 1, 0, 0, 1);
+        }
 
         vkCmdEndRenderPass(DrawCmdBuffer);
     VK_CHECK(vkEndCommandBuffer(DrawCmdBuffer));
