@@ -8,23 +8,24 @@
 
 static shoora_vulkan_context *Context = nullptr;
 // NOTE: Triangle
-// static shoora_vertex_info Vertices[] =
-// {
-//     {.VertexPos = Vec2( 0.0f,  0.5f), .VertexColor = Vec3(1, 0, 0)},
-//     {.VertexPos = Vec2( 0.5f, -0.5f), .VertexColor = Vec3(0, 1, 0)},
-//     {.VertexPos = Vec2(-0.5f, -0.5f), .VertexColor = Vec3(0, 0, 1)}
-// };
-// static u32 Indices[] = {0, 1, 2, 0, 1, 3};
+static shoora_vertex_info TriangleVertices[] =
+{
+    {.VertexPos = Vec2( 0.0f,  0.5f), .VertexColor = Vec3(1, 0, 0)},
+    {.VertexPos = Vec2( 0.5f, -0.5f), .VertexColor = Vec3(0, 1, 0)},
+    {.VertexPos = Vec2(-0.5f, -0.5f), .VertexColor = Vec3(0, 0, 1)}
+};
+static u32 TriangleIndices[] = {0, 1, 2};
 
 // NOTE: Rectangle
-static shoora_vertex_info Vertices[] =
+static shoora_vertex_info RectVertices[] =
 {
     {.VertexPos = Vec2( 0.5f,  0.5f), .VertexColor = Vec3(1, 1, 0)},
     {.VertexPos = Vec2( 0.5f, -0.5f), .VertexColor = Vec3(0, 1, .32f)},
     {.VertexPos = Vec2(-0.5f, -0.5f), .VertexColor = Vec3(0.32f, 1, 1)},
     {.VertexPos = Vec2(-0.5f,  0.5f), .VertexColor = Vec3(0.32f, 0.21f, 0.66f)},
 };
-static u32 Indices[] = {0, 1, 2, 0, 2, 3};
+static u32 RectIndices[] = {0, 1, 2, 0, 2, 3};
+
 struct uniform_data
 {
     vec3 Color;
@@ -71,7 +72,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     CreateRenderPass(RenderDevice, Swapchain, &VulkanContext->GraphicsRenderPass);
     CreateSwapchainFramebuffers(RenderDevice, Swapchain, VulkanContext->GraphicsRenderPass);
 
-    CreateVertexBuffer(RenderDevice, Vertices, ARRAY_SIZE(Vertices), Indices, ARRAY_SIZE(Indices),
+    CreateVertexBuffer(RenderDevice, RectVertices, ARRAY_SIZE(RectVertices), RectIndices, ARRAY_SIZE(RectIndices),
                        &VulkanContext->VertexBuffer, &VulkanContext->IndexBuffer);
 
     CreateSwapchainUniformResources(RenderDevice, Swapchain, sizeof(uniform_data), VulkanContext->Pipeline.GraphicsPipelineLayout);
@@ -146,7 +147,7 @@ void DrawFrameInVulkan()
     VkCommandBufferBeginInfo DrawCmdBufferBeginInfo = {};
     DrawCmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     VkClearValue ClearValues[1];
-    ClearValues[0].color = { {0.0f, 0.0f, 0.2f, 1.0f} };
+    ClearValues[0].color = {{0.2f, 0.3f, 0.3f, 1.0f}};
     VkRect2D RenderArea = {};
     RenderArea.offset = {0, 0};
     RenderArea.extent = Context->Swapchain.ImageDimensions;
@@ -181,13 +182,13 @@ void DrawFrameInVulkan()
         vkCmdBindVertexBuffers(DrawCmdBuffer, 0, 1, &Context->VertexBuffer.Handle, offsets);
         vkCmdBindIndexBuffer(DrawCmdBuffer, Context->IndexBuffer.Handle, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(Indices), 1, 0, 0, 1);
+        vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(RectIndices), 1, 0, 0, 1);
 
         if(WireframeMode)
         {
             vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             Context->Pipeline.WireframeGraphicsPipeline);
-            vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(Indices), 1, 0, 0, 1);
+            vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(RectIndices), 1, 0, 0, 1);
         }
 
         vkCmdEndRenderPass(DrawCmdBuffer);
