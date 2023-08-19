@@ -2,6 +2,124 @@
 #include "vulkan_image.h"
 #include <stb_image.h>
 
+VkDescriptorSetLayoutBinding
+CreateDescriptorSetLayoutBinding(u32 BindingIndex, VkDescriptorType DescriptorType, u32 DescriptorCount,
+                                 VkShaderStageFlags ConsumingShaderStage)
+{
+    VkDescriptorSetLayoutBinding LayoutBinding = {};
+    LayoutBinding.binding = BindingIndex;
+    LayoutBinding.descriptorType = DescriptorType;
+    LayoutBinding.descriptorCount = DescriptorCount;
+    LayoutBinding.stageFlags = ConsumingShaderStage;
+
+    return LayoutBinding;
+}
+
+void
+CreatePipelineLayout(shoora_vulkan_device *RenderDevice, u32 SetLayoutCount, VkDescriptorSetLayout *pSetLayouts,
+                     u32 PushConstantCount, VkPushConstantRange *pPushConstants, VkPipelineLayout *pPipelineLayout)
+{
+    VkPipelineLayoutCreateInfo PipelineLayoutCreateInfo = {};
+    PipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    PipelineLayoutCreateInfo.setLayoutCount = SetLayoutCount;
+    PipelineLayoutCreateInfo.pSetLayouts = pSetLayouts;
+    PipelineLayoutCreateInfo.pushConstantRangeCount = PushConstantCount;
+    PipelineLayoutCreateInfo.pPushConstantRanges = pPushConstants;
+
+    VK_CHECK(vkCreatePipelineLayout(RenderDevice->LogicalDevice, &PipelineLayoutCreateInfo, nullptr,
+                                    pPipelineLayout));
+}
+
+void
+CreateDescriptorSetLayout(shoora_vulkan_device *RenderDevice, VkDescriptorSetLayoutBinding *Bindings,
+                          u32 BindingCount, VkDescriptorSetLayout *pSetLayout)
+{
+    VkDescriptorSetLayoutCreateInfo CreateInfo = {};
+    CreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    CreateInfo.bindingCount = BindingCount;
+    CreateInfo.pBindings = Bindings;
+    VK_CHECK(vkCreateDescriptorSetLayout(RenderDevice->LogicalDevice, &CreateInfo, nullptr, pSetLayout));
+}
+
+void
+CreateDescriptorPool(shoora_vulkan_device *RenderDevice, VkDescriptorType DescriptorType, u32 DescriptorSetCount,
+                     VkDescriptorPool *pDescriptorPool)
+{
+    VkDescriptorPoolSize PoolSizes[1];
+    PoolSizes[0].type = DescriptorType;
+    PoolSizes[0].descriptorCount = DescriptorSetCount;
+
+    VkDescriptorPoolCreateInfo PoolCreateInfo = {};
+    PoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    PoolCreateInfo.pNext = nullptr;
+    PoolCreateInfo.flags = 0;
+    PoolCreateInfo.maxSets = DescriptorSetCount;
+    PoolCreateInfo.poolSizeCount = ARRAY_SIZE(PoolSizes);
+    PoolCreateInfo.pPoolSizes = PoolSizes;
+
+    VK_CHECK(vkCreateDescriptorPool(RenderDevice->LogicalDevice, &PoolCreateInfo, nullptr, pDescriptorPool));
+}
+
+void
+CreateDescriptorSets(shoora_vulkan_device *RenderDevice, VkDescriptorPool *pPool, VkDescriptorSetLayout *pLayout,
+                     u32 Count, VkDescriptorSet *pSets, shoora_vulkan_buffer *pBuffers, VkDescriptorType Type,
+                     u32 BindingIndex)
+{
+    for(u32 Index = 0; Index < Count; ++Index)
+    {
+        VkDescriptorSetAllocateInfo AllocInfo = {};
+        AllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        AllocInfo.pNext = nullptr;
+        AllocInfo.descriptorPool = *pPool;
+        AllocInfo.descriptorSetCount = 1;
+        AllocInfo.pSetLayouts = pLayout;
+
+        VK_CHECK(vkAllocateDescriptorSets(RenderDevice->LogicalDevice, &AllocInfo, &pSets[Index]));
+
+        VkWriteDescriptorSet WriteSet = {};
+
+        VkDescriptorBufferInfo BufferInfo = {};
+        BufferInfo.buffer = pBuffers[Index].Handle;
+        BufferInfo.range = pBuffers[Index].MemSize;
+
+        WriteSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        WriteSet.dstSet = pSets[Index];
+        WriteSet.descriptorCount = 1;
+        WriteSet.descriptorType = Type;
+        WriteSet.pBufferInfo = &BufferInfo;
+        WriteSet.dstBinding = BindingIndex;
+
+        vkUpdateDescriptorSets(RenderDevice->LogicalDevice, 1, &WriteSet, 0, nullptr);
+    }
+}
+
+// TODO)): Create one merged descirptor which encapsulates data for all the uniform buffers we need.
+// TODO)): Remove this notion of UniformBufferCount.
+void
+CreateUniformDescriptors(shoora_vulkan_device *RenderDevice, VkShaderStageFlags ConsumingShaderStage,
+                         VkDescriptorSetLayout *pSetLayout, u32 PushConstantCount,
+                         VkPushConstantRange *pPushConstants, u32 UniformBufferCount,
+                         shoora_vulkan_buffer *pUniformBuffers, VkDescriptorSet *pUniformDescriptors,
+                         VkPipelineLayout *pPipelineLayout, VkDescriptorPool *pDescriptorPool)
+{
+    auto UniformLayoutBinding = CreateDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+                                                                 ConsumingShaderStage);
+    CreateDescriptorSetLayout(RenderDevice, &UniformLayoutBinding, 1, pSetLayout);
+    CreatePipelineLayout(RenderDevice, 1, pSetLayout, PushConstantCount, pPushConstants, pPipelineLayout);
+    CreateDescriptorPool(RenderDevice, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, UniformBufferCount, pDescriptorPool);
+
+    CreateDescriptorSets(RenderDevice, pDescriptorPool, pSetLayout, UniformBufferCount, pUniformDescriptors,
+                         pUniformBuffers, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0);
+}
+
+
+
+
+//? <---------------------------------------------------------------------------------------------------------------->
+//  ------------------------------------------------------------------------------------------------------------------
+//? <---------------------------------------------------HELPERS------------------------------------------------------>
+// -------------------------------------------------------------------------------------------------------------------
+//? <---------------------------------------------------------------------------------------------------------------->
 #if 0
 // NOTE: descriptors represent shader resources. THey are organized into sets.
 // their contents are specified by descirptor set layout.

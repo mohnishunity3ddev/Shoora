@@ -319,7 +319,7 @@ OutputToConsole(LogType LogType, const char *Message)
 void
 LogOutput(LogType LogType, const char *Format, ...)
 {
-    char Buffer[1024];
+    char Buffer[4096];
     i32 Length = 0;
 
     if(Format)

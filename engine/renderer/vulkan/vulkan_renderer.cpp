@@ -4,6 +4,7 @@
 #include "vulkan_render_pass.h"
 #include "vulkan_pipeline.h"
 #include "vulkan_buffer.h"
+#include <memory.h>
 
 static shoora_vulkan_context *Context = nullptr;
 // NOTE: Triangle
@@ -24,6 +25,12 @@ static shoora_vertex_info Vertices[] =
     {.VertexPos = Vec2(-0.5f,  0.5f), .VertexColor = Vec3(0.32f, 0.21f, 0.66f)},
 };
 static u32 Indices[] = {0, 1, 2, 0, 2, 3};
+struct uniform_data
+{
+    vec3 Color;
+};
+
+uniform_data UniformData = {};
 
 static exit_application *QuitApplication;
 
@@ -52,19 +59,25 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     SetupDebugCallbacks(VulkanContext, DebugCreateInfo);
 #endif
 
-    CreatePresentationSurface(VulkanContext, &VulkanContext->Swapchain.Surface);
+    shoora_vulkan_device *RenderDevice = &VulkanContext->Device;
+    shoora_vulkan_swapchain *Swapchain = &VulkanContext->Swapchain;
+
+    CreatePresentationSurface(VulkanContext, &Swapchain->Surface);
     CreateDeviceAndQueues(VulkanContext, &DeviceCreateInfo);
-    volkLoadDevice(VulkanContext->Device.LogicalDevice);
-    CreateCommandPools(&VulkanContext->Device);
+    volkLoadDevice(RenderDevice->LogicalDevice);
+    CreateCommandPools(RenderDevice);
 
-    CreateSwapchain(VulkanContext, AppInfo->WindowWidth, AppInfo->WindowHeight, &SwapchainInfo);
-    CreateRenderPass(&VulkanContext->Device, &VulkanContext->Swapchain, &VulkanContext->GraphicsRenderPass);
-    CreateSwapchainFramebuffers(&VulkanContext->Device, &VulkanContext->Swapchain,
-                                VulkanContext->GraphicsRenderPass);
+    CreateSwapchain(VulkanContext, AppInfo->WindowWidth, AppInfo->WindowHeight, &SwapchainInfo, sizeof(uniform_data));
+    CreateRenderPass(RenderDevice, Swapchain, &VulkanContext->GraphicsRenderPass);
+    CreateSwapchainFramebuffers(RenderDevice, Swapchain, VulkanContext->GraphicsRenderPass);
 
-    CreateGraphicsPipeline(VulkanContext, "shaders/spirv/triangle.vert.spv", "shaders/spirv/triangle.frag.spv");
-    CreateVertexBuffer(&VulkanContext->Device, Vertices, ARRAY_SIZE(Vertices), Indices, ARRAY_SIZE(Indices),
+    CreateVertexBuffer(RenderDevice, Vertices, ARRAY_SIZE(Vertices), Indices, ARRAY_SIZE(Indices),
                        &VulkanContext->VertexBuffer, &VulkanContext->IndexBuffer);
+
+    CreateSwapchainUniformResources(RenderDevice, Swapchain, sizeof(uniform_data), VulkanContext->Pipeline.GraphicsPipelineLayout);
+    CreateGraphicsPipeline(VulkanContext, "shaders/spirv/triangle.vert.spv", "shaders/spirv/triangle.frag.spv",
+                           &Swapchain->UniformPipelineLayout);
+    CreateWireframePipeline(VulkanContext, "shaders/spirv/wireframe.vert.spv", "shaders/spirv/wireframe.frag.spv");
     CreateSynchronizationPrimitives(&VulkanContext->Device, &VulkanContext->SyncHandles);
 
     AppInfo->WindowResizeCallback = &WindowResizedCallback;
@@ -114,9 +127,18 @@ void DrawFrameInVulkan()
 
     AcquireNextSwapchainImage(&Context->Device, &Context->Swapchain, pCurrentFrameImageAvlSemaphore);
 
+    u32 ImageIndex = Context->Swapchain.CurrentImageIndex;
     shoora_vulkan_command_buffer_handle *pDrawCmdBuffer =
-        &Context->Swapchain.DrawCommandBuffers[Context->Swapchain.CurrentImageIndex];
+        &Context->Swapchain.DrawCommandBuffers[ImageIndex];
     VkCommandBuffer DrawCmdBuffer = pDrawCmdBuffer->Handle;
+
+    f32 RedColor = (f32)(Context->FrameCounter % 600) / 600.0f;
+    f32 GreenColor = (f32)(Context->FrameCounter % 1200) / 1200.0f;
+    f32 BlueColor = (f32)(Context->FrameCounter % 900) / 900.0f;
+
+    UniformData.Color = Vec3(RedColor, GreenColor, BlueColor);
+    memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &UniformData,
+           sizeof(UniformData));
 
     VK_CHECK(vkResetFences(Context->Device.LogicalDevice, 1, &pCurrentFrameFence->Handle));
     VK_CHECK(vkResetCommandBuffer(DrawCmdBuffer, 0));
@@ -132,7 +154,7 @@ void DrawFrameInVulkan()
     RenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     RenderPassBeginInfo.pNext = nullptr;
     RenderPassBeginInfo.renderPass = Context->GraphicsRenderPass;
-    RenderPassBeginInfo.framebuffer = Context->Swapchain.Framebuffers[Context->Swapchain.CurrentImageIndex];
+    RenderPassBeginInfo.framebuffer = Context->Swapchain.ImageFramebuffers[ImageIndex];
     RenderPassBeginInfo.renderArea = RenderArea;
     RenderPassBeginInfo.clearValueCount = 1;
     RenderPassBeginInfo.pClearValues = ClearValues;
@@ -149,6 +171,13 @@ void DrawFrameInVulkan()
         Scissor.extent = Context->Swapchain.ImageDimensions;
         vkCmdSetScissor(DrawCmdBuffer, 0, 1, &Scissor);
 
+        vkCmdBindDescriptorSets(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                Context->Swapchain.UniformPipelineLayout, 0, 1,
+                                &Context->Swapchain.UniformDescriptorSets[ImageIndex], 0,
+                                nullptr);
+        vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->Pipeline.GraphicsPipeline);
+
+#if 0
         b32 WireframeMode = ((Context->FrameCounter / 600) % 2);
 
         if(WireframeMode)
@@ -161,12 +190,18 @@ void DrawFrameInVulkan()
             vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                               Context->Pipeline.GraphicsPipeline);
         }
+#endif
 
         VkDeviceSize offsets[1] = {0};
-        vkCmdBindVertexBuffers(DrawCmdBuffer, 0, 1, &Context->VertexBuffer.Buffer, offsets);
-        vkCmdBindIndexBuffer(DrawCmdBuffer, Context->IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindVertexBuffers(DrawCmdBuffer, 0, 1, &Context->VertexBuffer.Handle, offsets);
+        vkCmdBindIndexBuffer(DrawCmdBuffer, Context->IndexBuffer.Handle, 0, VK_INDEX_TYPE_UINT32);
 
         vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(Indices), 1, 0, 0, 1);
+
+        // vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        //                   Context->Pipeline.WireframeGraphicsPipeline);
+        // vkCmdDrawIndexed(DrawCmdBuffer, sizeof(Indices), 1, 0, 0, 1);
+
         vkCmdEndRenderPass(DrawCmdBuffer);
     VK_CHECK(vkEndCommandBuffer(DrawCmdBuffer));
 
@@ -204,16 +239,19 @@ void
 DestroyVulkanRenderer(shoora_vulkan_context *Context)
 {
     VK_CHECK(vkDeviceWaitIdle(Context->Device.LogicalDevice));
+    shoora_vulkan_device *RenderDevice = &Context->Device;
 
-    DestroyAllSynchronizationPrimitives(&Context->Device, &Context->SyncHandles);
-    DestroyVertexBuffer(&Context->Device, &Context->VertexBuffer, &Context->IndexBuffer);
+    DestroySwapchainUniformResources(RenderDevice, &Context->Swapchain);
+
+    DestroyAllSynchronizationPrimitives(RenderDevice, &Context->SyncHandles);
+    DestroyVertexBuffer(RenderDevice, &Context->VertexBuffer, &Context->IndexBuffer);
     // DestroyAllSemaphores(Context);
     // DestroyAllFences(Context);
-    DestroyPipeline(&Context->Device, &Context->Pipeline);
-    DestroyRenderPass(&Context->Device, Context->GraphicsRenderPass);
+    DestroyPipelines(RenderDevice, &Context->Pipeline);
+    DestroyRenderPass(RenderDevice, Context->GraphicsRenderPass);
     DestroySwapchain(Context);
     DestroyPresentationSurface(Context);
-    DestroyLogicalDevice(&Context->Device);
+    DestroyLogicalDevice(RenderDevice);
 #ifdef _DEBUG
     DestroyDebugUtilHandles(Context);
 #endif

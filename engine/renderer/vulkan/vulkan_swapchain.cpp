@@ -1,6 +1,7 @@
 #include "vulkan_swapchain.h"
 #include "platform/platform.h"
 #include "vulkan_image.h"
+#include "vulkan_descriptor_sets.h"
 
 b32
 CheckSupportedPresentModes(const shoora_vulkan_context *Context, VkPresentModeKHR DesiredPresentMode)
@@ -220,7 +221,7 @@ SelectImageFormats(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *
 
 void
 PrepareForSwapchainCreation(shoora_vulkan_context *Context,
-                            shoora_vulkan_swapchain_create_info *ShooraSwapchainInfo)
+                            shoora_vulkan_swapchain_create_info *ShooraSwapchainInfo, u32 UniformDataSize)
 {
     if (!CheckSupportedPresentModes(Context, ShooraSwapchainInfo->DesiredPresentMode))
     {
@@ -228,6 +229,7 @@ PrepareForSwapchainCreation(shoora_vulkan_context *Context,
         ShooraSwapchainInfo->DesiredPresentMode = VK_PRESENT_MODE_FIFO_KHR;
     }
     Context->Swapchain.PresentMode = ShooraSwapchainInfo->DesiredPresentMode;
+    Context->Swapchain.UniformDataSize = UniformDataSize;
 
     GetSurfaceCapabilities(Context, &Context->Swapchain.SurfaceCapabilities);
     SelectSwapchainImageCount(&Context->Swapchain);
@@ -290,7 +292,7 @@ CreateSwapchainImageViews(shoora_vulkan_device *RenderDevice, shoora_vulkan_swap
 void
 CreateSwapchainFramebuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, VkRenderPass RenderPass)
 {
-    ASSERT(Swapchain->ImageCount <= ARRAY_SIZE(Swapchain->Framebuffers))
+    ASSERT(Swapchain->ImageCount <= ARRAY_SIZE(Swapchain->ImageFramebuffers))
 
     for(u32 Index = 0;
         Index < Swapchain->ImageCount;
@@ -308,7 +310,7 @@ CreateSwapchainFramebuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_sw
         CreateInfo.layers = 1;
 
         VK_CHECK(vkCreateFramebuffer(RenderDevice->LogicalDevice, &CreateInfo, nullptr,
-                                     &Swapchain->Framebuffers[Index]));
+                                     &Swapchain->ImageFramebuffers[Index]));
 
         LogOutput(LogType_Info, "Created Swapchain Framebuffer[%d]\n", Index);
     }
@@ -321,7 +323,7 @@ DestroySwapchainFramebuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_s
         Index < Swapchain->ImageCount;
         ++Index)
     {
-        VkFramebuffer FrameBuffer = Swapchain->Framebuffers[Index];
+        VkFramebuffer FrameBuffer = Swapchain->ImageFramebuffers[Index];
         ASSERT(FrameBuffer != VK_NULL_HANDLE);
         vkDestroyFramebuffer(RenderDevice->LogicalDevice, FrameBuffer, nullptr);
     }
@@ -403,14 +405,14 @@ FreeDrawCommandBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapcha
 
 void
 CreateSwapchain(shoora_vulkan_context *Context, u32 WindowWidth, u32 WindowHeight,
-                shoora_vulkan_swapchain_create_info *ShooraSwapchainInfo)
+                shoora_vulkan_swapchain_create_info *ShooraSwapchainInfo, size_t UniformDataSize)
 {
     VkSwapchainKHR OldSwapchain = Context->Swapchain.SwapchainHandle;
     b32 IsWindowResized = OldSwapchain != VK_NULL_HANDLE;
     if(!IsWindowResized)
     {
         ASSERT(ShooraSwapchainInfo != nullptr);
-        PrepareForSwapchainCreation(Context, ShooraSwapchainInfo);
+        PrepareForSwapchainCreation(Context, ShooraSwapchainInfo, UniformDataSize);
     }
 
     shoora_vulkan_swapchain *SwapchainInfo = &Context->Swapchain;
@@ -455,6 +457,7 @@ CreateSwapchain(shoora_vulkan_context *Context, u32 WindowWidth, u32 WindowHeigh
 
     if(IsWindowResized)
     {
+        // DestroySwapchainUniformResources(&Context->Device, &Context->Swapchain);
         DestroySwapchainFramebuffers(&Context->Device, &Context->Swapchain);
         DestroySwapchainImageViews(&Context->Device, &Context->Swapchain);
         FreeDrawCommandBuffers(&Context->Device, &Context->Swapchain);
@@ -469,6 +472,9 @@ CreateSwapchain(shoora_vulkan_context *Context, u32 WindowWidth, u32 WindowHeigh
     if(IsWindowResized && (Context->GraphicsRenderPass != VK_NULL_HANDLE))
     {
         CreateSwapchainFramebuffers(&Context->Device, &Context->Swapchain, Context->GraphicsRenderPass);
+        // TODO)): Do this!!
+        // CreateSwapchainUniformResources(&Context->Device, &Context->Swapchain,
+        //                                 Context->Swapchain.ImageCount, Context->Swapchain.UniformDataSize);
     }
 
     AllocateDrawCommandBuffers(&Context->Device, &Context->Swapchain);
@@ -543,6 +549,35 @@ PresentImage(shoora_vulkan_context *Context)
     PresentInfo.pResults = nullptr;
 
     VK_CHECK(vkQueuePresentKHR(PresentQueue, &PresentInfo));
+}
+
+void
+CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
+                                size_t RequiredSize, VkPipelineLayout PipelineLayout)
+{
+    CreateUniformBuffers(RenderDevice, Swapchain->UniformBuffers, Swapchain->ImageCount, RequiredSize);
+    CreateUniformDescriptors(RenderDevice, VK_SHADER_STAGE_VERTEX_BIT, &Swapchain->UniformSetLayout, 0, nullptr,
+                             SHU_MAX_FRAMES_IN_FLIGHT, Swapchain->UniformBuffers, Swapchain->UniformDescriptorSets,
+                             &Swapchain->UniformPipelineLayout, &Swapchain->UniformDescriptorPool);
+    PipelineLayout = Swapchain->UniformPipelineLayout;
+}
+
+void
+DestroySwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain)
+{
+    for (u32 Index = 0; Index < Swapchain->ImageCount; ++Index)
+    {
+        DestroyUniformBuffer(RenderDevice, &Swapchain->UniformBuffers[Index]);
+    }
+
+    vkDestroyDescriptorSetLayout(RenderDevice->LogicalDevice, Swapchain->UniformSetLayout, nullptr);
+
+    // TODO)): This layout needs to be removed from the swapchain struct.
+    vkDestroyPipelineLayout(RenderDevice->LogicalDevice, Swapchain->UniformPipelineLayout, nullptr);
+
+    vkDestroyDescriptorPool(RenderDevice->LogicalDevice, Swapchain->UniformDescriptorPool, nullptr);
+
+    // VkDescriptorSet UniformDescriptorSets[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
 }
 
 void

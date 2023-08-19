@@ -1,11 +1,16 @@
 #if !defined(VULKAN_DESCRIPTOR_SETS_H)
 
-// descriptors represent shader resources.
-
 #include "defines.h"
 #include "volk/volk.h"
 #include "vulkan_renderer.h"
 
+void CreateUniformDescriptors(shoora_vulkan_device *RenderDevice, VkShaderStageFlags ConsumingShaderStage,
+                              VkDescriptorSetLayout *pSetLayout, u32 PushConstantCount,
+                              VkPushConstantRange *pPushConstants, u32 UniformBufferCount,
+                              shoora_vulkan_buffer *pUniformBuffers, VkDescriptorSet *pUniformDescriptors,
+                              VkPipelineLayout *pPipelineLayout, VkDescriptorPool *pDescriptorPool);
+
+#if 0
 struct shoora_sampler_mipmap_info
 {
     VkSamplerMipmapMode MipmapMode;
@@ -87,6 +92,7 @@ struct shoora_copy_description_info
 };
 
 b32 CreateTextureAndUniformBufferDescriptor(shoora_vulkan_device *RenderDevice);
+#endif
 
 #define VULKAN_DESCRIPTOR_SETS_H
 #endif // VULKAN_DESCRIPTOR_SETS_H

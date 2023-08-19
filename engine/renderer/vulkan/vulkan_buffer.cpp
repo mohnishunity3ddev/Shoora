@@ -282,23 +282,91 @@ CreateVertexBuffer(shoora_vulkan_device *RenderDevice, shoora_vertex_info *Verti
     vkDestroyBuffer(RenderDevice->LogicalDevice, StagingIndexBuffer.Buffer, nullptr);
     vkFreeMemory(RenderDevice->LogicalDevice, StagingIndexBuffer.Memory, nullptr);
 
-    outVertexBuffer->Buffer = VertexBuffer.Buffer;
+    outVertexBuffer->Handle = VertexBuffer.Buffer;
     outVertexBuffer->Memory = VertexBuffer.Memory;
 
-    outIndexBuffer->Buffer = IndexBuffer.Buffer;
+    outIndexBuffer->Handle = IndexBuffer.Buffer;
     outIndexBuffer->Memory = IndexBuffer.Memory;
 
     LogOutput(LogType_Info, "Created Vertex buffer and Index buffers\n");
+}
+
+// TODO)): Instead of creating 4 separate uniform buffers, create a single one with each having an offset.
+void
+CreateUniformBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *pUniformBuffers,
+                     u32 UniformBufferCount, size_t Size)
+{
+    VkMemoryRequirements MemReqs;
+
+    VkBufferCreateInfo BufferInfo = {};
+    BufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    BufferInfo.size = Size;
+    BufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    BufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    VkMemoryAllocateInfo MemAllocInfo = {};
+    MemAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+
+    for(u32 Index = 0;
+        Index < UniformBufferCount;
+        ++Index)
+    {
+        shoora_vulkan_buffer *pUniformBuffer = pUniformBuffers + Index;
+        VK_CHECK(vkCreateBuffer(RenderDevice->LogicalDevice, &BufferInfo, nullptr, &pUniformBuffer->Handle));
+
+        vkGetBufferMemoryRequirements(RenderDevice->LogicalDevice, pUniformBuffer->Handle, &MemReqs);
+
+        MemAllocInfo.allocationSize = MemReqs.size;
+        MemAllocInfo.memoryTypeIndex = GetDeviceMemoryType(RenderDevice, MemReqs.memoryTypeBits,
+                                                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        pUniformBuffer->MemSize = Size;
+
+        VK_CHECK(vkAllocateMemory(RenderDevice->LogicalDevice, &MemAllocInfo, nullptr,
+                                  &pUniformBuffer->Memory));
+        VK_CHECK(vkBindBufferMemory(RenderDevice->LogicalDevice, pUniformBuffer->Handle, pUniformBuffer->Memory, 0));
+        VK_CHECK(vkMapMemory(RenderDevice->LogicalDevice, pUniformBuffer->Memory, 0, MemAllocInfo.allocationSize,
+                             0, (void **)&pUniformBuffer->pMapped));
+    }
+
+    LogOutput(LogType_Info, "Created Uniform Buffers\n");
+}
+
+void
+DestroyUniformBuffer(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *pUniformBuffer)
+{
+    vkUnmapMemory(RenderDevice->LogicalDevice, pUniformBuffer->Memory);
+    pUniformBuffer->pMapped = nullptr;
+
+    vkFreeMemory(RenderDevice->LogicalDevice, pUniformBuffer->Memory, nullptr);
+    pUniformBuffer->Memory = VK_NULL_HANDLE;
+
+    vkDestroyBuffer(RenderDevice->LogicalDevice, pUniformBuffer->Handle, nullptr);
+    pUniformBuffer->Handle = VK_NULL_HANDLE;
+}
+
+void
+DestroyUniformBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *pUniformBuffers,
+                      u32 UniformBufferCount)
+{
+    for(u32 Index = 0;
+        Index < UniformBufferCount;
+        ++Index)
+    {
+        shoora_vulkan_buffer *pUniformBuffer = pUniformBuffers + Index;
+        DestroyUniformBuffer(RenderDevice, pUniformBuffer);
+    }
+
+    LogOutput(LogType_Warn, "Destroyed Uniform Buffers\n");
 }
 
 void
 DestroyVertexBuffer(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *pVertexBuffer,
                     shoora_vulkan_buffer *pIndexBuffer)
 {
-    vkDestroyBuffer(RenderDevice->LogicalDevice, pVertexBuffer->Buffer, nullptr);
+    vkDestroyBuffer(RenderDevice->LogicalDevice, pVertexBuffer->Handle, nullptr);
     vkFreeMemory(RenderDevice->LogicalDevice, pVertexBuffer->Memory, nullptr);
 
-    vkDestroyBuffer(RenderDevice->LogicalDevice, pIndexBuffer->Buffer, nullptr);
+    vkDestroyBuffer(RenderDevice->LogicalDevice, pIndexBuffer->Handle, nullptr);
     vkFreeMemory(RenderDevice->LogicalDevice, pIndexBuffer->Memory, nullptr);
 
     LogOutput(LogType_Warn, "Destroyed Vertex and index buffers\n");

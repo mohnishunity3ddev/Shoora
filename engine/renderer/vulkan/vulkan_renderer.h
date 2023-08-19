@@ -70,6 +70,14 @@ struct shoora_vulkan_device
     u32 QueueFamilyCount;
 };
 
+struct shoora_vulkan_buffer
+{
+    VkBuffer Handle;
+    VkDeviceMemory Memory;
+    VkDeviceSize MemSize;
+    void *pMapped = nullptr;
+};
+
 struct shoora_vulkan_swapchain
 {
     VkSurfaceKHR Surface;
@@ -87,18 +95,20 @@ struct shoora_vulkan_swapchain
     VkSwapchainKHR SwapchainHandle;
 
     // TODO)): Make this Dynamic!
+    u32 ImageCount;
     VkImage Images[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
     VkImageView ImageViews[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
-    VkFramebuffer Framebuffers[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
-    u32 ImageCount;
+    VkFramebuffer ImageFramebuffers[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
+
+    VkDescriptorSetLayout UniformSetLayout;
+    // TODO)): This pipeline layout needs to be removed from here!
+    VkPipelineLayout UniformPipelineLayout;
+    VkDescriptorPool UniformDescriptorPool;
+    VkDescriptorSet UniformDescriptorSets[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
+    shoora_vulkan_buffer UniformBuffers[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
+    u32 UniformDataSize;
 
     shoora_vulkan_command_buffer_handle DrawCommandBuffers[SHU_MAX_FRAMES_IN_FLIGHT];
-};
-
-struct shoora_vulkan_buffer
-{
-    VkBuffer Buffer;
-    VkDeviceMemory Memory;
 };
 
 struct shoora_vulkan_semaphore_handle
@@ -122,7 +132,8 @@ struct shoora_vulkan_synchronization
 
 struct shoora_vulkan_pipeline
 {
-    VkPipelineLayout PipelineLayout;
+    VkPipelineLayout GraphicsPipelineLayout;
+    VkPipelineLayout WireframePipelineLayout;
     VkPipeline GraphicsPipeline;
     VkPipeline WireframeGraphicsPipeline;
 };

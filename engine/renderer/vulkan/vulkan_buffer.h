@@ -29,5 +29,12 @@ void CreateVertexBuffer(shoora_vulkan_device *RenderDevice, shoora_vertex_info *
 void DestroyVertexBuffer(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *pVertexBuffer,
                          shoora_vulkan_buffer *pIndexBuffer);
 
+void CreateUniformBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *pUniformBuffers,
+                          u32 UniformBufferCount, size_t Size);
+
+void DestroyUniformBuffer(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *pUniformBuffer);
+void DestroyUniformBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *pUniformBuffers,
+                           u32 UniformBufferCount);
+
 #define VULKAN_BUFFER_H
 #endif // VULKAN_BUFFER_H
