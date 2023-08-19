@@ -408,8 +408,8 @@ void
 WindowResized(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, VkRenderPass RenderPass,
               vec2 ScreenDim)
 {
-    VK_CHECK(vkDeviceWaitIdle(RenderDevice->LogicalDevice));
-
+    // TODO)): Will it be better to wait for all device operations to finish? or queue wait will suffice?
+    VK_CHECK(vkQueueWaitIdle(GetQueueHandle(RenderDevice, QueueType_Graphics)));
 
     Swapchain->ImageDimensions = {(u32)ScreenDim.x, (u32)ScreenDim.y};
 
