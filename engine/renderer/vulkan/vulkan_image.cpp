@@ -2,6 +2,7 @@
 #include "utils/utils.h"
 #include <memory>
 
+#if 0
 #if !defined(STB_IMPORT)
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -37,7 +38,6 @@ GetSuitableImageFormat(shoora_vulkan_device *RenderDevice, VkFormat *FormatCandi
     return Result;
 }
 
-#if 0
 VkFormat
 GetSuitableDepthAttachmentFormat(shoora_vulkan_device *RenderDevice)
 {
@@ -48,7 +48,6 @@ GetSuitableDepthAttachmentFormat(shoora_vulkan_device *RenderDevice)
                                                   VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     return DepthFormat;
 }
-#endif
 
 void
 GenerateMipMaps(const char *InputFilename, const char *OutputFilename, i32 MipLevelCount, i32 Quality,
@@ -645,3 +644,4 @@ FreeMemory(shoora_vulkan_device *RenderDevice, VkDeviceMemory Memory)
 
     return Result;
 }
+#endif

@@ -1,6 +1,6 @@
 #include "vulkan_descriptor_sets.h"
 #include "vulkan_image.h"
-#include <stb_image.h>
+// #include <stb_image.h>
 
 VkDescriptorSetLayoutBinding
 CreateDescriptorSetLayoutBinding(u32 BindingIndex, VkDescriptorType DescriptorType, u32 DescriptorCount,

@@ -30,9 +30,9 @@ struct uniform_data
 {
     vec3 Color;
 };
-uniform_data UniformData = {};
-static b32 WireframeMode = true;
+static uniform_data UniformData = {};
 
+static b32 WireframeMode = true;
 static exit_application *QuitApplication;
 
 void WindowResizedCallback(u32 Width, u32 Height)
@@ -62,7 +62,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
 
     shoora_vulkan_device *RenderDevice = &VulkanContext->Device;
     shoora_vulkan_swapchain *Swapchain = &VulkanContext->Swapchain;
-    
+
     CreatePresentationSurface(VulkanContext, &Swapchain->Surface);
     CreateDeviceAndQueues(VulkanContext, &DeviceCreateInfo);
     volkLoadDevice(RenderDevice->LogicalDevice);
@@ -81,7 +81,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
                            &VulkanContext->Pipeline);
     CreateWireframePipeline(VulkanContext, "shaders/spirv/wireframe.vert.spv", "shaders/spirv/wireframe.frag.spv");
     CreateSynchronizationPrimitives(&VulkanContext->Device, &VulkanContext->SyncHandles);
-
+    
     AppInfo->WindowResizeCallback = &WindowResizedCallback;
     QuitApplication = AppInfo->ExitApplication;
     ASSERT(QuitApplication);
@@ -89,7 +89,6 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     VulkanContext->CurrentFrame = 0;
     VulkanContext->IsInitialized = true;
     VulkanContext->FrameCounter = 0;
-
     Context = VulkanContext;
 }
 
@@ -188,7 +187,7 @@ void DrawFrameInVulkan()
         if(WireframeMode)
         {
             vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            Context->Pipeline.WireframeGraphicsPipeline);
+                              Context->Pipeline.WireframeGraphicsPipeline);
             vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(RectIndices), 1, 0, 0, 1);
         }
 
