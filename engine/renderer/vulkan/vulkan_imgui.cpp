@@ -33,14 +33,18 @@ SetStyle(ImGuiStyle AppStyle, u32 index)
 void
 InitializeImGui(shoora_vulkan_imgui *ImGuiContext, vec2 ScreenDim)
 {
-    ImGuiStyle *Style = &ImGuiContext->UIStyle;
+    ImGuiContext->UIStyle = ImGui::GetStyle();
 
-    *Style = ImGui::GetStyle();
+    ImGuiStyle *Style = &ImGuiContext->UIStyle;
     Style->Colors[ImGuiCol_TitleBg] = ImVec4(1.0f, 0.0f, 0.0f, 0.6f);
     Style->Colors[ImGuiCol_TitleBgActive] = ImVec4(1.0f, 0.0f, 0.0f, 0.8f);
     Style->Colors[ImGuiCol_MenuBarBg] = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
     Style->Colors[ImGuiCol_Header] = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
     Style->Colors[ImGuiCol_CheckMark] = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
+    Style->AntiAliasedFill = true;
+    Style->AntiAliasedLines = true;
+    Style->AntiAliasedLinesUseTex = true;
+    Style->WindowRounding = 10.0f;
 
     SetStyle(ImGuiContext->UIStyle, 0);
 

@@ -22,6 +22,7 @@ struct win32_window_context
 static win32_window_context GlobalWin32WindowContext = {};
 static WINDOWPLACEMENT GlobalWin32WindowPosition = {sizeof(GlobalWin32WindowPosition)};
 static b8 Win32GlobalRunning = false;
+static int64 Win32GlobalPerfFrequency = 0;
 
 void DummyWinResize(u32 Width, u32 Height) {}
 
@@ -461,11 +462,30 @@ ShouldCreateConsole(PWSTR pCmdLine)
     return true;
 }
 
+inline LARGE_INTEGER
+Win32GetWallClock()
+{
+    LARGE_INTEGER Result;
+    QueryPerformanceCounter(&Result);
+    return Result;
+}
+
+inline f32
+Win32GetSecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End)
+{
+    f32 Result = ((f32)(End.QuadPart - Start.QuadPart) / (f32)Win32GlobalPerfFrequency);
+    return Result;
+}
+
 // TODO)): Right now this is the only entry point since win32 is the only platform right now.
 // TODO)): Have to implement multiple entrypoints for all platforms.
 i32 WINAPI
 wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdShow)
 {
+    LARGE_INTEGER Frequency;
+    QueryPerformanceFrequency(&Frequency);
+    Win32GlobalPerfFrequency = Frequency.QuadPart;
+
     b32 CreateConsole = ShouldCreateConsole(pCmdLine);
 
     if(CreateConsole)
@@ -509,6 +529,8 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     InitializeRenderer(&RendererContext, &AppInfo);
 
     Win32GlobalRunning = true;
+    LARGE_INTEGER FrameMarkerStart = Win32GetWallClock();
+    LARGE_INTEGER FrameMarkerEnd = Win32GetWallClock();
     while(Win32GlobalRunning)
     {
         // MOUSE
@@ -571,8 +593,22 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         NewInputState = OldInputState;
         OldInputState = Temp;
 
+        f32 DeltaTime = Win32GetSecondsElapsed(FrameMarkerStart, FrameMarkerEnd);
+        if(DeltaTime <= 0.0f)
+        {
+            DeltaTime = 1.0f;
+        }
+        u32 FPS = (u32)(1.0f / DeltaTime);
+        // LogOutput(LogType_Trace, "DeltaTime: %f, FPS: %u\n", DeltaTime, FPS);
+        
+        FramePacket.DeltaTime = DeltaTime;
+        FramePacket.Fps = FPS;
+
         // NOTE: Game Update
         DrawFrame(&FramePacket);
+
+        FrameMarkerStart = FrameMarkerEnd;
+        FrameMarkerEnd = Win32GetWallClock();
     }
 
     DestroyRenderer(&RendererContext);

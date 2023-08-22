@@ -40,7 +40,16 @@ struct shoora_render_state
     vec3 ClearColor = Vec3(0.2f, 0.3f, 0.3f);
     vec3 MeshColor = Vec3(1.0f, 0.0f, 0.0f);
 };
+struct shoora_debug_overlay
+{
+    f32 MsPerFrame = 0.0f;
+    u32 Fps = 0;
+} DebugOverlay;
+static f32 DeltaTime = 0.0f;
 static shoora_render_state RenderState;
+static f32 UiUpdateTimer = 0.0f;
+static const f32 UiUpdateWaitTime = 0.25f;
+
 static exit_application *QuitApplication;
 
 void WindowResizedCallback(u32 Width, u32 Height)
@@ -64,11 +73,20 @@ ImGuiNewFrame()
 
     ImGui::SetNextWindowPos(ImVec2(800, 100), 1 << 2);
     ImGui::SetNextWindowSize(ImVec2(400, 400), 1 << 2);
+
     ImGui::Begin("Inspector");
     ImGui::Checkbox("Toggle Wireframe", (bool *)&RenderState.WireframeMode);
     ImGui::SliderFloat("Wireframe Line Width", &RenderState.WireLineWidth, 1.0f, 10.0f);
     ImGui::ColorEdit3("Clear Color", RenderState.ClearColor.E);
     ImGui::ColorEdit3("Rectangle Color", RenderState.MeshColor.E);
+    ImGui::End();
+
+    ImGui::SetNextWindowPos(ImVec2(0, 0), 1 << 2);
+    ImGui::SetNextWindowSize(ImVec2(400, 400), 1 << 2);
+    ImGui::Begin("Debug Stats");
+    ImGui::Text("Device: %s", Context->Device.DeviceProperties.deviceName);
+    ImGui::Text("FPS: %u", DebugOverlay.Fps);
+    ImGui::Text("MS Per Frame: %f", DebugOverlay.MsPerFrame);
     ImGui::End();
 
     ImGui::Render();
@@ -119,6 +137,9 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     VulkanContext->CurrentFrame = 0;
     VulkanContext->IsInitialized = true;
     VulkanContext->FrameCounter = 0;
+
+    UiUpdateTimer = 0.0f;
+
     Context = VulkanContext;
 }
 
@@ -138,11 +159,21 @@ AdvanceToNextFrame()
 void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 {
     ASSERT(Context != nullptr);
+    ASSERT(FramePacket->DeltaTime > 0.0f);
     if(!Context->IsInitialized || Context->CurrentFrame >= SHU_MAX_FRAMES_IN_FLIGHT)
     {
         QuitApplication("[RENDERER]: Either the render is not initialized or there was some "
                         "problem with the current "
                         "frame counter.\n");
+    }
+
+    DeltaTime = FramePacket->DeltaTime;
+    UiUpdateTimer += DeltaTime;
+    if(UiUpdateTimer >= UiUpdateWaitTime)
+    {
+        DebugOverlay.Fps = FramePacket->Fps;
+        DebugOverlay.MsPerFrame = 1000.0f*DeltaTime;
+        UiUpdateTimer = 0.0f;
     }
 
     shoora_vulkan_fence_handle *pCurrentFrameFence = GetCurrentFrameFencePtr(&Context->SyncHandles,
@@ -227,7 +258,6 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         }
 
         ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
-
 
         vkCmdEndRenderPass(DrawCmdBuffer);
     VK_CHECK(vkEndCommandBuffer(DrawCmdBuffer));
