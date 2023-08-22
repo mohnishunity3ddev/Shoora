@@ -2,6 +2,64 @@
 #include "platform/platform.h"
 #include "vulkan_device.h"
 
+VkCommandBuffer
+CreateTransientCommandBuffer(shoora_vulkan_device *RenderDevice, VkCommandPool CommandPool,
+                             VkCommandBufferLevel Level, b32 Begin)
+{
+    VkCommandBufferAllocateInfo AllocInfo = {};
+    AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    AllocInfo.pNext = nullptr;
+    AllocInfo.commandPool = CommandPool;
+    AllocInfo.level = Level;
+    AllocInfo.commandBufferCount = 1;
+
+    VkCommandBuffer CmdBuffer;
+    VK_CHECK(vkAllocateCommandBuffers(RenderDevice->LogicalDevice, &AllocInfo, &CmdBuffer));
+
+    if(Begin)
+    {
+        VkCommandBufferBeginInfo BeginInfo = {};
+        BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        BeginInfo.pNext = nullptr;
+        BeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+        VK_CHECK(vkBeginCommandBuffer(CmdBuffer, &BeginInfo));
+    }
+
+    return CmdBuffer;
+}
+
+void
+FlushTransientCommandBuffer(shoora_vulkan_device *RenderDevice, VkCommandBuffer CmdBuffer, VkQueue Queue,
+                            VkCommandPool Pool, b32 Free)
+{
+    if(CmdBuffer == VK_NULL_HANDLE)
+    {
+        return;
+    }
+
+    VK_CHECK(vkEndCommandBuffer(CmdBuffer));
+
+    VkSubmitInfo SubmitInfo = {};
+    SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    SubmitInfo.commandBufferCount = 1;
+    SubmitInfo.pCommandBuffers = &CmdBuffer;
+
+    VkFenceCreateInfo FenceInfo = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
+    VkFence Fence;
+    VK_CHECK(vkCreateFence(RenderDevice->LogicalDevice, &FenceInfo, nullptr, &Fence));
+
+    VK_CHECK(vkQueueSubmit(Queue, 1, &SubmitInfo, Fence));
+    VK_CHECK(vkWaitForFences(RenderDevice->LogicalDevice, 1, &Fence, VK_TRUE, SHU_DEFAULT_FENCE_TIMEOUT));
+
+    vkDestroyFence(RenderDevice->LogicalDevice, Fence, nullptr);
+
+    if(Free)
+    {
+        vkFreeCommandBuffers(RenderDevice->LogicalDevice, Pool, 1, &CmdBuffer);
+    }
+}
+
 #if 0
 shoora_vulkan_command_buffer_handle *
 GetCommandBufferGroupForQueue(shoora_vulkan_context *Context, shoora_queue_type Type)

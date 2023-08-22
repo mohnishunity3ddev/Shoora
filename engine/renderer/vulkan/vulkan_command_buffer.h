@@ -12,6 +12,12 @@ struct shoora_command_buffer_allocate_info
     u32 BufferCount;
 };
 
+VkCommandBuffer CreateTransientCommandBuffer(shoora_vulkan_device *RenderDevice, VkCommandPool CommandPool,
+                                             VkCommandBufferLevel Level, b32 Begin);
+
+void FlushTransientCommandBuffer(shoora_vulkan_device *RenderDevice, VkCommandBuffer CmdBuffer, VkQueue Queue,
+                                 VkCommandPool Pool, b32 Free);
+
 #if 0
 void AllocateCommandBuffers(shoora_vulkan_context *Context, shoora_command_buffer_allocate_info *AllocInfos,
                             u32 AllocInfoCount);

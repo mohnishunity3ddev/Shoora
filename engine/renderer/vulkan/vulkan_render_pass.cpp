@@ -16,17 +16,34 @@ CreateRenderPass(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Sw
     ColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     ColorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
+    VkAttachmentDescription DepthAttachment;
+    DepthAttachment.flags = 0;
+    // TODO)): Get this Depth Format!
+    DepthAttachment.format = Swapchain->DepthFormat;
+    DepthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    DepthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    DepthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    DepthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    DepthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    DepthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    DepthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
     VkAttachmentReference ColorAttachmentRef;
     ColorAttachmentRef.attachment = 0;
     ColorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    VkAttachmentReference DepthAttachmentRef;
+    DepthAttachmentRef.attachment = 1;
+    DepthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     VkSubpassDescription Subpass = {};
     Subpass.flags = 0;
     Subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     Subpass.colorAttachmentCount = 1;
+    // Subpass.pDepthStencilAttachment = ;
     Subpass.pColorAttachments = &ColorAttachmentRef;
+    Subpass.pDepthStencilAttachment = &DepthAttachmentRef;
 
-    VkAttachmentDescription Attachments[] = {ColorAttachment};
+    VkAttachmentDescription Attachments[] = {ColorAttachment, DepthAttachment};
 
     VkRenderPassCreateInfo RenderPassCreateInfo = {};
     RenderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;

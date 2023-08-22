@@ -21,10 +21,10 @@ InitializeRenderer(renderer_context *RendererContext, shoora_app_info *AppInfo)
 }
 
 void
-DrawFrame()
+DrawFrame(shoora_platform_frame_packet *FramePacket)
 {
 #if defined(SHU_RENDERER_BACKEND_VULKAN)
-    DrawFrameInVulkan();
+    DrawFrameInVulkan(FramePacket);
 #else
 #endif
 }

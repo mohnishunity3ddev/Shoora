@@ -2,9 +2,20 @@
 #include "vulkan_image.h"
 // #include <stb_image.h>
 
+VkDescriptorImageInfo
+GetImageDescriptorInfo(VkSampler Sampler, VkImageView ImageView, VkImageLayout ImageLayout)
+{
+    VkDescriptorImageInfo ImageInfo = {};
+    ImageInfo.sampler = Sampler;
+    ImageInfo.imageView = ImageView;
+    ImageInfo.imageLayout = ImageLayout;
+
+    return ImageInfo;
+}
+
 VkDescriptorSetLayoutBinding
-CreateDescriptorSetLayoutBinding(u32 BindingIndex, VkDescriptorType DescriptorType, u32 DescriptorCount,
-                                 VkShaderStageFlags ConsumingShaderStage)
+GetDescriptorSetLayoutBinding(u32 BindingIndex, VkDescriptorType DescriptorType, u32 DescriptorCount,
+                              VkShaderStageFlags ConsumingShaderStage)
 {
     VkDescriptorSetLayoutBinding LayoutBinding = {};
     LayoutBinding.binding = BindingIndex;
@@ -41,13 +52,22 @@ CreateDescriptorSetLayout(shoora_vulkan_device *RenderDevice, VkDescriptorSetLay
     VK_CHECK(vkCreateDescriptorSetLayout(RenderDevice->LogicalDevice, &CreateInfo, nullptr, pSetLayout));
 }
 
+VkDescriptorPoolSize
+GetDescriptorPoolSize(VkDescriptorType DescriptorType, u32 DescriptorCount)
+{
+    VkDescriptorPoolSize Size;
+    Size.type = DescriptorType;
+    Size.descriptorCount = DescriptorCount;
+
+    return Size;
+}
+
 void
 CreateDescriptorPool(shoora_vulkan_device *RenderDevice, VkDescriptorType DescriptorType, u32 DescriptorSetCount,
                      VkDescriptorPool *pDescriptorPool)
 {
     VkDescriptorPoolSize PoolSizes[1];
-    PoolSizes[0].type = DescriptorType;
-    PoolSizes[0].descriptorCount = DescriptorSetCount;
+    PoolSizes[0] = GetDescriptorPoolSize(DescriptorType, DescriptorSetCount);
 
     VkDescriptorPoolCreateInfo PoolCreateInfo = {};
     PoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -61,35 +81,80 @@ CreateDescriptorPool(shoora_vulkan_device *RenderDevice, VkDescriptorType Descri
 }
 
 void
+CreateDescriptorPool(shoora_vulkan_device *RenderDevice, u32 PoolSizeCount, VkDescriptorPoolSize *pSizes,
+                     u32 DescriptorSetCount, VkDescriptorPool *pDescriptorPool)
+{
+    VkDescriptorPoolCreateInfo PoolCreateInfo = {};
+    PoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    PoolCreateInfo.pNext = nullptr;
+    PoolCreateInfo.flags = 0;
+    PoolCreateInfo.maxSets = DescriptorSetCount;
+    PoolCreateInfo.poolSizeCount = PoolSizeCount;
+    PoolCreateInfo.pPoolSizes = pSizes;
+
+    VK_CHECK(vkCreateDescriptorPool(RenderDevice->LogicalDevice, &PoolCreateInfo, nullptr, pDescriptorPool));
+}
+
+void
+AllocateDescriptorSets(shoora_vulkan_device *RenderDevice, VkDescriptorPool Pool, u32 Count,
+                       VkDescriptorSetLayout *pSetLayouts, VkDescriptorSet *pSets)
+{
+    VkDescriptorSetAllocateInfo AllocInfo = {};
+    AllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    AllocInfo.pNext = nullptr;
+    AllocInfo.descriptorPool = Pool;
+    AllocInfo.descriptorSetCount = Count;
+    AllocInfo.pSetLayouts = pSetLayouts;
+
+    VK_CHECK(vkAllocateDescriptorSets(RenderDevice->LogicalDevice, &AllocInfo, pSets));
+}
+
+void
+UpdateBufferDescriptorSet(shoora_vulkan_device *RenderDevice, VkDescriptorSet DescriptorSet, u32 BindingIndex,
+                          VkDescriptorType DescriptorType, VkBuffer BufferHandle, u64 BufferSize)
+{
+    VkDescriptorBufferInfo BufferInfo = {};
+    BufferInfo.buffer = BufferHandle;
+    BufferInfo.offset = 0;
+    BufferInfo.range = BufferSize;
+
+    VkWriteDescriptorSet WriteSet = {};
+    WriteSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    WriteSet.dstSet = DescriptorSet;
+    WriteSet.descriptorCount = 1;
+    WriteSet.descriptorType = DescriptorType;
+    WriteSet.pBufferInfo = &BufferInfo;
+    WriteSet.dstBinding = BindingIndex;
+
+    vkUpdateDescriptorSets(RenderDevice->LogicalDevice, 1, &WriteSet, 0, nullptr);
+}
+
+void
+UpdateImageDescriptorSet(shoora_vulkan_device *RenderDevice, VkDescriptorSet DescriptorSet, u32 BindingIndex,
+                         VkDescriptorType DescriptorType, VkDescriptorImageInfo *pImageInfo)
+{
+    VkWriteDescriptorSet WriteSet = {};
+    WriteSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    WriteSet.dstSet = DescriptorSet;
+    WriteSet.descriptorCount = 1;
+    WriteSet.descriptorType = DescriptorType;
+    WriteSet.pImageInfo = pImageInfo;
+
+    vkUpdateDescriptorSets(RenderDevice->LogicalDevice, 1, &WriteSet, 0, nullptr);
+}
+
+
+void
 CreateDescriptorSets(shoora_vulkan_device *RenderDevice, VkDescriptorPool *pPool, VkDescriptorSetLayout *pLayout,
                      u32 Count, VkDescriptorSet *pSets, shoora_vulkan_buffer *pBuffers, VkDescriptorType Type,
                      u32 BindingIndex)
 {
     for(u32 Index = 0; Index < Count; ++Index)
     {
-        VkDescriptorSetAllocateInfo AllocInfo = {};
-        AllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        AllocInfo.pNext = nullptr;
-        AllocInfo.descriptorPool = *pPool;
-        AllocInfo.descriptorSetCount = 1;
-        AllocInfo.pSetLayouts = pLayout;
+        AllocateDescriptorSets(RenderDevice, *pPool, 1, pLayout, &pSets[Index]);
 
-        VK_CHECK(vkAllocateDescriptorSets(RenderDevice->LogicalDevice, &AllocInfo, &pSets[Index]));
-
-        VkWriteDescriptorSet WriteSet = {};
-
-        VkDescriptorBufferInfo BufferInfo = {};
-        BufferInfo.buffer = pBuffers[Index].Handle;
-        BufferInfo.range = pBuffers[Index].MemSize;
-
-        WriteSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        WriteSet.dstSet = pSets[Index];
-        WriteSet.descriptorCount = 1;
-        WriteSet.descriptorType = Type;
-        WriteSet.pBufferInfo = &BufferInfo;
-        WriteSet.dstBinding = BindingIndex;
-
-        vkUpdateDescriptorSets(RenderDevice->LogicalDevice, 1, &WriteSet, 0, nullptr);
+        UpdateBufferDescriptorSet(RenderDevice, pSets[Index], BindingIndex, Type, pBuffers[Index].Handle,
+                                  pBuffers[Index].MemSize);
     }
 }
 
@@ -102,7 +167,7 @@ CreateUniformDescriptors(shoora_vulkan_device *RenderDevice, VkShaderStageFlags 
                          shoora_vulkan_buffer *pUniformBuffers, VkDescriptorSet *pUniformDescriptors,
                          VkPipelineLayout *pPipelineLayout, VkDescriptorPool *pDescriptorPool)
 {
-    auto UniformLayoutBinding = CreateDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+    auto UniformLayoutBinding = GetDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
                                                                  ConsumingShaderStage);
     CreateDescriptorSetLayout(RenderDevice, &UniformLayoutBinding, 1, pSetLayout);
     CreatePipelineLayout(RenderDevice, 1, pSetLayout, PushConstantCount, pPushConstants, pPipelineLayout);

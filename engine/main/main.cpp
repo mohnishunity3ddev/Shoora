@@ -28,7 +28,7 @@ void DummyWinResize(u32 Width, u32 Height) {}
 static shoora_app_info AppInfo =
 {
     .AppName = "Placeholder App Name",
-    .WindowResizeCallback = &DummyWinResize,
+    .WindowResizeCallback = &DummyWinResize
 };
 
 RECT
@@ -521,6 +521,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
             SU_SPECIALMOUSEBUTTON2,
         };
 
+
         // Mouse
         POINT ClientRelativeMousePos;
         GetCursorPos(&ClientRelativeMousePos);
@@ -554,19 +555,23 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         // {
         //     OutputDebugString(L"W was pressed!\n");
         // }
+        shoora_platform_frame_packet FramePacket = {};
+
         if(Win32InputKeyPressed(NewInputState->MouseButtons[0]))
         {
+            FramePacket.LeftMouseClicked = true;
             WIN32_LOG_OUTPUT("Left Mouse Button was pressed at [%f, %f]!\n",
                              NewInputState->MouseXPos, NewInputState->MouseYPos);
         }
-
-
+        FramePacket.MouseXPos = NewInputState->MouseXPos;
+        FramePacket.MouseYPos = NewInputState->MouseYPos;
+        
         platform_input_state *Temp = NewInputState;
         NewInputState = OldInputState;
         OldInputState = Temp;
 
         // NOTE: Game Update
-        DrawFrame();
+        DrawFrame(&FramePacket);
     }
 
     DestroyRenderer(&RendererContext);

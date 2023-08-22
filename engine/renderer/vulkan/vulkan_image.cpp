@@ -2,23 +2,222 @@
 #include "utils/utils.h"
 #include <memory>
 
-#if 0
-#if !defined(STB_IMPORT)
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-#define STB_IMAGE_RESIZE_IMPLEMENTATION
-#include "stb_image_resize.h"
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
-#define STB_IMPORT
-#endif
+
+
+void
+CreateSampler2D(shoora_vulkan_device *RenderDevice, VkFilter Filter, VkSamplerMipmapMode MipmapMode,
+                VkSamplerAddressMode AddressMode, VkBorderColor BorderColor, VkSampler *pSampler)
+{
+    VkSamplerCreateInfo SamplerInfo = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
+    SamplerInfo.maxAnisotropy = 1.0f;
+    SamplerInfo.magFilter = Filter;
+    SamplerInfo.minFilter = Filter;
+    SamplerInfo.mipmapMode = MipmapMode;
+    SamplerInfo.addressModeU = AddressMode;
+    SamplerInfo.addressModeV = AddressMode;
+    SamplerInfo.addressModeW = AddressMode;
+    SamplerInfo.borderColor = BorderColor;
+
+    VK_CHECK(vkCreateSampler(RenderDevice->LogicalDevice, &SamplerInfo, nullptr, pSampler));
+}
+
+void
+CreateImageView2D(shoora_vulkan_device *RenderDevice, VkImage Image, VkFormat Format, VkImageAspectFlags Aspect,
+                  VkImageView *pImageView)
+{
+    VkImageViewCreateInfo ViewInfo = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+    ViewInfo.image = Image;
+    ViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    ViewInfo.format = Format;
+    ViewInfo.subresourceRange.levelCount = 1;
+    ViewInfo.subresourceRange.layerCount = 1;
+    ViewInfo.subresourceRange.aspectMask = Aspect;
+
+    VK_CHECK(vkCreateImageView(RenderDevice->LogicalDevice, &ViewInfo, nullptr, pImageView));
+}
+
+void
+CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, vec2 Dim, VkFormat Format, VkImageUsageFlags Usage,
+                    VkImageAspectFlags Aspect, VkImage *pImage, VkDeviceMemory *pMemory, VkImageView *pView)
+{
+    VkImageCreateInfo ImageInfo = {};
+    ImageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    ImageInfo.imageType = VK_IMAGE_TYPE_2D;
+    ImageInfo.mipLevels = 1;
+    ImageInfo.arrayLayers = 1;
+    ImageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    ImageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    ImageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    ImageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    ImageInfo.format = Format;
+    ImageInfo.usage = Usage;
+    ImageInfo.extent.width = (u32)Dim.x;
+    ImageInfo.extent.height = (u32)Dim.y;
+    ImageInfo.extent.depth = 1;
+
+    VK_CHECK(vkCreateImage(RenderDevice->LogicalDevice, &ImageInfo, nullptr, pImage));
+
+    VkMemoryRequirements MemReqs;
+    vkGetImageMemoryRequirements(RenderDevice->LogicalDevice, *pImage, &MemReqs);
+    VkMemoryAllocateInfo MemAllocInfo = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+    MemAllocInfo.allocationSize = MemReqs.size;
+    MemAllocInfo.memoryTypeIndex = GetDeviceMemoryType(RenderDevice, MemReqs.memoryTypeBits,
+                                                       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    VK_CHECK(vkAllocateMemory(RenderDevice->LogicalDevice, &MemAllocInfo, nullptr, pMemory));
+    VK_CHECK(vkBindImageMemory(RenderDevice->LogicalDevice, *pImage, *pMemory, 0));
+
+    CreateImageView2D(RenderDevice, *pImage, Format, Aspect, pView);
+}
+
+void
+SetImageLayout(VkCommandBuffer CmdBuffer, VkImage Image, VkImageLayout OldImageLayout,
+               VkImageLayout NewImageLayout, VkImageSubresourceRange SubresourceRange,
+               VkPipelineStageFlags SrcStage, VkPipelineStageFlags DstStage)
+{
+    VkImageMemoryBarrier ImageMemoryBarrier = {};
+    ImageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    ImageMemoryBarrier.oldLayout = OldImageLayout;
+    ImageMemoryBarrier.newLayout = NewImageLayout;
+    ImageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    ImageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    ImageMemoryBarrier.image = Image;
+    ImageMemoryBarrier.subresourceRange = SubresourceRange;
+
+    // SrcAccessMask are operations that should be complete on the old layout before transitioning to the new
+    // layout.
+    switch(OldImageLayout)
+    {
+        // Image layout does not matter.
+        case VK_IMAGE_LAYOUT_UNDEFINED:
+        {
+            ImageMemoryBarrier.srcAccessMask = 0;
+        } break;
+
+        // Only for images laid out in memorg in linear fashion which can be used by CPUs since linear images
+        // are good for reading/writing by CPUs.
+        case VK_IMAGE_LAYOUT_PREINITIALIZED:
+        {
+            ImageMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+        } break;
+
+        // Image is a color attachment.
+        // Make sure any writes to the color buffer have been finished.
+        case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+        {
+            ImageMemoryBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        } break;
+
+        // Image is a depth attachment.
+        // Make sure any writes to the depth buffer have been finished.
+        case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL:
+        {
+            ImageMemoryBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        } break;
+
+        case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+        {
+            // Make sure any reads from the image have been finished
+            ImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        } break;
+
+        case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+        {
+            // Make sure any writes to  the image have been finished
+            ImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        } break;
+
+        case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+        {
+            // The image is meant to be read from in a shader.
+            ImageMemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        } break;
+
+        default:
+        {
+            ASSERT(!"This Layout is not handled yet!");
+        }
+    }
+
+    // Target layouts (new)
+    // Destination access mask controls the dependency for the new image layout
+    switch(NewImageLayout)
+    {
+        case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+        {
+            // Image will be used as a transfer destination
+            // Make sure any writes to the image have been finished
+            ImageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        } break;
+
+        case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+        {
+            // Image will be used as a transfer source
+            // Make sure any reads from the image have been finished
+            ImageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        } break;
+
+        case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+        {
+            // Image will be used as a color attachment
+            // Make sure any writes to the color buffer have been finished
+            ImageMemoryBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        } break;
+
+        case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+        {
+            // Image layout will be used as a depth/stencil attachment
+            // Make sure any writes to depth/stencil buffer have been finished
+            ImageMemoryBarrier.dstAccessMask = ImageMemoryBarrier.dstAccessMask |
+                                               VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        } break;
+
+        case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+        {
+            // Image will be read in a shader (sampler, input attachment)
+            // Make sure any writes to the image have been finished
+            if(ImageMemoryBarrier.srcAccessMask == 0)
+            {
+                ImageMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+            }
+
+            ImageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        } break;
+
+        default:
+        {
+            ASSERT(!"This Layout is not handled yet!");
+        }
+    }
+
+    vkCmdPipelineBarrier(CmdBuffer, SrcStage, DstStage, 0,
+                         0, nullptr, 0, nullptr,
+                         1, &ImageMemoryBarrier);
+}
+
+void
+SetImageLayout(VkCommandBuffer CmdBuffer, VkImage Image, VkImageAspectFlags Aspect, VkImageLayout OldImageLayout,
+               VkImageLayout NewImageLayout, VkPipelineStageFlags SrcStage, VkPipelineStageFlags DstStage)
+{
+    VkImageSubresourceRange SubresourceRange = {};
+    SubresourceRange.aspectMask = Aspect;
+    SubresourceRange.baseArrayLayer = 0;
+    SubresourceRange.baseMipLevel = 0;
+    SubresourceRange.layerCount = 1;
+    SubresourceRange.levelCount = 1;
+
+    SetImageLayout(CmdBuffer, Image, OldImageLayout, NewImageLayout, SubresourceRange, SrcStage, DstStage);
+}
 
 VkFormat
 GetSuitableImageFormat(shoora_vulkan_device *RenderDevice, VkFormat *FormatCandidates, u32 FormatCount,
                        VkImageTiling Tiling, VkFormatFeatureFlags FormatUsage)
 {
     VkFormat Result = VK_FORMAT_UNDEFINED;
-    for (u32 Index = 0; Index < FormatCount; ++Index)
+    for(u32 Index = 0;
+        Index < FormatCount;
+        ++Index)
     {
         VkFormat Candidate = FormatCandidates[Index];
 
@@ -48,6 +247,39 @@ GetSuitableDepthAttachmentFormat(shoora_vulkan_device *RenderDevice)
                                                   VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     return DepthFormat;
 }
+
+void
+DestroyImage2D(shoora_vulkan_device *RenderDevice, shoora_vulkan_image *pImage)
+{
+    if(pImage->ImageView != VK_NULL_HANDLE)
+    {
+        vkDestroyImageView(RenderDevice->LogicalDevice, pImage->ImageView, nullptr);
+        pImage->ImageView = VK_NULL_HANDLE;
+    }
+
+    if(pImage->ImageMemory != VK_NULL_HANDLE)
+    {
+        vkFreeMemory(RenderDevice->LogicalDevice, pImage->ImageMemory, nullptr);
+        pImage->ImageMemory = VK_NULL_HANDLE;
+    }
+
+    if(pImage->Image != VK_NULL_HANDLE)
+    {
+        vkDestroyImage(RenderDevice->LogicalDevice, pImage->Image, nullptr);
+        pImage->Image = VK_NULL_HANDLE;
+    }
+}
+
+#if 0
+#if !defined(STB_IMPORT)
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "stb_image_resize.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+#define STB_IMPORT
+#endif
 
 void
 GenerateMipMaps(const char *InputFilename, const char *OutputFilename, i32 MipLevelCount, i32 Quality,

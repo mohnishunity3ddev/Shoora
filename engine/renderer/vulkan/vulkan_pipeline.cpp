@@ -2,6 +2,537 @@
 #include "vulkan_shaders.h"
 #include "vulkan_vertex_definitions.h"
 
+VkPipelineLayoutCreateInfo
+GetPipelineLayoutCreateInfo(VkDescriptorSetLayout *pSetLayouts, u32 SetLayoutCount)
+{
+    VkPipelineLayoutCreateInfo CreateInfo = {};
+    CreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    CreateInfo.setLayoutCount = SetLayoutCount;
+    CreateInfo.pSetLayouts = pSetLayouts;
+
+    return CreateInfo;
+}
+
+VkPipelineInputAssemblyStateCreateInfo
+GetInputAssemblyInfo(VkPrimitiveTopology Topology, VkBool32 PrimitiveRestartEnable)
+{
+    VkPipelineInputAssemblyStateCreateInfo CreateInfo = {};
+    CreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    CreateInfo.flags = 0;
+    CreateInfo.topology = Topology;
+    CreateInfo.primitiveRestartEnable = PrimitiveRestartEnable;
+
+    return CreateInfo;
+}
+
+VkPipelineRasterizationStateCreateInfo
+GetRasterizationInfo(VkPolygonMode PolygonMode, VkCullModeFlags CullMode, VkFrontFace FrontFace,
+                     VkPipelineRasterizationStateCreateFlags Flags)
+{
+    VkPipelineRasterizationStateCreateInfo RasterizationInfo = {};
+    RasterizationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    RasterizationInfo.polygonMode = PolygonMode;
+    RasterizationInfo.cullMode = CullMode;
+    RasterizationInfo.frontFace = FrontFace;
+    RasterizationInfo.flags = Flags;
+    RasterizationInfo.depthClampEnable = VK_FALSE;
+    RasterizationInfo.lineWidth = 1.0f;
+    return RasterizationInfo;
+}
+
+VkPipelineColorBlendStateCreateInfo
+GetPipelineColorBlendInfo(u32 AttachmentCount, const VkPipelineColorBlendAttachmentState *pAttachments)
+{
+    VkPipelineColorBlendStateCreateInfo ColorBlendStateInfo{};
+    ColorBlendStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    ColorBlendStateInfo.attachmentCount = AttachmentCount;
+    ColorBlendStateInfo.pAttachments = pAttachments;
+    return ColorBlendStateInfo;
+}
+
+VkPipelineDepthStencilStateCreateInfo
+GetPipelineDepthStencilInfo(VkBool32 DepthTestEnable, VkBool32 DepthWriteEnable, VkCompareOp DepthCompareOp)
+{
+    VkPipelineDepthStencilStateCreateInfo DepthStencilStateInfo = {};
+    DepthStencilStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    DepthStencilStateInfo.depthTestEnable = DepthTestEnable;
+    DepthStencilStateInfo.depthWriteEnable = DepthWriteEnable;
+    DepthStencilStateInfo.depthCompareOp = DepthCompareOp;
+    DepthStencilStateInfo.back.compareOp = VK_COMPARE_OP_ALWAYS;
+    return DepthStencilStateInfo;
+}
+
+VkPipelineViewportStateCreateInfo
+GetPipelineViewportInfo(uint32_t ViewportCount, uint32_t ScissorCount,
+                        VkPipelineViewportStateCreateFlags Flags)
+{
+    VkPipelineViewportStateCreateInfo PipelineViewportCreateInfo = {};
+    PipelineViewportCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    PipelineViewportCreateInfo.viewportCount = ViewportCount;
+    PipelineViewportCreateInfo.scissorCount = ScissorCount;
+    PipelineViewportCreateInfo.flags = Flags;
+    return PipelineViewportCreateInfo;
+}
+
+VkViewport
+GetViewport(f32 Width, f32 Height, f32 MinDepth, f32 MaxDepth)
+{
+    VkViewport Viewport = {};
+    Viewport.width = Width;
+    Viewport.height = Height;
+    Viewport.minDepth = MinDepth;
+    Viewport.maxDepth = MaxDepth;
+
+    return Viewport;
+}
+
+VkPipelineMultisampleStateCreateInfo
+GetPipelineMultiSampleInfo(VkSampleCountFlagBits Samples, VkPipelineMultisampleStateCreateFlags Flags)
+{
+    VkPipelineMultisampleStateCreateInfo PipelineMultisampleInfo = {};
+    PipelineMultisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    PipelineMultisampleInfo.rasterizationSamples = Samples;
+    PipelineMultisampleInfo.flags = Flags;
+    return PipelineMultisampleInfo;
+}
+
+VkPipelineDynamicStateCreateInfo
+GetPipelineDynamicStateInfo(u32 DynamicStateCount, VkDynamicState *pDynamicStates,
+                       VkPipelineDynamicStateCreateFlags Flags)
+{
+    VkPipelineDynamicStateCreateInfo PipelineDynamicStateInfo = {};
+    PipelineDynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    PipelineDynamicStateInfo.pDynamicStates = pDynamicStates;
+    PipelineDynamicStateInfo.dynamicStateCount = DynamicStateCount;
+    PipelineDynamicStateInfo.flags = Flags;
+    return PipelineDynamicStateInfo;
+}
+
+VkVertexInputBindingDescription
+GetPipelineVertexInputBinding(u32 Binding, u32 Stride, VkVertexInputRate InputRate)
+{
+    VkVertexInputBindingDescription VertexInputBindDescription = {};
+    VertexInputBindDescription.binding = Binding;
+    VertexInputBindDescription.stride = Stride;
+    VertexInputBindDescription.inputRate = InputRate;
+
+    return VertexInputBindDescription;
+}
+
+VkVertexInputAttributeDescription
+GetPipelineVertexAttribInfo(u32 Binding, u32 Location, VkFormat Format, u32 Offset)
+{
+    VkVertexInputAttributeDescription VertexInputAttribDescription = {};
+    VertexInputAttribDescription.location = Location;
+    VertexInputAttribDescription.binding = Binding;
+    VertexInputAttribDescription.format = Format;
+    VertexInputAttribDescription.offset = Offset;
+    return VertexInputAttribDescription;
+}
+
+VkPipelineVertexInputStateCreateInfo
+PipelineVertexInputInfo()
+{
+    VkPipelineVertexInputStateCreateInfo VertexInputStateInfo{};
+    VertexInputStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    return VertexInputStateInfo;
+}
+
+VkGraphicsPipelineCreateInfo
+GetGraphicsPipelineInfo(VkPipelineLayout Layout, VkRenderPass RenderPass, VkPipelineCreateFlags Flags)
+{
+    VkGraphicsPipelineCreateInfo pipelineCreateInfo{};
+    pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineCreateInfo.layout = Layout;
+    pipelineCreateInfo.renderPass = RenderPass;
+    pipelineCreateInfo.flags = Flags;
+    pipelineCreateInfo.basePipelineIndex = -1;
+    pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+    return pipelineCreateInfo;
+}
+
+
+
+
+
+void
+DestroyPipelineLayout(shoora_vulkan_device *RenderDevice, VkPipelineLayout PipelineLayout)
+{
+    vkDestroyPipelineLayout(RenderDevice->LogicalDevice, PipelineLayout, nullptr);
+    LogOutput(LogType_Warn, "Pipeline Layout Destroyed!\n");
+}
+
+void
+DestroyPipelines(shoora_vulkan_device *RenderDevice, shoora_vulkan_pipeline *Pipeline)
+{
+    DestroyPipelineLayout(RenderDevice, Pipeline->GraphicsPipelineLayout);
+    vkDestroyPipeline(RenderDevice->LogicalDevice, Pipeline->GraphicsPipeline, nullptr);
+    DestroyPipelineLayout(RenderDevice, Pipeline->WireframePipelineLayout);
+    vkDestroyPipeline(RenderDevice->LogicalDevice, Pipeline->WireframeGraphicsPipeline, nullptr);
+    LogOutput(LogType_Warn, "Graphics Pipeline Destroyed!\n");
+}
+
+void
+DestroyShaderModule(shoora_vulkan_device *RenderDevice, VkShaderModule ShaderModule)
+{
+    vkDestroyShaderModule(RenderDevice->LogicalDevice, ShaderModule, nullptr);
+}
+
+VkPipelineShaderStageCreateInfo
+GetShaderStageInfo(VkShaderModule Shader, VkShaderStageFlagBits StageFlags, const char *EntryPointName)
+{
+    VkPipelineShaderStageCreateInfo StageInfo;
+    StageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    StageInfo.pNext = nullptr;
+    StageInfo.flags = 0;
+    StageInfo.stage = StageFlags;
+    StageInfo.module = Shader;
+    StageInfo.pName = EntryPointName;
+    StageInfo.pSpecializationInfo = nullptr;
+
+    return StageInfo;
+}
+
+void
+CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderFile,
+                       const char *FragmentShaderFile, shoora_vulkan_pipeline *pPipeline)
+{
+    ASSERT(pPipeline != nullptr);
+
+    shoora_vulkan_device *RenderDevice = &Context->Device;
+
+    //? Shader Stages
+    auto VertexShader = CreateShaderModule(RenderDevice, VertexShaderFile);
+    auto FragmentShader = CreateShaderModule(RenderDevice, FragmentShaderFile);
+    const char *ShaderCodeEntryPoint = "main";
+    auto VertexShaderStageInfo = GetShaderStageInfo(VertexShader, VK_SHADER_STAGE_VERTEX_BIT,
+                                                    ShaderCodeEntryPoint);
+    auto FragmentShaderStageInfo = GetShaderStageInfo(FragmentShader, VK_SHADER_STAGE_FRAGMENT_BIT,
+                                                      ShaderCodeEntryPoint);
+    VkPipelineShaderStageCreateInfo ShaderStageInfos[] = {VertexShaderStageInfo, FragmentShaderStageInfo};
+
+    //? Vertex Input
+    auto VertexBindingDescription = GetVertexBindingDescription();
+    VkVertexInputAttributeDescription AttributeDescriptions[16];
+    u32 AttributeCount;
+    GetVertexAttributeDescriptions(AttributeDescriptions, &AttributeCount);
+    VkPipelineVertexInputStateCreateInfo VertexInputInfo;
+    VertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    VertexInputInfo.pNext = nullptr;
+    VertexInputInfo.flags = 0;
+    VertexInputInfo.vertexBindingDescriptionCount = 1;
+    VertexInputInfo.pVertexBindingDescriptions = &VertexBindingDescription;
+    VertexInputInfo.vertexAttributeDescriptionCount = AttributeCount;
+    VertexInputInfo.pVertexAttributeDescriptions = AttributeDescriptions;
+
+    //? Input Assembly
+    VkPipelineInputAssemblyStateCreateInfo InputAssemblyInfo;
+    InputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    InputAssemblyInfo.pNext = nullptr;
+    InputAssemblyInfo.flags = 0;
+    InputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    InputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
+
+    //? Viewport Info
+    u32 Width = Context->Swapchain.ImageDimensions.width;
+    u32 Height = Context->Swapchain.ImageDimensions.height;
+    VkViewport Viewport = {};
+    Viewport.x = 0;
+    Viewport.y = 0;
+    Viewport.width = (f32)Width;
+    Viewport.height = (f32)Height;
+    VkRect2D Scissor = {.offset = {0, 0}, .extent = {.width = Width, .height = Height}};
+
+    VkPipelineViewportStateCreateInfo ViewportInfo;
+    ViewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    ViewportInfo.pNext = nullptr;
+    ViewportInfo.flags = 0;
+    ViewportInfo.viewportCount = 1;
+    ViewportInfo.pViewports = &Viewport;
+    ViewportInfo.scissorCount = 1;
+    ViewportInfo.pScissors = &Scissor;
+
+    //? Rasterizer Info
+    VkPipelineRasterizationStateCreateInfo RasterizerInfo;
+    RasterizerInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    RasterizerInfo.pNext = nullptr;
+    RasterizerInfo.flags = 0;
+    RasterizerInfo.depthClampEnable = VK_FALSE;
+    RasterizerInfo.rasterizerDiscardEnable = VK_FALSE;
+    RasterizerInfo.polygonMode = VK_POLYGON_MODE_FILL;
+    RasterizerInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+    RasterizerInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    RasterizerInfo.depthBiasEnable = VK_FALSE;
+    RasterizerInfo.depthBiasConstantFactor = 0.0f;
+    RasterizerInfo.depthBiasClamp = 0.0f;
+    RasterizerInfo.depthBiasSlopeFactor = 0.0f;
+    RasterizerInfo.lineWidth = 1.0f;
+
+    //? Multisample Info
+    VkPipelineMultisampleStateCreateInfo MultisampleInfo;
+    MultisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    MultisampleInfo.pNext = nullptr;
+    MultisampleInfo.flags = 0;
+    MultisampleInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    MultisampleInfo.sampleShadingEnable = VK_FALSE;
+    MultisampleInfo.minSampleShading = 1.0f;
+    MultisampleInfo.pSampleMask = nullptr;
+    MultisampleInfo.alphaToCoverageEnable = VK_FALSE;
+    MultisampleInfo.alphaToOneEnable = VK_FALSE;
+
+    //? Depth Stencil Info
+    VkPipelineDepthStencilStateCreateInfo DepthStencilInfo = {};
+    DepthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    DepthStencilInfo.pNext = nullptr;
+    DepthStencilInfo.flags = 0;
+    DepthStencilInfo.depthTestEnable = VK_TRUE;
+    DepthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    DepthStencilInfo.depthWriteEnable = VK_TRUE;
+
+    // DepthStencilInfo.depthBoundsTestEnable = VK_FALSE;
+    // DepthStencilInfo.stencilTestEnable = VK_FALSE;
+    // DepthStencilInfo.front = 0;
+    // DepthStencilInfo.back = 0;
+    DepthStencilInfo.minDepthBounds = 0.0f;
+    DepthStencilInfo.maxDepthBounds = 1.0f;
+
+    //? Color Blend Info
+    VkPipelineColorBlendAttachmentState BlendAttachment;
+    BlendAttachment.blendEnable = VK_FALSE;
+    // NOTE: Src is the color calculated by the fragment shader. Dst is the color already there in the framebuffer
+    // attachment.
+    BlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    BlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    BlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+    BlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    BlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    BlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+    BlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                                     VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    VkPipelineColorBlendStateCreateInfo ColorBlendInfo;
+    ColorBlendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    ColorBlendInfo.pNext = nullptr;
+    ColorBlendInfo.flags = 0;
+    ColorBlendInfo.logicOpEnable = VK_FALSE;
+    ColorBlendInfo.logicOp = VK_LOGIC_OP_CLEAR;
+    ColorBlendInfo.attachmentCount = 1;
+    ColorBlendInfo.pAttachments = &BlendAttachment;
+    ColorBlendInfo.blendConstants[0] = 0.0f;
+    ColorBlendInfo.blendConstants[1] = 0.0f;
+    ColorBlendInfo.blendConstants[2] = 0.0f;
+    ColorBlendInfo.blendConstants[3] = 0.0f;
+
+    //? Pipeline Layout
+    ASSERT((pPipeline->GraphicsPipelineLayout != VK_NULL_HANDLE));
+
+    //? Dynamic State
+    VkDynamicState DynamicStates[] = {VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT};
+    VkPipelineDynamicStateCreateInfo DynamicsInfo = {};
+    DynamicsInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    DynamicsInfo.dynamicStateCount = ARRAY_SIZE(DynamicStates);
+    DynamicsInfo.pDynamicStates = DynamicStates;
+
+    VkGraphicsPipelineCreateInfo PipelineCreateInfo = {};
+    PipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    PipelineCreateInfo.stageCount = ARRAY_SIZE(ShaderStageInfos);
+    PipelineCreateInfo.pStages = ShaderStageInfos;
+    PipelineCreateInfo.pVertexInputState = &VertexInputInfo;
+    PipelineCreateInfo.pInputAssemblyState = &InputAssemblyInfo;
+    PipelineCreateInfo.pViewportState = &ViewportInfo;
+    PipelineCreateInfo.pRasterizationState = &RasterizerInfo;
+    PipelineCreateInfo.pMultisampleState = &MultisampleInfo;
+    PipelineCreateInfo.pDepthStencilState = &DepthStencilInfo;
+    PipelineCreateInfo.pColorBlendState = &ColorBlendInfo;
+    PipelineCreateInfo.pDynamicState = &DynamicsInfo;
+    PipelineCreateInfo.layout = pPipeline->GraphicsPipelineLayout;
+    PipelineCreateInfo.renderPass = Context->GraphicsRenderPass;
+    PipelineCreateInfo.subpass = 0;
+    PipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+    PipelineCreateInfo.basePipelineIndex = -1;
+
+    VK_CHECK(vkCreateGraphicsPipelines(RenderDevice->LogicalDevice, VK_NULL_HANDLE, 1, &PipelineCreateInfo,
+                                       nullptr, &pPipeline->GraphicsPipeline));
+
+    LogOutput(LogType_Debug, "Created Graphics Pipeline!\n");
+
+    vkDestroyShaderModule(RenderDevice->LogicalDevice, VertexShader, nullptr);
+    vkDestroyShaderModule(RenderDevice->LogicalDevice, FragmentShader, nullptr);
+}
+
+#if 1
+void
+CreateWireframePipeline(shoora_vulkan_context *Context, const char *VertexShaderFile,
+                        const char *FragmentShaderFile)
+{
+    shoora_vulkan_device *RenderDevice = &Context->Device;
+
+    //? Shader Stages
+    auto VertexShader = CreateShaderModule(RenderDevice, VertexShaderFile);
+    auto FragmentShader = CreateShaderModule(RenderDevice, FragmentShaderFile);
+    const char *ShaderCodeEntryPoint = "main";
+    auto VertexShaderStageInfo = GetShaderStageInfo(VertexShader, VK_SHADER_STAGE_VERTEX_BIT,
+                                                    ShaderCodeEntryPoint);
+    auto FragmentShaderStageInfo = GetShaderStageInfo(FragmentShader, VK_SHADER_STAGE_FRAGMENT_BIT,
+                                                      ShaderCodeEntryPoint);
+    VkPipelineShaderStageCreateInfo ShaderStageInfos[] = {VertexShaderStageInfo, FragmentShaderStageInfo};
+
+    //? Vertex Input
+    auto VertexBindingDescription = GetVertexBindingDescription();
+    VkVertexInputAttributeDescription AttributeDescriptions[16];
+    u32 AttributeCount;
+    GetVertexAttributeDescriptions(AttributeDescriptions, &AttributeCount);
+    VkPipelineVertexInputStateCreateInfo VertexInputInfo;
+    VertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    VertexInputInfo.pNext = nullptr;
+    VertexInputInfo.flags = 0;
+    VertexInputInfo.vertexBindingDescriptionCount = 1;
+    VertexInputInfo.pVertexBindingDescriptions = &VertexBindingDescription;
+    VertexInputInfo.vertexAttributeDescriptionCount = AttributeCount;
+    VertexInputInfo.pVertexAttributeDescriptions = AttributeDescriptions;
+
+    //? Input Assembly
+    VkPipelineInputAssemblyStateCreateInfo InputAssemblyInfo;
+    InputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    InputAssemblyInfo.pNext = nullptr;
+    InputAssemblyInfo.flags = 0;
+    InputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    InputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
+
+    //? Viewport Info
+    u32 Width = Context->Swapchain.ImageDimensions.width;
+    u32 Height = Context->Swapchain.ImageDimensions.height;
+    VkViewport Viewport = {};
+    Viewport.x = 0;
+    Viewport.y = 0;
+    Viewport.width = (f32)Width;
+    Viewport.height = (f32)Height;
+    VkRect2D Scissor = {.offset = {0, 0}, .extent = {.width = Width, .height = Height}};
+
+    VkPipelineViewportStateCreateInfo ViewportInfo;
+    ViewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    ViewportInfo.pNext = nullptr;
+    ViewportInfo.flags = 0;
+    ViewportInfo.viewportCount = 1;
+    ViewportInfo.pViewports = &Viewport;
+    ViewportInfo.scissorCount = 1;
+    ViewportInfo.pScissors = &Scissor;
+
+    //? Rasterizer Info
+    VkPipelineRasterizationStateCreateInfo RasterizerInfo;
+    RasterizerInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    RasterizerInfo.pNext = nullptr;
+    RasterizerInfo.flags = 0;
+    RasterizerInfo.depthClampEnable = VK_FALSE;
+    RasterizerInfo.rasterizerDiscardEnable = VK_FALSE;
+    RasterizerInfo.polygonMode = VK_POLYGON_MODE_LINE;
+    RasterizerInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+    RasterizerInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    RasterizerInfo.depthBiasEnable = VK_FALSE;
+    RasterizerInfo.depthBiasConstantFactor = 0.0f;
+    RasterizerInfo.depthBiasClamp = 0.0f;
+    RasterizerInfo.depthBiasSlopeFactor = 0.0f;
+    RasterizerInfo.lineWidth = 5.0f;
+
+    //? Multisample Info
+    VkPipelineMultisampleStateCreateInfo MultisampleInfo;
+    MultisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    MultisampleInfo.pNext = nullptr;
+    MultisampleInfo.flags = 0;
+    MultisampleInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    MultisampleInfo.sampleShadingEnable = VK_FALSE;
+    MultisampleInfo.minSampleShading = 1.0f;
+    MultisampleInfo.pSampleMask = nullptr;
+    MultisampleInfo.alphaToCoverageEnable = VK_FALSE;
+    MultisampleInfo.alphaToOneEnable = VK_FALSE;
+
+#if 1
+    //? Depth Stencil Info
+    VkPipelineDepthStencilStateCreateInfo DepthStencilInfo = {};
+    DepthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    DepthStencilInfo.pNext = nullptr;
+    DepthStencilInfo.flags = 0;
+    DepthStencilInfo.depthTestEnable = VK_TRUE;
+    DepthStencilInfo.depthWriteEnable = VK_TRUE;
+    DepthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    DepthStencilInfo.depthBoundsTestEnable = VK_FALSE;
+    DepthStencilInfo.stencilTestEnable = VK_FALSE;
+    // DepthStencilInfo.front = 0;
+    // DepthStencilInfo.back = 0;
+    DepthStencilInfo.minDepthBounds = 0.0f;
+    DepthStencilInfo.maxDepthBounds = 1.0f;
+#endif
+
+    //? Color Blend Info
+    VkPipelineColorBlendAttachmentState BlendAttachment;
+    BlendAttachment.blendEnable = VK_FALSE;
+    // NOTE: Src is the color calculated by the fragment shader. Dst is the color already there in the framebuffer
+    // attachment.
+    BlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    BlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    BlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+    BlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    BlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    BlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+    BlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                                     VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    VkPipelineColorBlendStateCreateInfo ColorBlendInfo;
+    ColorBlendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    ColorBlendInfo.pNext = nullptr;
+    ColorBlendInfo.flags = 0;
+    ColorBlendInfo.logicOpEnable = VK_FALSE;
+    ColorBlendInfo.logicOp = VK_LOGIC_OP_CLEAR;
+    ColorBlendInfo.attachmentCount = 1;
+    ColorBlendInfo.pAttachments = &BlendAttachment;
+    ColorBlendInfo.blendConstants[0] = 0.0f;
+    ColorBlendInfo.blendConstants[1] = 0.0f;
+    ColorBlendInfo.blendConstants[2] = 0.0f;
+    ColorBlendInfo.blendConstants[3] = 0.0f;
+
+    VkPipelineLayoutCreateInfo PipelineLayoutInfo = {};
+    PipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    VK_CHECK(vkCreatePipelineLayout(RenderDevice->LogicalDevice, &PipelineLayoutInfo, nullptr,
+                                    &Context->Pipeline.WireframePipelineLayout));
+
+    //? Dynamic State
+    VkDynamicState DynamicStates[] = {VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT};
+    VkPipelineDynamicStateCreateInfo DynamicsInfo = {};
+    DynamicsInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    DynamicsInfo.dynamicStateCount = ARRAY_SIZE(DynamicStates);
+    DynamicsInfo.pDynamicStates = DynamicStates;
+
+    VkGraphicsPipelineCreateInfo WireframePipelineCreateInfos[1] = {};
+    WireframePipelineCreateInfos[0].sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    WireframePipelineCreateInfos[0].stageCount = ARRAY_SIZE(ShaderStageInfos);
+    WireframePipelineCreateInfos[0].pStages = ShaderStageInfos;
+    WireframePipelineCreateInfos[0].pVertexInputState = &VertexInputInfo;
+    WireframePipelineCreateInfos[0].pInputAssemblyState = &InputAssemblyInfo;
+    WireframePipelineCreateInfos[0].pViewportState = &ViewportInfo;
+    WireframePipelineCreateInfos[0].pRasterizationState = &RasterizerInfo;
+    WireframePipelineCreateInfos[0].pMultisampleState = &MultisampleInfo;
+    WireframePipelineCreateInfos[0].pDepthStencilState = &DepthStencilInfo;
+    WireframePipelineCreateInfos[0].pColorBlendState = &ColorBlendInfo;
+    WireframePipelineCreateInfos[0].pDynamicState = &DynamicsInfo;
+    WireframePipelineCreateInfos[0].layout = Context->Pipeline.WireframePipelineLayout;
+    WireframePipelineCreateInfos[0].renderPass = Context->GraphicsRenderPass;
+    WireframePipelineCreateInfos[0].subpass = 0;
+    WireframePipelineCreateInfos[0].basePipelineHandle = VK_NULL_HANDLE;
+    WireframePipelineCreateInfos[0].basePipelineIndex = -1;
+
+    VkPipeline Pipelines[1];
+
+    VK_CHECK(vkCreateGraphicsPipelines(RenderDevice->LogicalDevice, VK_NULL_HANDLE,
+                                       ARRAY_SIZE(WireframePipelineCreateInfos), WireframePipelineCreateInfos,
+                                       nullptr, Pipelines));
+
+    Context->Pipeline.WireframeGraphicsPipeline = Pipelines[0];
+
+    LogOutput(LogType_Debug, "Created Wireframe Pipeline!\n");
+
+    vkDestroyShaderModule(RenderDevice->LogicalDevice, VertexShader, nullptr);
+    vkDestroyShaderModule(RenderDevice->LogicalDevice, FragmentShader, nullptr);
+}
+#endif
+
 #if 0
 void
 CreateShaderModule(shoora_vulkan_device *RenderDevice, const char *ShaderFile, VkShaderModule *Module)
@@ -443,385 +974,3 @@ DestroyPipelineCache(shoora_vulkan_device *RenderDevice, VkPipelineCache Pipelin
     vkDestroyPipelineCache(RenderDevice->LogicalDevice, PipelineCache, nullptr);
 }
 #endif
-
-void
-DestroyPipelineLayout(shoora_vulkan_device *RenderDevice, VkPipelineLayout PipelineLayout)
-{
-    vkDestroyPipelineLayout(RenderDevice->LogicalDevice, PipelineLayout, nullptr);
-    LogOutput(LogType_Warn, "Pipeline Layout Destroyed!\n");
-}
-
-void
-DestroyPipelines(shoora_vulkan_device *RenderDevice, shoora_vulkan_pipeline *Pipeline)
-{
-    DestroyPipelineLayout(RenderDevice, Pipeline->GraphicsPipelineLayout);
-    DestroyPipelineLayout(RenderDevice, Pipeline->WireframePipelineLayout);
-    vkDestroyPipeline(RenderDevice->LogicalDevice, Pipeline->GraphicsPipeline, nullptr);
-    vkDestroyPipeline(RenderDevice->LogicalDevice, Pipeline->WireframeGraphicsPipeline, nullptr);
-    LogOutput(LogType_Warn, "Graphics Pipeline Destroyed!\n");
-}
-
-void
-DestroyShaderModule(shoora_vulkan_device *RenderDevice, VkShaderModule ShaderModule)
-{
-    vkDestroyShaderModule(RenderDevice->LogicalDevice, ShaderModule, nullptr);
-}
-
-VkPipelineShaderStageCreateInfo
-GetShaderStageInfo(VkShaderModule Shader, VkShaderStageFlagBits StageFlags, const char *EntryPointName)
-{
-    VkPipelineShaderStageCreateInfo StageInfo;
-    StageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    StageInfo.pNext = nullptr;
-    StageInfo.flags = 0;
-    StageInfo.stage = StageFlags;
-    StageInfo.module = Shader;
-    StageInfo.pName = EntryPointName;
-    StageInfo.pSpecializationInfo = nullptr;
-
-    return StageInfo;
-}
-
-void
-CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderFile,
-                       const char *FragmentShaderFile, shoora_vulkan_pipeline *pPipeline)
-{
-    ASSERT(pPipeline != nullptr);
-
-    shoora_vulkan_device *RenderDevice = &Context->Device;
-
-    //? Shader Stages
-    auto VertexShader = CreateShaderModule(RenderDevice, VertexShaderFile);
-    auto FragmentShader = CreateShaderModule(RenderDevice, FragmentShaderFile);
-    const char *ShaderCodeEntryPoint = "main";
-    auto VertexShaderStageInfo = GetShaderStageInfo(VertexShader, VK_SHADER_STAGE_VERTEX_BIT,
-                                                    ShaderCodeEntryPoint);
-    auto FragmentShaderStageInfo = GetShaderStageInfo(FragmentShader, VK_SHADER_STAGE_FRAGMENT_BIT,
-                                                      ShaderCodeEntryPoint);
-    VkPipelineShaderStageCreateInfo ShaderStageInfos[] = {VertexShaderStageInfo, FragmentShaderStageInfo};
-
-    //? Vertex Input
-    auto VertexBindingDescription = GetVertexBindingDescription();
-    VkVertexInputAttributeDescription AttributeDescriptions[16];
-    u32 AttributeCount;
-    GetVertexAttributeDescriptions(AttributeDescriptions, &AttributeCount);
-    VkPipelineVertexInputStateCreateInfo VertexInputInfo;
-    VertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    VertexInputInfo.pNext = nullptr;
-    VertexInputInfo.flags = 0;
-    VertexInputInfo.vertexBindingDescriptionCount = 1;
-    VertexInputInfo.pVertexBindingDescriptions = &VertexBindingDescription;
-    VertexInputInfo.vertexAttributeDescriptionCount = AttributeCount;
-    VertexInputInfo.pVertexAttributeDescriptions = AttributeDescriptions;
-
-    //? Input Assembly
-    VkPipelineInputAssemblyStateCreateInfo InputAssemblyInfo;
-    InputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    InputAssemblyInfo.pNext = nullptr;
-    InputAssemblyInfo.flags = 0;
-    InputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    InputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
-
-    //? Viewport Info
-    u32 Width = Context->Swapchain.ImageDimensions.width;
-    u32 Height = Context->Swapchain.ImageDimensions.height;
-    VkViewport Viewport = {};
-    Viewport.x = 0;
-    Viewport.y = 0;
-    Viewport.width = (f32)Width;
-    Viewport.height = (f32)Height;
-    VkRect2D Scissor = {
-        .offset = {0, 0},
-        .extent = {.width = Width, .height = Height}
-    };
-
-    VkPipelineViewportStateCreateInfo ViewportInfo;
-    ViewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    ViewportInfo.pNext = nullptr;
-    ViewportInfo.flags = 0;
-    ViewportInfo.viewportCount = 1;
-    ViewportInfo.pViewports = &Viewport;
-    ViewportInfo.scissorCount = 1;
-    ViewportInfo.pScissors = &Scissor;
-
-    //? Rasterizer Info
-    VkPipelineRasterizationStateCreateInfo RasterizerInfo;
-    RasterizerInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    RasterizerInfo.pNext = nullptr;
-    RasterizerInfo.flags = 0;
-    RasterizerInfo.depthClampEnable = VK_FALSE;
-    RasterizerInfo.rasterizerDiscardEnable = VK_FALSE;
-    RasterizerInfo.polygonMode = VK_POLYGON_MODE_FILL;
-    RasterizerInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-    RasterizerInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
-    RasterizerInfo.depthBiasEnable = VK_FALSE;
-    RasterizerInfo.depthBiasConstantFactor = 0.0f;
-    RasterizerInfo.depthBiasClamp = 0.0f;
-    RasterizerInfo.depthBiasSlopeFactor = 0.0f;
-    RasterizerInfo.lineWidth = 1.0f;
-
-    //? Multisample Info
-    VkPipelineMultisampleStateCreateInfo MultisampleInfo;
-    MultisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    MultisampleInfo.pNext = nullptr;
-    MultisampleInfo.flags = 0;
-    MultisampleInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-    MultisampleInfo.sampleShadingEnable = VK_FALSE;
-    MultisampleInfo.minSampleShading = 1.0f;
-    MultisampleInfo.pSampleMask = nullptr;
-    MultisampleInfo.alphaToCoverageEnable = VK_FALSE;
-    MultisampleInfo.alphaToOneEnable = VK_FALSE;
-
-#if 0
-    //? Depth Stencil Info
-    VkPipelineDepthStencilStateCreateInfo DepthStencilInfo = {};
-    DepthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    DepthStencilInfo.pNext = nullptr;
-    DepthStencilInfo.flags = 0;
-    DepthStencilInfo.depthTestEnable = VK_FALSE;
-    DepthStencilInfo.depthWriteEnable = VK_FALSE;
-    DepthStencilInfo.depthBoundsTestEnable = VK_FALSE;
-    DepthStencilInfo.stencilTestEnable = VK_FALSE;
-    // DepthStencilInfo.front = 0;
-    // DepthStencilInfo.back = 0;
-    DepthStencilInfo.minDepthBounds = 0.0f;
-    DepthStencilInfo.maxDepthBounds = 1.0f;
-#endif
-
-    //? Color Blend Info
-    VkPipelineColorBlendAttachmentState BlendAttachment;
-    BlendAttachment.blendEnable = VK_FALSE;
-    // NOTE: Src is the color calculated by the fragment shader. Dst is the color already there in the framebuffer
-    // attachment.
-    BlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    BlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-    BlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-    BlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    BlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    BlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-    BlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-                                     VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    VkPipelineColorBlendStateCreateInfo ColorBlendInfo;
-    ColorBlendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    ColorBlendInfo.pNext = nullptr;
-    ColorBlendInfo.flags = 0;
-    ColorBlendInfo.logicOpEnable = VK_FALSE;
-    ColorBlendInfo.logicOp = VK_LOGIC_OP_CLEAR;
-    ColorBlendInfo.attachmentCount = 1;
-    ColorBlendInfo.pAttachments = &BlendAttachment;
-    ColorBlendInfo.blendConstants[0] = 0.0f;
-    ColorBlendInfo.blendConstants[1] = 0.0f;
-    ColorBlendInfo.blendConstants[2] = 0.0f;
-    ColorBlendInfo.blendConstants[3] = 0.0f;
-
-    //? Pipeline Layout
-    ASSERT((pPipeline->GraphicsPipelineLayout != VK_NULL_HANDLE));
-
-    //? Dynamic State
-    VkDynamicState DynamicStates[] = {VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT};
-    VkPipelineDynamicStateCreateInfo DynamicsInfo = {};
-    DynamicsInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    DynamicsInfo.dynamicStateCount = ARRAY_SIZE(DynamicStates);
-    DynamicsInfo.pDynamicStates = DynamicStates;
-
-    VkGraphicsPipelineCreateInfo PipelineCreateInfo = {};
-    PipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    PipelineCreateInfo.stageCount = ARRAY_SIZE(ShaderStageInfos);
-    PipelineCreateInfo.pStages = ShaderStageInfos;
-    PipelineCreateInfo.pVertexInputState = &VertexInputInfo;
-    PipelineCreateInfo.pInputAssemblyState = &InputAssemblyInfo;
-    PipelineCreateInfo.pViewportState = &ViewportInfo;
-    PipelineCreateInfo.pRasterizationState = &RasterizerInfo;
-    PipelineCreateInfo.pMultisampleState = &MultisampleInfo;
-    PipelineCreateInfo.pColorBlendState = &ColorBlendInfo;
-    PipelineCreateInfo.pDynamicState = &DynamicsInfo;
-    PipelineCreateInfo.layout = pPipeline->GraphicsPipelineLayout;
-    PipelineCreateInfo.renderPass = Context->GraphicsRenderPass;
-    PipelineCreateInfo.subpass = 0;
-    PipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
-    PipelineCreateInfo.basePipelineIndex = -1;
-
-    VK_CHECK(vkCreateGraphicsPipelines(RenderDevice->LogicalDevice, VK_NULL_HANDLE, 1, &PipelineCreateInfo,
-                                       nullptr, &pPipeline->GraphicsPipeline));
-
-    LogOutput(LogType_Debug, "Created Graphics Pipeline!\n");
-
-    vkDestroyShaderModule(RenderDevice->LogicalDevice, VertexShader, nullptr);
-    vkDestroyShaderModule(RenderDevice->LogicalDevice, FragmentShader, nullptr);
-}
-
-void
-CreateWireframePipeline(shoora_vulkan_context *Context, const char *VertexShaderFile,
-                        const char *FragmentShaderFile)
-{
-    shoora_vulkan_device *RenderDevice = &Context->Device;
-
-    //? Shader Stages
-    auto VertexShader = CreateShaderModule(RenderDevice, VertexShaderFile);
-    auto FragmentShader = CreateShaderModule(RenderDevice, FragmentShaderFile);
-    const char *ShaderCodeEntryPoint = "main";
-    auto VertexShaderStageInfo = GetShaderStageInfo(VertexShader, VK_SHADER_STAGE_VERTEX_BIT,
-                                                    ShaderCodeEntryPoint);
-    auto FragmentShaderStageInfo = GetShaderStageInfo(FragmentShader, VK_SHADER_STAGE_FRAGMENT_BIT,
-                                                      ShaderCodeEntryPoint);
-    VkPipelineShaderStageCreateInfo ShaderStageInfos[] = {VertexShaderStageInfo, FragmentShaderStageInfo};
-
-    //? Vertex Input
-    auto VertexBindingDescription = GetVertexBindingDescription();
-    VkVertexInputAttributeDescription AttributeDescriptions[16];
-    u32 AttributeCount;
-    GetVertexAttributeDescriptions(AttributeDescriptions, &AttributeCount);
-    VkPipelineVertexInputStateCreateInfo VertexInputInfo;
-    VertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    VertexInputInfo.pNext = nullptr;
-    VertexInputInfo.flags = 0;
-    VertexInputInfo.vertexBindingDescriptionCount = 1;
-    VertexInputInfo.pVertexBindingDescriptions = &VertexBindingDescription;
-    VertexInputInfo.vertexAttributeDescriptionCount = AttributeCount;
-    VertexInputInfo.pVertexAttributeDescriptions = AttributeDescriptions;
-
-    //? Input Assembly
-    VkPipelineInputAssemblyStateCreateInfo InputAssemblyInfo;
-    InputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    InputAssemblyInfo.pNext = nullptr;
-    InputAssemblyInfo.flags = 0;
-    InputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    InputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
-
-    //? Viewport Info
-    u32 Width = Context->Swapchain.ImageDimensions.width;
-    u32 Height = Context->Swapchain.ImageDimensions.height;
-    VkViewport Viewport = {};
-    Viewport.x = 0;
-    Viewport.y = 0;
-    Viewport.width = (f32)Width;
-    Viewport.height = (f32)Height;
-    VkRect2D Scissor = {
-        .offset = {0, 0},
-        .extent = {.width = Width, .height = Height}
-    };
-
-    VkPipelineViewportStateCreateInfo ViewportInfo;
-    ViewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    ViewportInfo.pNext = nullptr;
-    ViewportInfo.flags = 0;
-    ViewportInfo.viewportCount = 1;
-    ViewportInfo.pViewports = &Viewport;
-    ViewportInfo.scissorCount = 1;
-    ViewportInfo.pScissors = &Scissor;
-
-    //? Rasterizer Info
-    VkPipelineRasterizationStateCreateInfo RasterizerInfo;
-    RasterizerInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    RasterizerInfo.pNext = nullptr;
-    RasterizerInfo.flags = 0;
-    RasterizerInfo.depthClampEnable = VK_FALSE;
-    RasterizerInfo.rasterizerDiscardEnable = VK_FALSE;
-    RasterizerInfo.polygonMode = VK_POLYGON_MODE_LINE;
-    RasterizerInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-    RasterizerInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
-    RasterizerInfo.depthBiasEnable = VK_FALSE;
-    RasterizerInfo.depthBiasConstantFactor = 0.0f;
-    RasterizerInfo.depthBiasClamp = 0.0f;
-    RasterizerInfo.depthBiasSlopeFactor = 0.0f;
-    RasterizerInfo.lineWidth = 5.0f;
-
-    //? Multisample Info
-    VkPipelineMultisampleStateCreateInfo MultisampleInfo;
-    MultisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    MultisampleInfo.pNext = nullptr;
-    MultisampleInfo.flags = 0;
-    MultisampleInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-    MultisampleInfo.sampleShadingEnable = VK_FALSE;
-    MultisampleInfo.minSampleShading = 1.0f;
-    MultisampleInfo.pSampleMask = nullptr;
-    MultisampleInfo.alphaToCoverageEnable = VK_FALSE;
-    MultisampleInfo.alphaToOneEnable = VK_FALSE;
-
-#if 0
-    //? Depth Stencil Info
-    VkPipelineDepthStencilStateCreateInfo DepthStencilInfo = {};
-    DepthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    DepthStencilInfo.pNext = nullptr;
-    DepthStencilInfo.flags = 0;
-    DepthStencilInfo.depthTestEnable = VK_FALSE;
-    DepthStencilInfo.depthWriteEnable = VK_FALSE;
-    DepthStencilInfo.depthBoundsTestEnable = VK_FALSE;
-    DepthStencilInfo.stencilTestEnable = VK_FALSE;
-    // DepthStencilInfo.front = 0;
-    // DepthStencilInfo.back = 0;
-    DepthStencilInfo.minDepthBounds = 0.0f;
-    DepthStencilInfo.maxDepthBounds = 1.0f;
-#endif
-
-    //? Color Blend Info
-    VkPipelineColorBlendAttachmentState BlendAttachment;
-    BlendAttachment.blendEnable = VK_FALSE;
-    // NOTE: Src is the color calculated by the fragment shader. Dst is the color already there in the framebuffer
-    // attachment.
-    BlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    BlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-    BlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-    BlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    BlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    BlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-    BlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-                                     VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    VkPipelineColorBlendStateCreateInfo ColorBlendInfo;
-    ColorBlendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    ColorBlendInfo.pNext = nullptr;
-    ColorBlendInfo.flags = 0;
-    ColorBlendInfo.logicOpEnable = VK_FALSE;
-    ColorBlendInfo.logicOp = VK_LOGIC_OP_CLEAR;
-    ColorBlendInfo.attachmentCount = 1;
-    ColorBlendInfo.pAttachments = &BlendAttachment;
-    ColorBlendInfo.blendConstants[0] = 0.0f;
-    ColorBlendInfo.blendConstants[1] = 0.0f;
-    ColorBlendInfo.blendConstants[2] = 0.0f;
-    ColorBlendInfo.blendConstants[3] = 0.0f;
-
-    VkPipelineLayoutCreateInfo PipelineLayoutInfo = {};
-    PipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    VK_CHECK(vkCreatePipelineLayout(RenderDevice->LogicalDevice, &PipelineLayoutInfo, nullptr,
-                                    &Context->Pipeline.WireframePipelineLayout));
-
-    //? Dynamic State
-    VkDynamicState DynamicStates[] = {VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT};
-    VkPipelineDynamicStateCreateInfo DynamicsInfo = {};
-    DynamicsInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    DynamicsInfo.dynamicStateCount = ARRAY_SIZE(DynamicStates);
-    DynamicsInfo.pDynamicStates = DynamicStates;
-
-
-
-    VkGraphicsPipelineCreateInfo WireframePipelineCreateInfos[1] = {};
-    WireframePipelineCreateInfos[0].sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    WireframePipelineCreateInfos[0].stageCount = ARRAY_SIZE(ShaderStageInfos);
-    WireframePipelineCreateInfos[0].pStages = ShaderStageInfos;
-    WireframePipelineCreateInfos[0].pVertexInputState = &VertexInputInfo;
-    WireframePipelineCreateInfos[0].pInputAssemblyState = &InputAssemblyInfo;
-    WireframePipelineCreateInfos[0].pViewportState = &ViewportInfo;
-    WireframePipelineCreateInfos[0].pRasterizationState = &RasterizerInfo;
-    WireframePipelineCreateInfos[0].pMultisampleState = &MultisampleInfo;
-    WireframePipelineCreateInfos[0].pColorBlendState = &ColorBlendInfo;
-    WireframePipelineCreateInfos[0].pDynamicState = &DynamicsInfo;
-    WireframePipelineCreateInfos[0].layout = Context->Pipeline.WireframePipelineLayout;
-    WireframePipelineCreateInfos[0].renderPass = Context->GraphicsRenderPass;
-    WireframePipelineCreateInfos[0].subpass = 0;
-    WireframePipelineCreateInfos[0].basePipelineHandle = VK_NULL_HANDLE;
-    WireframePipelineCreateInfos[0].basePipelineIndex = -1;
-
-
-    VkPipeline Pipelines[1];
-
-    VK_CHECK(vkCreateGraphicsPipelines(RenderDevice->LogicalDevice, VK_NULL_HANDLE,
-                                       ARRAY_SIZE(WireframePipelineCreateInfos), WireframePipelineCreateInfos,
-                                       nullptr, Pipelines));
-
-    Context->Pipeline.WireframeGraphicsPipeline = Pipelines[0];
-
-    LogOutput(LogType_Debug, "Created Wireframe Pipeline!\n");
-
-    vkDestroyShaderModule(RenderDevice->LogicalDevice, VertexShader, nullptr);
-    vkDestroyShaderModule(RenderDevice->LogicalDevice, FragmentShader, nullptr);
-}

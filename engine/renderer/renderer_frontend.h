@@ -14,7 +14,7 @@ struct renderer_context
 };
 
 void InitializeRenderer(renderer_context *RendererContext, shoora_app_info *AppInfo);
-void DrawFrame();
+void DrawFrame(shoora_platform_frame_packet *FramePacket);
 void DestroyRenderer(renderer_context *RendererContext);
 
 #define RENDERER_FRONTEND_H

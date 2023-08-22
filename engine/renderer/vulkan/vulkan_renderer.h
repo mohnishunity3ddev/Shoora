@@ -1,10 +1,12 @@
 #if !defined(_VULKAN_RENDERER_H)
 #include "defines.h"
+#include "math/math.h"
 #include "platform/platform.h"
 #include "volk/volk.h"
 #include "vulkan_defines.h"
 #include "vulkan_device.h"
-#include "math/math.h"
+#include <imgui.h>
+
 
 struct shoora_vulkan_debug
 {
@@ -57,6 +59,7 @@ struct shoora_vulkan_device
     u32 GraphicsQueueFamilyInternalIndex;
     u32 TransferQueueFamilyInternalIndex;
     u32 ComputeQueueFamilyInternalIndex;
+    VkQueue GraphicsQueue, TransferQueue, ComputeQueue;
     shoora_vulkan_queue QueueFamilies[SHU_VK_MAX_QUEUE_FAMILY_COUNT];
     // For short-lived commands.
 
@@ -76,6 +79,13 @@ struct shoora_vulkan_buffer
     VkDeviceMemory Memory;
     VkDeviceSize MemSize;
     void *pMapped = nullptr;
+};
+
+struct shoora_vulkan_image
+{
+    VkImage Image;
+    VkImageView ImageView;
+    VkDeviceMemory ImageMemory;
 };
 
 struct shoora_vulkan_swapchain
@@ -98,6 +108,7 @@ struct shoora_vulkan_swapchain
     u32 ImageCount;
     VkImage Images[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
     VkImageView ImageViews[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
+    shoora_vulkan_image DepthStencilImage;
     VkFramebuffer ImageFramebuffers[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
 
     VkDescriptorSetLayout UniformSetLayout;
@@ -130,10 +141,41 @@ struct shoora_vulkan_synchronization
 
 struct shoora_vulkan_pipeline
 {
-    VkPipelineLayout GraphicsPipelineLayout;
-    VkPipelineLayout WireframePipelineLayout;
     VkPipeline GraphicsPipeline;
+    VkPipelineLayout GraphicsPipelineLayout;
     VkPipeline WireframeGraphicsPipeline;
+    VkPipelineLayout WireframePipelineLayout;
+};
+
+struct shoora_imgui_push_constant_block
+{
+    vec2 Scale;
+    vec2 Translate;
+};
+
+struct shoora_vulkan_imgui
+{
+    shoora_vulkan_device *RenderDevice;
+    ImGuiStyle UIStyle;
+    
+    VkImage FontImage = VK_NULL_HANDLE;
+    VkSampler FontSampler = VK_NULL_HANDLE;
+    VkDeviceMemory FontMemory = VK_NULL_HANDLE;
+    VkImageView FontImageView = VK_NULL_HANDLE;
+
+    VkDescriptorPool DescriptorPool;
+    VkDescriptorSetLayout DescriptorSetLayout;
+    VkDescriptorSet DescriptorSet;
+
+    VkPipelineLayout PipelineLayout;
+    VkPipeline Pipeline;
+
+    shoora_vulkan_buffer VertexBuffer;
+    u32 VertexCount;
+    shoora_vulkan_buffer IndexBuffer;
+    u32 IndexCount;
+
+    shoora_imgui_push_constant_block PushConstantBlock;
 };
 
 struct shoora_vulkan_context
@@ -148,13 +190,15 @@ struct shoora_vulkan_context
     shoora_vulkan_buffer IndexBuffer;
     shoora_vulkan_synchronization SyncHandles;
 
+    shoora_vulkan_imgui ImContext;
+
     b32 IsInitialized;
     u32 CurrentFrame;
     u32 FrameCounter;
 };
 
 void InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo);
-void DrawFrameInVulkan();
+void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket);
 void DestroyVulkanRenderer(shoora_vulkan_context *Context);
 
 #define _VULKAN_RENDERER_H

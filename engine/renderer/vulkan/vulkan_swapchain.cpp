@@ -137,13 +137,11 @@ SelectImageTransforms(shoora_vulkan_swapchain *Swapchain, VkSurfaceTransformFlag
     // }
 }
 
-#if 0
-void
+inline void
 SetSwapchainDepthFormat(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain)
 {
     Swapchain->DepthFormat = GetSuitableDepthAttachmentFormat(RenderDevice);
 }
-#endif
 
 void
 SelectImageFormats(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
@@ -214,11 +212,9 @@ SelectImageFormats(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *
         }
     }
 
-    ASSERT(FormatFound);
-
-#if 0
     SetSwapchainDepthFormat(RenderDevice, Swapchain);
-#endif
+
+    ASSERT(FormatFound);
 }
 
 void
@@ -290,21 +286,43 @@ CreateSwapchainImageViews(shoora_vulkan_device *RenderDevice, shoora_vulkan_swap
 }
 
 void
+SetupDepthStencil(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain)
+{
+    shoora_vulkan_image *pImage = &Swapchain->DepthStencilImage;
+
+    vec2 Dim = Vec2(Swapchain->ImageDimensions.width, Swapchain->ImageDimensions.height);
+
+    VkImageAspectFlags Aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
+    if(Swapchain->DepthFormat >= VK_FORMAT_D16_UNORM_S8_UINT)
+    {
+        Aspect |= VK_IMAGE_ASPECT_STENCIL_BIT;
+    }
+
+    CreateSimpleImage2D(RenderDevice, Dim, Swapchain->DepthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                        Aspect, &pImage->Image, &pImage->ImageMemory, &pImage->ImageView);
+}
+
+void
 CreateSwapchainFramebuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, VkRenderPass RenderPass)
 {
     ASSERT(Swapchain->ImageCount <= ARRAY_SIZE(Swapchain->ImageFramebuffers))
+
+    VkImageView Attachments[2];
+    Attachments[1] = Swapchain->DepthStencilImage.ImageView;
 
     for(u32 Index = 0;
         Index < Swapchain->ImageCount;
         ++Index)
     {
+        Attachments[0] = Swapchain->ImageViews[Index];
+
         VkFramebufferCreateInfo CreateInfo;
         CreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         CreateInfo.pNext = nullptr;
         CreateInfo.flags = 0;
         CreateInfo.renderPass = RenderPass;
-        CreateInfo.attachmentCount = 1;
-        CreateInfo.pAttachments = &Swapchain->ImageViews[Index];
+        CreateInfo.attachmentCount = 2;
+        CreateInfo.pAttachments = Attachments;
         CreateInfo.width = Swapchain->ImageDimensions.width;
         CreateInfo.height = Swapchain->ImageDimensions.height;
         CreateInfo.layers = 1;
@@ -492,7 +510,7 @@ CreateSwapchain(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swa
     CreateInfo.imageUsage = SwapchainInfo->ImageUsageFlags;
     CreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     CreateInfo.queueFamilyIndexCount = 0;
-    CreateInfo.pQueueFamilyIndices = 0;
+    CreateInfo.pQueueFamilyIndices = nullptr;
     CreateInfo.preTransform = SwapchainInfo->TransformFlagBits;
 
     // TODO)): Read More about this!
@@ -512,6 +530,7 @@ CreateSwapchain(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swa
 
     GetSwapchainImageHandles(RenderDevice, Swapchain);
     CreateSwapchainImageViews(RenderDevice, Swapchain);
+    SetupDepthStencil(RenderDevice, Swapchain);
     AllocateDrawCommandBuffers(RenderDevice, Swapchain);
 
     LogOutput(LogType_Info, "Swapchain Created!\n");
@@ -622,6 +641,7 @@ DestroySwapchain(shoora_vulkan_context *Context)
 {
     DestroySwapchainFramebuffers(&Context->Device, &Context->Swapchain);
     DestroySwapchainImageViews(&Context->Device, &Context->Swapchain);
+    DestroyImage2D(&Context->Device, &Context->Swapchain.DepthStencilImage);
     vkDestroySwapchainKHR(Context->Device.LogicalDevice, Context->Swapchain.Handle, 0);
     LogOutput(LogType_Warn, "Destroyed Swapchain!\n");
 }

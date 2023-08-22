@@ -127,6 +127,36 @@ GetDeviceMemoryType(shoora_vulkan_device *RenderDevice, u32 DesiredMemoryTypeBit
     return Result;
 }
 
+#if 0
+b32
+GetSupportedDepthFormat(shoora_vulkan_device *RenderDevice, VkFormat *pDepthFormat)
+{
+    // Since all depth formats may be optional, we need to find a suitable depth format to use
+    // Start with the highest precision packed format
+    VkFormat FormatList[] =
+    {
+        VK_FORMAT_D32_SFLOAT_S8_UINT,
+        VK_FORMAT_D32_SFLOAT,
+        VK_FORMAT_D24_UNORM_S8_UINT,
+        VK_FORMAT_D16_UNORM_S8_UINT,
+        VK_FORMAT_D16_UNORM
+    };
+
+    for (auto &Format : FormatList)
+    {
+        VkFormatProperties FormatProps;
+        vkGetPhysicalDeviceFormatProperties(RenderDevice->PhysicalDevice, Format, &FormatProps);
+        if (FormatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+        {
+            *pDepthFormat = Format;
+            return true;
+        }
+    }
+
+    return false;
+}
+#endif
+
 b32
 CheckSurfaceSupport(VkPhysicalDevice PhysicalDevice, u32 QueueFamilyIndex, VkSurfaceKHR Surface)
 {
@@ -544,6 +574,10 @@ AcquireRequiredDeviceQueueHandles(shoora_vulkan_device *RenderDevice)
         vkGetDeviceQueue(RenderDevice->LogicalDevice, DeviceQueue->FamilyIndex, 0, &DeviceQueue->Handle);
         ASSERT(DeviceQueue->Handle != VK_NULL_HANDLE);
     }
+
+    RenderDevice->GraphicsQueue = RenderDevice->QueueFamilies[RenderDevice->GraphicsQueueFamilyInternalIndex].Handle;
+    RenderDevice->TransferQueue = RenderDevice->QueueFamilies[RenderDevice->TransferQueueFamilyInternalIndex].Handle;
+    RenderDevice->ComputeQueue = RenderDevice->QueueFamilies[RenderDevice->ComputeQueueFamilyInternalIndex].Handle;
 }
 
 void

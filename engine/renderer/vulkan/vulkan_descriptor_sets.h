@@ -4,6 +4,24 @@
 #include "volk/volk.h"
 #include "vulkan_renderer.h"
 
+// Initializers!!!!
+VkDescriptorImageInfo GetImageDescriptorInfo(VkSampler Sampler, VkImageView ImageView, VkImageLayout ImageLayout);
+
+VkDescriptorPoolSize GetDescriptorPoolSize(VkDescriptorType DescriptorType, u32 DescriptorCount);
+void CreateDescriptorPool(shoora_vulkan_device *RenderDevice, u32 PoolSizeCount, VkDescriptorPoolSize *pSizes,
+                          u32 DescriptorSetCount, VkDescriptorPool *pDescriptorPool);
+VkDescriptorSetLayoutBinding GetDescriptorSetLayoutBinding(u32 BindingIndex, VkDescriptorType DescriptorType,
+                                                              u32 DescriptorCount,
+                                                              VkShaderStageFlags ConsumingShaderStage);
+void CreateDescriptorSetLayout(shoora_vulkan_device *RenderDevice, VkDescriptorSetLayoutBinding *Bindings,
+                               u32 BindingCount, VkDescriptorSetLayout *pSetLayout);
+void AllocateDescriptorSets(shoora_vulkan_device *RenderDevice, VkDescriptorPool Pool, u32 Count,
+                            VkDescriptorSetLayout *pSetLayouts, VkDescriptorSet *pSets);
+void UpdateBufferDescriptorSet(shoora_vulkan_device *RenderDevice, VkDescriptorSet DescriptorSet, u32 BindingIndex,
+                               VkDescriptorType DescriptorType, VkBuffer BufferHandle, u64 BufferSize);
+void UpdateImageDescriptorSet(shoora_vulkan_device *RenderDevice, VkDescriptorSet DescriptorSet, u32 BindingIndex,
+                              VkDescriptorType DescriptorType, VkDescriptorImageInfo *pImageInfo);
+
 void CreateUniformDescriptors(shoora_vulkan_device *RenderDevice, VkShaderStageFlags ConsumingShaderStage,
                               VkDescriptorSetLayout *pSetLayout, u32 PushConstantCount,
                               VkPushConstantRange *pPushConstants, u32 UniformBufferCount,

@@ -52,31 +52,31 @@
 
 Index of this file:
 
-// [SECTION] Forward Declarations
-// [SECTION] Helpers
-// [SECTION] Demo Window / ShowDemoWindow()
-// - ShowDemoWindow()
-// - sub section: ShowDemoWindowWidgets()
-// - sub section: ShowDemoWindowLayout()
-// - sub section: ShowDemoWindowPopups()
-// - sub section: ShowDemoWindowTables()
-// - sub section: ShowDemoWindowInputs()
-// [SECTION] About Window / ShowAboutWindow()
-// [SECTION] Style Editor / ShowStyleEditor()
-// [SECTION] User Guide / ShowUserGuide()
-// [SECTION] Example App: Main Menu Bar / ShowExampleAppMainMenuBar()
-// [SECTION] Example App: Debug Console / ShowExampleAppConsole()
-// [SECTION] Example App: Debug Log / ShowExampleAppLog()
-// [SECTION] Example App: Simple Layout / ShowExampleAppLayout()
-// [SECTION] Example App: Property Editor / ShowExampleAppPropertyEditor()
-// [SECTION] Example App: Long Text / ShowExampleAppLongText()
-// [SECTION] Example App: Auto Resize / ShowExampleAppAutoResize()
-// [SECTION] Example App: Constrained Resize / ShowExampleAppConstrainedResize()
-// [SECTION] Example App: Simple overlay / ShowExampleAppSimpleOverlay()
-// [SECTION] Example App: Fullscreen window / ShowExampleAppFullscreen()
-// [SECTION] Example App: Manipulating window titles / ShowExampleAppWindowTitles()
-// [SECTION] Example App: Custom Rendering using ImDrawList API / ShowExampleAppCustomRendering()
-// [SECTION] Example App: Documents Handling / ShowExampleAppDocuments()
+[SECTION] Forward Declarations
+[SECTION] Helpers
+[SECTION] Demo Window / ShowDemoWindow()
+- ShowDemoWindow()
+- sub section: ShowDemoWindowWidgets()
+- sub section: ShowDemoWindowLayout()
+- sub section: ShowDemoWindowPopups()
+- sub section: ShowDemoWindowTables()
+- sub section: ShowDemoWindowInputs()
+[SECTION] About Window / ShowAboutWindow()
+[SECTION] Style Editor / ShowStyleEditor()
+[SECTION] User Guide / ShowUserGuide()
+[SECTION] Example App: Main Menu Bar / ShowExampleAppMainMenuBar()
+[SECTION] Example App: Debug Console / ShowExampleAppConsole()
+[SECTION] Example App: Debug Log / ShowExampleAppLog()
+[SECTION] Example App: Simple Layout / ShowExampleAppLayout()
+[SECTION] Example App: Property Editor / ShowExampleAppPropertyEditor()
+[SECTION] Example App: Long Text / ShowExampleAppLongText()
+[SECTION] Example App: Auto Resize / ShowExampleAppAutoResize()
+[SECTION] Example App: Constrained Resize / ShowExampleAppConstrainedResize()
+[SECTION] Example App: Simple overlay / ShowExampleAppSimpleOverlay()
+[SECTION] Example App: Fullscreen window / ShowExampleAppFullscreen()
+[SECTION] Example App: Manipulating window titles / ShowExampleAppWindowTitles()
+[SECTION] Example App: Custom Rendering using ImDrawList API / ShowExampleAppCustomRendering()
+[SECTION] Example App: Documents Handling / ShowExampleAppDocuments()
 
 */
 
@@ -261,7 +261,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
     static bool show_app_fullscreen = false;
     static bool show_app_window_titles = false;
     static bool show_app_custom_rendering = false;
-
+    
     if (show_app_main_menu_bar)       ShowExampleAppMainMenuBar();
     if (show_app_documents)           ShowExampleAppDocuments(&show_app_documents);
     if (show_app_console)             ShowExampleAppConsole(&show_app_console);

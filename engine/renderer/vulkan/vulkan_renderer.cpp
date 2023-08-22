@@ -4,6 +4,7 @@
 #include "vulkan_render_pass.h"
 #include "vulkan_pipeline.h"
 #include "vulkan_buffer.h"
+#include "vulkan_imgui.h"
 #include <memory.h>
 
 static shoora_vulkan_context *Context = nullptr;
@@ -81,7 +82,9 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
                            &VulkanContext->Pipeline);
     CreateWireframePipeline(VulkanContext, "shaders/spirv/wireframe.vert.spv", "shaders/spirv/wireframe.frag.spv");
     CreateSynchronizationPrimitives(&VulkanContext->Device, &VulkanContext->SyncHandles);
-    
+
+    PrepareImGui(RenderDevice, &VulkanContext->ImContext, ScreenDim, VulkanContext->GraphicsRenderPass);
+
     AppInfo->WindowResizeCallback = &WindowResizedCallback;
     QuitApplication = AppInfo->ExitApplication;
     ASSERT(QuitApplication);
@@ -105,7 +108,7 @@ AdvanceToNextFrame()
     ++Context->FrameCounter;
 }
 
-void DrawFrameInVulkan()
+void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 {
     ASSERT(Context != nullptr);
     if(!Context->IsInitialized || Context->CurrentFrame >= SHU_MAX_FRAMES_IN_FLIGHT)
@@ -133,10 +136,6 @@ void DrawFrameInVulkan()
         &Context->Swapchain.DrawCommandBuffers[ImageIndex];
     VkCommandBuffer DrawCmdBuffer = pDrawCmdBuffer->Handle;
 
-    // f32 RedColor = (f32)(Context->FrameCounter % 600) / 600.0f;
-    // f32 GreenColor = (f32)(Context->FrameCounter % 1200) / 1200.0f;
-    // f32 BlueColor = (f32)(Context->FrameCounter % 900) / 900.0f;
-
     UniformData.Color = Vec3(1, 1, 0);
     memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &UniformData,
            sizeof(UniformData));
@@ -146,18 +145,23 @@ void DrawFrameInVulkan()
 
     VkCommandBufferBeginInfo DrawCmdBufferBeginInfo = {};
     DrawCmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    VkClearValue ClearValues[1];
+    VkClearValue ClearValues[2] = {};
     ClearValues[0].color = {{0.2f, 0.3f, 0.3f, 1.0f}};
+    ClearValues[1].depthStencil = { .depth = 0.0f, .stencil = 0};
     VkRect2D RenderArea = {};
     RenderArea.offset = {0, 0};
     RenderArea.extent = Context->Swapchain.ImageDimensions;
+
+    ImGuiNewFrame();
+    ImGuiUpdateBuffers(&Context->Device, &Context->ImContext);
+
     VkRenderPassBeginInfo RenderPassBeginInfo = {};
     RenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     RenderPassBeginInfo.pNext = nullptr;
     RenderPassBeginInfo.renderPass = Context->GraphicsRenderPass;
     RenderPassBeginInfo.framebuffer = Context->Swapchain.ImageFramebuffers[ImageIndex];
     RenderPassBeginInfo.renderArea = RenderArea;
-    RenderPassBeginInfo.clearValueCount = 1;
+    RenderPassBeginInfo.clearValueCount = ARRAY_SIZE(ClearValues);
     RenderPassBeginInfo.pClearValues = ClearValues;
     VK_CHECK(vkBeginCommandBuffer(DrawCmdBuffer, &DrawCmdBufferBeginInfo));
         pDrawCmdBuffer->IsRecording = true;
@@ -191,6 +195,9 @@ void DrawFrameInVulkan()
             vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(RectIndices), 1, 0, 0, 1);
         }
 
+        ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
+
+
         vkCmdEndRenderPass(DrawCmdBuffer);
     VK_CHECK(vkEndCommandBuffer(DrawCmdBuffer));
 
@@ -222,6 +229,9 @@ void DrawFrameInVulkan()
     VK_CHECK(vkQueuePresentKHR(GraphicsQueue, &PresentInfo));
 
     AdvanceToNextFrame();
+    ImGuiUpdateInput(FramePacket->LeftMouseClicked,
+                     Vec2(FramePacket->MouseXPos, FramePacket->MouseYPos));
+    VK_CHECK(vkQueueWaitIdle(Context->Device.GraphicsQueue));
 }
 
 void
@@ -230,6 +240,7 @@ DestroyVulkanRenderer(shoora_vulkan_context *Context)
     VK_CHECK(vkDeviceWaitIdle(Context->Device.LogicalDevice));
     shoora_vulkan_device *RenderDevice = &Context->Device;
 
+    ImGuiCleanup(RenderDevice, &Context->ImContext);
     DestroySwapchainUniformResources(RenderDevice, &Context->Swapchain);
 
     DestroyAllSynchronizationPrimitives(RenderDevice, &Context->SyncHandles);

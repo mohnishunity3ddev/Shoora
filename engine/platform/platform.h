@@ -51,6 +51,13 @@ struct shoora_app_info
     exit_application *ExitApplication;
 };
 
+struct shoora_platform_frame_packet
+{
+    b32 LeftMouseClicked;
+    f32 MouseXPos;
+    f32 MouseYPos;
+};
+
 SHU_EXPORT void LogOutput(LogType LogType, const char *Format, ...);
 SHU_EXPORT void LogString(const char *String);
 

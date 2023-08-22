@@ -17,12 +17,6 @@ struct shoora_buffer_transition_info
     u32 NewQueueFamily;
 };
 
-struct shoora_buffer_info
-{
-    VkBuffer Buffer;
-    VkDeviceMemory Memory;
-};
-
 void CreateVertexBuffer(shoora_vulkan_device *RenderDevice, shoora_vertex_info *Vertices, u32 VertexCount,
                         u32 *Indices, u32 IndexCount, shoora_vulkan_buffer *outVertexBuffer,
                         shoora_vulkan_buffer *outIndexBuffer);
@@ -31,10 +25,14 @@ void DestroyVertexBuffer(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffe
 
 void CreateUniformBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *pUniformBuffers,
                           u32 UniformBufferCount, size_t Size);
+shoora_vulkan_buffer CreateBuffer(shoora_vulkan_device *RenderDevice, VkBufferUsageFlags Usage,
+                                                VkSharingMode SharingMode, VkMemoryPropertyFlags DesiredMemoryType,
+                                                u8 *pData, size_t DataSize);
 
 void DestroyUniformBuffer(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *pUniformBuffer);
 void DestroyUniformBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *pUniformBuffers,
                            u32 UniformBufferCount);
+void DestroyBuffer(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *pBuffer);
 
 #define VULKAN_BUFFER_H
 #endif // VULKAN_BUFFER_H

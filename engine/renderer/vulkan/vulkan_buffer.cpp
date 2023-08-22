@@ -138,11 +138,11 @@ CopyDataBetweenBuffers()
     vkCmdCopyBuffer(CommandBuffer, SourceBuffer, DestinationBuffer, 1, &Region);
 }
 
-shoora_buffer_info
+shoora_vulkan_buffer
 CreateBuffer(shoora_vulkan_device *RenderDevice, VkBufferUsageFlags Usage, VkSharingMode SharingMode,
-             VkMemoryPropertyFlags DesiredMemoryType, u8 *pData, size_t DataSize)
+                           VkMemoryPropertyFlags DesiredMemoryType, u8 *pData, size_t DataSize)
 {
-    shoora_buffer_info Result;
+    shoora_vulkan_buffer Result;
 
     VkBuffer Buffer;
     VkDeviceMemory Memory;
@@ -168,16 +168,18 @@ CreateBuffer(shoora_vulkan_device *RenderDevice, VkBufferUsageFlags Usage, VkSha
     MemoryAllocateInfo.allocationSize = MemRequirements.size;
     MemoryAllocateInfo.memoryTypeIndex = GetDeviceMemoryType(RenderDevice, MemRequirements.memoryTypeBits,
                                                              DesiredMemoryType);
-
+    
     VK_CHECK(vkAllocateMemory(RenderDevice->LogicalDevice, &MemoryAllocateInfo, nullptr, &Memory));
 
-    if(pData != nullptr)
-    {
-        ASSERT(DesiredMemoryType != VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    u8 *pBufferData;
+    VK_CHECK(vkMapMemory(RenderDevice->LogicalDevice, Memory, 0, MemRequirements.size, 0, (void **)&pBufferData));
 
-        u8 *pBufferData;
-        VK_CHECK(vkMapMemory(RenderDevice->LogicalDevice, Memory, 0, MemRequirements.size, 0,
-                            (void **)&pBufferData));
+    if (pData != nullptr)
+    {
+        ASSERT(DesiredMemoryType != VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT &&
+               "You cannot expect to provide data for the buffer and have a GPU Local Memory since you can't "
+               "directly store data from the CPU to the GPU. You have to use a staging buffer to upload the data "
+               "to GPU Local Memory.");
         memcpy(pBufferData, pData, DataSize);
         vkUnmapMemory(RenderDevice->LogicalDevice, Memory);
         pBufferData = nullptr;
@@ -185,8 +187,11 @@ CreateBuffer(shoora_vulkan_device *RenderDevice, VkBufferUsageFlags Usage, VkSha
 
     VK_CHECK(vkBindBufferMemory(RenderDevice->LogicalDevice, Buffer, Memory, 0));
 
-    Result.Buffer = Buffer;
-    Result.Memory = Memory;
+    Result =
+    {
+        .Handle = Buffer, .Memory = Memory,
+        .MemSize = DataSize, .pMapped = pBufferData
+    };
 
     return Result;
 }
@@ -254,38 +259,38 @@ CreateVertexBuffer(shoora_vulkan_device *RenderDevice, shoora_vertex_info *Verti
     size_t RequiredVertexBufferSize = VertexCount*sizeof(shoora_vertex_info);
     size_t RequiredIndexBufferSize = IndexCount*sizeof(u32);
 
-    shoora_buffer_info StagingVertexBuffer = CreateBuffer(RenderDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                                          VK_SHARING_MODE_EXCLUSIVE,
-                                                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                                          (u8 *)Vertices, RequiredVertexBufferSize);
-    shoora_buffer_info VertexBuffer = CreateBuffer(RenderDevice,
-                                                   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                                   VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                   nullptr, RequiredVertexBufferSize);
+    auto StagingVertexBuffer = CreateBuffer(RenderDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                            VK_SHARING_MODE_EXCLUSIVE,
+                                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                            (u8 *)Vertices, RequiredVertexBufferSize);
+    auto VertexBuffer = CreateBuffer(RenderDevice,
+                                     VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                     VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, nullptr,
+                                     RequiredVertexBufferSize);
 
-    shoora_buffer_info StagingIndexBuffer = CreateBuffer(RenderDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                                          VK_SHARING_MODE_EXCLUSIVE,
-                                                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                                          (u8 *)Indices, RequiredIndexBufferSize);
-    shoora_buffer_info IndexBuffer = CreateBuffer(RenderDevice,
-                                                   VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                                   VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                   nullptr, RequiredIndexBufferSize);
+    auto StagingIndexBuffer = CreateBuffer(RenderDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                           VK_SHARING_MODE_EXCLUSIVE,
+                                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                           (u8 *)Indices, RequiredIndexBufferSize);
+    auto IndexBuffer = CreateBuffer(RenderDevice,
+                                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                    VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, nullptr,
+                                    RequiredIndexBufferSize);
 
-    VkBuffer SourceBuffers[] = {StagingVertexBuffer.Buffer, StagingIndexBuffer.Buffer};
-    VkBuffer DestinationBuffers[] = {VertexBuffer.Buffer, IndexBuffer.Buffer};
+    VkBuffer SourceBuffers[] = {StagingVertexBuffer.Handle, StagingIndexBuffer.Handle};
+    VkBuffer DestinationBuffers[] = {VertexBuffer.Handle, IndexBuffer.Handle};
     size_t CopySizes[] = {RequiredVertexBufferSize, RequiredIndexBufferSize};
-    CopyBuffers(RenderDevice, SourceBuffers, DestinationBuffers, CopySizes, ARRAY_SIZE(SourceBuffers));
+    CopyBuffers(RenderDevice, SourceBuffers, DestinationBuffers, CopySizes, ARRAY_SIZE(CopySizes));
 
-    vkDestroyBuffer(RenderDevice->LogicalDevice, StagingVertexBuffer.Buffer, nullptr);
+    vkDestroyBuffer(RenderDevice->LogicalDevice, StagingVertexBuffer.Handle, nullptr);
     vkFreeMemory(RenderDevice->LogicalDevice, StagingVertexBuffer.Memory, nullptr);
-    vkDestroyBuffer(RenderDevice->LogicalDevice, StagingIndexBuffer.Buffer, nullptr);
+    vkDestroyBuffer(RenderDevice->LogicalDevice, StagingIndexBuffer.Handle, nullptr);
     vkFreeMemory(RenderDevice->LogicalDevice, StagingIndexBuffer.Memory, nullptr);
 
-    outVertexBuffer->Handle = VertexBuffer.Buffer;
+    outVertexBuffer->Handle = VertexBuffer.Handle;
     outVertexBuffer->Memory = VertexBuffer.Memory;
 
-    outIndexBuffer->Handle = IndexBuffer.Buffer;
+    outIndexBuffer->Handle = IndexBuffer.Handle;
     outIndexBuffer->Memory = IndexBuffer.Memory;
 
     LogOutput(LogType_Info, "Created Vertex buffer and Index buffers\n");
@@ -332,16 +337,33 @@ CreateUniformBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *p
 }
 
 void
+DestroyBuffer(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *pBuffer)
+{
+    if(pBuffer->pMapped)
+    {
+        vkUnmapMemory(RenderDevice->LogicalDevice, pBuffer->Memory);
+        pBuffer->pMapped = nullptr;
+    }
+
+    if(pBuffer->Memory != VK_NULL_HANDLE)
+    {
+        vkFreeMemory(RenderDevice->LogicalDevice, pBuffer->Memory, nullptr);
+        pBuffer->Memory = VK_NULL_HANDLE;
+    }
+
+    if(pBuffer->Handle != VK_NULL_HANDLE)
+    {
+        vkDestroyBuffer(RenderDevice->LogicalDevice, pBuffer->Handle, nullptr);
+        pBuffer->Handle = VK_NULL_HANDLE;
+    }
+
+    pBuffer->MemSize = 0;
+}
+
+void
 DestroyUniformBuffer(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *pUniformBuffer)
 {
-    vkUnmapMemory(RenderDevice->LogicalDevice, pUniformBuffer->Memory);
-    pUniformBuffer->pMapped = nullptr;
-
-    vkFreeMemory(RenderDevice->LogicalDevice, pUniformBuffer->Memory, nullptr);
-    pUniformBuffer->Memory = VK_NULL_HANDLE;
-
-    vkDestroyBuffer(RenderDevice->LogicalDevice, pUniformBuffer->Handle, nullptr);
-    pUniformBuffer->Handle = VK_NULL_HANDLE;
+    DestroyBuffer(RenderDevice, pUniformBuffer);
 }
 
 void
@@ -363,11 +385,8 @@ void
 DestroyVertexBuffer(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *pVertexBuffer,
                     shoora_vulkan_buffer *pIndexBuffer)
 {
-    vkDestroyBuffer(RenderDevice->LogicalDevice, pVertexBuffer->Handle, nullptr);
-    vkFreeMemory(RenderDevice->LogicalDevice, pVertexBuffer->Memory, nullptr);
-
-    vkDestroyBuffer(RenderDevice->LogicalDevice, pIndexBuffer->Handle, nullptr);
-    vkFreeMemory(RenderDevice->LogicalDevice, pIndexBuffer->Memory, nullptr);
+    DestroyBuffer(RenderDevice, pVertexBuffer);
+    DestroyBuffer(RenderDevice, pIndexBuffer);
 
     LogOutput(LogType_Warn, "Destroyed Vertex and index buffers\n");
 }
