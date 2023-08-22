@@ -5,15 +5,9 @@ struct vec2
 {
     union
     {
-        struct
-        {
-            f32 x, y;
-        };
-
-        struct
-        {
-            f32 u, v;
-        };
+        struct { f32 x, y; };
+        struct { f32 u, v; };
+        f32 E[2];
     };
 
     inline vec2 operator+=(vec2 A);
@@ -45,7 +39,7 @@ struct vec3
         struct { f32 Reserved_3; vec2 vw; };
         struct { vec2 rg; f32 Reserved_4; };
         struct { f32 Reserved_5; vec2 gb; };
-
+        f32 E[3];
     };
 
     inline vec3 operator+=(vec3 A);

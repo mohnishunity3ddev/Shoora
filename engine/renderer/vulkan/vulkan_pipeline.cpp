@@ -445,7 +445,6 @@ CreateWireframePipeline(shoora_vulkan_context *Context, const char *VertexShader
     MultisampleInfo.alphaToCoverageEnable = VK_FALSE;
     MultisampleInfo.alphaToOneEnable = VK_FALSE;
 
-#if 1
     //? Depth Stencil Info
     VkPipelineDepthStencilStateCreateInfo DepthStencilInfo = {};
     DepthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -456,11 +455,8 @@ CreateWireframePipeline(shoora_vulkan_context *Context, const char *VertexShader
     DepthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
     DepthStencilInfo.depthBoundsTestEnable = VK_FALSE;
     DepthStencilInfo.stencilTestEnable = VK_FALSE;
-    // DepthStencilInfo.front = 0;
-    // DepthStencilInfo.back = 0;
     DepthStencilInfo.minDepthBounds = 0.0f;
     DepthStencilInfo.maxDepthBounds = 1.0f;
-#endif
 
     //? Color Blend Info
     VkPipelineColorBlendAttachmentState BlendAttachment;
@@ -494,7 +490,7 @@ CreateWireframePipeline(shoora_vulkan_context *Context, const char *VertexShader
                                     &Context->Pipeline.WireframePipelineLayout));
 
     //? Dynamic State
-    VkDynamicState DynamicStates[] = {VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT};
+    VkDynamicState DynamicStates[] = {VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_LINE_WIDTH};
     VkPipelineDynamicStateCreateInfo DynamicsInfo = {};
     DynamicsInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     DynamicsInfo.dynamicStateCount = ARRAY_SIZE(DynamicStates);

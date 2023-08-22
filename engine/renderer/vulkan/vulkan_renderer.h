@@ -157,7 +157,7 @@ struct shoora_vulkan_imgui
 {
     shoora_vulkan_device *RenderDevice;
     ImGuiStyle UIStyle;
-    
+
     VkImage FontImage = VK_NULL_HANDLE;
     VkSampler FontSampler = VK_NULL_HANDLE;
     VkDeviceMemory FontMemory = VK_NULL_HANDLE;

@@ -54,6 +54,7 @@ struct shoora_app_info
 struct shoora_platform_frame_packet
 {
     b32 LeftMouseClicked;
+    b32 IsLeftMouseDown;
     f32 MouseXPos;
     f32 MouseYPos;
 };

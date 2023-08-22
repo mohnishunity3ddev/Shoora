@@ -33,7 +33,14 @@ struct uniform_data
 };
 static uniform_data UniformData = {};
 
-static b32 WireframeMode = true;
+struct shoora_render_state
+{
+    b8 WireframeMode = true;
+    f32 WireLineWidth = 10.0f;
+    vec3 ClearColor = Vec3(0.2f, 0.3f, 0.3f);
+    vec3 MeshColor = Vec3(1.0f, 0.0f, 0.0f);
+};
+static shoora_render_state RenderState;
 static exit_application *QuitApplication;
 
 void WindowResizedCallback(u32 Width, u32 Height)
@@ -45,6 +52,25 @@ void WindowResizedCallback(u32 Width, u32 Height)
         ASSERT(Context->IsInitialized);
         WindowResized(&Context->Device, &Context->Swapchain, Context->GraphicsRenderPass, Vec2(Width, Height));
     }
+}
+
+void
+ImGuiNewFrame()
+{
+    ImGui::NewFrame();
+
+    ImGui::ShowDemoWindow();
+
+    ImGui::SetNextWindowPos(ImVec2(800, 100), 1 << 2);
+    ImGui::SetNextWindowSize(ImVec2(400, 400), 1 << 2);
+    ImGui::Begin("Inspector");
+    ImGui::Checkbox("Toggle Wireframe", (bool *)&RenderState.WireframeMode);
+    ImGui::SliderFloat("Wireframe Line Width", &RenderState.WireLineWidth, 1.0f, 10.0f);
+    ImGui::ColorEdit3("Clear Color", RenderState.ClearColor.E);
+    ImGui::ColorEdit3("Rectangle Color", RenderState.MeshColor.E);
+    ImGui::End();
+
+    ImGui::Render();
 }
 
 void
@@ -136,9 +162,9 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         &Context->Swapchain.DrawCommandBuffers[ImageIndex];
     VkCommandBuffer DrawCmdBuffer = pDrawCmdBuffer->Handle;
 
-    UniformData.Color = Vec3(1, 1, 0);
-    memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &UniformData,
-           sizeof(UniformData));
+    // RenderState.MeshColor = Vec3(1, 1, 0);
+    memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &RenderState.MeshColor,
+           sizeof(RenderState.MeshColor));
 
     VK_CHECK(vkResetFences(Context->Device.LogicalDevice, 1, &pCurrentFrameFence->Handle));
     VK_CHECK(vkResetCommandBuffer(DrawCmdBuffer, 0));
@@ -146,7 +172,10 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     VkCommandBufferBeginInfo DrawCmdBufferBeginInfo = {};
     DrawCmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     VkClearValue ClearValues[2] = {};
-    ClearValues[0].color = {{0.2f, 0.3f, 0.3f, 1.0f}};
+    ClearValues[0].color =
+    {
+        {RenderState.ClearColor.r, RenderState.ClearColor.g, RenderState.ClearColor.b, 1.0f}
+    };
     ClearValues[1].depthStencil = { .depth = 0.0f, .stencil = 0};
     VkRect2D RenderArea = {};
     RenderArea.offset = {0, 0};
@@ -188,10 +217,11 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 
         vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(RectIndices), 1, 0, 0, 1);
 
-        if(WireframeMode)
+        if(RenderState.WireframeMode)
         {
             vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                               Context->Pipeline.WireframeGraphicsPipeline);
+            vkCmdSetLineWidth(DrawCmdBuffer, RenderState.WireLineWidth);
             vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(RectIndices), 1, 0, 0, 1);
         }
 
@@ -229,8 +259,7 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     VK_CHECK(vkQueuePresentKHR(GraphicsQueue, &PresentInfo));
 
     AdvanceToNextFrame();
-    ImGuiUpdateInput(FramePacket->LeftMouseClicked,
-                     Vec2(FramePacket->MouseXPos, FramePacket->MouseYPos));
+    ImGuiUpdateInput(FramePacket);
     VK_CHECK(vkQueueWaitIdle(Context->Device.GraphicsQueue));
 }
 

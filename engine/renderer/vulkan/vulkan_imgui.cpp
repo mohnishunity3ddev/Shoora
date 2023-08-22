@@ -42,7 +42,7 @@ InitializeImGui(shoora_vulkan_imgui *ImGuiContext, vec2 ScreenDim)
     Style->Colors[ImGuiCol_Header] = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
     Style->Colors[ImGuiCol_CheckMark] = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
 
-    SetStyle(ImGuiContext->UIStyle, 2);
+    SetStyle(ImGuiContext->UIStyle, 0);
 
     ImGuiIO &IO = ImGui::GetIO();
     IO.DisplaySize = ImVec2(ScreenDim.x, ScreenDim.y);
@@ -233,16 +233,6 @@ PrepareImGui(shoora_vulkan_device *RenderDevice, shoora_vulkan_imgui *ImGuiConte
 }
 
 void
-ImGuiNewFrame()
-{
-    ImGui::NewFrame();
-
-    ImGui::ShowDemoWindow();
-
-    ImGui::Render();
-}
-
-void
 ImGuiUpdateBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_imgui *ImContext)
 {
     ImDrawData *ImDrawData = ImGui::GetDrawData();
@@ -281,7 +271,9 @@ ImGuiUpdateBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_imgui *ImCo
     ImDrawVert *VtxDst = (ImDrawVert *)ImContext->VertexBuffer.pMapped;
     ImDrawIdx *IdxDst = (ImDrawIdx *)ImContext->IndexBuffer.pMapped;
 
-    for(int Index = 0; Index < ImDrawData->CmdListsCount; Index++)
+    for(int Index = 0;
+        Index < ImDrawData->CmdListsCount;
+        Index++)
     {
         const ImDrawList *CmdList = ImDrawData->CmdLists[Index];
         memcpy(VtxDst, CmdList->VtxBuffer.Data, CmdList->VtxBuffer.Size * sizeof(ImDrawVert));
@@ -350,12 +342,12 @@ ImGuiDrawFrame(VkCommandBuffer CmdBuffer, shoora_vulkan_imgui *ImContext)
 }
 
 void
-ImGuiUpdateInput(b32 LMouseClicked, vec2 MousePos)
+ImGuiUpdateInput(shoora_platform_frame_packet *InputPacket)
 {
     ImGuiIO &IO = ImGui::GetIO();
 
-    IO.MousePos = ImVec2(MousePos.x, MousePos.y);
-    IO.MouseDown[0] = LMouseClicked;
+    IO.MousePos = ImVec2(InputPacket->MouseXPos, InputPacket->MouseYPos);
+    IO.MouseDown[0] = InputPacket->IsLeftMouseDown;
 }
 
 void

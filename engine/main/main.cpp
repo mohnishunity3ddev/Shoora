@@ -560,12 +560,13 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         if(Win32InputKeyPressed(NewInputState->MouseButtons[0]))
         {
             FramePacket.LeftMouseClicked = true;
-            WIN32_LOG_OUTPUT("Left Mouse Button was pressed at [%f, %f]!\n",
-                             NewInputState->MouseXPos, NewInputState->MouseYPos);
+            // WIN32_LOG_OUTPUT("Left Mouse Button was pressed at [%f, %f]!\n",
+            //                  NewInputState->MouseXPos, NewInputState->MouseYPos);
         }
+        FramePacket.IsLeftMouseDown = NewInputState->MouseButtons[0].IsDown;
         FramePacket.MouseXPos = NewInputState->MouseXPos;
         FramePacket.MouseYPos = NewInputState->MouseYPos;
-        
+
         platform_input_state *Temp = NewInputState;
         NewInputState = OldInputState;
         OldInputState = Temp;
