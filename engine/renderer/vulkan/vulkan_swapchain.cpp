@@ -469,6 +469,7 @@ WindowResized(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapc
     }
 
     // DestroySwapchainUniformResources(&Context->Device, &Context->Swapchain);
+    DestroyImage2D(RenderDevice, &Swapchain->DepthStencilImage);
     DestroySwapchainFramebuffers(RenderDevice, Swapchain);
     DestroySwapchainImageViews(RenderDevice, Swapchain);
     FreeDrawCommandBuffers(RenderDevice, Swapchain);
@@ -479,6 +480,10 @@ WindowResized(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapc
     GetSwapchainImageHandles(RenderDevice, Swapchain);
     CreateSwapchainImageViews(RenderDevice, Swapchain);
     ASSERT(RenderPass != VK_NULL_HANDLE);
+    CreateSimpleImage2D(RenderDevice, ScreenDim, Swapchain->DepthFormat,
+                        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT,
+                        &Swapchain->DepthStencilImage.Image, &Swapchain->DepthStencilImage.ImageMemory,
+                        &Swapchain->DepthStencilImage.ImageView);
     CreateSwapchainFramebuffers(RenderDevice, Swapchain, RenderPass);
 
     AllocateDrawCommandBuffers(RenderDevice, Swapchain);

@@ -51,6 +51,7 @@ void WindowResizedCallback(u32 Width, u32 Height)
     {
         ASSERT(Context->IsInitialized);
         WindowResized(&Context->Device, &Context->Swapchain, Context->GraphicsRenderPass, Vec2(Width, Height));
+        ImGuiUpdateWindowSize(Vec2(Width, Height));
     }
 }
 
@@ -59,7 +60,7 @@ ImGuiNewFrame()
 {
     ImGui::NewFrame();
 
-    ImGui::ShowDemoWindow();
+    // ImGui::ShowDemoWindow();
 
     ImGui::SetNextWindowPos(ImVec2(800, 100), 1 << 2);
     ImGui::SetNextWindowSize(ImVec2(400, 400), 1 << 2);
@@ -259,7 +260,7 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     VK_CHECK(vkQueuePresentKHR(GraphicsQueue, &PresentInfo));
 
     AdvanceToNextFrame();
-    ImGuiUpdateInput(FramePacket);
+    ImGuiUpdateInputState(FramePacket);
     VK_CHECK(vkQueueWaitIdle(Context->Device.GraphicsQueue));
 }
 

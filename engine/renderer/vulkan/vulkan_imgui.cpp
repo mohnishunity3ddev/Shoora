@@ -45,6 +45,7 @@ InitializeImGui(shoora_vulkan_imgui *ImGuiContext, vec2 ScreenDim)
     SetStyle(ImGuiContext->UIStyle, 0);
 
     ImGuiIO &IO = ImGui::GetIO();
+    ImGuiContext->WindowDim = ScreenDim;
     IO.DisplaySize = ImVec2(ScreenDim.x, ScreenDim.y);
     IO.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
 
@@ -342,12 +343,19 @@ ImGuiDrawFrame(VkCommandBuffer CmdBuffer, shoora_vulkan_imgui *ImContext)
 }
 
 void
-ImGuiUpdateInput(shoora_platform_frame_packet *InputPacket)
+ImGuiUpdateInputState(shoora_platform_frame_packet *InputPacket)
 {
     ImGuiIO &IO = ImGui::GetIO();
 
     IO.MousePos = ImVec2(InputPacket->MouseXPos, InputPacket->MouseYPos);
     IO.MouseDown[0] = InputPacket->IsLeftMouseDown;
+}
+
+void
+ImGuiUpdateWindowSize(vec2 WindowDim)
+{
+    ImGuiIO &IO = ImGui::GetIO();
+    IO.DisplaySize = ImVec2(WindowDim.x, WindowDim.y);
 }
 
 void

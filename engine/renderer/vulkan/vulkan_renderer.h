@@ -155,6 +155,7 @@ struct shoora_imgui_push_constant_block
 
 struct shoora_vulkan_imgui
 {
+    vec2 WindowDim;
     shoora_vulkan_device *RenderDevice;
     ImGuiStyle UIStyle;
 
