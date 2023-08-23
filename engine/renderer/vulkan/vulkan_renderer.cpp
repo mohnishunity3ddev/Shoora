@@ -12,25 +12,25 @@ static shoora_vulkan_context *Context = nullptr;
 // NOTE: Triangle
 static shoora_vertex_info TriangleVertices[] =
 {
-    {.VertexPos = Vec2( 0.0f,  0.5f), .VertexColor = Vec3(1, 0, 0)},
-    {.VertexPos = Vec2( 0.5f, -0.5f), .VertexColor = Vec3(0, 1, 0)},
-    {.VertexPos = Vec2(-0.5f, -0.5f), .VertexColor = Vec3(0, 0, 1)}
+    {.VertexPos = Vec2( 0.0f,  0.5f), .VertexColor = Vec3(1.0f, 0.0f, 0.0f)},
+    {.VertexPos = Vec2( 0.5f, -0.5f), .VertexColor = Vec3(0.0f, 1.0f, 0.0f)},
+    {.VertexPos = Vec2(-0.5f, -0.5f), .VertexColor = Vec3(0.0f, 0.0f, 1.0f)}
 };
 static u32 TriangleIndices[] = {0, 1, 2};
 
 // NOTE: Rectangle
 static shoora_vertex_info RectVertices[] =
 {
-    {.VertexPos = Vec2( 0.5f,  0.5f), .VertexColor = Vec3(1, 1, 0)},
-    {.VertexPos = Vec2( 0.5f, -0.5f), .VertexColor = Vec3(0, 1, .32f)},
-    {.VertexPos = Vec2(-0.5f, -0.5f), .VertexColor = Vec3(0.32f, 1, 1)},
+    {.VertexPos = Vec2( 0.5f,  0.5f), .VertexColor = Vec3(1.00f, 1.00f, 0.00f)},
+    {.VertexPos = Vec2( 0.5f, -0.5f), .VertexColor = Vec3(0.00f, 1.00f, 0.32f)},
+    {.VertexPos = Vec2(-0.5f, -0.5f), .VertexColor = Vec3(0.32f, 1.00f, 1.00f)},
     {.VertexPos = Vec2(-0.5f,  0.5f), .VertexColor = Vec3(0.32f, 0.21f, 0.66f)},
 };
 static u32 RectIndices[] = {0, 1, 2, 0, 2, 3};
 
 struct uniform_data
 {
-    vec3 Color;
+    vec3f Color;
 };
 static uniform_data UniformData = {};
 
@@ -38,8 +38,8 @@ struct shoora_render_state
 {
     b8 WireframeMode = true;
     f32 WireLineWidth = 10.0f;
-    vec3 ClearColor = Vec3(0.2f, 0.3f, 0.3f);
-    vec3 MeshColor = Vec3(1.0f, 0.0f, 0.0f);
+    vec3f ClearColor = Vec3(0.2f, 0.3f, 0.3f);
+    vec3f MeshColor = Vec3(1.0f, 0.0f, 0.0f);
 };
 struct shoora_debug_overlay
 {
@@ -115,7 +115,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     volkLoadDevice(RenderDevice->LogicalDevice);
     CreateCommandPools(RenderDevice);
 
-    vec2 ScreenDim = Vec2(AppInfo->WindowWidth, AppInfo->WindowHeight);
+    vec2u ScreenDim = Vec2(AppInfo->WindowWidth, AppInfo->WindowHeight);
     CreateSwapchain(&VulkanContext->Device, &VulkanContext->Swapchain, ScreenDim, &SwapchainInfo);
     CreateRenderPass(RenderDevice, Swapchain, &VulkanContext->GraphicsRenderPass);
     CreateSwapchainFramebuffers(RenderDevice, Swapchain, VulkanContext->GraphicsRenderPass);
@@ -130,8 +130,6 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     CreateSynchronizationPrimitives(&VulkanContext->Device, &VulkanContext->SyncHandles);
 
     PrepareImGui(RenderDevice, &VulkanContext->ImContext, ScreenDim, VulkanContext->GraphicsRenderPass);
-
-    LoadPNG("images/test_png.png");
 
     AppInfo->WindowResizeCallback = &WindowResizedCallback;
     QuitApplication = AppInfo->ExitApplication;

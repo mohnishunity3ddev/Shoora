@@ -5,8 +5,8 @@
 
 struct shoora_vertex_info
 {
-    vec2 VertexPos;
-    vec3 VertexColor;
+    vec2f VertexPos;
+    vec3f VertexColor;
 };
 
 VkVertexInputBindingDescription GetVertexBindingDescription();

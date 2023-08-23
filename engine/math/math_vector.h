@@ -1,119 +1,74 @@
 #if !defined(MATH_VECTOR_H)
 #include "defines.h"
 
+template <typename T>
 struct vec2
 {
     union
     {
-        struct { f32 x, y; };
-        struct { f32 u, v; };
+        struct { T x, y; };
+        struct { T u, v; };
+        struct { T Width, Height; };
         f32 E[2];
     };
 
-    inline vec2 operator+=(vec2 A);
-    inline vec2 operator-=(vec2 A);
-    inline vec2 operator*=(f32 A);
-    inline vec2 operator/=(vec2 A);
-    inline vec2 operator/=(f32 A);
+    inline vec2<T> operator+=(vec2<T> A);
+    inline vec2<T> operator-=(vec2<T> A);
+    inline vec2<T> operator*=(T A);
+    inline vec2<T> operator/=(vec2<T> A);
+    inline vec2<T> operator/=(T A);
 };
-
-inline vec2 Vec2(f32 x, f32 y);
-inline f32 Dot(vec2 A, vec2 B);
-
-inline vec2 operator+(vec2 A, vec2 B);
-inline vec2 operator-(vec2 A, vec2 B);
-inline vec2 operator*(vec2 A, f32 B);
-inline vec2 operator/(vec2 A, vec2 B);
-inline vec2 operator/(vec2 A, f32 B);
-
-struct vec3
-{
-    union
-    {
-        struct { f32 x, y, z; };
-        struct { f32 u, v, w; };
-        struct { f32 r, g, b; };
-        struct { vec2 xy; f32 Reserved_0; };
-        struct { f32 Reserved_1; vec2 yz; };
-        struct { vec2 uv; f32 Reserved_2; };
-        struct { f32 Reserved_3; vec2 vw; };
-        struct { vec2 rg; f32 Reserved_4; };
-        struct { f32 Reserved_5; vec2 gb; };
-        f32 E[3];
-    };
-
-    inline vec3 operator+=(vec3 A);
-    inline vec3 operator-=(vec3 A);
-    inline vec3 operator*=(f32 A);
-    inline vec3 operator/=(vec3 A);
-    inline vec3 operator/=(f32 A);
-};
-
-inline vec3 Vec3(f32 x, f32 y, f32 z);
-inline vec3 Vec3(vec2 xy, f32 z);
-inline vec3 ToVec3(vec2 A);
-inline vec2 ToVec2(vec3 A);
-
-inline f32 Dot(vec3 A, vec3 B);
-
-inline vec3 operator+(vec3 A, vec3 B);
-inline vec3 operator-(vec3 A, vec3 B);
-inline vec3 operator*(vec3 A, f32 B);
-inline vec3 operator/(vec3 A, vec3 B);
-inline vec3 operator/(vec3 A, f32 B);
 
 // ----------------------------------------------------------------------------------------------------------------
 // Vec2
 // ----------------------------------------------------------------------------------------------------------------
-inline vec2
-Vec2(f32 x, f32 y)
+template <typename T>
+vec2<T>
+Vec2(T x, T y)
 {
-    vec2 Result;
+    vec2<T> Result;
     Result.x = x;
     Result.y = y;
     return Result;
 }
 
-inline f32
-Dot(vec2 A, vec2 B)
+template <typename T>
+T
+Dot(vec2<T> A, vec2<T> B)
 {
-    f32 Result = A.x * B.x + A.y * B.y;
+    T Result = A.x * B.x + A.y * B.y;
     return Result;
 }
 
-inline vec2
-operator+(vec2 A, vec2 B)
+template <typename T>
+vec2<T>
+operator+(vec2<T> A, vec2<T> B)
 {
-    vec2 Result;
-
-    Result.x = A.x + B.x;
-    Result.y = A.y + B.y;
-
+    vec2<T> Result = {A.x + B.x, A.y + B.y};
     return Result;
 }
 
-inline vec2
-operator-(vec2 A, vec2 B)
+template <typename T>
+vec2<T>
+operator-(vec2<T> A, vec2<T> B)
 {
-    vec2 Result;
-    Result.x = A.x - B.x;
-    Result.y = A.y - B.y;
+    vec2<T> Result = {A.x - B.x, A.y - B.y};
     return Result;
 }
 
-inline vec2
-operator*(vec2 A, f32 B)
+template <typename T>
+vec2<T>
+operator*(vec2<T> A, T B)
 {
-    vec2 Result;
-    Result.x = B * A.x;
-    Result.y = B * A.y;
+    vec2<T> Result = {B * A.x, B * A.y};
     return Result;
 }
 
-inline vec2
-operator/(vec2 A, vec2 B)
+template <typename T>
+vec2<T>
+operator/(vec2<T> A, vec2<T> B)
 {
-    vec2 Result;
+    vec2<T> Result;
 
     ASSERT(B.x != 0.0f && B.y != 0.0f);
     Result.x = A.x / B.x;
@@ -122,10 +77,11 @@ operator/(vec2 A, vec2 B)
     return Result;
 }
 
-inline vec2
-operator/(vec2 A, f32 B)
+template <typename T>
+vec2<T>
+operator/(vec2<T> A, T B)
 {
-    vec2 Result;
+    vec2<T> Result;
     ASSERT(B != 0.0f);
 
     Result.x = A.x / B;
@@ -134,89 +90,131 @@ operator/(vec2 A, f32 B)
     return Result;
 }
 
-inline vec2
-vec2::operator+=(vec2 A)
+template <typename T>
+vec2<T>
+vec2<T>::operator+=(vec2<T> A)
 {
     *this = *this + A;
     return *this;
 }
 
-inline vec2
-vec2::operator-=(vec2 A)
+template <typename T>
+vec2<T>
+vec2<T>::operator-=(vec2<T> A)
 {
     *this = *this - A;
     return *this;
 }
 
-inline vec2
-vec2::operator*=(f32 A)
+template <typename T>
+vec2<T>
+vec2<T>::operator*=(T A)
 {
     *this = *this * A;
     return *this;
 }
 
-inline vec2
-vec2::operator/=(vec2 A)
+template <typename T>
+vec2<T>
+vec2<T>::operator/=(vec2<T> A)
 {
     *this = *this / A;
     return *this;
 }
 
-inline vec2
-vec2::operator/=(f32 A)
+template <typename T>
+vec2<T>
+vec2<T>::operator/=(T A)
 {
     *this = *this / A;
     return *this;
 }
+typedef vec2<i32> vec2i;
+typedef vec2<f32> vec2f;
+typedef vec2<u32> vec2u;
+
+template<typename T>
+struct vec3
+{
+    union
+    {
+        struct { T x, y, z; };
+        struct { T u, v, w; };
+        struct { T r, g, b; };
+        struct { T Width, Height, Depth; };
+        struct { vec2<T> xy; T Reserved_0; };
+        struct { T Reserved_1; vec2<T> yz; };
+        struct { vec2<T> uv; T Reserved_2; };
+        struct { T Reserved_3; vec2<T> vw; };
+        struct { vec2<T> rg; T Reserved_4; };
+        struct { T Reserved_5; vec2<T> gb; };
+        T E[3];
+    };
+
+    inline vec3<T> operator+=(vec3<T> A);
+    inline vec3<T> operator-=(vec3<T> A);
+    inline vec3<T> operator*=(T A);
+    inline vec3<T> operator/=(vec3<T> A);
+    inline vec3<T> operator/=(T A);
+};
 
 // ----------------------------------------------------------------------------------------------------------------
 // Vec3
 // ----------------------------------------------------------------------------------------------------------------
-inline vec3
-Vec3(f32 x, f32 y, f32 z)
+template <typename T>
+vec3<T>
+Vec3(T x, T y, T z)
 {
-    vec3 Result;
+    vec3<T> Result = {x, y, z};
+    return Result;
+}
 
-    Result.x = x;
-    Result.y = y;
-    Result.z = z;
+template <typename S, typename T>
+vec3<T>
+Vec3(S x, S y, S z)
+{
+    vec3<T> Result = {(T)x, (T)y, (T)z};
+    return Result;
+}
+
+template <typename T>
+vec3<T>
+Vec3(vec2<T> xy, T z)
+{
+    vec3<T> Result = Vec3(xy.x, xy.y, z);
 
     return Result;
 }
 
-inline vec3
-Vec3(vec2 xy, f32 z)
+template <typename T>
+vec3<T>
+ToVec3(vec2<T> A)
 {
-    vec3 Result = Vec3(xy.x, xy.y, z);
-
+    vec3<T> Result = Vec3(A.x, A.y, 0.0f);
     return Result;
 }
 
-inline vec3
-ToVec3(vec2 A)
+template <typename T>
+vec2<T>
+ToVec2(vec3<T> A)
 {
-    vec3 Result = Vec3(A.x, A.y, 0.0f);
+    vec2<T> Result = Vec2(A.x, A.y);
     return Result;
 }
 
-inline vec2
-ToVec2(vec3 A)
+template <typename T>
+T
+Dot(vec3<T> A, vec3<T> B)
 {
-    vec2 Result = Vec2(A.x, A.y);
+    T Result = A.x * B.x + A.y * B.y + A.z * B.z;
     return Result;
 }
 
-inline f32
-Dot(vec3 A, vec3 B)
+template <typename T>
+vec3<T>
+operator+(vec3<T> A, vec3<T> B)
 {
-    f32 Result = A.x * B.x + A.y * B.y + A.z * B.z;
-    return Result;
-}
-
-inline vec3
-operator+(vec3 A, vec3 B)
-{
-    vec3 Result;
+    vec3<T> Result;
 
     Result.x = A.x + B.x;
     Result.y = A.y + B.y;
@@ -225,10 +223,11 @@ operator+(vec3 A, vec3 B)
     return Result;
 }
 
-inline vec3
-operator-(vec3 A, vec3 B)
+template <typename T>
+vec3<T>
+operator-(vec3<T> A, vec3<T> B)
 {
-    vec3 Result;
+    vec3<T> Result;
 
     Result.x = A.x - B.x;
     Result.y = A.y - B.y;
@@ -237,10 +236,11 @@ operator-(vec3 A, vec3 B)
     return Result;
 }
 
-inline vec3
-operator*(vec3 A, f32 B)
+template <typename T>
+vec3<T>
+operator*(vec3<T> A, T B)
 {
-    vec3 Result;
+    vec3<T> Result;
 
     Result.x = B * A.x;
     Result.y = B * A.y;
@@ -249,10 +249,11 @@ operator*(vec3 A, f32 B)
     return Result;
 }
 
-inline vec3
-operator/(vec3 A, vec3 B)
+template <typename T>
+vec3<T>
+operator/(vec3<T> A, vec3<T> B)
 {
-    vec3 Result;
+    vec3<T> Result;
 
     ASSERT(B.x != 0.0f && B.y != 0.0f && B.z != 0.0f);
 
@@ -263,10 +264,11 @@ operator/(vec3 A, vec3 B)
     return Result;
 }
 
-inline vec3
-operator/(vec3 A, f32 B)
+template <typename T>
+vec3<T>
+operator/(vec3<T> A, T B)
 {
-    vec3 Result;
+    vec3<T> Result;
 
     ASSERT(B != 0.0f);
 
@@ -277,40 +279,49 @@ operator/(vec3 A, f32 B)
     return Result;
 }
 
-inline vec3
-vec3::operator+=(vec3 A)
+template <typename T>
+vec3<T>
+vec3<T>::operator+=(vec3<T> A)
 {
     *this = *this + A;
     return *this;
 }
 
-inline vec3
-vec3::operator-=(vec3 A)
+template <typename T>
+vec3<T>
+vec3<T>::operator-=(vec3<T> A)
 {
     *this = *this - A;
     return *this;
 }
 
-inline vec3
-vec3::operator*=(f32 A)
+template <typename T>
+vec3<T>
+vec3<T>::operator*=(T A)
 {
     *this = *this * A;
     return *this;
 }
 
-inline vec3
-vec3::operator/=(vec3 A)
+template <typename T>
+vec3<T>
+vec3<T>::operator/=(vec3<T> A)
 {
     *this = *this / A;
     return *this;
 }
 
-inline vec3
-vec3::operator/=(f32 A)
+template <typename T>
+vec3<T>
+vec3<T>::operator/=(T A)
 {
     *this = *this / A;
     return *this;
 }
+
+typedef vec3<i32> vec3i;
+typedef vec3<f32> vec3f;
+typedef vec3<u32> vec3u;
 
 #define MATH_VECTOR_H
 #endif

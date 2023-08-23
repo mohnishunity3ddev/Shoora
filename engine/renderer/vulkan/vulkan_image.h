@@ -22,7 +22,7 @@ struct shoora_image_transition
 };
 
 
-void CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, vec2 Dim, VkFormat Format, VkImageUsageFlags Usage,
+void CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, vec2u Dim, VkFormat Format, VkImageUsageFlags Usage,
                          VkImageAspectFlags Aspect, VkImage *pImage, VkDeviceMemory *pMemory, VkImageView *pView);
 void CreateImageView2D(shoora_vulkan_device *RenderDevice, VkImage Image, VkFormat Format,
                        VkImageAspectFlags Aspect, VkImageView *pImageView);

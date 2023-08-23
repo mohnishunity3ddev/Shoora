@@ -31,7 +31,7 @@ SetStyle(ImGuiStyle AppStyle, u32 index)
 }
 
 void
-InitializeImGui(shoora_vulkan_imgui *ImGuiContext, vec2 ScreenDim)
+InitializeImGui(shoora_vulkan_imgui *ImGuiContext, vec2u ScreenDim)
 {
     ImGuiContext->UIStyle = ImGui::GetStyle();
 
@@ -76,9 +76,10 @@ InitializeResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_imgui *ImG
 
     IO.Fonts->GetTexDataAsRGBA32(&FontData, &TexWidth, &TexHeight);
     VkDeviceSize UploadSize = TexWidth*TexHeight*4*sizeof(char);
+    ASSERT(TexWidth > 0 && TexHeight > 0);
 
     // Create Image resources to hold font data which can be used in shaders in the future.
-    CreateSimpleImage2D(RenderDevice, Vec2(TexWidth, TexHeight), VK_FORMAT_R8G8B8A8_UNORM,
+    CreateSimpleImage2D(RenderDevice, Vec2<u32>(TexWidth, TexHeight), VK_FORMAT_R8G8B8A8_UNORM,
                         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                         VK_IMAGE_ASPECT_COLOR_BIT, &ImGUIContext->FontImage,
                         &ImGUIContext->FontMemory, &ImGUIContext->FontImageView);
@@ -218,7 +219,7 @@ InitializeResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_imgui *ImG
 }
 
 void
-PrepareImGui(shoora_vulkan_device *RenderDevice, shoora_vulkan_imgui *ImGuiContext, vec2 ScreenDim,
+PrepareImGui(shoora_vulkan_device *RenderDevice, shoora_vulkan_imgui *ImGuiContext, vec2u ScreenDim,
              VkRenderPass RenderPass)
 {
     ImGuiContext->RenderDevice = RenderDevice;
@@ -356,7 +357,7 @@ ImGuiUpdateInputState(shoora_platform_frame_packet *InputPacket)
 }
 
 void
-ImGuiUpdateWindowSize(vec2 WindowDim)
+ImGuiUpdateWindowSize(vec2u WindowDim)
 {
     ImGuiIO &IO = ImGui::GetIO();
     IO.DisplaySize = ImVec2(WindowDim.x, WindowDim.y);

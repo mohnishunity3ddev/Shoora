@@ -63,7 +63,6 @@ struct png_idat_footer
 {
     u8 CheckValue;
 };
-
 #pragma pack(pop)
 
 #define FOURCC(String) (((u32)(String[0]) << 0) | ((u32)(String[1]) << 8) | ((u32)(String[2]) << 16) | ((u32)(String[3]) << 24))
@@ -170,7 +169,6 @@ ParsePNG(shoora_file File)
                                       ChunkHeader->Type[3]);
                 EndianSwap(&ChunkHeader->Length);
 
-
                 void *ChunkData = ConsumeSize(At, ChunkHeader->Length);
                 png_chunk_footer *ChunkFooter = Consume(At, png_chunk_footer);
                 EndianSwap(&ChunkFooter->CRC);
@@ -271,11 +269,26 @@ ParsePNG(shoora_file File)
     free(DecompressedPixels);
 }
 
-void
+shoora_image_data
 LoadPNG(const char *Filename)
 {
     LogInfo("Parsing %s...\n", Filename);
-    ParsePNG(ReadFile(Filename));
+    shoora_image_data ImageData = {};
 
+    ParsePNG(ReadFile(Filename));
     int x = 0;
+
+    return ImageData;
+}
+
+void
+FreePng(shoora_image_data *ImageData)
+{
+    ASSERT((ImageData != nullptr) && (ImageData->Data != nullptr));
+
+    free(ImageData->Data);
+    ImageData->Data = nullptr;
+    ImageData->Dim.Width = 0;
+    ImageData->Dim.Height = 0;
+    ImageData->NumChannels = 0;
 }
