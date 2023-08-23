@@ -5,6 +5,7 @@
 #include "vulkan_pipeline.h"
 #include "vulkan_buffer.h"
 #include "vulkan_imgui.h"
+#include "loaders/image/png_loader.h"
 #include <memory.h>
 
 static shoora_vulkan_context *Context = nullptr;
@@ -129,6 +130,8 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     CreateSynchronizationPrimitives(&VulkanContext->Device, &VulkanContext->SyncHandles);
 
     PrepareImGui(RenderDevice, &VulkanContext->ImContext, ScreenDim, VulkanContext->GraphicsRenderPass);
+
+    LoadPNG("images/test_png.png");
 
     AppInfo->WindowResizeCallback = &WindowResizedCallback;
     QuitApplication = AppInfo->ExitApplication;

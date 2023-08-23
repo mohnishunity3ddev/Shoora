@@ -340,6 +340,76 @@ LogOutput(LogType LogType, const char *Format, ...)
 }
 
 void
+Log_(LogType Type, const char *Format, va_list VarArgs)
+{
+    char Buffer[4096];
+
+    i32 Length = vsnprintf(Buffer, ARRAYSIZE(Buffer), Format, VarArgs);
+
+    if(Length > 0 && Length < ARRAYSIZE(Buffer))
+    {
+        OutputToConsole(Type, Buffer);
+    }
+}
+
+#define LOG_FORMAT(Type, Format)                                                                                  \
+    va_list VarArgs;                                                                                              \
+    va_start(VarArgs, Format);                                                                                    \
+    Log_(Type, Format, VarArgs);                                                                                  \
+    va_end(VarArgs);
+void
+LogInfo(const char *Format, ...)
+{
+    LOG_FORMAT(LogType_Info, Format);
+}
+void
+LogDebug(const char *Format, ...)
+{
+    LOG_FORMAT(LogType_Debug, Format);
+}
+void
+LogError(const char *Format, ...)
+{
+    LOG_FORMAT(LogType_Error, Format);
+}
+void
+LogFatal(const char *Format, ...)
+{
+    LOG_FORMAT(LogType_Fatal, Format);
+}
+void
+LogTrace(const char *Format, ...)
+{
+    LOG_FORMAT(LogType_Trace, Format);
+}
+
+void
+LogInfoUnformatted(const char *Message)
+{
+    OutputToConsole(LogType_Info, Message);
+}
+void
+LogDebugUnformatted(const char *Message)
+{
+    OutputToConsole(LogType_Debug, Message);
+}
+void
+LogErrorUnformatted(const char *Message)
+{
+    OutputToConsole(LogType_Error, Message);
+}
+void
+LogFatalUnformatted(const char *Message)
+{
+    OutputToConsole(LogType_Fatal, Message);
+}
+void
+LogTraceUnformatted(const char *Message)
+{
+    OutputToConsole(LogType_Trace, Message);
+}
+
+void
 ExitApplication(const char *Reason)
 {
     LogOutput(LogType_Fatal, Reason);
@@ -600,7 +670,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         }
         u32 FPS = (u32)(1.0f / DeltaTime);
         // LogOutput(LogType_Trace, "DeltaTime: %f, FPS: %u\n", DeltaTime, FPS);
-        
+
         FramePacket.DeltaTime = DeltaTime;
         FramePacket.Fps = FPS;
 
