@@ -168,7 +168,7 @@ CreateBuffer(shoora_vulkan_device *RenderDevice, VkBufferUsageFlags Usage, VkSha
     MemoryAllocateInfo.allocationSize = MemRequirements.size;
     MemoryAllocateInfo.memoryTypeIndex = GetDeviceMemoryType(RenderDevice, MemRequirements.memoryTypeBits,
                                                              DesiredMemoryType);
-    
+
     VK_CHECK(vkAllocateMemory(RenderDevice->LogicalDevice, &MemoryAllocateInfo, nullptr, &Memory));
 
     u8 *pBufferData;

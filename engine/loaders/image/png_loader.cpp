@@ -1,5 +1,6 @@
 #include "png_loader.h"
 
+#if !SHU_USE_STB
 #include <cstdio>
 #include <memory>
 
@@ -199,8 +200,7 @@ ParsePNG(shoora_file File)
                             DecompressedPixels = (u8 *)AllocatePixels(IHDR->Width, IHDR->Height, 4);
                             Supported = true;
                         }
-                    }
-                    break;
+                    } break;
 
                     case FOURCC("iCCP"):
                     {
@@ -252,8 +252,7 @@ ParsePNG(shoora_file File)
 
                             int x = 0;
                         }
-                    }
-                    break;
+                    } break;
 
                     case FOURCC("IEND"):
                     {
@@ -292,3 +291,4 @@ FreePng(shoora_image_data *ImageData)
     ImageData->Dim.Height = 0;
     ImageData->NumChannels = 0;
 }
+#endif

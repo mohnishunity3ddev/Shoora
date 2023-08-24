@@ -1,9 +1,14 @@
 #version 450
 
-layout(location = 0) in vec3 VertexColor;
+layout(set = 1, binding = 0) uniform sampler2D Sampler;
+
+layout(location = 0) in vec3 InUniformColor;
+layout(location = 1) in vec3 InVertexColor;
+layout(location = 2) in vec2 InUV;
 
 layout(location = 0) out vec4 outColor;
 void main()
 {
-    outColor = vec4(VertexColor, 1.0);
+    vec4 texColor = texture(Sampler, InUV);
+    outColor = vec4(texColor.rgb*InUniformColor, texColor.a);
 }

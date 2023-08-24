@@ -8,6 +8,90 @@
 #include "jpeg_loader.h"
 #endif
 
+shoora_image_mipmap
+GetMipmapLevelData()
+{
+    return {};
+}
+
+// TODO)): Check the filename for png/jpeg format and choose appropriately.
+shoora_image_data
+LoadImageFile(const char *Filename, u32 MipmapCount, u32 DesiredChannelCount)
+{
+    shoora_image_data ImageData = {};
+
+#if SHU_USE_STB
+#if 0
+    stbi_info(Filename, &ImageData.Dim.Width, &ImageData.Dim.Height, &ChannelCount);
+#endif
+    stbi_set_flip_vertically_on_load(1);
+    ImageData.Data = stbi_load(Filename, &ImageData.Dim.Width, &ImageData.Dim.Height, &ImageData.NumChannels,
+                               DesiredChannelCount);
+
+
+    ASSERT(ImageData.NumChannels == 4);
+
+    if((DesiredChannelCount != 0) &&
+       (DesiredChannelCount != ImageData.NumChannels))
+    {
+        ASSERT(!"Your desired number of channels for this file is not supported!");
+    }
+    ImageData.TotalSize = (ImageData.Dim.Width)*(ImageData.Dim.Height)*(ImageData.NumChannels);
+
+    if(MipmapCount > 0)
+    {
+        ASSERT(!"Mipmaps are not supported right now!\n");
+    }
+#else
+    LoadPNG(Filename);
+#error "custom loaders for file not supported yet!"
+#endif
+
+    return ImageData;
+}
+
+void
+FreeImageData(shoora_image_data *ImageData)
+{
+    ASSERT((ImageData != nullptr) && (ImageData->Data != nullptr));
+
+#if SHU_USE_STB
+    stbi_image_free(ImageData->Data);
+#else
+    FreePng(ImageData);
+#error "custom image loaders are not implemented yet!"
+#endif
+    ImageData->Data = nullptr;
+    ImageData->Dim.Width = 0;
+    ImageData->Dim.Height = 0;
+    ImageData->NumChannels = 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #if 0
 void
 GenerateMipMaps(const char *InputFilename, const char *OutputFilename, i32 MipLevelCount, i32 Quality,
@@ -108,44 +192,3 @@ GenerateMipMaps(const char *InputFilename, const char *OutputFilename, i32 MipLe
     free(CombinedData);
 }
 #endif
-
-shoora_image_mipmap
-GetMipmapLevelData()
-{
-    return {};
-}
-
-// TODO)): Check the filename for png/jpeg format and choose appropriately.
-shoora_image_data
-LoadImageFile(const char *Filename, i32 MipmapCount)
-{
-    shoora_image_data ImageData = {};
-
-#if SHU_USE_STB
-    // ImageData.Data = stbi_load(Filename, &ImageData.Dim.w, &ImageData.h, &ImageData.NumChannels, 0);
-    // ImageData.Size = ImageData.Width * ImageData.Height * ImageData.NumChannels;
-
-    // if(MipmapCount > 0)
-    // {
-
-    // }
-#else
-#error "custom loaders for file not supported yet!"
-#endif
-
-    return ImageData;
-}
-
-void
-FreeImageData(shoora_image_data *ImageData)
-{
-    ASSERT((ImageData != nullptr) && (ImageData->Data != nullptr));
-
-#if SHU_USE_STB
-    stbi_image_free(ImageData->Data);
-#endif
-    ImageData->Data = nullptr;
-    ImageData->Dim.Width = 0;
-    ImageData->Dim.Height = 0;
-    ImageData->NumChannels = 0;
-}

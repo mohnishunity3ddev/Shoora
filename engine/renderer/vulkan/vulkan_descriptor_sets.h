@@ -8,11 +8,17 @@
 VkDescriptorImageInfo GetImageDescriptorInfo(VkSampler Sampler, VkImageView ImageView, VkImageLayout ImageLayout);
 
 VkDescriptorPoolSize GetDescriptorPoolSize(VkDescriptorType DescriptorType, u32 DescriptorCount);
+void CreateDescriptorPool(shoora_vulkan_device *RenderDevice, VkDescriptorPoolSize *PoolSizes, u32 PoolSizeCount,
+                          u32 MaxSets, VkDescriptorPool *pDescriptorPool);
 void CreateDescriptorPool(shoora_vulkan_device *RenderDevice, u32 PoolSizeCount, VkDescriptorPoolSize *pSizes,
                           u32 DescriptorSetCount, VkDescriptorPool *pDescriptorPool);
 VkDescriptorSetLayoutBinding GetDescriptorSetLayoutBinding(u32 BindingIndex, VkDescriptorType DescriptorType,
-                                                              u32 DescriptorCount,
-                                                              VkShaderStageFlags ConsumingShaderStage);
+                                                           u32 DescriptorCount,
+                                                           VkShaderStageFlags ConsumingShaderStage);
+void CreatePipelineLayout(shoora_vulkan_device *RenderDevice, u32 SetLayoutCount,
+                          VkDescriptorSetLayout *pSetLayouts, u32 PushConstantCount,
+                          VkPushConstantRange *pPushConstants, VkPipelineLayout *pPipelineLayout);
+
 void CreateDescriptorSetLayout(shoora_vulkan_device *RenderDevice, VkDescriptorSetLayoutBinding *Bindings,
                                u32 BindingCount, VkDescriptorSetLayout *pSetLayout);
 void AllocateDescriptorSets(shoora_vulkan_device *RenderDevice, VkDescriptorPool Pool, u32 Count,

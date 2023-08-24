@@ -82,13 +82,13 @@ CreateDescriptorPool(shoora_vulkan_device *RenderDevice, VkDescriptorType Descri
 
 void
 CreateDescriptorPool(shoora_vulkan_device *RenderDevice, u32 PoolSizeCount, VkDescriptorPoolSize *pSizes,
-                     u32 DescriptorSetCount, VkDescriptorPool *pDescriptorPool)
+                     u32 MaxSets, VkDescriptorPool *pDescriptorPool)
 {
     VkDescriptorPoolCreateInfo PoolCreateInfo = {};
     PoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     PoolCreateInfo.pNext = nullptr;
     PoolCreateInfo.flags = 0;
-    PoolCreateInfo.maxSets = DescriptorSetCount;
+    PoolCreateInfo.maxSets = MaxSets;
     PoolCreateInfo.poolSizeCount = PoolSizeCount;
     PoolCreateInfo.pPoolSizes = pSizes;
 
@@ -143,6 +143,24 @@ UpdateImageDescriptorSet(shoora_vulkan_device *RenderDevice, VkDescriptorSet Des
     vkUpdateDescriptorSets(RenderDevice->LogicalDevice, 1, &WriteSet, 0, nullptr);
 }
 
+VkWriteDescriptorSet
+GetWriteDescriptorSet(shoora_vulkan_device *RenderDevice, u32 BindingIndex, VkDescriptorSet Set)
+{
+    VkWriteDescriptorSet WriteSet = {};
+    WriteSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    WriteSet.dstSet = Set;
+    WriteSet.descriptorCount = 1;
+    WriteSet.dstBinding = BindingIndex;
+
+    return WriteSet;
+}
+
+void
+CreateDescriptorSet(shoora_vulkan_device *RenderDevice, VkDescriptorPool *pPool, VkDescriptorSetLayout *pSetLayout,
+                    u32 DescriptorSetCount, VkDescriptorSet *pDescriptorSets)
+{
+
+}
 
 void
 CreateDescriptorSets(shoora_vulkan_device *RenderDevice, VkDescriptorPool *pPool, VkDescriptorSetLayout *pLayout,
@@ -152,10 +170,15 @@ CreateDescriptorSets(shoora_vulkan_device *RenderDevice, VkDescriptorPool *pPool
     for(u32 Index = 0; Index < Count; ++Index)
     {
         AllocateDescriptorSets(RenderDevice, *pPool, 1, pLayout, &pSets[Index]);
-
         UpdateBufferDescriptorSet(RenderDevice, pSets[Index], BindingIndex, Type, pBuffers[Index].Handle,
                                   pBuffers[Index].MemSize);
     }
+}
+
+void
+CreateDescriptorSet(shoora_vulkan_device *RenderDevice, VkDescriptorPool Pool, VkDescriptorSetLayout *pSetLayouts,
+                    u32 DescriptorSetCount, VkDescriptorSet *pSets)
+{
 }
 
 // TODO)): Create one merged descirptor which encapsulates data for all the uniform buffers we need.
@@ -178,8 +201,77 @@ CreateUniformDescriptors(shoora_vulkan_device *RenderDevice, VkShaderStageFlags 
 }
 
 
+#if 0
+void
+SetupDescriptors(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
+                 shoora_uniform_resource_info *DescriptorInfos, u32 DescriptorInfoCount, VkDescriptorPool *pPool,
+                 VkDescriptorSetLayout *pSetLayout, VkPipelineLayout *pPipelineLayout, VkDescriptorSet *pSets,
+                 u32 SetCount, shoora_vulkan_buffer *pBuffer, shoora_vulkan_image *pImage)
+{
+    ASSERT(DescriptorInfoCount <= 16);
+    VkDescriptorPoolSize PoolSizeInfos[16];
+    u32 PoolSizeInfoCount = DescriptorInfoCount;
+    VkDescriptorSetLayoutBinding LayoutBindings[16];
+    u32 LayoutBindingCount = DescriptorInfoCount;
 
+    for(u32 DescriptorIndex = 0;
+        DescriptorIndex < DescriptorInfoCount;
+        ++DescriptorIndex)
+    {
+        shoora_uniform_resource_info *Info = DescriptorInfos + DescriptorIndex;
+        PoolSizeInfos[DescriptorIndex] = GetDescriptorPoolSize(Info->DescriptorType, Info->DescriptorCount);
 
+        LayoutBindings[DescriptorIndex] = GetDescriptorSetLayoutBinding(DescriptorIndex, Info->DescriptorType, 1,
+                                                                        Info->ConsumingShaderStage);
+    }
+
+    CreateDescriptorPool(RenderDevice, PoolSizeInfos, PoolSizeInfoCount, 100, pPool);
+    CreateDescriptorSetLayout(RenderDevice, LayoutBindings, LayoutBindingCount, pSetLayout);
+
+    u32 PushConstantCount = 0;
+    VkPushConstantRange *PushConstants = nullptr;
+    CreatePipelineLayout(RenderDevice, 1, pSetLayout, PushConstantCount, PushConstants, pPipelineLayout);
+
+    for(u32 SetIndex = 0;
+        SetIndex = SetCount;
+        ++SetIndex)
+    {
+        VkDescriptorSet *pSet = &pSets[SetIndex];
+        AllocateDescriptorSets(RenderDevice, *pPool, 1, pSetLayout, pSet);
+
+        VkWriteDescriptorSet WriteDescriptorSets[16];
+        u32 WriteDescriptorCount = DescriptorInfoCount;
+        for(u32 TypeIndex = 0;
+            TypeIndex < DescriptorInfoCount;
+            ++TypeIndex)
+        {
+            shoora_uniform_resource_info *SetInfo = DescriptorInfos + TypeIndex;
+            VkWriteDescriptorSet WriteSet = GetWriteDescriptorSet(RenderDevice, SetInfo->BindingIndex, *pSet);
+
+            if(SetInfo->DescriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+            {
+                shoora_vulkan_buffer *Buffer =
+                VkDescriptorBufferInfo BufferInfo = {};
+                BufferInfo.buffer = BufferHandle;
+                BufferInfo.offset = 0;
+                BufferInfo.range = BufferSize;
+
+            }
+            else if(SetInfo->DescriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+            {
+
+            }
+            else
+            {
+                LogError("[SHOORA]: DescriptorType(%u) not supported yet!", (u32)SetInfo->DescriptorType);
+            }
+        }
+
+        vkUpdateDescriptorSets(RenderDevice->LogicalDevice, WriteDescriptorCount, WriteDescriptorSets, 0, nullptr);
+    }
+
+}
+#endif
 //? <---------------------------------------------------------------------------------------------------------------->
 //  ------------------------------------------------------------------------------------------------------------------
 //? <---------------------------------------------------HELPERS------------------------------------------------------>

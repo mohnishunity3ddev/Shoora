@@ -1,8 +1,33 @@
 #include "vulkan_image.h"
 #include "utils/utils.h"
+#include "vulkan_buffer.h"
+#include "vulkan_command_buffer.h"
+#include "loaders/image/image_loader.h"
 #include <memory>
 
+static VkFormat ThreeChannelColorCandidates[] = {VK_FORMAT_R8G8B8_UNORM,   VK_FORMAT_R8G8B8_SNORM,
+                                                 VK_FORMAT_R8G8B8_USCALED, VK_FORMAT_R8G8B8_SSCALED,
+                                                 VK_FORMAT_R8G8B8_UINT,    VK_FORMAT_R8G8B8_SINT,
+                                                 VK_FORMAT_R8G8B8_SRGB,    VK_FORMAT_B8G8R8_UNORM,
+                                                 VK_FORMAT_B8G8R8_SNORM};
 
+static VkFormat FourChannelColorCandidates[] = {VK_FORMAT_R8G8B8A8_UNORM,               VK_FORMAT_R8G8B8A8_SNORM,
+                                                VK_FORMAT_R8G8B8A8_USCALED,             VK_FORMAT_R8G8B8A8_SSCALED,
+                                                VK_FORMAT_R8G8B8A8_UINT,                VK_FORMAT_R8G8B8A8_SINT,
+                                                VK_FORMAT_R8G8B8A8_SRGB,                VK_FORMAT_B8G8R8A8_UNORM,
+                                                VK_FORMAT_B8G8R8A8_SNORM,               VK_FORMAT_B8G8R8A8_USCALED,
+                                                VK_FORMAT_B8G8R8A8_SSCALED,             VK_FORMAT_B8G8R8A8_UINT,
+                                                VK_FORMAT_B8G8R8A8_SINT,                VK_FORMAT_B8G8R8A8_SRGB,
+                                                VK_FORMAT_A8B8G8R8_UNORM_PACK32,        VK_FORMAT_A8B8G8R8_SNORM_PACK32,
+                                                VK_FORMAT_A8B8G8R8_USCALED_PACK32,      VK_FORMAT_A8B8G8R8_SSCALED_PACK32,
+                                                VK_FORMAT_A8B8G8R8_UINT_PACK32,         VK_FORMAT_A8B8G8R8_SINT_PACK32,
+                                                VK_FORMAT_A8B8G8R8_SRGB_PACK32,         VK_FORMAT_A2R10G10B10_UNORM_PACK32,
+                                                VK_FORMAT_A2R10G10B10_SNORM_PACK32,     VK_FORMAT_A2R10G10B10_USCALED_PACK32,
+                                                VK_FORMAT_A2R10G10B10_SSCALED_PACK32,   VK_FORMAT_A2R10G10B10_UINT_PACK32,
+                                                VK_FORMAT_A2R10G10B10_SINT_PACK32,      VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+                                                VK_FORMAT_A2B10G10R10_SNORM_PACK32,     VK_FORMAT_A2B10G10R10_USCALED_PACK32,
+                                                VK_FORMAT_A2B10G10R10_SSCALED_PACK32,   VK_FORMAT_A2B10G10R10_UINT_PACK32,
+                                                VK_FORMAT_A2B10G10R10_SINT_PACK32};
 
 void
 CreateSampler2D(shoora_vulkan_device *RenderDevice, VkFilter Filter, VkSamplerMipmapMode MipmapMode,
@@ -70,6 +95,16 @@ CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, vec2u Dim, VkFormat Form
 
     CreateImageView2D(RenderDevice, *pImage, Format, Aspect, pView);
 }
+
+void
+CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, vec2u Dim, VkFormat Format, VkImageUsageFlags Usage,
+                    VkImageAspectFlags Aspect, shoora_vulkan_image *pImage)
+{
+    CreateSimpleImage2D(RenderDevice, Dim, Format, Usage, Aspect, &pImage->Handle, &pImage->ImageMemory,
+                        &pImage->ImageView);
+}
+
+
 
 void
 SetImageLayout(VkCommandBuffer CmdBuffer, VkImage Image, VkImageLayout OldImageLayout,
@@ -212,29 +247,118 @@ SetImageLayout(VkCommandBuffer CmdBuffer, VkImage Image, VkImageAspectFlags Aspe
 
 VkFormat
 GetSuitableImageFormat(shoora_vulkan_device *RenderDevice, VkFormat *FormatCandidates, u32 FormatCount,
-                       VkImageTiling Tiling, VkFormatFeatureFlags FormatUsage)
+                       VkImageTiling Tiling, VkFormatFeatureFlags FormatUsage, VkFormat Desired = VK_FORMAT_UNDEFINED)
 {
     VkFormat Result = VK_FORMAT_UNDEFINED;
-    for(u32 Index = 0;
-        Index < FormatCount;
-        ++Index)
-    {
-        VkFormat Candidate = FormatCandidates[Index];
 
+    if(Desired != VK_FORMAT_UNDEFINED)
+    {
         VkFormatProperties FormatProps;
-        vkGetPhysicalDeviceFormatProperties(RenderDevice->PhysicalDevice, Candidate, &FormatProps);
+        vkGetPhysicalDeviceFormatProperties(RenderDevice->PhysicalDevice, Desired, &FormatProps);
 
         if ((Tiling == VK_IMAGE_TILING_LINEAR &&
-             ((FormatProps.linearTilingFeatures & FormatUsage) == FormatUsage)) ||
+                ((FormatProps.linearTilingFeatures & FormatUsage) == FormatUsage)) ||
             (Tiling == VK_IMAGE_TILING_OPTIMAL &&
-             ((FormatProps.optimalTilingFeatures & FormatUsage) == FormatUsage)))
+                ((FormatProps.optimalTilingFeatures & FormatUsage) == FormatUsage)))
         {
-            Result = Candidate;
-            break;
+            Result = Desired;
         }
     }
 
+    if(Result == VK_FORMAT_UNDEFINED)
+    {
+        for (u32 Index = 0; Index < FormatCount; ++Index)
+        {
+            VkFormat Candidate = FormatCandidates[Index];
+
+            VkFormatProperties FormatProps;
+            vkGetPhysicalDeviceFormatProperties(RenderDevice->PhysicalDevice, Candidate, &FormatProps);
+
+            if ((Tiling == VK_IMAGE_TILING_LINEAR &&
+                    ((FormatProps.linearTilingFeatures & FormatUsage) == FormatUsage)) ||
+                (Tiling == VK_IMAGE_TILING_OPTIMAL &&
+                    ((FormatProps.optimalTilingFeatures & FormatUsage) == FormatUsage)))
+            {
+                Result = Candidate;
+                break;
+            }
+        }
+    }
+
+    ASSERT(Result != VK_FORMAT_UNDEFINED);
     return Result;
+}
+
+void
+CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, const char *ImageFilename,
+                           shoora_vulkan_image_sampler *pImageSampler)
+{
+    shoora_image_data ImageData = LoadImageFile(ImageFilename);
+
+    VkFormat DesiredImageFormat = VK_FORMAT_UNDEFINED;
+    VkFormat *Candidates = nullptr;
+    u32 CandidateCount = 0;
+
+#if 0
+    if(ImageData.NumChannels == 3)
+    {
+        DesiredImageFormat = VK_FORMAT_R8G8B8_SRGB;
+        Candidates = ThreeChannelColorCandidates;
+        CandidateCount = ARRAY_SIZE(ThreeChannelColorCandidates);
+    }
+    else
+#endif
+    {
+        DesiredImageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+        Candidates = FourChannelColorCandidates;
+        CandidateCount = ARRAY_SIZE(FourChannelColorCandidates);
+    }
+
+    VkFormat ImageFormat = GetSuitableImageFormat(RenderDevice, Candidates, CandidateCount,
+                                                  VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT,
+                                                  DesiredImageFormat);
+
+    CreateSimpleImage2D(RenderDevice, Vec2<u32>(ImageData.Dim.Width, ImageData.Dim.Height), ImageFormat,
+                        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
+                        &pImageSampler->Image);
+
+    // Create buffer to store store font data.
+    shoora_vulkan_buffer StagingBuffer = CreateBuffer(RenderDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                                      VK_SHARING_MODE_EXCLUSIVE,
+                                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                                      ImageData.Data, ImageData.TotalSize);
+
+    // Get command buffer to store transfer data from buffer to image
+    VkCommandBuffer CopyCmdBuffer = CreateTransientCommandBuffer(RenderDevice, RenderDevice->GraphicsCommandPool,
+                                                                 VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+
+    SetImageLayout(CopyCmdBuffer, pImageSampler->Image.Handle, VK_IMAGE_ASPECT_COLOR_BIT,
+                   VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_HOST_BIT,
+                   VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+    // Copy
+    VkBufferImageCopy BufferCopy = {};
+    BufferCopy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    BufferCopy.imageSubresource.layerCount = 1;
+    BufferCopy.imageExtent.width = ImageData.Dim.Width;
+    BufferCopy.imageExtent.height = ImageData.Dim.Height;
+    BufferCopy.imageExtent.depth = 1;
+    vkCmdCopyBufferToImage(CopyCmdBuffer, StagingBuffer.Handle, pImageSampler->Image.Handle,
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &BufferCopy);
+    FreeImageData(&ImageData);
+
+    // Prepare for shader read
+    SetImageLayout(CopyCmdBuffer, pImageSampler->Image.Handle, VK_IMAGE_ASPECT_COLOR_BIT,
+                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                   VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+    FlushTransientCommandBuffer(RenderDevice, CopyCmdBuffer, RenderDevice->GraphicsQueue,
+                                RenderDevice->GraphicsCommandPool, true);
+    DestroyBuffer(RenderDevice, &StagingBuffer);
+
+    // Descriptor Set Stuff
+    CreateSampler2D(RenderDevice, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_LINEAR,
+                    VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+                    &pImageSampler->Sampler);
 }
 
 VkFormat
@@ -263,10 +387,10 @@ DestroyImage2D(shoora_vulkan_device *RenderDevice, shoora_vulkan_image *pImage)
         pImage->ImageMemory = VK_NULL_HANDLE;
     }
 
-    if(pImage->Image != VK_NULL_HANDLE)
+    if(pImage->Handle != VK_NULL_HANDLE)
     {
-        vkDestroyImage(RenderDevice->LogicalDevice, pImage->Image, nullptr);
-        pImage->Image = VK_NULL_HANDLE;
+        vkDestroyImage(RenderDevice->LogicalDevice, pImage->Handle, nullptr);
+        pImage->Handle = VK_NULL_HANDLE;
     }
 }
 

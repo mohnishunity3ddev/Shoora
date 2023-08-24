@@ -21,10 +21,10 @@ static u32 TriangleIndices[] = {0, 1, 2};
 // NOTE: Rectangle
 static shoora_vertex_info RectVertices[] =
 {
-    {.VertexPos = Vec2( 0.5f,  0.5f), .VertexColor = Vec3(1.00f, 1.00f, 0.00f)},
-    {.VertexPos = Vec2( 0.5f, -0.5f), .VertexColor = Vec3(0.00f, 1.00f, 0.32f)},
-    {.VertexPos = Vec2(-0.5f, -0.5f), .VertexColor = Vec3(0.32f, 1.00f, 1.00f)},
-    {.VertexPos = Vec2(-0.5f,  0.5f), .VertexColor = Vec3(0.32f, 0.21f, 0.66f)},
+    {.VertexPos = Vec2( 0.5f,  0.5f), .VertexColor = Vec3(1.00f, 0.00f, 0.00f), .VertexUV = Vec2(1.0f, 1.0f)},
+    {.VertexPos = Vec2( 0.5f, -0.5f), .VertexColor = Vec3(0.00f, 1.00f, 0.00f), .VertexUV = Vec2(1.0f, 0.0f)},
+    {.VertexPos = Vec2(-0.5f, -0.5f), .VertexColor = Vec3(0.00f, 0.00f, 1.00f), .VertexUV = Vec2(0.0f, 0.0f)},
+    {.VertexPos = Vec2(-0.5f,  0.5f), .VertexColor = Vec3(0.00f, 0.00f, 0.00f), .VertexUV = Vec2(0.0f, 1.0f)},
 };
 static u32 RectIndices[] = {0, 1, 2, 0, 2, 3};
 
@@ -123,7 +123,8 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     CreateVertexBuffer(RenderDevice, RectVertices, ARRAY_SIZE(RectVertices), RectIndices, ARRAY_SIZE(RectIndices),
                        &VulkanContext->VertexBuffer, &VulkanContext->IndexBuffer);
 
-    CreateSwapchainUniformResources(RenderDevice, Swapchain, sizeof(uniform_data), &VulkanContext->Pipeline.GraphicsPipelineLayout);
+    CreateSwapchainUniformResources(RenderDevice, Swapchain, sizeof(uniform_data),
+                                    &VulkanContext->Pipeline.GraphicsPipelineLayout);
     CreateGraphicsPipeline(VulkanContext, "shaders/spirv/triangle.vert.spv", "shaders/spirv/triangle.frag.spv",
                            &VulkanContext->Pipeline);
     CreateWireframePipeline(VulkanContext, "shaders/spirv/wireframe.vert.spv", "shaders/spirv/wireframe.frag.spv");
@@ -191,8 +192,7 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     AcquireNextSwapchainImage(&Context->Device, &Context->Swapchain, pCurrentFrameImageAvlSemaphore);
 
     u32 ImageIndex = Context->Swapchain.CurrentImageIndex;
-    shoora_vulkan_command_buffer_handle *pDrawCmdBuffer =
-        &Context->Swapchain.DrawCommandBuffers[ImageIndex];
+    shoora_vulkan_command_buffer_handle *pDrawCmdBuffer = &Context->Swapchain.DrawCommandBuffers[ImageIndex];
     VkCommandBuffer DrawCmdBuffer = pDrawCmdBuffer->Handle;
 
     // RenderState.MeshColor = Vec3(1, 1, 0);
@@ -238,10 +238,11 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         Scissor.extent = Context->Swapchain.ImageDimensions;
         vkCmdSetScissor(DrawCmdBuffer, 0, 1, &Scissor);
 
+        VkDescriptorSet DescriptorSets[] = {Context->Swapchain.UniformDescriptorSets[ImageIndex],
+                                            Context->Swapchain.SampledImageDescriptorSet};
         vkCmdBindDescriptorSets(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                Context->Pipeline.GraphicsPipelineLayout, 0, 1,
-                                &Context->Swapchain.UniformDescriptorSets[ImageIndex], 0,
-                                nullptr);
+                                Context->Pipeline.GraphicsPipelineLayout, 0, ARRAY_SIZE(DescriptorSets),
+                                DescriptorSets, 0, nullptr);
         vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->Pipeline.GraphicsPipeline);
 
         VkDeviceSize offsets[1] = {0};

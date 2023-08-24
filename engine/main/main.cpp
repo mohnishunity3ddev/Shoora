@@ -368,6 +368,11 @@ LogDebug(const char *Format, ...)
     LOG_FORMAT(LogType_Debug, Format);
 }
 void
+LogWarn(const char *Format, ...)
+{
+    LOG_FORMAT(LogType_Warn, Format);
+}
+void
 LogError(const char *Format, ...)
 {
     LOG_FORMAT(LogType_Error, Format);
@@ -392,6 +397,11 @@ void
 LogDebugUnformatted(const char *Message)
 {
     OutputToConsole(LogType_Debug, Message);
+}
+void
+LogWarnUnformatted(const char *Message)
+{
+    OutputToConsole(LogType_Warn, Message);
 }
 void
 LogErrorUnformatted(const char *Message)

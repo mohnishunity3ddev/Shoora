@@ -65,12 +65,14 @@ struct shoora_platform_frame_packet
 SHU_EXPORT void LogOutput(LogType LogType, const char *Format, ...);
 SHU_EXPORT void LogInfo(const char *Format, ...);
 SHU_EXPORT void LogDebug(const char *Format, ...);
+SHU_EXPORT void LogWarn(const char *Format, ...);
 SHU_EXPORT void LogError(const char *Format, ...);
 SHU_EXPORT void LogFatal(const char *Format, ...);
 SHU_EXPORT void LogTrace(const char *Format, ...);
 
 SHU_EXPORT void LogInfoUnformatted(const char *Message);
 SHU_EXPORT void LogDebugUnformatted(const char *Message);
+SHU_EXPORT void LogWarnUnformatted(const char *Message);
 SHU_EXPORT void LogErrorUnformatted(const char *Message);
 SHU_EXPORT void LogFatalUnformatted(const char *Message);
 SHU_EXPORT void LogTraceUnformatted(const char *Message);

@@ -15,7 +15,7 @@ GetVertexBindingDescription()
 void
 GetVertexAttributeDescriptions(VkVertexInputAttributeDescription *Attributes, u32 *AttributeCount)
 {
-    *AttributeCount = 2;
+    *AttributeCount = 3;
 
     VkVertexInputAttributeDescription *PositionAttribute = &Attributes[0];
     PositionAttribute->location = 0;
@@ -28,4 +28,10 @@ GetVertexAttributeDescriptions(VkVertexInputAttributeDescription *Attributes, u3
     ColorAttribute->binding = 0;
     ColorAttribute->format = VK_FORMAT_R32G32B32_SFLOAT;
     ColorAttribute->offset = (u32)OFFSET_OF(shoora_vertex_info, VertexColor);
+
+    VkVertexInputAttributeDescription *UVAttribute = &Attributes[2];
+    UVAttribute->location = 2;
+    UVAttribute->binding = 0;
+    UVAttribute->format = VK_FORMAT_R32G32_SFLOAT;
+    UVAttribute->offset = (u32)OFFSET_OF(shoora_vertex_info, VertexUV);
 }

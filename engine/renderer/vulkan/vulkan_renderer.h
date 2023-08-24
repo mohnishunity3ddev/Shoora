@@ -83,9 +83,20 @@ struct shoora_vulkan_buffer
 
 struct shoora_vulkan_image
 {
-    VkImage Image;
+    VkImage Handle;
     VkImageView ImageView;
     VkDeviceMemory ImageMemory;
+};
+
+struct shoora_vulkan_image_sampler
+{
+    shoora_vulkan_image Image;
+    VkSampler Sampler;
+};
+
+struct shoora_vulkan_descriptor_resource
+{
+
 };
 
 struct shoora_vulkan_swapchain
@@ -111,11 +122,15 @@ struct shoora_vulkan_swapchain
     shoora_vulkan_image DepthStencilImage;
     VkFramebuffer ImageFramebuffers[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
 
-    VkDescriptorSetLayout UniformSetLayout;
-
     VkDescriptorPool UniformDescriptorPool;
+
+    VkDescriptorSetLayout UniformSetLayout;
     VkDescriptorSet UniformDescriptorSets[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
     shoora_vulkan_buffer UniformBuffers[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
+
+    VkDescriptorSetLayout SampledImageDescriptorSetLayout;
+    VkDescriptorSet SampledImageDescriptorSet;
+    shoora_vulkan_image_sampler UniformCombinedImageSampler;
 
     shoora_vulkan_command_buffer_handle DrawCommandBuffers[SHU_MAX_FRAMES_IN_FLIGHT];
 };
