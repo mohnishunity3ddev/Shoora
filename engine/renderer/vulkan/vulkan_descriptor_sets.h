@@ -8,8 +8,6 @@
 VkDescriptorImageInfo GetImageDescriptorInfo(VkSampler Sampler, VkImageView ImageView, VkImageLayout ImageLayout);
 
 VkDescriptorPoolSize GetDescriptorPoolSize(VkDescriptorType DescriptorType, u32 DescriptorCount);
-void CreateDescriptorPool(shoora_vulkan_device *RenderDevice, VkDescriptorPoolSize *PoolSizes, u32 PoolSizeCount,
-                          u32 MaxSets, VkDescriptorPool *pDescriptorPool);
 void CreateDescriptorPool(shoora_vulkan_device *RenderDevice, u32 PoolSizeCount, VkDescriptorPoolSize *pSizes,
                           u32 DescriptorSetCount, VkDescriptorPool *pDescriptorPool);
 VkDescriptorSetLayoutBinding GetDescriptorSetLayoutBinding(u32 BindingIndex, VkDescriptorType DescriptorType,
@@ -27,12 +25,6 @@ void UpdateBufferDescriptorSet(shoora_vulkan_device *RenderDevice, VkDescriptorS
                                VkDescriptorType DescriptorType, VkBuffer BufferHandle, u64 BufferSize);
 void UpdateImageDescriptorSet(shoora_vulkan_device *RenderDevice, VkDescriptorSet DescriptorSet, u32 BindingIndex,
                               VkDescriptorType DescriptorType, VkDescriptorImageInfo *pImageInfo);
-
-void CreateUniformDescriptors(shoora_vulkan_device *RenderDevice, VkShaderStageFlags ConsumingShaderStage,
-                              VkDescriptorSetLayout *pSetLayout, u32 PushConstantCount,
-                              VkPushConstantRange *pPushConstants, u32 UniformBufferCount,
-                              shoora_vulkan_buffer *pUniformBuffers, VkDescriptorSet *pUniformDescriptors,
-                              VkPipelineLayout *pPipelineLayout, VkDescriptorPool *pDescriptorPool);
 
 #if 0
 struct shoora_sampler_mipmap_info

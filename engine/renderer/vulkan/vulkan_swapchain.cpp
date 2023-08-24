@@ -624,7 +624,8 @@ CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulka
     Sizes[1] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1);
     CreateDescriptorPool(RenderDevice, ARRAY_SIZE(Sizes), Sizes, 100, &Swapchain->UniformDescriptorPool);
 
-    // 1st Descriptor Set
+    // TODO)): Create one merged descirptor which encapsulates data for all the uniform buffers we need.
+    // 1st Descriptor Set(Uniform Buffer used in Vertex Shadder)
     auto SetLayoutBinding = GetDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
                                                           VK_SHADER_STAGE_VERTEX_BIT);
     CreateDescriptorSetLayout(RenderDevice, &SetLayoutBinding, 1, &Swapchain->UniformSetLayout);
@@ -637,7 +638,7 @@ CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulka
                                   Swapchain->UniformBuffers[Index].MemSize);
     }
 
-    // 2nd Descriptor Set
+    // 2nd Descriptor Set(Image Sampler used in Fragment shader)
     SetLayoutBinding = GetDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
                                                      VK_SHADER_STAGE_FRAGMENT_BIT);
     CreateDescriptorSetLayout(RenderDevice, &SetLayoutBinding, 1, &Swapchain->SampledImageDescriptorSetLayout);

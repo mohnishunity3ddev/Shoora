@@ -155,52 +155,6 @@ GetWriteDescriptorSet(shoora_vulkan_device *RenderDevice, u32 BindingIndex, VkDe
     return WriteSet;
 }
 
-void
-CreateDescriptorSet(shoora_vulkan_device *RenderDevice, VkDescriptorPool *pPool, VkDescriptorSetLayout *pSetLayout,
-                    u32 DescriptorSetCount, VkDescriptorSet *pDescriptorSets)
-{
-
-}
-
-void
-CreateDescriptorSets(shoora_vulkan_device *RenderDevice, VkDescriptorPool *pPool, VkDescriptorSetLayout *pLayout,
-                     u32 Count, VkDescriptorSet *pSets, shoora_vulkan_buffer *pBuffers, VkDescriptorType Type,
-                     u32 BindingIndex)
-{
-    for(u32 Index = 0; Index < Count; ++Index)
-    {
-        AllocateDescriptorSets(RenderDevice, *pPool, 1, pLayout, &pSets[Index]);
-        UpdateBufferDescriptorSet(RenderDevice, pSets[Index], BindingIndex, Type, pBuffers[Index].Handle,
-                                  pBuffers[Index].MemSize);
-    }
-}
-
-void
-CreateDescriptorSet(shoora_vulkan_device *RenderDevice, VkDescriptorPool Pool, VkDescriptorSetLayout *pSetLayouts,
-                    u32 DescriptorSetCount, VkDescriptorSet *pSets)
-{
-}
-
-// TODO)): Create one merged descirptor which encapsulates data for all the uniform buffers we need.
-// TODO)): Remove this notion of UniformBufferCount.
-void
-CreateUniformDescriptors(shoora_vulkan_device *RenderDevice, VkShaderStageFlags ConsumingShaderStage,
-                         VkDescriptorSetLayout *pSetLayout, u32 PushConstantCount,
-                         VkPushConstantRange *pPushConstants, u32 UniformBufferCount,
-                         shoora_vulkan_buffer *pUniformBuffers, VkDescriptorSet *pUniformDescriptors,
-                         VkPipelineLayout *pPipelineLayout, VkDescriptorPool *pDescriptorPool)
-{
-    auto UniformLayoutBinding = GetDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-                                                                 ConsumingShaderStage);
-    CreateDescriptorSetLayout(RenderDevice, &UniformLayoutBinding, 1, pSetLayout);
-    CreatePipelineLayout(RenderDevice, 1, pSetLayout, PushConstantCount, pPushConstants, pPipelineLayout);
-    CreateDescriptorPool(RenderDevice, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, UniformBufferCount, pDescriptorPool);
-
-    CreateDescriptorSets(RenderDevice, pDescriptorPool, pSetLayout, UniformBufferCount, pUniformDescriptors,
-                         pUniformBuffers, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0);
-}
-
-
 #if 0
 void
 SetupDescriptors(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
