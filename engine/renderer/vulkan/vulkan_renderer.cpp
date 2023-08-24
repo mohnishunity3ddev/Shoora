@@ -21,10 +21,10 @@ static u32 TriangleIndices[] = {0, 1, 2};
 // NOTE: Rectangle
 static shoora_vertex_info RectVertices[] =
 {
-    {.VertexPos = Vec2( 0.5f,  0.5f), .VertexColor = Vec3(1.00f, 0.00f, 0.00f), .VertexUV = Vec2(1.0f, 1.0f)},
-    {.VertexPos = Vec2( 0.5f, -0.5f), .VertexColor = Vec3(0.00f, 1.00f, 0.00f), .VertexUV = Vec2(1.0f, 0.0f)},
-    {.VertexPos = Vec2(-0.5f, -0.5f), .VertexColor = Vec3(0.00f, 0.00f, 1.00f), .VertexUV = Vec2(0.0f, 0.0f)},
-    {.VertexPos = Vec2(-0.5f,  0.5f), .VertexColor = Vec3(0.00f, 0.00f, 0.00f), .VertexUV = Vec2(0.0f, 1.0f)},
+    {.VertexPos = Vec2( 0.75f,  0.75f), .VertexColor = Vec3(1.00f, 0.00f, 0.00f), .VertexUV = Vec2(1.0f, 1.0f)},
+    {.VertexPos = Vec2( 0.75f, -0.75f), .VertexColor = Vec3(0.00f, 1.00f, 0.00f), .VertexUV = Vec2(1.0f, 0.0f)},
+    {.VertexPos = Vec2(-0.75f, -0.75f), .VertexColor = Vec3(0.00f, 0.00f, 1.00f), .VertexUV = Vec2(0.0f, 0.0f)},
+    {.VertexPos = Vec2(-0.75f,  0.75f), .VertexColor = Vec3(0.00f, 0.00f, 0.00f), .VertexUV = Vec2(0.0f, 1.0f)},
 };
 static u32 RectIndices[] = {0, 1, 2, 0, 2, 3};
 
@@ -36,10 +36,10 @@ static uniform_data UniformData = {};
 
 struct shoora_render_state
 {
-    b8 WireframeMode = true;
+    b8 WireframeMode = false;
     f32 WireLineWidth = 10.0f;
     vec3f ClearColor = Vec3(0.2f, 0.3f, 0.3f);
-    vec3f MeshColor = Vec3(1.0f, 0.0f, 0.0f);
+    vec3f MeshColor = Vec3(1.0f, 1.0f, 1.0f);
 };
 struct shoora_debug_overlay
 {

@@ -617,7 +617,7 @@ CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulka
 {
     // NOTE: Get all the data the shader is going to use
     CreateUniformBuffers(RenderDevice, Swapchain->UniformBuffers, Swapchain->ImageCount, RequiredSize);
-    CreateCombinedImageSampler(RenderDevice, "images/test_png.png", &Swapchain->UniformCombinedImageSampler);
+    CreateCombinedImageSampler(RenderDevice, "images/brickwall.png", &Swapchain->UniformCombinedImageSampler);
 
     VkDescriptorPoolSize Sizes[2];
     Sizes[0] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SHU_MAX_FRAMES_IN_FLIGHT);
