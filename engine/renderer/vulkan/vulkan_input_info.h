@@ -14,7 +14,8 @@
 const char *RequiredInstanceLayers[] =
 {
 #if _DEBUG
-    SHU_VK_VALIDATION_KHRONOS
+    SHU_VK_VALIDATION_KHRONOS,
+    SHU_VK_VALIDATION_LUNARG_API_DUMP
 #endif
 };
 
@@ -34,7 +35,7 @@ const char *RequiredInstanceExtensions[] =
 
 #if defined(_DEBUG)
     SHU_VK_EXTENSION_DEBUG_UTILS,
-    SHU_VK_EXTENSION_DEBUG_REPORT,
+    SHU_VK_EXTENSION_DEBUG_REPORT
 #endif
 };
 

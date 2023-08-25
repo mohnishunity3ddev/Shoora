@@ -12,10 +12,10 @@ CheckAvailableInstanceExtensions(const char **ppRequiredInstanceExtensions, u32 
     VK_CHECK(vkEnumerateInstanceExtensionProperties(0, &AvailableExtensionCount, 0));
     // VK_CHECK(vkEnumerateInstanceExtensionProperties(0, &AvailableExtensionCount, 0));
 
-    ASSERT((AvailableExtensionCount > 0) && (AvailableExtensionCount <= 256) &&
+    ASSERT((AvailableExtensionCount > 0) && (AvailableExtensionCount <= 32) &&
            (AvailableExtensionCount >= RequiredInstanceExtensionCount));
 
-    VkExtensionProperties AvailableExtensions[256];
+    VkExtensionProperties AvailableExtensions[32];
     VK_CHECK(vkEnumerateInstanceExtensionProperties(0, &AvailableExtensionCount, AvailableExtensions));
 
     i32 FoundExtensionCount = 0;
@@ -50,17 +50,18 @@ CheckAvailableInstanceLayers(const char **ppRequiredLayers, u32 RequiredLayerCou
     u32 AvailableLayerCount = 0;
     VK_CHECK(vkEnumerateInstanceLayerProperties(&AvailableLayerCount, 0));
 
-    ASSERT((AvailableLayerCount > 0) && (AvailableLayerCount <= 256) &&
+    ASSERT((AvailableLayerCount > 0) && (AvailableLayerCount <= 32) &&
            (AvailableLayerCount >= RequiredLayerCount));
 
-    VkLayerProperties AvailableLayers[256];
-    VK_CHECK(vkEnumerateInstanceLayerProperties(&AvailableLayerCount, 0));
+    VkLayerProperties AvailableLayers[32];
+    VK_CHECK(vkEnumerateInstanceLayerProperties(&AvailableLayerCount, AvailableLayers));
 
     i32 FoundLayerCount = 0;
     for(i32 RequiredLayerIndex = 0;
         RequiredLayerIndex < RequiredLayerCount;
         ++RequiredLayerIndex)
     {
+
         const char *RequiredLayerName = *(ppRequiredLayers + RequiredLayerIndex);
 
         for(i32 AvailableLayerIndex = 0;
@@ -91,11 +92,19 @@ CreateVulkanInstance(shoora_vulkan_context *VulkanContext, shoora_instance_creat
     const char **ppRequiredInstanceLayers = ShuraInstanceCreateInfo->ppRequiredInstanceLayers;
     u32 RequiredInstanceLayerCount = ShuraInstanceCreateInfo->RequiredInstanceLayerCount;
 
+    b32 RequiredLayersAvailable = CheckAvailableInstanceLayers(ppRequiredInstanceLayers,
+                                                               RequiredInstanceLayerCount);
+    if(!RequiredLayersAvailable)
+    {
+        LogFatal("Required Layers NOT Available for creating Vulkan Instance\n");
+        return false;
+    }
+
     b32 RequiredExtensionsAvailable = CheckAvailableInstanceExtensions(ppRequiredInstanceExtensions,
                                                                        RequiredInstanceExtensionCount);
     if(!RequiredExtensionsAvailable)
     {
-        LogOutput(LogType_Fatal, "Required Extensions NOT Available for creating Vulkan Instance\n");
+        LogFatal("Required Extensions NOT Available for creating Vulkan Instance\n");
         return false;
     }
 
@@ -120,7 +129,7 @@ CreateVulkanInstance(shoora_vulkan_context *VulkanContext, shoora_instance_creat
     // TODO)): I keep passing 0 as the Allocator. Might want to integrate Vulkan Memory Allocator from AMD.
     VK_CHECK(vkCreateInstance(&InstanceCreateInfo, 0, &VulkanContext->Instance));
 
-    LogOutput(LogType_Info, "Created Vulkan Instance.\n");
+    LogInfo("Created Vulkan Instance.\n");
     return true;
 }
 
@@ -128,5 +137,5 @@ void
 DestroyVulkanInstance(shoora_vulkan_context *VulkanContext)
 {
     vkDestroyInstance(VulkanContext->Instance, 0);
-    LogOutput(LogType_Info, "Destroyed Vulkan Instance!\n");
+    LogWarn("Destroyed Vulkan Instance!\n");
 }

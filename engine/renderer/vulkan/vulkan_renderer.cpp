@@ -12,19 +12,19 @@ static shoora_vulkan_context *Context = nullptr;
 // NOTE: Triangle
 static shoora_vertex_info TriangleVertices[] =
 {
-    {.VertexPos = Vec2( 0.0f,  0.5f), .VertexColor = Vec3(1.0f, 0.0f, 0.0f)},
-    {.VertexPos = Vec2( 0.5f, -0.5f), .VertexColor = Vec3(0.0f, 1.0f, 0.0f)},
-    {.VertexPos = Vec2(-0.5f, -0.5f), .VertexColor = Vec3(0.0f, 0.0f, 1.0f)}
+    {.VertexPos = Vec2( 0.0f,  0.5f), .VertexColor = vec3f{1, 0, 0}},
+    {.VertexPos = Vec2( 0.5f, -0.5f), .VertexColor = vec3f{0, 1, 0}},
+    {.VertexPos = Vec2(-0.5f, -0.5f), .VertexColor = vec3f{0, 0, 1}}
 };
 static u32 TriangleIndices[] = {0, 1, 2};
 
 // NOTE: Rectangle
 static shoora_vertex_info RectVertices[] =
 {
-    {.VertexPos = Vec2( 0.75f,  0.75f), .VertexColor = Vec3(1.00f, 0.00f, 0.00f), .VertexUV = Vec2(1.0f, 1.0f)},
-    {.VertexPos = Vec2( 0.75f, -0.75f), .VertexColor = Vec3(0.00f, 1.00f, 0.00f), .VertexUV = Vec2(1.0f, 0.0f)},
-    {.VertexPos = Vec2(-0.75f, -0.75f), .VertexColor = Vec3(0.00f, 0.00f, 1.00f), .VertexUV = Vec2(0.0f, 0.0f)},
-    {.VertexPos = Vec2(-0.75f,  0.75f), .VertexColor = Vec3(0.00f, 0.00f, 0.00f), .VertexUV = Vec2(0.0f, 1.0f)},
+    {.VertexPos = Vec2( 0.75f,  0.75f), .VertexColor = vec3f{1, 0, 0}, .VertexUV = vec2f{1, 1}},
+    {.VertexPos = Vec2( 0.75f, -0.75f), .VertexColor = vec3f{0, 1, 0}, .VertexUV = vec2f{1, 0}},
+    {.VertexPos = Vec2(-0.75f, -0.75f), .VertexColor = vec3f{0, 0, 1}, .VertexUV = vec2f{0, 0}},
+    {.VertexPos = Vec2(-0.75f,  0.75f), .VertexColor = vec3f{0, 0, 0}, .VertexUV = vec2f{0, 1}},
 };
 static u32 RectIndices[] = {0, 1, 2, 0, 2, 3};
 
@@ -49,7 +49,7 @@ struct shoora_debug_overlay
 static f32 DeltaTime = 0.0f;
 static shoora_render_state RenderState;
 static f32 UiUpdateTimer = 0.0f;
-static const f32 UiUpdateWaitTime = 0.25f;
+static const f32 UiUpdateWaitTime = 1;
 
 static exit_application *QuitApplication;
 

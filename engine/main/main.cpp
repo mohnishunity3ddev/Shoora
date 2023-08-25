@@ -23,6 +23,7 @@ static win32_window_context GlobalWin32WindowContext = {};
 static WINDOWPLACEMENT GlobalWin32WindowPosition = {sizeof(GlobalWin32WindowPosition)};
 static b8 Win32GlobalRunning = false;
 static int64 Win32GlobalPerfFrequency = 0;
+static FILE *WriteFp = nullptr;
 
 void DummyWinResize(u32 Width, u32 Height) {}
 
@@ -303,6 +304,8 @@ OutputDebugStringColor(LogType LogType, const char *message)
 void
 OutputToConsole(LogType LogType, const char *Message)
 {
+    fprintf(WriteFp, "%s", Message);
+
     HANDLE Console = GlobalWin32WindowContext.ConsoleHandle;
 
     static u8 Levels[] = {64, 4, 6, 2, 1, 8, 8, 8};
@@ -448,10 +451,10 @@ Win32ProcessWindowsMessageQueue(HWND WindowHandle, platform_input_state *Input)
             {
                 u32 KeyCode = Message.wParam;
 
-                b8 KeyWasPreviouslyDown = ((Message.lParam & (1 << 30)) != 0);
-                b8 KeyIsCurrentlyDown = ((Message.lParam & (1 << 31)) == 0);
+                b8 KeyWasPreviouslyDown = ((Message.lParam & (1ULL << 30)) != 0);
+                b8 KeyIsCurrentlyDown = ((Message.lParam & (1ULL << 31)) == 0);
 
-                b8 KeyIsPressed = KeyIsCurrentlyDown &&
+                b8 KeyIsPressed = (KeyIsCurrentlyDown) &
                                   (KeyIsCurrentlyDown != KeyWasPreviouslyDown);
 
                 if(KeyCode == SU_ESCAPE && KeyIsPressed)
@@ -562,6 +565,12 @@ Win32GetSecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End)
 i32 WINAPI
 wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdShow)
 {
+    if (WriteFp == nullptr)
+    {
+        WriteFp = fopen("app_dump.txt", "w");
+    }
+    OutputToConsole(LogType_Info, "Inside WinMain\n");
+
     LARGE_INTEGER Frequency;
     QueryPerformanceFrequency(&Frequency);
     Win32GlobalPerfFrequency = Frequency.QuadPart;
@@ -699,6 +708,11 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         Win32PauseConsoleWindow();
     }
 
+    if (WriteFp != nullptr)
+    {
+        fclose(WriteFp);
+        WriteFp = nullptr;
+    }
     return 0;
 }
 

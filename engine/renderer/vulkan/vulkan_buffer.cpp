@@ -326,8 +326,8 @@ CreateUniformBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *p
                                                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         pUniformBuffer->MemSize = Size;
 
-        VK_CHECK(vkAllocateMemory(RenderDevice->LogicalDevice, &MemAllocInfo, nullptr,
-                                  &pUniformBuffer->Memory));
+        VK_CHECK(vkAllocateMemory(RenderDevice->LogicalDevice, &MemAllocInfo, nullptr, &pUniformBuffer->Memory));
+
         VK_CHECK(vkBindBufferMemory(RenderDevice->LogicalDevice, pUniformBuffer->Handle, pUniformBuffer->Memory, 0));
         VK_CHECK(vkMapMemory(RenderDevice->LogicalDevice, pUniformBuffer->Memory, 0, MemAllocInfo.allocationSize,
                              0, (void **)&pUniformBuffer->pMapped));
