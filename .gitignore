@@ -1,3 +1,4 @@
 bin/*
 *.spv
 imgui.ini
+app_dump.txt
