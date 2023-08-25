@@ -318,7 +318,7 @@ CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, const char *Image
                                                   VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT,
                                                   DesiredImageFormat);
 
-    CreateSimpleImage2D(RenderDevice, Vec2<u32>(ImageData.Dim.Width, ImageData.Dim.Height), ImageFormat,
+    CreateSimpleImage2D(RenderDevice, Vec2<u32>(ImageData.Dim.w, ImageData.Dim.h), ImageFormat,
                         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
                         &pImageSampler->Image);
 
@@ -340,8 +340,8 @@ CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, const char *Image
     VkBufferImageCopy BufferCopy = {};
     BufferCopy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     BufferCopy.imageSubresource.layerCount = 1;
-    BufferCopy.imageExtent.width = ImageData.Dim.Width;
-    BufferCopy.imageExtent.height = ImageData.Dim.Height;
+    BufferCopy.imageExtent.width = ImageData.Dim.w;
+    BufferCopy.imageExtent.height = ImageData.Dim.h;
     BufferCopy.imageExtent.depth = 1;
     vkCmdCopyBufferToImage(CopyCmdBuffer, StagingBuffer.Handle, pImageSampler->Image.Handle,
                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &BufferCopy);

@@ -25,7 +25,7 @@ LoadImageFile(const char *Filename, u32 MipmapCount, u32 DesiredChannelCount)
     stbi_info(Filename, &ImageData.Dim.Width, &ImageData.Dim.Height, &ChannelCount);
 #endif
     stbi_set_flip_vertically_on_load(1);
-    ImageData.Data = stbi_load(Filename, &ImageData.Dim.Width, &ImageData.Dim.Height, &ImageData.NumChannels,
+    ImageData.Data = stbi_load(Filename, &ImageData.Dim.w, &ImageData.Dim.h, &ImageData.NumChannels,
                                DesiredChannelCount);
 
 
@@ -36,7 +36,7 @@ LoadImageFile(const char *Filename, u32 MipmapCount, u32 DesiredChannelCount)
     {
         ASSERT(!"Your desired number of channels for this file is not supported!");
     }
-    ImageData.TotalSize = (ImageData.Dim.Width)*(ImageData.Dim.Height)*(ImageData.NumChannels);
+    ImageData.TotalSize = (ImageData.Dim.w)*(ImageData.Dim.h)*(ImageData.NumChannels);
 
     if(MipmapCount > 0)
     {
@@ -62,8 +62,8 @@ FreeImageData(shoora_image_data *ImageData)
 #error "custom image loaders are not implemented yet!"
 #endif
     ImageData->Data = nullptr;
-    ImageData->Dim.Width = 0;
-    ImageData->Dim.Height = 0;
+    ImageData->Dim.w = 0;
+    ImageData->Dim.h = 0;
     ImageData->NumChannels = 0;
 }
 

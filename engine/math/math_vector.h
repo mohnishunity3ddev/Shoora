@@ -8,7 +8,7 @@ struct vec2
     {
         struct { T x, y; };
         struct { T u, v; };
-        struct { T Width, Height; };
+        struct { T w, h; };
         f32 E[2];
     };
 
@@ -139,9 +139,9 @@ struct vec3
     union
     {
         struct { T x, y, z; };
-        struct { T u, v, w; };
+        struct { T u, v, w_; };
         struct { T r, g, b; };
-        struct { T Width, Height, Depth; };
+        struct { T w, h, d; };
         struct { vec2<T> xy; T Reserved_0; };
         struct { T Reserved_1; vec2<T> yz; };
         struct { vec2<T> uv; T Reserved_2; };
