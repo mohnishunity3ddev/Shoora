@@ -7,7 +7,7 @@ Write-Output "ExeFolderPath: $ExeFolderPath"
 Set-Location $DataFolderPath
 # $exe = Get-ChildItem $ExeFolderPath -Recurse -Include *.exe
 # Write-Output "Exe: $exe"
-Invoke-Expression "& `"$ASSETS_FROM_BIN_RELATIVE_PATH\$EXE_NAME`""
+Invoke-Expression "& `"$ASSETS_FROM_BIN_RELATIVE_PATH\Debug\$EXE_NAME`""
 
 goto src
 
