@@ -15,7 +15,6 @@ const char *RequiredInstanceLayers[] =
 {
 #if _DEBUG
     SHU_VK_VALIDATION_KHRONOS,
-    SHU_VK_VALIDATION_LUNARG_API_DUMP
 #endif
 };
 
@@ -35,7 +34,7 @@ const char *RequiredInstanceExtensions[] =
 
 #if defined(_DEBUG)
     SHU_VK_EXTENSION_DEBUG_UTILS,
-    SHU_VK_EXTENSION_DEBUG_REPORT
+    // SHU_VK_EXTENSION_DEBUG_REPORT
 #endif
 };
 
@@ -70,10 +69,10 @@ shoora_queue_info QueueInfos[] =
 
 VkPhysicalDeviceFeatures DesiredFeatures =
 {
-    .geometryShader = VK_TRUE,
+    // .geometryShader = VK_TRUE,
     .fillModeNonSolid = VK_TRUE,
     .wideLines = VK_TRUE,
-    .samplerAnisotropy = VK_TRUE,
+    // .samplerAnisotropy = VK_TRUE,
 };
 
 shoora_command_pool_create_info CommandPoolCreateInfos[] =

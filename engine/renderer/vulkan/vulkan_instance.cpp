@@ -4,6 +4,7 @@
 #include <cstring>
 #include "vulkan_renderer.h"
 #include "platform/platform.h"
+#include <memory>
 
 b32
 CheckAvailableInstanceExtensions(const char **ppRequiredInstanceExtensions, u32 RequiredInstanceExtensionCount)
@@ -15,7 +16,9 @@ CheckAvailableInstanceExtensions(const char **ppRequiredInstanceExtensions, u32 
     ASSERT((AvailableExtensionCount > 0) && (AvailableExtensionCount <= 32) &&
            (AvailableExtensionCount >= RequiredInstanceExtensionCount));
 
-    VkExtensionProperties AvailableExtensions[32];
+    // VkExtensionProperties AvailableExtensions[32];
+    VkExtensionProperties *AvailableExtensions = (VkExtensionProperties *)malloc(AvailableExtensionCount *
+                                                                                 sizeof(VkExtensionProperties));
     VK_CHECK(vkEnumerateInstanceExtensionProperties(0, &AvailableExtensionCount, AvailableExtensions));
 
     i32 FoundExtensionCount = 0;
@@ -40,6 +43,7 @@ CheckAvailableInstanceExtensions(const char **ppRequiredInstanceExtensions, u32 
         }
     }
 
+    free(AvailableExtensions);
     b32 Result = (FoundExtensionCount == RequiredInstanceExtensionCount);
     return Result;
 }
@@ -53,7 +57,9 @@ CheckAvailableInstanceLayers(const char **ppRequiredLayers, u32 RequiredLayerCou
     ASSERT((AvailableLayerCount > 0) && (AvailableLayerCount <= 32) &&
            (AvailableLayerCount >= RequiredLayerCount));
 
-    VkLayerProperties AvailableLayers[32];
+    // VkLayerProperties AvailableLayers[32];
+    VkLayerProperties *AvailableLayers = (VkLayerProperties *)malloc(AvailableLayerCount *
+                                                                     sizeof(VkLayerProperties));
     VK_CHECK(vkEnumerateInstanceLayerProperties(&AvailableLayerCount, AvailableLayers));
 
     i32 FoundLayerCount = 0;
@@ -79,6 +85,7 @@ CheckAvailableInstanceLayers(const char **ppRequiredLayers, u32 RequiredLayerCou
         }
     }
 
+    free(AvailableLayers);
     b32 Result = (FoundLayerCount == RequiredLayerCount);
     return Result;
 }

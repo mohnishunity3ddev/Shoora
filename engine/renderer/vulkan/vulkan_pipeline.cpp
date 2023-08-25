@@ -289,10 +289,10 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
     DepthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
     DepthStencilInfo.depthWriteEnable = VK_TRUE;
 
-    // DepthStencilInfo.depthBoundsTestEnable = VK_FALSE;
+    // DepthStencilInfo.depthBoundsTestEnable = VK_TRUE;
     // DepthStencilInfo.stencilTestEnable = VK_FALSE;
-    // DepthStencilInfo.front = 0;
-    // DepthStencilInfo.back = 0;
+    // DepthStencilInfo.front = {};
+    // DepthStencilInfo.back = {};
     DepthStencilInfo.minDepthBounds = 0.0f;
     DepthStencilInfo.maxDepthBounds = 1.0f;
 

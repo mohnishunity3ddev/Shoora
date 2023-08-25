@@ -304,7 +304,14 @@ OutputDebugStringColor(LogType LogType, const char *message)
 void
 OutputToConsole(LogType LogType, const char *Message)
 {
+#if SHU_CRASH_DUMP_ENABLE
+    WriteFp = fopen("app_dump.txt", "a");
     fprintf(WriteFp, "%s", Message);
+    fclose(WriteFp);
+    WriteFp = nullptr;
+#else
+    fprintf(WriteFp, "%s", Message);
+#endif
 
     HANDLE Console = GlobalWin32WindowContext.ConsoleHandle;
 
@@ -568,6 +575,9 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     if (WriteFp == nullptr)
     {
         WriteFp = fopen("app_dump.txt", "w");
+#if SHU_CRASH_DUMP_ENABLE
+        fclose(WriteFp);
+#endif
     }
     OutputToConsole(LogType_Info, "Inside WinMain\n");
 
@@ -707,6 +717,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     {
         Win32PauseConsoleWindow();
     }
+
 
     if (WriteFp != nullptr)
     {

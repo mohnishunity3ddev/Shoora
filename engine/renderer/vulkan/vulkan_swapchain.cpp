@@ -589,6 +589,7 @@ AcquireNextSwapchainImage(shoora_vulkan_device *RenderDevice, shoora_vulkan_swap
     Swapchain->CurrentImageIndex = ImageIndex;
 }
 
+#if 0
 void
 PresentImage(shoora_vulkan_context *Context)
 {
@@ -610,6 +611,7 @@ PresentImage(shoora_vulkan_context *Context)
 
     VK_CHECK(vkQueuePresentKHR(PresentQueue, &PresentInfo));
 }
+#endif
 
 void
 CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,

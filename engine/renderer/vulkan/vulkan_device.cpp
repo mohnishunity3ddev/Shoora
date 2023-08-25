@@ -108,6 +108,7 @@ GetDeviceMemoryType(shoora_vulkan_device *RenderDevice, u32 DesiredMemoryTypeBit
 {
     i32 Result = -1;
 
+
     // Iterate over Physical Device Memory Properties to see if the memory requirements for our buffer are
     // satisfied.
     for(u32 MemoryType = 0;

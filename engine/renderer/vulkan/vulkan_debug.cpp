@@ -85,6 +85,7 @@ SetupDebugCallbacks(shoora_vulkan_context *Context, shoora_vulkan_debug_create_i
     VK_CHECK(vkCreateDebugUtilsMessengerEXT(Context->Instance, &MessengerCreateInfo, 0,
                                             &Context->Debug.Messenger));
 
+#if 0
     VkDebugReportCallbackCreateInfoEXT ReportCallbackInfo = {};
     ReportCallbackInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
     ReportCallbackInfo.pNext = 0;
@@ -94,6 +95,7 @@ SetupDebugCallbacks(shoora_vulkan_context *Context, shoora_vulkan_debug_create_i
 
     VK_CHECK(vkCreateDebugReportCallbackEXT(Context->Instance, &ReportCallbackInfo, 0,
                                             &Context->Debug.ReportCallback));
+#endif
 
     LogOutput(LogType_Info, "Vulkan Debug Utils have been created!\n");
     return true;
@@ -117,7 +119,10 @@ void
 DestroyDebugUtilHandles(shoora_vulkan_context *Context)
 {
     vkDestroyDebugUtilsMessengerEXT(Context->Instance, Context->Debug.Messenger, 0);
+
+#if 0
     vkDestroyDebugReportCallbackEXT(Context->Instance, Context->Debug.ReportCallback, 0);
+#endif
 
     LogOutput(LogType_Info, "Destroyed Debug Utils!\n");
 }

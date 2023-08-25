@@ -1,5 +1,5 @@
 # all variables used in ps1 files
-Set-Variable -Name PROJECT_NAME -Value "Shoora"
+Set-Variable -Name PROJECT_NAME -Value "ShooraProject"
 Set-Variable -Name EXE_NAME -Value "ShooraEngine_Debug.exe"
 
 Set-Variable -Name BUILD_SCRIPTS_DIR_PATH -Value $PSScriptRoot
