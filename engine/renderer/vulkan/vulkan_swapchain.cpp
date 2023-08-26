@@ -291,7 +291,7 @@ SetupDepthStencil(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *S
 {
     shoora_vulkan_image *pImage = &Swapchain->DepthStencilImage;
 
-    vec2u Dim = Vec2(Swapchain->ImageDimensions.width, Swapchain->ImageDimensions.height);
+    vec2u Dim = vec2u{Swapchain->ImageDimensions.width, Swapchain->ImageDimensions.height};
 
     VkImageAspectFlags Aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
     if(Swapchain->DepthFormat >= VK_FORMAT_D16_UNORM_S8_UINT)

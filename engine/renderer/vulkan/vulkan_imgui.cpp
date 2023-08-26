@@ -79,7 +79,7 @@ InitializeResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_imgui *ImG
     ASSERT(TexWidth > 0 && TexHeight > 0);
 
     // Create Image resources to hold font data which can be used in shaders in the future.
-    CreateSimpleImage2D(RenderDevice, Vec2<u32>(TexWidth, TexHeight), VK_FORMAT_R8G8B8A8_UNORM,
+    CreateSimpleImage2D(RenderDevice, vec2u{(u32)TexWidth, (u32)TexHeight}, VK_FORMAT_R8G8B8A8_UNORM,
                         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                         VK_IMAGE_ASPECT_COLOR_BIT, &ImGUIContext->FontImage,
                         &ImGUIContext->FontMemory, &ImGUIContext->FontImageView);
@@ -302,8 +302,8 @@ ImGuiDrawFrame(VkCommandBuffer CmdBuffer, shoora_vulkan_imgui *ImContext)
     vkCmdSetViewport(CmdBuffer, 0, 1, &Viewport);
 
     // UI scale and translate via push constants
-    ImContext->PushConstantBlock.Scale = Vec2(2.0f/IO.DisplaySize.x, 2.0f/IO.DisplaySize.y);
-    ImContext->PushConstantBlock.Translate = Vec2(-1.0f, -1.0f);
+    ImContext->PushConstantBlock.Scale = vec2f{2.0f/IO.DisplaySize.x, 2.0f/IO.DisplaySize.y};
+    ImContext->PushConstantBlock.Translate = vec2f{-1.0f, -1.0f};
     vkCmdPushConstants(CmdBuffer, ImContext->PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                        sizeof(shoora_imgui_push_constant_block), &ImContext->PushConstantBlock);
 

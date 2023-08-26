@@ -319,7 +319,7 @@ CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, const char *Image
                                                   VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT,
                                                   DesiredImageFormat);
 
-    CreateSimpleImage2D(RenderDevice, Vec2<u32>(ImageData.Dim.w, ImageData.Dim.h), ImageFormat,
+    CreateSimpleImage2D(RenderDevice, vec2u{(u32)ImageData.Dim.w, (u32)ImageData.Dim.h}, ImageFormat,
                         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
                         &pImageSampler->Image);
 

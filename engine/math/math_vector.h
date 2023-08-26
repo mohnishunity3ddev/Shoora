@@ -12,126 +12,39 @@ struct vec2
         f32 E[2];
     };
 
-    inline vec2<T> operator+=(vec2<T> A);
-    inline vec2<T> operator-=(vec2<T> A);
+    inline vec2<T> operator+=(const vec2<T>& A);
+    inline vec2<T> operator-=(const vec2<T>& A);
     inline vec2<T> operator*=(T A);
-    inline vec2<T> operator/=(vec2<T> A);
+    inline vec2<T> operator/=(const vec2<T>& A);
     inline vec2<T> operator/=(T A);
+    inline T& operator[](size_t Index);
+    inline T Dot(const vec2<T>& A);
+    inline T SqMagnitude();
+    inline T Magnitude();
+    inline vec2<f32> Normalized();
 };
 
-// ----------------------------------------------------------------------------------------------------------------
-// Vec2
-// ----------------------------------------------------------------------------------------------------------------
-template <typename T>
-vec2<T>
-Vec2(T x, T y)
-{
-    vec2<T> Result;
-    Result.x = x;
-    Result.y = y;
-    return Result;
-}
-
-template <typename T>
-T
-Dot(vec2<T> A, vec2<T> B)
-{
-    T Result = A.x * B.x + A.y * B.y;
-    return Result;
-}
-
-template <typename T>
-vec2<T>
-operator+(vec2<T> A, vec2<T> B)
-{
-    vec2<T> Result = {A.x + B.x, A.y + B.y};
-    return Result;
-}
-
-template <typename T>
-vec2<T>
-operator-(vec2<T> A, vec2<T> B)
-{
-    vec2<T> Result = {A.x - B.x, A.y - B.y};
-    return Result;
-}
-
-template <typename T>
-vec2<T>
-operator*(vec2<T> A, T B)
-{
-    vec2<T> Result = {B * A.x, B * A.y};
-    return Result;
-}
-
-template <typename T>
-vec2<T>
-operator/(vec2<T> A, vec2<T> B)
-{
-    vec2<T> Result;
-
-    ASSERT(B.x != 0.0f && B.y != 0.0f);
-    Result.x = A.x / B.x;
-    Result.y = A.y / B.y;
-
-    return Result;
-}
-
-template <typename T>
-vec2<T>
-operator/(vec2<T> A, T B)
-{
-    vec2<T> Result;
-    ASSERT(B != 0.0f);
-
-    Result.x = A.x / B;
-    Result.y = A.y / B;
-
-    return Result;
-}
-
-template <typename T>
-vec2<T>
-vec2<T>::operator+=(vec2<T> A)
-{
-    *this = *this + A;
-    return *this;
-}
-
-template <typename T>
-vec2<T>
-vec2<T>::operator-=(vec2<T> A)
-{
-    *this = *this - A;
-    return *this;
-}
-
-template <typename T>
-vec2<T>
-vec2<T>::operator*=(T A)
-{
-    *this = *this * A;
-    return *this;
-}
-
-template <typename T>
-vec2<T>
-vec2<T>::operator/=(vec2<T> A)
-{
-    *this = *this / A;
-    return *this;
-}
-
-template <typename T>
-vec2<T>
-vec2<T>::operator/=(T A)
-{
-    *this = *this / A;
-    return *this;
-}
 typedef vec2<i32> vec2i;
 typedef vec2<f32> vec2f;
 typedef vec2<u32> vec2u;
+#define Vec2f Vec2<f32>
+#define Vec2u Vec2<u32>
+#define Vec2i Vec2<i32>
+
+template <typename T> SHU_EXPORT vec2<T> Vec2();
+template <typename T> SHU_EXPORT vec2<T> Vec2(T A);
+template <typename T> SHU_EXPORT vec2<T> Vec2(T x, T y);
+template <typename T> SHU_EXPORT T Dot(const vec2<T>& A, const vec2<T>& B);
+template <typename T> SHU_EXPORT vec2<T> operator+(const vec2<T>& A, const vec2<T>& B);
+template <typename T> SHU_EXPORT vec2<T> operator-(const vec2<T>& A, const vec2<T>& B);
+template <typename T> SHU_EXPORT vec2<T> operator*(const vec2<T>& A, T B);
+template <typename T> SHU_EXPORT vec2<T> operator/(const vec2<T>& A, const vec2<T>& B);
+template <typename T> SHU_EXPORT vec2<T> operator/(const vec2<T>& A, T B);
+template <typename T> SHU_EXPORT T SqMagnitude(const vec2<T> &A);
+template <typename T> SHU_EXPORT T Magnitude(const vec2<T> &A);
+template <typename T> SHU_EXPORT vec2f Normalize(const vec2<T> &A);
+
+// ----------------------------------------------------------------------------------------------------------------
 
 template<typename T>
 struct vec3
@@ -151,16 +64,303 @@ struct vec3
         T E[3];
     };
 
-    inline vec3<T> operator+=(vec3<T> A);
-    inline vec3<T> operator-=(vec3<T> A);
+    inline vec3<T> operator+=(const vec3<T>& A);
+    inline vec3<T> operator-=(const vec3<T>& A);
     inline vec3<T> operator*=(T A);
-    inline vec3<T> operator/=(vec3<T> A);
+    inline vec3<T> operator/=(const vec3<T>& A);
     inline vec3<T> operator/=(T A);
+    inline T& operator[](size_t Index);
+    inline T SqMagnitude();
+    inline T Magnitude();
+    inline vec3<f32> Normalized();
+    inline T Dot(const vec3<T> &A);
+    inline vec3<T> Cross(const vec3<T> &A);
 };
+typedef vec3<i32> vec3i;
+typedef vec3<f32> vec3f;
+typedef vec3<u32> vec3u;
+#define Vec3f Vec3<f32>
+#define Vec3u Vec3<u32>
+#define Vec3i Vec3<i32>
+
+template <typename T> SHU_EXPORT vec3<T> Vec3();
+template <typename T> SHU_EXPORT vec3<T> Vec3(T A);
+template <typename T> SHU_EXPORT vec3<T> Vec3(T x, T y, T z);
+template <typename T> SHU_EXPORT vec3<T> Vec3(const vec2<T>& xy, T z);
+template <typename T> SHU_EXPORT vec3<T> ToVec3(const vec2<T>& A);
+template <typename T> SHU_EXPORT vec2<T> ToVec2(const vec3<T>& A);
+template <typename T> SHU_EXPORT T Dot(const vec3<T>& A, const vec3<T>& B);
+template <typename T> SHU_EXPORT vec3<T> Cross(const vec3<T>& A, const vec3<T>& B);
+template <typename T> SHU_EXPORT vec3<T> operator+(const vec3<T>& A, const vec3<T>& B);
+template <typename T> SHU_EXPORT vec3<T> operator-(const vec3<T>& A, const vec3<T>& B);
+template <typename T> SHU_EXPORT vec3<T> operator*(const vec3<T>& A, T B);
+template <typename T> SHU_EXPORT vec3<T> operator/(const vec3<T>& A, const vec3<T>& B);
+template <typename T> SHU_EXPORT vec3<T> operator/(const vec3<T>& A, T B);
+template <typename T> SHU_EXPORT T SqMagnitude(const vec3<T> &A);
+template <typename T> SHU_EXPORT T Magnitude(const vec3<T> &A);
+template <typename T> SHU_EXPORT vec3f Normalize(const vec3<T>& A);
+
+// ----------------------------------------------------------------------------------------------------------------
+
+template <typename T>
+struct vec4
+{
+    union
+    {
+        struct { T x, y, z, w; };
+        struct { T r, g, b, a; };
+        struct { T u, v, s, t; };
+        struct { vec2<T> xy; vec2<T> zw; };
+        struct { vec2<T> rg; vec2<T> ba; };
+        struct { vec2<T> uv; vec2<T> st; };
+        struct { vec3<T> xyz; T Reserved_0; };
+        struct { vec3<T> rgb; T Reserved_1; };
+        T E[4];
+    };
+
+    inline vec4<T> operator+=(const vec4<T>& A);
+    inline vec4<T> operator-=(const vec4<T>& A);
+    inline vec4<T> operator*=(T A);
+    inline vec4<T> operator/=(const vec4<T>& A);
+    inline vec4<T> operator/=(T A);
+    inline T &operator[](size_t Index);
+};
+
+template <typename T> SHU_EXPORT vec4<T> Vec4();
+template <typename T> SHU_EXPORT vec4<T> Vec4(T A);
+template <typename T> SHU_EXPORT vec4<T> Vec4(T x, T y, T z, T w);
+template <typename T> SHU_EXPORT T Dot(const vec4<T>& A, const vec4<T>& B);
+template <typename T> SHU_EXPORT vec4<T> operator+(const vec4<T>& A, const vec4<T>& B);
+template <typename T> SHU_EXPORT vec4<T> operator-(const vec4<T>& A, const vec4<T>& B);
+template <typename T> SHU_EXPORT vec4<T> operator*(const vec4<T>& A, const vec4<T>& B);
+template <typename T> SHU_EXPORT vec4<T> operator*(const vec4<T>& A, T B);
+template <typename T> SHU_EXPORT vec4<T> operator/(const vec4<T>& A, const vec4<T>& B);
+template <typename T> SHU_EXPORT vec4<T> operator/(const vec4<T>& A, T B);
+
+typedef vec4<i32> vec4i;
+typedef vec4<f32> vec4f;
+typedef vec4<u32> vec4u;
+#define Vec4f Vec4<f32>
+#define Vec4u Vec4<u32>
+#define Vec4i Vec4<i32>
+
+// ----------------------------------------------------------------------------------------------------------------
+// Vec2
+// ----------------------------------------------------------------------------------------------------------------
+template <typename T>
+vec2<T>
+Vec2()
+{
+    vec2<T> Result = {(T)0, (T)0};
+    return Result;
+}
+
+template <typename T>
+vec2<T>
+Vec2(T A)
+{
+    vec2<T> Result = {A, A};
+    return Result;
+}
+
+
+template <typename T>
+vec2<T>
+Vec2(T x, T y)
+{
+    vec2<T> Result;
+    Result.x = x;
+    Result.y = y;
+    return Result;
+}
+
+template <typename T>
+vec2<T>
+operator+(const vec2<T>& A, const vec2<T>& B)
+{
+    vec2<T> Result = {A.x + B.x, A.y + B.y};
+    return Result;
+}
+
+template <typename T>
+vec2<T>
+operator-(const vec2<T>& A, const vec2<T>& B)
+{
+    vec2<T> Result = {A.x - B.x, A.y - B.y};
+    return Result;
+}
+
+template <typename T>
+vec2<T>
+operator*(const vec2<T>& A, T B)
+{
+    vec2<T> Result = {B * A.x, B * A.y};
+    return Result;
+}
+
+template <typename T>
+vec2<T>
+operator/(const vec2<T>& A, const vec2<T>& B)
+{
+    vec2<T> Result;
+
+    ASSERT(B.x != 0.0f && B.y != 0.0f);
+    Result.x = A.x / B.x;
+    Result.y = A.y / B.y;
+
+    return Result;
+}
+
+template <typename T>
+vec2<T>
+operator/(const vec2<T>& A, T B)
+{
+    vec2<T> Result;
+    ASSERT(B != 0.0f);
+
+    Result.x = A.x / B;
+    Result.y = A.y / B;
+
+    return Result;
+}
+
+template <typename T>
+vec2<T>
+vec2<T>::operator+=(const vec2<T>& A)
+{
+    *this = *this + A;
+    return *this;
+}
+
+template <typename T>
+vec2<T>
+vec2<T>::operator-=(const vec2<T>& A)
+{
+    *this = *this - A;
+    return *this;
+}
+
+template <typename T>
+vec2<T>
+vec2<T>::operator*=(T A)
+{
+    *this = *this * A;
+    return *this;
+}
+
+template <typename T>
+vec2<T>
+vec2<T>::operator/=(const vec2<T>& A)
+{
+    *this = *this / A;
+    return *this;
+}
+
+template <typename T>
+vec2<T>
+vec2<T>::operator/=(T A)
+{
+    *this = *this / A;
+    return *this;
+}
+
+template <typename T>
+T&
+vec2<T>::operator[](size_t Index)
+{
+    if(Index >= 2)
+    {
+        ASSERT(!"Index Out of Bounds");
+    }
+
+    return this->E[Index];
+}
+
+template <typename T>
+T
+vec2<T>::SqMagnitude()
+{
+    T Result = this->x * this->x + this->y * this->y;
+    return Result;
+}
+
+template <typename T>
+T
+vec2<T>::Magnitude()
+{
+    T Result = sqrtf(this->x*this->x + this->y*this->y);
+    return Result;
+}
+
+template <typename T>
+T
+SqMagnitude(const vec2<T> &A)
+{
+    T Result = A.x*A.x + A.y*A.y;
+    return Result;
+}
+
+template <typename T>
+T
+Magnitude(const vec2<T> &A)
+{
+    T Result = sqrtf(A.x*A.x + A.y*A.y);
+    return Result;
+}
+
+template <typename T>
+vec2f
+Normalize(const vec2<T> &A)
+{
+    f32 OneByMagnitude = 1.0f / (f32)A.Magnitude();
+    vec2f Result = Vec2f((f32)(A.x*OneByMagnitude),
+                         (f32)(A.y*OneByMagnitude));
+    return Result;
+}
+
+template <typename T>
+vec2f
+vec2<T>::Normalized()
+{
+    vec2f Result = Normalize(*this);
+    return Result;
+}
+
+template <typename T>
+T
+Dot(const vec2<T>& A, const vec2<T>& B)
+{
+    T Result = A.x*B.x + A.y*B.y + A.z*B.z;
+    return Result;
+}
+
+template <typename T>
+T
+vec2<T>::Dot(const vec2<T>& A)
+{
+    T Result = A.x * this->x + A.y * this->y;
+    return Result;
+}
 
 // ----------------------------------------------------------------------------------------------------------------
 // Vec3
 // ----------------------------------------------------------------------------------------------------------------
+template <typename T>
+vec3<T>
+Vec3()
+{
+    vec3<T> Result = {(T)0, (T)0, (T)0};
+    return Result;
+}
+
+template <typename T>
+vec3<T>
+Vec3(T A)
+{
+    vec3<T> Result = {A, A, A};
+    return Result;
+}
+
 template <typename T>
 vec3<T>
 Vec3(T x, T y, T z)
@@ -169,17 +369,9 @@ Vec3(T x, T y, T z)
     return Result;
 }
 
-template <typename S, typename T>
-vec3<T>
-Vec3(S x, S y, S z)
-{
-    vec3<T> Result = {(T)x, (T)y, (T)z};
-    return Result;
-}
-
 template <typename T>
 vec3<T>
-Vec3(vec2<T> xy, T z)
+Vec3(const vec2<T>& xy, T z)
 {
     vec3<T> Result = Vec3(xy.x, xy.y, z);
 
@@ -188,7 +380,7 @@ Vec3(vec2<T> xy, T z)
 
 template <typename T>
 vec3<T>
-ToVec3(vec2<T> A)
+ToVec3(const vec2<T>& A)
 {
     vec3<T> Result = Vec3(A.x, A.y, 0.0f);
     return Result;
@@ -196,7 +388,7 @@ ToVec3(vec2<T> A)
 
 template <typename T>
 vec2<T>
-ToVec2(vec3<T> A)
+ToVec2(const vec3<T>& A)
 {
     vec2<T> Result = Vec2(A.x, A.y);
     return Result;
@@ -204,15 +396,42 @@ ToVec2(vec3<T> A)
 
 template <typename T>
 T
-Dot(vec3<T> A, vec3<T> B)
+Dot(const vec3<T>& A, const vec3<T>& B)
 {
     T Result = A.x * B.x + A.y * B.y + A.z * B.z;
     return Result;
 }
 
 template <typename T>
+T
+vec3<T>::Dot(const vec3<T>& A)
+{
+    T Result = A.x*this->x + A.y*this->y + A.z*this->z;
+    return Result;
+}
+
+template <typename T>
 vec3<T>
-operator+(vec3<T> A, vec3<T> B)
+Cross(const vec3<T> &A, const vec3<T> &B)
+{
+    vec3<T> Result;
+    Result.x = A.y*B.z - A.z*B.y;
+    Result.y = A.z*B.x - A.x*B.z;
+    Result.z = A.x*B.y - A.y*B.x;
+    return Result;
+}
+
+template <typename T>
+vec3<T>
+vec3<T>::Cross(const vec3<T> &A)
+{
+    vec3<T> Result = Cross(*this, A);
+    return Result;
+}
+
+template <typename T>
+vec3<T>
+operator+(const vec3<T>& A, const vec3<T>& B)
 {
     vec3<T> Result;
 
@@ -225,7 +444,7 @@ operator+(vec3<T> A, vec3<T> B)
 
 template <typename T>
 vec3<T>
-operator-(vec3<T> A, vec3<T> B)
+operator-(const vec3<T>& A, const vec3<T>& B)
 {
     vec3<T> Result;
 
@@ -238,7 +457,7 @@ operator-(vec3<T> A, vec3<T> B)
 
 template <typename T>
 vec3<T>
-operator*(vec3<T> A, T B)
+operator*(const vec3<T>& A, T B)
 {
     vec3<T> Result;
 
@@ -251,7 +470,7 @@ operator*(vec3<T> A, T B)
 
 template <typename T>
 vec3<T>
-operator/(vec3<T> A, vec3<T> B)
+operator/(const vec3<T>& A, const vec3<T>& B)
 {
     vec3<T> Result;
 
@@ -266,7 +485,7 @@ operator/(vec3<T> A, vec3<T> B)
 
 template <typename T>
 vec3<T>
-operator/(vec3<T> A, T B)
+operator/(const vec3<T>& A, T B)
 {
     vec3<T> Result;
 
@@ -281,7 +500,7 @@ operator/(vec3<T> A, T B)
 
 template <typename T>
 vec3<T>
-vec3<T>::operator+=(vec3<T> A)
+vec3<T>::operator+=(const vec3<T>& A)
 {
     *this = *this + A;
     return *this;
@@ -289,7 +508,7 @@ vec3<T>::operator+=(vec3<T> A)
 
 template <typename T>
 vec3<T>
-vec3<T>::operator-=(vec3<T> A)
+vec3<T>::operator-=(const vec3<T>& A)
 {
     *this = *this - A;
     return *this;
@@ -305,7 +524,7 @@ vec3<T>::operator*=(T A)
 
 template <typename T>
 vec3<T>
-vec3<T>::operator/=(vec3<T> A)
+vec3<T>::operator/=(const vec3<T>& A)
 {
     *this = *this / A;
     return *this;
@@ -319,9 +538,211 @@ vec3<T>::operator/=(T A)
     return *this;
 }
 
-typedef vec3<i32> vec3i;
-typedef vec3<f32> vec3f;
-typedef vec3<u32> vec3u;
+template <typename T>
+T&
+vec3<T>::operator[](size_t Index)
+{
+    if (Index >= 3)
+    {
+        ASSERT(!"Index Out of Bounds");
+    }
+
+    return this->E[Index];
+}
+
+template <typename T>
+T
+vec3<T>::SqMagnitude()
+{
+    T Result = this->x*this->x + this->y*this->y + this->z*this->z;
+    return Result;
+}
+
+template <typename T>
+T
+vec3<T>::Magnitude()
+{
+    T Result = sqrtf(this->x*this->x + this->y*this->y + this->z*this->z);
+    return Result;
+}
+
+template <typename T>
+T
+SqMagnitude(const vec3<T> &A)
+{
+    T Result = A.x*A.x + A.y*A.y + A.z*A.z;
+    return Result;
+}
+
+template <typename T>
+T
+Magnitude(const vec3<T> &A)
+{
+    T Result = sqrtf(A.x*A.x + A.y*A.y + A.z*A.z);
+    return Result;
+}
+
+template <typename T>
+vec3f
+Normalize(const vec3<T> &A)
+{
+    f32 OneByMagnitude = 1.0f / (f32)A.Magnitude();
+    vec3f Result = Vec3f((f32)(A.x*OneByMagnitude),
+                         (f32)(A.y*OneByMagnitude),
+                         (f32)(A.z*OneByMagnitude));
+    return Result;
+}
+
+template <typename T>
+vec3f
+vec3<T>::Normalized()
+{
+    vec3f Result = Normalize(*this);
+    return Result;
+}
+
+// ----------------------------------------------------------------------------------------------------------------
+// Vec4
+// ----------------------------------------------------------------------------------------------------------------
+template <typename T>
+vec4<T>
+Vec4()
+{
+    vec4<T> Result = {(T)0, (T)0, (T)0, (T)0};
+    return Result;
+}
+
+template <typename T>
+vec4<T>
+Vec4(T A)
+{
+    vec4<T> Result = {A, A, A, A};
+    return Result;
+}
+
+template <typename T>
+vec4<T>
+Vec4(T x, T y, T z, T w)
+{
+    vec4<T> Result;
+    Result.x = x;
+    Result.y = y;
+    Result.z = z;
+    Result.w = w;
+    return Result;
+}
+
+template <typename T>
+T
+Dot(const vec4<T>& A, const vec4<T>& B)
+{
+    T Result = A.x*B.x + A.y*B.y + A.z*B.z + A.w*B.w;
+    return Result;
+}
+
+template <typename T>
+vec4<T>
+operator+(const vec4<T>& A, const vec4<T>& B)
+{
+    vec4<T> Result = {A.x+B.x, A.y+B.y, A.z+B.z, A.w+B.w};
+    return Result;
+}
+
+template <typename T>
+vec4<T>
+operator-(const vec4<T>& A, const vec4<T>& B)
+{
+    vec4<T> Result = {A.x-B.x, A.y-B.y, A.z-B.z, A.w-B.w};
+    return Result;
+}
+
+template <typename T>
+vec4<T>
+operator*(const vec4<T>& A, const vec4<T>& B)
+{
+    vec4<T> Result = {A.x*B.x, A.y*B.y, A.z*B.z, A.w*B.w};
+    return Result;
+}
+
+template <typename T>
+vec4<T>
+operator*(const vec4<T>& A, T B)
+{
+    vec4<T> Result = {A.x*B, A.y*B, A.z*B, A.w*B};
+    return Result;
+}
+
+template <typename T>
+vec4<T>
+operator/(const vec4<T>& A, const vec4<T>& B)
+{
+    ASSERT((B.x != 0.0f) && (B.y != 0.0f) && (B.z != 0.0f) && (B.w != 0.0f));
+
+    vec4<T> Result = {A.x/B.x, A.y/B.y, A.z/B.z, A.w/B.w};
+    return Result;
+}
+
+template <typename T>
+vec4<T>
+operator/(const vec4<T>& A, T B)
+{
+    ASSERT(B != 0.0f);
+
+    vec4<T> Result = {A.x/B, A.y/B, A.z/B, A.w/B};
+    return Result;
+}
+
+template <typename T>
+vec4<T>
+vec4<T>::operator+=(const vec4<T>& A)
+{
+    *this = *this + A;
+    return *this;
+}
+
+template <typename T>
+vec4<T>
+vec4<T>::operator-=(const vec4<T>& A)
+{
+    *this = *this - A;
+    return *this;
+}
+
+template <typename T>
+vec4<T>
+vec4<T>::operator*=(T A)
+{
+    *this = *this * A;
+    return *this;
+}
+
+template <typename T>
+vec4<T>
+vec4<T>::operator/=(const vec4<T>& A)
+{
+    *this = *this / A;
+    return *this;
+}
+
+template <typename T>
+vec4<T>
+vec4<T>::operator/=(T A)
+{
+    *this = *this / A;
+    return *this;
+}
+
+template <typename T>
+T &
+vec4<T>::operator[](size_t Index)
+{
+    if (Index >= 2)
+    {
+        ASSERT(!"Index Out of Bounds");
+    }
+
+    return this->E[Index];
+}
 
 #define MATH_VECTOR_H
 #endif

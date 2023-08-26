@@ -12,19 +12,19 @@ static shoora_vulkan_context *Context = nullptr;
 // NOTE: Triangle
 static shoora_vertex_info TriangleVertices[] =
 {
-    {.VertexPos = Vec2( 0.0f,  0.5f), .VertexColor = vec3f{1, 0, 0}},
-    {.VertexPos = Vec2( 0.5f, -0.5f), .VertexColor = vec3f{0, 1, 0}},
-    {.VertexPos = Vec2(-0.5f, -0.5f), .VertexColor = vec3f{0, 0, 1}}
+    {.VertexPos = vec2f{ 0.0f,  0.5f}, .VertexColor = vec3f{1, 0, 0}},
+    {.VertexPos = vec2f{ 0.5f, -0.5f}, .VertexColor = vec3f{0, 1, 0}},
+    {.VertexPos = vec2f{-0.5f, -0.5f}, .VertexColor = vec3f{0, 0, 1}}
 };
 static u32 TriangleIndices[] = {0, 1, 2};
 
 // NOTE: Rectangle
 static shoora_vertex_info RectVertices[] =
 {
-    {.VertexPos = Vec2( 0.75f,  0.75f), .VertexColor = vec3f{1, 0, 0}, .VertexUV = vec2f{1, 1}},
-    {.VertexPos = Vec2( 0.75f, -0.75f), .VertexColor = vec3f{0, 1, 0}, .VertexUV = vec2f{1, 0}},
-    {.VertexPos = Vec2(-0.75f, -0.75f), .VertexColor = vec3f{0, 0, 1}, .VertexUV = vec2f{0, 0}},
-    {.VertexPos = Vec2(-0.75f,  0.75f), .VertexColor = vec3f{0, 0, 0}, .VertexUV = vec2f{0, 1}},
+    {.VertexPos = vec2f{ 0.75f,  0.75f}, .VertexColor = vec3f{1, 0, 0}, .VertexUV = vec2f{1, 1}},
+    {.VertexPos = vec2f{ 0.75f, -0.75f}, .VertexColor = vec3f{0, 1, 0}, .VertexUV = vec2f{1, 0}},
+    {.VertexPos = vec2f{-0.75f, -0.75f}, .VertexColor = vec3f{0, 0, 1}, .VertexUV = vec2f{0, 0}},
+    {.VertexPos = vec2f{-0.75f,  0.75f}, .VertexColor = vec3f{0, 0, 0}, .VertexUV = vec2f{0, 1}},
 };
 static u32 RectIndices[] = {0, 1, 2, 0, 2, 3};
 
@@ -38,8 +38,8 @@ struct shoora_render_state
 {
     b8 WireframeMode = false;
     f32 WireLineWidth = 10.0f;
-    vec3f ClearColor = Vec3(0.2f, 0.3f, 0.3f);
-    vec3f MeshColor = Vec3(1.0f, 1.0f, 1.0f);
+    vec3f ClearColor = vec3f{0.2f, 0.3f, 0.3f};
+    vec3f MeshColor = vec3f{1.0f, 1.0f, 1.0f};
 };
 struct shoora_debug_overlay
 {
@@ -60,8 +60,8 @@ void WindowResizedCallback(u32 Width, u32 Height)
     if(Context && (Width > 0 && Height > 0))
     {
         ASSERT(Context->IsInitialized);
-        WindowResized(&Context->Device, &Context->Swapchain, Context->GraphicsRenderPass, Vec2(Width, Height));
-        ImGuiUpdateWindowSize(Vec2(Width, Height));
+        WindowResized(&Context->Device, &Context->Swapchain, Context->GraphicsRenderPass, vec2u{Width, Height});
+        ImGuiUpdateWindowSize(vec2u{Width, Height});
     }
 }
 
@@ -96,6 +96,15 @@ ImGuiNewFrame()
 void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
 {
+    mat4f m = Mat4f(1.0, 2.0, 3.0, 4.0,
+                    2.0, 3.0, 4.0, 5.0,
+                    3.0, 4.0, 5.0, 6.0,
+                    4.0, 5.0, 6.0, 7.0);
+    vec4f v = Vec4f(1, 2, 3, 4);
+    vec4f v2 = m.MulVec(v);
+
+    vec3f v3 = Vec3f(1,2,3) - Vec3f(0,1,2);
+
     VK_CHECK(volkInitialize());
 
     ShuraInstanceCreateInfo.AppName = AppInfo->AppName;
@@ -115,7 +124,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     volkLoadDevice(RenderDevice->LogicalDevice);
     CreateCommandPools(RenderDevice);
 
-    vec2u ScreenDim = Vec2(AppInfo->WindowWidth, AppInfo->WindowHeight);
+    vec2u ScreenDim = vec2u{AppInfo->WindowWidth, AppInfo->WindowHeight};
     CreateSwapchain(&VulkanContext->Device, &VulkanContext->Swapchain, ScreenDim, &SwapchainInfo);
     CreateRenderPass(RenderDevice, Swapchain, &VulkanContext->GraphicsRenderPass);
     CreateSwapchainFramebuffers(RenderDevice, Swapchain, VulkanContext->GraphicsRenderPass);
