@@ -44,6 +44,7 @@ struct mat3
 };
 
 template <typename T> SHU_EXPORT mat3<T> Mat3();
+template <typename T> SHU_EXPORT mat3<T> Mat3(T Val);
 template <typename T>
 SHU_EXPORT mat3<T> Mat3(T m00, T m01, T m02,
                         T m10, T m11, T m12,
@@ -96,6 +97,8 @@ struct mat4
     inline mat4<T> operator*=(T A);
     inline mat4<T> operator/=(const mat4<T> &M);
     inline mat4<T> operator/=(T A);
+    inline vec4<T>& operator[](size_t RowIndex);
+    inline T& operator()(size_t RowIndex, size_t ColumnIndex);
     inline mat4<T> Transposed();
     inline mat4<T> MakeTranspose();
     inline mat4<T> Mul(const mat4<T> &M);
@@ -104,11 +107,10 @@ struct mat4
     inline mat4<T> Mul(T A);
     inline vec4<T> GetColumn(size_t Index);
     inline vec4<T> GetRow(size_t Index);
-    inline vec4<T>& operator[](size_t RowIndex);
-    inline T& operator()(size_t RowIndex, size_t ColumnIndex);
 };
 
 template <typename T> SHU_EXPORT mat4<T> Mat4();
+template <typename T> SHU_EXPORT mat4<T> Mat4(T Val);
 template <typename T>
 SHU_EXPORT mat4<T> Mat4(T m00, T m01, T m02, T m03,
                         T m10, T m11, T m12, T m13,
@@ -120,11 +122,15 @@ template <typename T> SHU_EXPORT mat4<T> operator+(const mat4<T> &M1, const mat4
 template <typename T> SHU_EXPORT mat4<T> operator-(const mat4<T> &M1, const mat4<T> &M2);
 template <typename T> SHU_EXPORT mat4<T> operator*(const mat4<T> &M1, T B);
 template <typename T> SHU_EXPORT mat4<T> operator*(const mat4<T> &M1, const mat4<T> &M2);
-template <typename T> SHU_EXPORT vec4<T> operator*(const vec4<T> &V, const mat4<T> &M);
-template <typename T> SHU_EXPORT vec4<T> operator*(const vec3<T> &V, const mat4<T> &M);
+template <typename T> SHU_EXPORT vec4<T> operator*(const mat4<T> &M, const vec4<T> &V);
+template <typename T> SHU_EXPORT vec4<T> operator*(const mat4<T> &M, const vec3<T> &V);
 template <typename T> SHU_EXPORT mat4<T> operator/(const mat4<T> &M1, T B);
 template <typename T> SHU_EXPORT mat4<T> operator/(const mat4<T> &M1, const mat4<T> &M2);
 template <typename T> SHU_EXPORT mat4<T> Transpose(const mat4<T> &M1);
+
+template <typename T> SHU_EXPORT mat4<T> TranslationMatrix(const vec3<T> &Tv);
+template <typename T> SHU_EXPORT mat4<T> ScaleMatrix(const vec3<T> &Sv);
+template <typename T> SHU_EXPORT mat4<T> RotationMatrix(const vec3<T> &Rv);
 
 typedef mat4<i32> mat4i;
 typedef mat4<u32> mat4u;
@@ -141,11 +147,19 @@ template <typename T>
 mat3<T>
 Mat3()
 {
-    mat3<T> Result;
+    mat3<T> Result = {};
+    return Result;
+}
 
-    Result.Rows[0] = vec3<T>{1, 0, 0};
-    Result.Rows[1] = vec3<T>{0, 1, 0};
-    Result.Rows[2] = vec3<T>{0, 0, 1};
+template <typename T>
+mat3<T>
+Mat3(T Val)
+{
+    mat3<T> Result = {};
+
+    Result.m00 = Val;
+    Result.m11 = Val;
+    Result.m22 = Val;
 
     return Result;
 }
@@ -158,9 +172,17 @@ Mat3(T m00, T m01, T m02,
 {
     mat3<T> Result;
 
-    Result.Rows[0] = vec3<T>{m00, m01, m02};
-    Result.Rows[1] = vec3<T>{m10, m11, m12};
-    Result.Rows[2] = vec3<T>{m20, m21, m22};
+    Result.m00 = m00;
+    Result.m01 = m01;
+    Result.m02 = m02;
+
+    Result.m10 = m10;
+    Result.m11 = m11;
+    Result.m12 = m12;
+
+    Result.m20 = m20;
+    Result.m21 = m21;
+    Result.m22 = m22;
 
     return Result;
 }
@@ -492,13 +514,19 @@ template <typename T>
 mat4<T>
 Mat4()
 {
-    mat4<T> Result;
+    mat4<T> Result = {};
+    return Result;
+}
 
-    Result.Rows[0] = vec4<T>{1, 0, 0, 0};
-    Result.Rows[1] = vec4<T>{0, 1, 0, 0};
-    Result.Rows[2] = vec4<T>{0, 0, 1, 0};
-    Result.Rows[3] = vec4<T>{0, 0, 0, 1};
-
+template <typename T>
+mat4<T>
+Mat4(T Val)
+{
+    mat4<T> Result = {};
+    Result.m00 = Val;
+    Result.m11 = Val;
+    Result.m22 = Val;
+    Result.m33 = Val;
     return Result;
 }
 
@@ -511,11 +539,25 @@ Mat4(T m00, T m01, T m02, T m03,
 {
     mat4<T> Result;
 
-    Result.Rows[0] = vec4<T>{m00, m01, m02, m03};
-    Result.Rows[1] = vec4<T>{m10, m11, m12, m13};
-    Result.Rows[2] = vec4<T>{m20, m21, m22, m23};
-    Result.Rows[3] = vec4<T>{m30, m31, m32, m33};
+    Result.m00 = m00;
+    Result.m01 = m01;
+    Result.m02 = m02;
+    Result.m03 = m03;
 
+    Result.m10 = m10;
+    Result.m11 = m11;
+    Result.m12 = m12;
+    Result.m13 = m13;
+
+    Result.m20 = m20;
+    Result.m21 = m21;
+    Result.m22 = m22;
+    Result.m23 = m23;
+
+    Result.m30 = m30;
+    Result.m31 = m31;
+    Result.m32 = m32;
+    Result.m33 = m33;
     return Result;
 }
 
@@ -577,27 +619,27 @@ operator*(const mat4<T> &M1, T B)
 
 template <typename T>
 vec4<T>
-operator*(const vec4<T> &V, const mat4<T> &M)
+operator*(const mat4<T> &M, const vec4<T> &V)
 {
     vec4<T> Result;
 
-    Result.x = V.x*M.m00 + V.y*M.m10 + V.z*M.m20 + V.w*M.m30;
-    Result.y = V.x*M.m01 + V.y*M.m11 + V.z*M.m21 + V.w*M.m31;
-    Result.z = V.x*M.m02 + V.y*M.m12 + V.z*M.m22 + V.w*M.m32;
-    Result.w = V.x*M.m03 + V.y*M.m13 + V.z*M.m23 + V.w*M.m33;
+    Result.x = M.m00*V.x + M.m01*V.y + M.m02*V.z + M.m03*V.w;
+    Result.y = M.m10*V.x + M.m11*V.y + M.m12*V.z + M.m13*V.w;
+    Result.z = M.m20*V.x + M.m21*V.y + M.m22*V.z + M.m23*V.w;
+    Result.w = M.m30*V.x + M.m31*V.y + M.m32*V.z + M.m33*V.w;
 
     return Result;
 }
 
 template <typename T>
 vec4<T>
-operator*(const vec3<T> &V, const mat4<T> &M)
+operator*(const mat4<T> &M, const vec3<T> &V)
 {
     vec4<T> Result;
-    Result.x = V.x * M.m00 + V.y * M.m10 + V.z * M.m20 + M.m30;
-    Result.y = V.x * M.m01 + V.y * M.m11 + V.z * M.m21 + M.m31;
-    Result.z = V.x * M.m02 + V.y * M.m12 + V.z * M.m22 + M.m32;
-    Result.w = V.x * M.m03 + V.y * M.m13 + V.z * M.m23 + M.m33;
+    Result.x = M.m00*V.x + M.m01*V.y + M.m02*V.z + M.m03;
+    Result.y = M.m10*V.x + M.m11*V.y + M.m12*V.z + M.m13;
+    Result.z = M.m20*V.x + M.m21*V.y + M.m22*V.z + M.m23;
+    Result.w = M.m30*V.x + M.m31*V.y + M.m32*V.z + M.m33;
     return Result;
 }
 
@@ -805,6 +847,41 @@ mat4<T>::Transposed()
                              this->m01, this->m11, this->m21, this->m31,
                              this->m02, this->m12, this->m22, this->m32,
                              this->m03, this->m13, this->m23, this->m33);
+    return Result;
+}
+
+template <typename T>
+mat4<T>
+TranslationMatrix(const vec3<T> &Tv)
+{
+    mat4<T> Result = Mat4((T)1);
+
+    Result.m03 = Tv.x;
+    Result.m13 = Tv.y;
+    Result.m23 = Tv.z;
+
+    return Result;
+}
+
+template <typename T>
+mat4<T>
+ScaleMatrix(const vec3<T> &Sv)
+{
+    mat4<T> Result = Mat4((T)1);
+
+    Result.m00 = Sv.x;
+    Result.m11 = Sv.y;
+    Result.m22 = Sv.z;
+
+    return Result;
+}
+
+template <typename T>
+mat4<T>
+RotationMatrix(const vec3<T> &Tv)
+{
+    mat4<T> Result = Mat4((T)1);
+
     return Result;
 }
 
