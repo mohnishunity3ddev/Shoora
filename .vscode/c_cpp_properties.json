@@ -6,7 +6,7 @@
                 "${workspaceFolder}/**",
                 "${VULKAN_SDK}\\include",
                 // "${CPP_LIBRARIES}\\glfw\\include",
-                // "${CPP_LIBRARIES}\\glm",
+                "${CPP_LIBRARIES}\\glm",
                 "${CPP_LIBRARIES}\\volk",
                 "${CPP_LIBRARIES}\\stb",
                 "${workspaceFolder}/engine"

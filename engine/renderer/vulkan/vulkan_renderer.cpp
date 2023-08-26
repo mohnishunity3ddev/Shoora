@@ -6,6 +6,8 @@
 #include "vulkan_buffer.h"
 #include "vulkan_imgui.h"
 #include "loaders/image/png_loader.h"
+// #include <glm/glm.hpp>
+// #include <glm/gtc/matrix_transform.hpp>
 #include <memory.h>
 
 static shoora_vulkan_context *Context = nullptr;
@@ -97,13 +99,12 @@ void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
 {
     vec4f Vector4 = Vec4f(1, 0, 0, 1);
-    vec3f TVec3 = Vec3f(1, 1, 0);
+    vec3f TVec3 = Vec3f(2.5f, 1.1f, -3.25f);
     mat4f TransMat = TranslationMatrix(TVec3);
     Vector4 = TransMat*Vector4;
 
     mat4f ScaleMat = ScaleMatrix(Vec3f(1, 2, 2));
     Vector4 = ScaleMat*Vector4;
-
 
     VK_CHECK(volkInitialize());
 

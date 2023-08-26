@@ -623,10 +623,10 @@ operator*(const mat4<T> &M, const vec4<T> &V)
 {
     vec4<T> Result;
 
-    Result.x = M.m00*V.x + M.m01*V.y + M.m02*V.z + M.m03*V.w;
-    Result.y = M.m10*V.x + M.m11*V.y + M.m12*V.z + M.m13*V.w;
-    Result.z = M.m20*V.x + M.m21*V.y + M.m22*V.z + M.m23*V.w;
-    Result.w = M.m30*V.x + M.m31*V.y + M.m32*V.z + M.m33*V.w;
+    Result.x = M.m00*V.x + M.m10*V.y + M.m20*V.z + M.m30*V.w;
+    Result.y = M.m01*V.x + M.m11*V.y + M.m21*V.z + M.m31*V.w;
+    Result.z = M.m02*V.x + M.m12*V.y + M.m22*V.z + M.m32*V.w;
+    Result.w = M.m03*V.x + M.m13*V.y + M.m23*V.z + M.m33*V.w;
 
     return Result;
 }
@@ -636,10 +636,10 @@ vec4<T>
 operator*(const mat4<T> &M, const vec3<T> &V)
 {
     vec4<T> Result;
-    Result.x = M.m00*V.x + M.m01*V.y + M.m02*V.z + M.m03;
-    Result.y = M.m10*V.x + M.m11*V.y + M.m12*V.z + M.m13;
-    Result.z = M.m20*V.x + M.m21*V.y + M.m22*V.z + M.m23;
-    Result.w = M.m30*V.x + M.m31*V.y + M.m32*V.z + M.m33;
+    Result.x = M.m00*V.x + M.m10*V.y + M.m20*V.z + M.m30;
+    Result.y = M.m01*V.x + M.m11*V.y + M.m21*V.z + M.m31;
+    Result.z = M.m02*V.x + M.m12*V.y + M.m22*V.z + M.m32;
+    Result.w = M.m03*V.x + M.m13*V.y + M.m23*V.z + M.m33;
     return Result;
 }
 
@@ -856,9 +856,9 @@ TranslationMatrix(const vec3<T> &Tv)
 {
     mat4<T> Result = Mat4((T)1);
 
-    Result.m03 = Tv.x;
-    Result.m13 = Tv.y;
-    Result.m23 = Tv.z;
+    Result.m30 = Tv.x;
+    Result.m31 = Tv.y;
+    Result.m32 = Tv.z;
 
     return Result;
 }
