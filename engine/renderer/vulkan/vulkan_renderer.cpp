@@ -96,15 +96,6 @@ ImGuiNewFrame()
 void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
 {
-    mat4f m = Mat4f(1.0, 2.0, 3.0, 4.0,
-                    2.0, 3.0, 4.0, 5.0,
-                    3.0, 4.0, 5.0, 6.0,
-                    4.0, 5.0, 6.0, 7.0);
-    vec4f v = Vec4f(1, 2, 3, 4);
-    vec4f v2 = m.MulVec(v);
-
-    vec3f v3 = Vec3f(1,2,3) - Vec3f(0,1,2);
-
     VK_CHECK(volkInitialize());
 
     ShuraInstanceCreateInfo.AppName = AppInfo->AppName;
