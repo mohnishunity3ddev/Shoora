@@ -21,9 +21,9 @@ struct shoora_image_transition
     VkImageAspectFlags Aspect;
 };
 
-
-void CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, vec2u Dim, VkFormat Format, VkImageUsageFlags Usage,
-                         VkImageAspectFlags Aspect, VkImage *pImage, VkDeviceMemory *pMemory, VkImageView *pView);
+void CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, Shu::vec2u Dim, VkFormat Format,
+                         VkImageUsageFlags Usage, VkImageAspectFlags Aspect, VkImage *pImage,
+                         VkDeviceMemory *pMemory, VkImageView *pView);
 void CreateImageView2D(shoora_vulkan_device *RenderDevice, VkImage Image, VkFormat Format,
                        VkImageAspectFlags Aspect, VkImageView *pImageView);
 void CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, const char *ImageFilename,

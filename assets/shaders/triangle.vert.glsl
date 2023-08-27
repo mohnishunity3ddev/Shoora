@@ -6,6 +6,7 @@ layout(location = 2) in vec2 InUV;
 
 layout(set = 0, binding = 0) uniform UniformBuffer
 {
+	mat4 Model;
 	vec3 Color;
 } ubo;
 
@@ -18,5 +19,7 @@ void main()
 	OutUniformColor = ubo.Color;
 	OutVertexColor = InColor;
 	OutUV = InUV;
-	gl_Position = vec4(InPos, 0.0, 1.0);
+
+	vec4 pos = ubo.Model*vec4(InPos, 0, 1);
+	gl_Position = pos;
 }

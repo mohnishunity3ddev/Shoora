@@ -31,7 +31,7 @@ SetStyle(ImGuiStyle AppStyle, u32 index)
 }
 
 void
-InitializeImGui(shoora_vulkan_imgui *ImGuiContext, vec2u ScreenDim)
+InitializeImGui(shoora_vulkan_imgui *ImGuiContext, Shu::vec2u ScreenDim)
 {
     ImGuiContext->UIStyle = ImGui::GetStyle();
 
@@ -79,10 +79,9 @@ InitializeResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_imgui *ImG
     ASSERT(TexWidth > 0 && TexHeight > 0);
 
     // Create Image resources to hold font data which can be used in shaders in the future.
-    CreateSimpleImage2D(RenderDevice, vec2u{(u32)TexWidth, (u32)TexHeight}, VK_FORMAT_R8G8B8A8_UNORM,
-                        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                        VK_IMAGE_ASPECT_COLOR_BIT, &ImGUIContext->FontImage,
-                        &ImGUIContext->FontMemory, &ImGUIContext->FontImageView);
+    CreateSimpleImage2D(RenderDevice, Shu::vec2u{(u32)TexWidth, (u32)TexHeight}, VK_FORMAT_R8G8B8A8_UNORM,
+                        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
+                        &ImGUIContext->FontImage, &ImGUIContext->FontMemory, &ImGUIContext->FontImageView);
 
     // Create buffer to store store font data.
     shoora_vulkan_buffer StagingBuffer = CreateBuffer(RenderDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -219,7 +218,7 @@ InitializeResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_imgui *ImG
 }
 
 void
-PrepareImGui(shoora_vulkan_device *RenderDevice, shoora_vulkan_imgui *ImGuiContext, vec2u ScreenDim,
+PrepareImGui(shoora_vulkan_device *RenderDevice, shoora_vulkan_imgui *ImGuiContext, Shu::vec2u ScreenDim,
              VkRenderPass RenderPass)
 {
     ImGuiContext->RenderDevice = RenderDevice;
@@ -302,8 +301,8 @@ ImGuiDrawFrame(VkCommandBuffer CmdBuffer, shoora_vulkan_imgui *ImContext)
     vkCmdSetViewport(CmdBuffer, 0, 1, &Viewport);
 
     // UI scale and translate via push constants
-    ImContext->PushConstantBlock.Scale = vec2f{2.0f/IO.DisplaySize.x, 2.0f/IO.DisplaySize.y};
-    ImContext->PushConstantBlock.Translate = vec2f{-1.0f, -1.0f};
+    ImContext->PushConstantBlock.Scale = Shu::vec2f{2.0f / IO.DisplaySize.x, 2.0f / IO.DisplaySize.y};
+    ImContext->PushConstantBlock.Translate = Shu::vec2f{-1.0f, -1.0f};
     vkCmdPushConstants(CmdBuffer, ImContext->PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                        sizeof(shoora_imgui_push_constant_block), &ImContext->PushConstantBlock);
 
@@ -357,7 +356,7 @@ ImGuiUpdateInputState(shoora_platform_frame_packet *InputPacket)
 }
 
 void
-ImGuiUpdateWindowSize(vec2u WindowDim)
+ImGuiUpdateWindowSize(Shu::vec2u WindowDim)
 {
     ImGuiIO &IO = ImGui::GetIO();
     IO.DisplaySize = ImVec2(WindowDim.x, WindowDim.y);

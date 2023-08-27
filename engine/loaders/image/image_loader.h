@@ -15,9 +15,9 @@ struct shoora_image_mipmap
 
 struct shoora_image_data
 {
-    vec2i Dim;
+    Shu::vec2i Dim;
     i32 NumChannels;
-
+    
     shoora_image_mipmap Mipmaps[16];
     i32 MipmapCount;
 

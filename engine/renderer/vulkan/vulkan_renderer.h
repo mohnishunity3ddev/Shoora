@@ -164,13 +164,13 @@ struct shoora_vulkan_pipeline
 
 struct shoora_imgui_push_constant_block
 {
-    vec2f Scale;
-    vec2f Translate;
+    Shu::vec2f Scale;
+    Shu::vec2f Translate;
 };
 
 struct shoora_vulkan_imgui
 {
-    vec2u WindowDim;
+    Shu::vec2u WindowDim;
     shoora_vulkan_device *RenderDevice;
     ImGuiStyle UIStyle;
 

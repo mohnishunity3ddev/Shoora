@@ -200,7 +200,7 @@ CreateUniformBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *p
         VK_CHECK(vkMapMemory(RenderDevice->LogicalDevice, pUniformBuffer->Memory, 0, MemAllocInfo.allocationSize,
                              0, (void **)&pUniformBuffer->pMapped));
     }
-
+    
     LogOutput(LogType_Info, "Created Uniform Buffers\n");
 }
 

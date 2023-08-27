@@ -6,42 +6,44 @@
 #include "vulkan_buffer.h"
 #include "vulkan_imgui.h"
 #include "loaders/image/png_loader.h"
-// #include <glm/glm.hpp>
-// #include <glm/gtc/matrix_transform.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <memory.h>
 
 static shoora_vulkan_context *Context = nullptr;
 // NOTE: Triangle
 static shoora_vertex_info TriangleVertices[] =
 {
-    {.VertexPos = vec2f{ 0.0f,  0.5f}, .VertexColor = vec3f{1, 0, 0}},
-    {.VertexPos = vec2f{ 0.5f, -0.5f}, .VertexColor = vec3f{0, 1, 0}},
-    {.VertexPos = vec2f{-0.5f, -0.5f}, .VertexColor = vec3f{0, 0, 1}}
+    {.VertexPos = Shu::vec2f{ 0.0f,  0.5f}, .VertexColor = Shu::vec3f{1, 0, 0}},
+    {.VertexPos = Shu::vec2f{ 0.5f, -0.5f}, .VertexColor = Shu::vec3f{0, 1, 0}},
+    {.VertexPos = Shu::vec2f{-0.5f, -0.5f}, .VertexColor = Shu::vec3f{0, 0, 1}}
 };
 static u32 TriangleIndices[] = {0, 1, 2};
 
 // NOTE: Rectangle
 static shoora_vertex_info RectVertices[] =
 {
-    {.VertexPos = vec2f{ 0.75f,  0.75f}, .VertexColor = vec3f{1, 0, 0}, .VertexUV = vec2f{1, 1}},
-    {.VertexPos = vec2f{ 0.75f, -0.75f}, .VertexColor = vec3f{0, 1, 0}, .VertexUV = vec2f{1, 0}},
-    {.VertexPos = vec2f{-0.75f, -0.75f}, .VertexColor = vec3f{0, 0, 1}, .VertexUV = vec2f{0, 0}},
-    {.VertexPos = vec2f{-0.75f,  0.75f}, .VertexColor = vec3f{0, 0, 0}, .VertexUV = vec2f{0, 1}},
+    {.VertexPos = Shu::vec2f{ 0.5f,  0.5f}, .VertexColor = Shu::vec3f{1, 0, 0}, .VertexUV = Shu::vec2f{1, 1}},
+    {.VertexPos = Shu::vec2f{ 0.5f, -0.5f}, .VertexColor = Shu::vec3f{0, 1, 0}, .VertexUV = Shu::vec2f{1, 0}},
+    {.VertexPos = Shu::vec2f{-0.5f, -0.5f}, .VertexColor = Shu::vec3f{0, 0, 1}, .VertexUV = Shu::vec2f{0, 0}},
+    {.VertexPos = Shu::vec2f{-0.5f,  0.5f}, .VertexColor = Shu::vec3f{0, 0, 0}, .VertexUV = Shu::vec2f{0, 1}},
 };
 static u32 RectIndices[] = {0, 1, 2, 0, 2, 3};
 
 struct uniform_data
 {
-    vec3f Color;
+    Shu::mat4f Model;
+    Shu::vec3f Color;
 };
+
 static uniform_data UniformData = {};
 
 struct shoora_render_state
 {
-    b8 WireframeMode = false;
-    f32 WireLineWidth = 10.0f;
-    vec3f ClearColor = vec3f{0.2f, 0.3f, 0.3f};
-    vec3f MeshColor = vec3f{1.0f, 1.0f, 1.0f};
+    b8      WireframeMode       = false;
+    f32     WireLineWidth       = 10.0f;
+    Shu::vec3f ClearColor = Shu::vec3f{0.2f, 0.3f, 0.3f};
+    Shu::vec3f MeshColorUniform = Shu::vec3f{1.0f, 1.0f, 1.0f};
 };
 struct shoora_debug_overlay
 {
@@ -52,6 +54,8 @@ static f32 DeltaTime = 0.0f;
 static shoora_render_state RenderState;
 static f32 UiUpdateTimer = 0.0f;
 static const f32 UiUpdateWaitTime = 1;
+static const Shu::mat4f Mat4Identity = Shu::Mat4f(1.0f);
+static const Shu::vec3f ZAxis = Shu::Vec3f(0, 0, 1);
 
 static exit_application *QuitApplication;
 
@@ -62,8 +66,9 @@ void WindowResizedCallback(u32 Width, u32 Height)
     if(Context && (Width > 0 && Height > 0))
     {
         ASSERT(Context->IsInitialized);
-        WindowResized(&Context->Device, &Context->Swapchain, Context->GraphicsRenderPass, vec2u{Width, Height});
-        ImGuiUpdateWindowSize(vec2u{Width, Height});
+        WindowResized(&Context->Device, &Context->Swapchain, Context->GraphicsRenderPass,
+                      Shu::vec2u{Width, Height});
+        ImGuiUpdateWindowSize(Shu::vec2u{Width, Height});
     }
 }
 
@@ -81,7 +86,9 @@ ImGuiNewFrame()
     ImGui::Checkbox("Toggle Wireframe", (bool *)&RenderState.WireframeMode);
     ImGui::SliderFloat("Wireframe Line Width", &RenderState.WireLineWidth, 1.0f, 10.0f);
     ImGui::ColorEdit3("Clear Color", RenderState.ClearColor.E);
-    ImGui::ColorEdit3("Rectangle Color", RenderState.MeshColor.E);
+
+    ImGui::ColorEdit3("Rectangle Color", RenderState.MeshColorUniform.E);
+
     ImGui::End();
 
     ImGui::SetNextWindowPos(ImVec2(0, 0), 1 << 2);
@@ -98,14 +105,6 @@ ImGuiNewFrame()
 void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
 {
-    vec4f Vector4 = Vec4f(1, 0, 0, 1);
-    vec3f TVec3 = Vec3f(2.5f, 1.1f, -3.25f);
-    mat4f TransMat = TranslationMatrix(TVec3);
-    Vector4 = TransMat*Vector4;
-
-    mat4f ScaleMat = ScaleMatrix(Vec3f(1, 2, 2));
-    Vector4 = ScaleMat*Vector4;
-
     VK_CHECK(volkInitialize());
 
     ShuraInstanceCreateInfo.AppName = AppInfo->AppName;
@@ -125,7 +124,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     volkLoadDevice(RenderDevice->LogicalDevice);
     CreateCommandPools(RenderDevice);
 
-    vec2u ScreenDim = vec2u{AppInfo->WindowWidth, AppInfo->WindowHeight};
+    Shu::vec2u ScreenDim = Shu::vec2u{AppInfo->WindowWidth, AppInfo->WindowHeight};
     CreateSwapchain(&VulkanContext->Device, &VulkanContext->Swapchain, ScreenDim, &SwapchainInfo);
     CreateRenderPass(RenderDevice, Swapchain, &VulkanContext->GraphicsRenderPass);
     CreateSwapchainFramebuffers(RenderDevice, Swapchain, VulkanContext->GraphicsRenderPass);
@@ -168,6 +167,27 @@ AdvanceToNextFrame()
     ++Context->FrameCounter;
 }
 
+static f32 Angle = 0.0f;
+static const f32 AngleSpeed = 50.0f;
+void
+WriteUniformData(u32 ImageIndex, f32 Delta)
+{
+    Angle += Delta;
+    if(Angle > 360.0f)
+    {
+        Angle = 0.0f;
+    }
+
+    Shu::mat4f Model = Mat4Identity;
+    Shu::Scale(Model, Shu::Vec3f(0.25f, 0.25f, 1.0f));
+    Shu::RotateGimbalLock(Model, Shu::Vec3f(0.0f, 0.0f, 1.0f) /* ZAxis */, Angle*AngleSpeed);
+    Shu::Translate(Model, Shu::Vec3f(0.5f, 0.0f, 0.0f));
+
+    UniformData.Model = Model;
+    UniformData.Color = RenderState.MeshColorUniform;
+    memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &UniformData, sizeof(uniform_data));
+}
+
 void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 {
     ASSERT(Context != nullptr);
@@ -206,8 +226,7 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     VkCommandBuffer DrawCmdBuffer = pDrawCmdBuffer->Handle;
 
     // RenderState.MeshColor = Vec3(1, 1, 0);
-    memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &RenderState.MeshColor,
-           sizeof(RenderState.MeshColor));
+    WriteUniformData(ImageIndex, FramePacket->DeltaTime);
 
     VK_CHECK(vkResetFences(Context->Device.LogicalDevice, 1, &pCurrentFrameFence->Handle));
     VK_CHECK(vkResetCommandBuffer(DrawCmdBuffer, 0));

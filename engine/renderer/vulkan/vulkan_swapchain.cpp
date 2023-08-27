@@ -291,7 +291,7 @@ SetupDepthStencil(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *S
 {
     shoora_vulkan_image *pImage = &Swapchain->DepthStencilImage;
 
-    vec2u Dim = vec2u{Swapchain->ImageDimensions.width, Swapchain->ImageDimensions.height};
+    Shu::vec2u Dim = Shu::vec2u{Swapchain->ImageDimensions.width, Swapchain->ImageDimensions.height};
 
     VkImageAspectFlags Aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
     if(Swapchain->DepthFormat >= VK_FORMAT_D16_UNORM_S8_UINT)
@@ -425,7 +425,7 @@ FreeDrawCommandBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapcha
 
 void
 WindowResized(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, VkRenderPass RenderPass,
-              vec2u ScreenDim)
+              Shu::vec2u ScreenDim)
 {
     // TODO)): Will it be better to wait for all device operations to finish? or queue wait will suffice?
     VK_CHECK(vkQueueWaitIdle(GetQueueHandle(RenderDevice, QueueType_Graphics)));
@@ -493,7 +493,7 @@ WindowResized(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapc
 }
 
 void
-CreateSwapchain(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, vec2u ScreenDim,
+CreateSwapchain(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, Shu::vec2u ScreenDim,
                 shoora_vulkan_swapchain_create_info *ShooraSwapchainInfo)
 {
     PrepareForSwapchainCreation(RenderDevice, Swapchain, ShooraSwapchainInfo);
