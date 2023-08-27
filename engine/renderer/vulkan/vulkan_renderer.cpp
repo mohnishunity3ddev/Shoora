@@ -139,7 +139,12 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
                                     &VulkanContext->Pipeline.GraphicsPipelineLayout);
     CreateGraphicsPipeline(VulkanContext, "shaders/spirv/triangle.vert.spv", "shaders/spirv/triangle.frag.spv",
                            &VulkanContext->Pipeline);
+
+    // Wireframe
+    CreatePipelineLayout(RenderDevice, 1, &VulkanContext->Swapchain.UniformSetLayout, 0, nullptr,
+                         &VulkanContext->Pipeline.WireframePipelineLayout);
     CreateWireframePipeline(VulkanContext, "shaders/spirv/wireframe.vert.spv", "shaders/spirv/wireframe.frag.spv");
+
     CreateSynchronizationPrimitives(&VulkanContext->Device, &VulkanContext->SyncHandles);
 
     PrepareImGui(RenderDevice, &VulkanContext->ImContext, ScreenDim, VulkanContext->GraphicsRenderPass);
@@ -182,8 +187,8 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
     }
 
     Shu::mat4f Model = Mat4Identity;
-    Shu::Scale(Model, Shu::Vec3f(0.05f, 0.5f, 1.0f));
-    Shu::RotateGimbalLock(Model, Shu::Vec3f(0.0f, 0.0f, 1.0f) /* ZAxis */, Angle*AngleSpeed);
+    Shu::Scale(Model, Shu::Vec3f(0.5f, 0.5f, 1.0f));
+    Shu::RotateGimbalLock(Model, Shu::Vec3f(0.0f, 0.0f, -1.0f), Angle*AngleSpeed);
     Shu::Translate(Model, Shu::Vec3f(0.75f, 0.0f, 0.0f));
 
     UniformData.Model = Model;

@@ -135,9 +135,9 @@ namespace Shu
     template <typename T> SHU_EXPORT mat4<T> operator*(const mat4<T> &M1, const mat4<T> &M2);
     template <typename T> SHU_EXPORT vec4<T> operator*(const mat4<T> &M, const vec4<T> &V);
     template <typename T> SHU_EXPORT vec4<T> operator*(const mat4<T> &M, const vec3<T> &V);
-    template <typename T> SHU_EXPORT mat4<T> operator/(const mat4<T> &M1, T B);
+    template <typename T> SHU_EXPORT mat4<T> operator/(const mat4<T> &M, T B);
     template <typename T> SHU_EXPORT mat4<T> operator/(const mat4<T> &M1, const mat4<T> &M2);
-    template <typename T> SHU_EXPORT mat4<T> Transpose(const mat4<T> &M1);
+    template <typename T> SHU_EXPORT mat4<T> Transpose(const mat4<T> &M);
 
 #if 1
     // -------------------------------------------------------------------------------------------------

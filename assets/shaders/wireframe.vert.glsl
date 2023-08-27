@@ -1,9 +1,17 @@
 #version 450
 
-layout(location = 0) in vec2 Pos;
-layout(location = 1) in vec3 Color;
+layout(set = 0, binding = 0) uniform UniformBuffer
+{
+    mat4 Model;
+    vec3 Color;
+}
+ubo;
+
+layout(location = 0) in vec2 InPos;
+layout(location = 1) in vec3 InColor;
 
 void main()
 {
-	gl_Position = vec4(Pos, 0.0, 1.0);
+    vec4 Pos = ubo.Model*vec4(InPos, 0, 1);
+    gl_Position = Pos;
 }

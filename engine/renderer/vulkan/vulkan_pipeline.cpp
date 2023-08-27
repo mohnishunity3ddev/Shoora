@@ -1,6 +1,7 @@
 #include "vulkan_pipeline.h"
 #include "vulkan_shaders.h"
 #include "vulkan_vertex_definitions.h"
+#include "vulkan_descriptor_sets.h"
 
 VkPipelineLayoutCreateInfo
 GetPipelineLayoutCreateInfo(VkDescriptorSetLayout *pSetLayouts, u32 SetLayoutCount)
@@ -484,10 +485,15 @@ CreateWireframePipeline(shoora_vulkan_context *Context, const char *VertexShader
     ColorBlendInfo.blendConstants[2] = 0.0f;
     ColorBlendInfo.blendConstants[3] = 0.0f;
 
-    VkPipelineLayoutCreateInfo PipelineLayoutInfo = {};
-    PipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    VK_CHECK(vkCreatePipelineLayout(RenderDevice->LogicalDevice, &PipelineLayoutInfo, nullptr,
-                                    &Context->Pipeline.WireframePipelineLayout));
+
+    if(Context->Pipeline.WireframePipelineLayout == VK_NULL_HANDLE)
+    {
+        VkPipelineLayoutCreateInfo PipelineLayoutInfo = {};
+        PipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        VK_CHECK(vkCreatePipelineLayout(RenderDevice->LogicalDevice, &PipelineLayoutInfo, nullptr,
+                                        &Context->Pipeline.WireframePipelineLayout));
+    }
+    ASSERT(Context->Pipeline.WireframePipelineLayout != VK_NULL_HANDLE);
 
     //? Dynamic State
     VkDynamicState DynamicStates[] = {VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_LINE_WIDTH};
@@ -514,13 +520,9 @@ CreateWireframePipeline(shoora_vulkan_context *Context, const char *VertexShader
     WireframePipelineCreateInfos[0].basePipelineHandle = VK_NULL_HANDLE;
     WireframePipelineCreateInfos[0].basePipelineIndex = -1;
 
-    VkPipeline Pipelines[1];
-
     VK_CHECK(vkCreateGraphicsPipelines(RenderDevice->LogicalDevice, VK_NULL_HANDLE,
                                        ARRAY_SIZE(WireframePipelineCreateInfos), WireframePipelineCreateInfos,
-                                       nullptr, Pipelines));
-
-    Context->Pipeline.WireframeGraphicsPipeline = Pipelines[0];
+                                       nullptr, &Context->Pipeline.WireframeGraphicsPipeline));
 
     LogOutput(LogType_Debug, "Created Wireframe Pipeline!\n");
 
