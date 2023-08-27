@@ -6,8 +6,11 @@
 #include "vulkan_buffer.h"
 #include "vulkan_imgui.h"
 #include "loaders/image/png_loader.h"
+
+// TODO)): Remove this after you are done with model, view, projection matrices!
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
 #include <memory.h>
 
 static shoora_vulkan_context *Context = nullptr;
@@ -179,9 +182,9 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
     }
 
     Shu::mat4f Model = Mat4Identity;
-    Shu::Scale(Model, Shu::Vec3f(0.25f, 0.25f, 1.0f));
+    Shu::Scale(Model, Shu::Vec3f(0.05f, 0.5f, 1.0f));
     Shu::RotateGimbalLock(Model, Shu::Vec3f(0.0f, 0.0f, 1.0f) /* ZAxis */, Angle*AngleSpeed);
-    Shu::Translate(Model, Shu::Vec3f(0.5f, 0.0f, 0.0f));
+    Shu::Translate(Model, Shu::Vec3f(0.75f, 0.0f, 0.0f));
 
     UniformData.Model = Model;
     UniformData.Color = RenderState.MeshColorUniform;
