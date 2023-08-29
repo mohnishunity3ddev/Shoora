@@ -19,6 +19,20 @@ SetupCamera(shoora_camera *Camera, Shu::vec3f Pos, Shu::vec3f GlobalUp)
 }
 
 void shoora_camera::
+UpdateCameraVectors()
+{
+    Shu::vec3f Front;
+    Front.x = Shu::Cos(Yaw) * Shu::Cos(Pitch);
+    Front.y = Shu::Sin(Pitch);
+    Front.z = Shu::Sin(Yaw) * Shu::Cos(Pitch);
+
+    this->Front = Shu::Normalize(Front);
+
+    this->Right = Shu::Normalize(Shu::Cross(this->GlobalUp, this->Front));
+    this->Up = Shu::Cross(this->Front, this->Right);
+}
+
+void shoora_camera::
 HandleInput(f32 XMovedSinceLastFrame, f32 YMovedSinceLastFrame)
 {
     f32 Yaw = this->Yaw - this->MouseSensitivity*XMovedSinceLastFrame;
@@ -41,20 +55,6 @@ HandleInput(f32 XMovedSinceLastFrame, f32 YMovedSinceLastFrame)
     this->Pitch = Pitch;
 
     this->UpdateCameraVectors();
-}
-
-void shoora_camera::
-UpdateCameraVectors()
-{
-    Shu::vec3f Front;
-    Front.x = Shu::Cos(Yaw) * Shu::Cos(Pitch);
-    Front.y = Shu::Sin(Pitch);
-    Front.z = Shu::Sin(Yaw) * Shu::Cos(Pitch);
-
-    this->Front = Shu::Normalize(Front);
-
-    this->Right = Shu::Normalize(Shu::Cross(this->GlobalUp, this->Front));
-    this->Up = Shu::Cross(this->Front, this->Right);
 }
 
 Shu::mat4f shoora_camera::

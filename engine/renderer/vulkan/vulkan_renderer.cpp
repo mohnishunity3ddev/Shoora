@@ -56,8 +56,8 @@ static uniform_data UniformData = {};
 
 struct shoora_render_state
 {
-    b8      WireframeMode       = false;
-    f32     WireLineWidth       = 10.0f;
+    b8 WireframeMode = false;
+    f32 WireLineWidth = 10.0f;
     Shu::vec3f ClearColor = Shu::vec3f{0.2f, 0.3f, 0.3f};
     Shu::vec3f MeshColorUniform = Shu::vec3f{1.0f, 1.0f, 1.0f};
 };
@@ -234,14 +234,8 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
     Shu::Translate(Model, Shu::Vec3f(0.0f, 0.0f, 0.0f));
     UniformData.Model = Model;
 
-#if 0
-    Context->Camera.Pos.z += Delta;
-    Context->Camera.UpdateCameraVectors();
-#endif
-
     Shu::mat4f View = Mat4Identity;
     View = Context->Camera.GetViewMatrix(View);
-
     UniformData.View = View;
 
     Shu::mat4f Projection = Shu::Perspective(45.0f, 1920.0f / 1080.0f, 0.1f, 100.0f);
@@ -253,10 +247,10 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
 }
 
 void
-GetMousePosDelta(f32 CurrentMouseDeltaX, f32 CurrentMouseDeltaY, Shu::vec2f &MousePosDelta)
+GetMousePosDelta(f32 CurrentMouseDeltaX, f32 CurrentMouseDeltaY, Shu::vec2f *MousePosDelta)
 {
-    MousePosDelta.x = CurrentMouseDeltaX - LastFrameMousePos.x;
-    MousePosDelta.y = CurrentMouseDeltaY - LastFrameMousePos.y;
+    MousePosDelta->x = CurrentMouseDeltaX - LastFrameMousePos.x;
+    MousePosDelta->y = CurrentMouseDeltaY - LastFrameMousePos.y;
     LastFrameMousePos.x = CurrentMouseDeltaX;
     LastFrameMousePos.y = CurrentMouseDeltaY;
 }
@@ -287,7 +281,7 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         LastFrameMousePos = {FramePacket->MouseXPos, FramePacket->MouseYPos};
     }
     Shu::vec2f MouseDelta;
-    GetMousePosDelta(FramePacket->MouseXPos, FramePacket->MouseYPos, MouseDelta);
+    GetMousePosDelta(FramePacket->MouseXPos, FramePacket->MouseYPos, &MouseDelta);
     Context->Camera.HandleInput(MouseDelta.x, MouseDelta.y);
 
     shoora_vulkan_fence_handle *pCurrentFrameFence = GetCurrentFrameFencePtr(&Context->SyncHandles,
