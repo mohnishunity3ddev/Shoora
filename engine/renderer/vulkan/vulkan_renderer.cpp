@@ -9,7 +9,6 @@
 
 #define SHU_USE_GLM 0
 #if SHU_USE_GLM
-// TODO)): Remove this after you are done with model, view, projection matrices!
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_LEFT_HANDED
 #include <glm/glm.hpp>
@@ -72,8 +71,7 @@ static shoora_render_state RenderState;
 static f32 UiUpdateTimer = 0.0f;
 static const f32 UiUpdateWaitTime = 1;
 static const Shu::mat4f Mat4Identity = Shu::Mat4f(1.0f);
-static const Shu::vec3f ZAxis = Shu::Vec3f(0, 0, 1);
-
+static Shu::vec2f LastFrameMousePos = Shu::Vec2f(FLT_MAX, FLT_MAX);
 static exit_application *QuitApplication;
 
 void WindowResizedCallback(u32 Width, u32 Height)
@@ -235,8 +233,11 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
     Shu::RotateGimbalLock(Model, Shu::Vec3f(0.0f, 0.0f, 1.0f), Angle * AngleSpeed);
     Shu::Translate(Model, Shu::Vec3f(0.0f, 0.0f, 0.0f));
     UniformData.Model = Model;
+
+#if 0
     Context->Camera.Pos.z += Delta;
     Context->Camera.UpdateCameraVectors();
+#endif
 
     Shu::mat4f View = Mat4Identity;
     View = Context->Camera.GetViewMatrix(View);
@@ -249,6 +250,15 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
 
     UniformData.Color = RenderState.MeshColorUniform;
     memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &UniformData, sizeof(uniform_data));
+}
+
+void
+GetMousePosDelta(f32 CurrentMouseDeltaX, f32 CurrentMouseDeltaY, Shu::vec2f &MousePosDelta)
+{
+    MousePosDelta.x = CurrentMouseDeltaX - LastFrameMousePos.x;
+    MousePosDelta.y = CurrentMouseDeltaY - LastFrameMousePos.y;
+    LastFrameMousePos.x = CurrentMouseDeltaX;
+    LastFrameMousePos.y = CurrentMouseDeltaY;
 }
 
 void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
@@ -270,6 +280,15 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         DebugOverlay.MsPerFrame = 1000.0f*DeltaTime;
         UiUpdateTimer = 0.0f;
     }
+
+    if(Context->FrameCounter == 0)
+    {
+        // 1st Frame
+        LastFrameMousePos = {FramePacket->MouseXPos, FramePacket->MouseYPos};
+    }
+    Shu::vec2f MouseDelta;
+    GetMousePosDelta(FramePacket->MouseXPos, FramePacket->MouseYPos, MouseDelta);
+    Context->Camera.HandleInput(MouseDelta.x, MouseDelta.y);
 
     shoora_vulkan_fence_handle *pCurrentFrameFence = GetCurrentFrameFencePtr(&Context->SyncHandles,
                                                                              Context->CurrentFrame);

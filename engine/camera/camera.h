@@ -32,6 +32,7 @@ struct shoora_camera
     void UpdateCameraVectors();
 
     Shu::mat4f GetViewMatrix(Shu::mat4f &M);
+    void HandleInput(f32 XMovedSinceLastFrame, f32 YMovedSinceLastFrame);
 };
 
 SHU_EXPORT void SetupCamera(shoora_camera *Camera, Shu::vec3f Pos = Shu::Vec3f(0.0f),

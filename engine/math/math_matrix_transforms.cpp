@@ -26,7 +26,7 @@ namespace Shu
         Mat *= RotateMat;
         return Mat;
     }
-
+    
     mat4f
     LookAt(const vec3f &CamPos, const vec3f &LookingTowards, const vec3f WorldUp, mat4f &M)
     {
@@ -57,4 +57,4 @@ namespace Shu
         Result.m32 = -(Far * Near) / (Far - Near);
         return Result;
     }
-} 
+}

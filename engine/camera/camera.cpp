@@ -19,6 +19,31 @@ SetupCamera(shoora_camera *Camera, Shu::vec3f Pos, Shu::vec3f GlobalUp)
 }
 
 void shoora_camera::
+HandleInput(f32 XMovedSinceLastFrame, f32 YMovedSinceLastFrame)
+{
+    f32 Yaw = this->Yaw - this->MouseSensitivity*XMovedSinceLastFrame;
+    if(Yaw < 0.0f || Yaw >= 360.0f)
+    {
+        Yaw = 0.0f;
+    }
+    this->Yaw = Yaw;
+
+    f32 Pitch = this->Pitch - this->MouseSensitivity*YMovedSinceLastFrame;
+    if(Pitch >= 89.0f)
+    {
+        Pitch = 89.0f;
+    }
+    if(Pitch <= -89.0f)
+    {
+        Pitch = -89.0f;
+    }
+
+    this->Pitch = Pitch;
+
+    this->UpdateCameraVectors();
+}
+
+void shoora_camera::
 UpdateCameraVectors()
 {
     Shu::vec3f Front;
