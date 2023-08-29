@@ -33,16 +33,16 @@ UpdateCameraVectors()
 }
 
 void shoora_camera::
-HandleInput(f32 XMovedSinceLastFrame, f32 YMovedSinceLastFrame)
+HandleInput(const shoora_camera_input *CameraInput)
 {
-    f32 Yaw = this->Yaw - this->MouseSensitivity*XMovedSinceLastFrame;
+    f32 Yaw = this->Yaw - this->MouseSensitivity*CameraInput->MouseDeltaX;
     if(Yaw < 0.0f || Yaw >= 360.0f)
     {
         Yaw = 0.0f;
     }
     this->Yaw = Yaw;
 
-    f32 Pitch = this->Pitch - this->MouseSensitivity*YMovedSinceLastFrame;
+    f32 Pitch = this->Pitch - this->MouseSensitivity*CameraInput->MouseDeltaY;
     if(Pitch >= 89.0f)
     {
         Pitch = 89.0f;
@@ -51,10 +51,43 @@ HandleInput(f32 XMovedSinceLastFrame, f32 YMovedSinceLastFrame)
     {
         Pitch = -89.0f;
     }
-
     this->Pitch = Pitch;
-
     this->UpdateCameraVectors();
+
+    Shu::vec3f MoveDirection = Shu::Vec3f(0.0f);
+    b32 Move = false;
+    if(CameraInput->MoveForwards)
+    {
+        Move = true;
+        MoveDirection += this->Front;
+    }
+    if(CameraInput->MoveBackwards)
+    {
+        Move = true;
+        MoveDirection -= this->Front;
+    }
+    if(CameraInput->MoveLeft)
+    {
+        Move = true;
+        MoveDirection -= this->Right;
+    }
+    if(CameraInput->MoveRight)
+    {
+        Move = true;
+        MoveDirection += this->Right;
+    }
+
+    if(Move)
+    {
+        f32 MovementSpeed = this->MovementSpeed;
+        if(CameraInput->MoveFaster)
+        {
+            MovementSpeed *= 3.0f;
+        }
+
+        MoveDirection = Shu::Normalize(MoveDirection);
+        this->Pos += MoveDirection * MovementSpeed * CameraInput->DeltaTime;
+    }
 }
 
 Shu::mat4f shoora_camera::

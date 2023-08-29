@@ -73,7 +73,8 @@ Win32ToggleFullscreen(HWND Window)
 struct platform_input_button_state
 {
     i32 ButtonTransitionsPerFrame;
-    b32 IsDown;
+    b32 IsCurrentlyDown;
+    b32 IsReleased;
 };
 
 enum platform_input_mouse_button
@@ -94,7 +95,7 @@ struct platform_input_state
 
     union
     {
-        platform_input_button_state KeyboardButtons[9];
+        platform_input_button_state KeyboardButtons[10];
 
         struct
         {
@@ -107,11 +108,11 @@ struct platform_input_state
             platform_input_button_state Keyboard_LeftArrow;
             platform_input_button_state Keyboard_RightArrow;
             platform_input_button_state Keyboard_Enter;
+            platform_input_button_state Keyboard_LeftShift;
         };
     };
 };
-
-
+static platform_input_state *GlobalInputState = nullptr;
 
 LRESULT CALLBACK
 Win32WindowCallback(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam)
@@ -169,18 +170,95 @@ Win32WindowCallback(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LPara
 void
 Win32UpdateInputButtonState(platform_input_button_state *InputButtonState, b32 IsCurrentlyDown)
 {
-    if(InputButtonState->IsDown != IsCurrentlyDown)
+    if(InputButtonState->IsCurrentlyDown != IsCurrentlyDown)
     {
         ++InputButtonState->ButtonTransitionsPerFrame;
-        InputButtonState->IsDown = IsCurrentlyDown;
+        InputButtonState->IsCurrentlyDown = IsCurrentlyDown;
+        InputButtonState->IsReleased = !IsCurrentlyDown;
     }
 }
 
 b32
-Win32InputKeyPressed(platform_input_button_state InputState)
+Win32InputKeyPressed(platform_input_button_state *InputState)
 {
-    b32 Result = ((InputState.ButtonTransitionsPerFrame > 1) ||
-                  (InputState.ButtonTransitionsPerFrame == 1 && InputState.IsDown));
+    b32 Result = ((InputState->ButtonTransitionsPerFrame > 1) ||
+                  (InputState->ButtonTransitionsPerFrame == 1 && InputState->IsCurrentlyDown));
+
+    return Result;
+}
+
+b32
+Win32InputKeyReleased()
+{
+    // TODO)) To Implement
+    return false;
+}
+
+b8
+Platform_GetKeyInputState(u8 KeyCode, KeyState State)
+{
+    b8 Result = false;
+    switch(State)
+    {
+        case SHU_KEYSTATE_PRESS:
+        {
+
+        } break;
+
+        case SHU_KEYSTATE_DOWN:
+        {
+            if(KeyCode == 'W' && GlobalInputState->Keyboard_W.IsCurrentlyDown)
+            {
+                Result = true;
+            }
+            else if(KeyCode == 'A' && GlobalInputState->Keyboard_A.IsCurrentlyDown)
+            {
+                Result = true;
+            }
+            else if(KeyCode == 'S' && GlobalInputState->Keyboard_S.IsCurrentlyDown)
+            {
+                Result = true;
+            }
+            else if(KeyCode == 'D' && GlobalInputState->Keyboard_D.IsCurrentlyDown)
+            {
+                Result = true;
+            }
+            else if(KeyCode == SU_LEFTSHIFT && GlobalInputState->Keyboard_LeftShift.IsCurrentlyDown)
+            {
+                Result = true;
+            }
+        } break;
+
+        case SHU_KEYSTATE_RELEASE:
+        {
+            if (KeyCode == 'W' && GlobalInputState->Keyboard_W.IsReleased)
+            {
+                Result = true;
+            }
+            else if (KeyCode == 'A' && GlobalInputState->Keyboard_A.IsReleased)
+            {
+                Result = true;
+            }
+            else if (KeyCode == 'S' && GlobalInputState->Keyboard_S.IsReleased)
+            {
+                Result = true;
+            }
+            else if (KeyCode == 'D' && GlobalInputState->Keyboard_D.IsReleased)
+            {
+                Result = true;
+            }
+            else if (KeyCode == SU_LEFTSHIFT && GlobalInputState->Keyboard_LeftShift.IsReleased)
+            {
+                Result = true;
+            }
+        }
+        break;
+
+        default:
+        {
+            LogWarn("KeyState (%u) for Key(%u) was not identified!", (u32)State, (u32)KeyCode);
+        } break;
+    }
 
     return Result;
 }
@@ -247,11 +325,11 @@ Win32PauseConsoleWindow()
 
     while (true)
     {
-        if (GetAsyncKeyState(VK_RETURN) & 0x8000)
+        if (GetKeyState(VK_RETURN) & (1 << 15))
         {
             break;
         }
-        else if (GetAsyncKeyState(VK_ESCAPE) & 0x8000)
+        else if (GetKeyState(VK_ESCAPE) & (1 << 15))
         {
             break;
         }
@@ -430,7 +508,7 @@ LogTraceUnformatted(const char *Message)
 }
 
 void
-ExitApplication(const char *Reason)
+Platform_ExitApplication(const char *Reason)
 {
     LogOutput(LogType_Fatal, Reason);
 
@@ -502,6 +580,9 @@ Win32ProcessWindowsMessageQueue(HWND WindowHandle, platform_input_state *Input)
                 }
                 else
                 {
+                    b32 ShiftKeyDown = (GetKeyState(SU_LEFTSHIFT) & (1 << 15));
+                    Win32UpdateInputButtonState(&Input->Keyboard_LeftShift, ShiftKeyDown ? true : false);
+
                     // GGetAsyncKeyState returns the state of the key RIGHT NOW! even if previously keys were
                     // pressed and were not handled.
                     b32 WasAltKeyDown = (GetKeyState(SU_ALT) & (1 << 15));
@@ -518,6 +599,15 @@ Win32ProcessWindowsMessageQueue(HWND WindowHandle, platform_input_state *Input)
                             Win32ToggleFullscreen(Message.hwnd);
                         }
                     }
+
+                    if(WasAltKeyDown && ShiftKeyDown && KeyIsPressed)
+                    {
+                        if(KeyCode == SU_KEY1)
+                        {
+                            LogErrorUnformatted("Shift + Alt + 1 was pressed!\n");
+                        }
+                    }
+
                 }
             } break;
 
@@ -567,6 +657,36 @@ Win32GetSecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End)
     return Result;
 }
 
+void
+Win32SetOutOfBoundsCursor(HWND Handle)
+{
+    RECT Rect;
+    GetWindowRect(Handle, &Rect);
+
+    POINT MousePos;
+    GetCursorPos(&MousePos);
+
+    if(MousePos.x >= (Rect.right - 5))
+    {
+        MousePos.x = Rect.left + 5;
+    }
+    else if(MousePos.x < (Rect.left - 5))
+    {
+        MousePos.x = Rect.right - 5;
+    }
+
+    if(MousePos.y >= (Rect.bottom - 5))
+    {
+        MousePos.y = Rect.top + 5;
+    }
+    else if(MousePos.y < (Rect.top - 5))
+    {
+        MousePos.y = Rect.bottom - 5;
+    }
+
+    SetCursorPos(MousePos.x, MousePos.y);
+}
+
 // TODO)): Right now this is the only entry point since win32 is the only platform right now.
 // TODO)): Have to implement multiple entrypoints for all platforms.
 i32 WINAPI
@@ -591,8 +711,6 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     {
         Win32SetConsoleHandle();
     }
-
-    AppInfo.ExitApplication = &ExitApplication;
 
     const wchar_t CLASS_NAME[] = L"Shoora Engine";
 
@@ -619,9 +737,9 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
 
     ShowWindow(WindowHandle, CmdShow);
 
-    platform_input_state InputState[2] = {};
-    platform_input_state *OldInputState = InputState;
-    platform_input_state *NewInputState = InputState + 1;
+    platform_input_state InputStates[2] = {};
+    platform_input_state *OldInputState = InputStates;
+    platform_input_state *NewInputState = InputStates + 1;
 
     renderer_context RendererContext = {};
     // TODO)): Get the AppName from the game dll.
@@ -632,6 +750,8 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     LARGE_INTEGER FrameMarkerEnd = Win32GetWallClock();
     while(Win32GlobalRunning)
     {
+        GlobalInputState = NewInputState;
+
         // MOUSE
         u32 MouseButtonsKeyCodes[5] =
         {
@@ -649,12 +769,13 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         ScreenToClient(WindowHandle, &ClientRelativeMousePos);
         NewInputState->MouseXPos = ClientRelativeMousePos.x;
         NewInputState->MouseYPos = ClientRelativeMousePos.y;
+        // Win32SetOutOfBoundsCursor(WindowHandle);
 
         for(i32 ButtonIndex = 0;
             ButtonIndex < 5;
             ++ButtonIndex)
         {
-                NewInputState->MouseButtons[ButtonIndex].IsDown = OldInputState->MouseButtons[ButtonIndex].IsDown;
+                NewInputState->MouseButtons[ButtonIndex].IsCurrentlyDown = OldInputState->MouseButtons[ButtonIndex].IsCurrentlyDown;
                 NewInputState->MouseButtons[ButtonIndex].ButtonTransitionsPerFrame = 0;
 
                 b32 IsButtonDown = GetKeyState(MouseButtonsKeyCodes[ButtonIndex]) & (1 << 15);
@@ -666,31 +787,52 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
             ButtonIndex < ARRAY_SIZE(NewInputState->KeyboardButtons);
             ++ButtonIndex)
         {
-            NewInputState->KeyboardButtons[ButtonIndex].IsDown = OldInputState->KeyboardButtons[ButtonIndex].IsDown;
+            NewInputState->KeyboardButtons[ButtonIndex].IsCurrentlyDown = OldInputState->KeyboardButtons[ButtonIndex].IsCurrentlyDown;
+            NewInputState->KeyboardButtons[ButtonIndex].IsReleased = false;
             NewInputState->KeyboardButtons[ButtonIndex].ButtonTransitionsPerFrame = 0;
         }
         Win32ProcessWindowsMessageQueue(GlobalWin32WindowContext.Handle, NewInputState);
 
+#if 0
         // NOTE: Input Key Press Check
-        // if(Win32InputKeyPressed(NewInputState->Keyboard_W))
-        // {
-        //     OutputDebugString(L"W was pressed!\n");
-        // }
+        if(Win32InputKeyPressed(&NewInputState->Keyboard_W))
+        {
+            LogInfoUnformatted("W was pressed!\n");
+        }
+        if(NewInputState->Keyboard_W.IsReleased)
+        {
+            LogInfoUnformatted("A is Released!\n");
+        }
+        if(NewInputState->Keyboard_A.IsCurrentlyDown)
+        {
+            LogInfoUnformatted("A is Down!\n");
+        }
+        if(NewInputState->Keyboard_A.IsReleased)
+        {
+            LogInfoUnformatted("A is Released!\n");
+        }
+        if(NewInputState->Keyboard_LeftShift.IsCurrentlyDown)
+        {
+            LogInfoUnformatted("Keyboard_LeftShift is Down!\n");
+        }
+        if(NewInputState->Keyboard_LeftShift.IsReleased)
+        {
+            LogInfoUnformatted("Left Shift is Released!\n");
+        }
+#endif
+
         shoora_platform_frame_packet FramePacket = {};
 
-        if(Win32InputKeyPressed(NewInputState->MouseButtons[0]))
+        // TODO)): Refactor this into an array. or get the mouse button info from the actual code which wants it.
+        if(Win32InputKeyPressed(&NewInputState->MouseButtons[0]))
         {
             FramePacket.LeftMouseClicked = true;
             // WIN32_LOG_OUTPUT("Left Mouse Button was pressed at [%f, %f]!\n",
             //                  NewInputState->MouseXPos, NewInputState->MouseYPos);
         }
-        FramePacket.IsLeftMouseDown = NewInputState->MouseButtons[0].IsDown;
+        FramePacket.IsLeftMouseDown = NewInputState->MouseButtons[0].IsCurrentlyDown;
         FramePacket.MouseXPos = NewInputState->MouseXPos;
         FramePacket.MouseYPos = NewInputState->MouseYPos;
-
-        platform_input_state *Temp = NewInputState;
-        NewInputState = OldInputState;
-        OldInputState = Temp;
 
         f32 DeltaTime = Win32GetSecondsElapsed(FrameMarkerStart, FrameMarkerEnd);
         if(DeltaTime <= 0.0f)
@@ -705,6 +847,10 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
 
         // NOTE: Game Update
         DrawFrame(&FramePacket);
+
+        platform_input_state *Temp = NewInputState;
+        NewInputState = OldInputState;
+        OldInputState = Temp;
 
         FrameMarkerStart = FrameMarkerEnd;
         FrameMarkerEnd = Win32GetWallClock();

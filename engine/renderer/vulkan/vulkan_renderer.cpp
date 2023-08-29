@@ -66,13 +66,13 @@ struct shoora_debug_overlay
     f32 MsPerFrame = 0.0f;
     u32 Fps = 0;
 } DebugOverlay;
+
 static f32 DeltaTime = 0.0f;
 static shoora_render_state RenderState;
 static f32 UiUpdateTimer = 0.0f;
 static const f32 UiUpdateWaitTime = 1;
 static const Shu::mat4f Mat4Identity = Shu::Mat4f(1.0f);
 static Shu::vec2f LastFrameMousePos = Shu::Vec2f(FLT_MAX, FLT_MAX);
-static exit_application *QuitApplication;
 
 void WindowResizedCallback(u32 Width, u32 Height)
 {
@@ -167,8 +167,6 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     SetupCamera(&VulkanContext->Camera, Shu::Vec3f(0, 0, -10.0f), Shu::Vec3f(0, 1, 0));
 
     AppInfo->WindowResizeCallback = &WindowResizedCallback;
-    QuitApplication = AppInfo->ExitApplication;
-    ASSERT(QuitApplication);
 
     VulkanContext->CurrentFrame = 0;
     VulkanContext->IsInitialized = true;
@@ -230,7 +228,7 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
 #else
     Shu::mat4f Model = Mat4Identity;
     Shu::Scale(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f));
-    Shu::RotateGimbalLock(Model, Shu::Vec3f(0.0f, 0.0f, 1.0f), Angle * AngleSpeed);
+    // Shu::RotateGimbalLock(Model, Shu::Vec3f(0.0f, 0.0f, 1.0f), Angle * AngleSpeed);
     Shu::Translate(Model, Shu::Vec3f(0.0f, 0.0f, 0.0f));
     UniformData.Model = Model;
 
@@ -247,10 +245,10 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
 }
 
 void
-GetMousePosDelta(f32 CurrentMouseDeltaX, f32 CurrentMouseDeltaY, Shu::vec2f *MousePosDelta)
+GetMousePosDelta(f32 CurrentMouseDeltaX, f32 CurrentMouseDeltaY, f32 *outMouseDeltaX, f32 *outMouseDeltaY)
 {
-    MousePosDelta->x = CurrentMouseDeltaX - LastFrameMousePos.x;
-    MousePosDelta->y = CurrentMouseDeltaY - LastFrameMousePos.y;
+    *outMouseDeltaX = CurrentMouseDeltaX - LastFrameMousePos.x;
+    *outMouseDeltaY = CurrentMouseDeltaY - LastFrameMousePos.y;
     LastFrameMousePos.x = CurrentMouseDeltaX;
     LastFrameMousePos.y = CurrentMouseDeltaY;
 }
@@ -261,9 +259,9 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     ASSERT(FramePacket->DeltaTime > 0.0f);
     if(!Context->IsInitialized || Context->CurrentFrame >= SHU_MAX_FRAMES_IN_FLIGHT)
     {
-        QuitApplication("[RENDERER]: Either the render is not initialized or there was some "
-                        "problem with the current "
-                        "frame counter.\n");
+        Platform_ExitApplication("[RENDERER]: Either the render is not initialized or there was some "
+                                 "problem with the current "
+                                 "frame counter.\n");
     }
 
     DeltaTime = FramePacket->DeltaTime;
@@ -280,9 +278,18 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         // 1st Frame
         LastFrameMousePos = {FramePacket->MouseXPos, FramePacket->MouseYPos};
     }
-    Shu::vec2f MouseDelta;
-    GetMousePosDelta(FramePacket->MouseXPos, FramePacket->MouseYPos, &MouseDelta);
-    Context->Camera.HandleInput(MouseDelta.x, MouseDelta.y);
+
+    shoora_camera_input CameraInput = {};
+    CameraInput.DeltaTime       = FramePacket->DeltaTime;
+    CameraInput.MoveForwards    = Platform_GetKeyInputState('W',  KeyState::SHU_KEYSTATE_DOWN);
+    CameraInput.MoveLeft        = Platform_GetKeyInputState('A',  KeyState::SHU_KEYSTATE_DOWN);
+    CameraInput.MoveBackwards   = Platform_GetKeyInputState('S',  KeyState::SHU_KEYSTATE_DOWN);
+    CameraInput.MoveRight       = Platform_GetKeyInputState('D',  KeyState::SHU_KEYSTATE_DOWN);
+    CameraInput.MoveFaster      = Platform_GetKeyInputState(0xA0, KeyState::SHU_KEYSTATE_DOWN);
+
+    GetMousePosDelta(FramePacket->MouseXPos, FramePacket->MouseYPos, &CameraInput.MouseDeltaX,
+                     &CameraInput.MouseDeltaY);
+    Context->Camera.HandleInput(&CameraInput);
 
     shoora_vulkan_fence_handle *pCurrentFrameFence = GetCurrentFrameFencePtr(&Context->SyncHandles,
                                                                              Context->CurrentFrame);

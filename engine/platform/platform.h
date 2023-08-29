@@ -33,10 +33,21 @@ enum LogType
     LogType_MaxCount
 };
 
+enum KeyState
+{
+    SHU_KEYSTATE_PRESS,
+    SHU_KEYSTATE_DOWN,
+    SHU_KEYSTATE_RELEASE,
+
+    SHU_KEYSTATE_MAX_COUNT
+};
+
 #if defined(SHU_RENDERER_BACKEND_VULKAN) && defined(VK_USE_PLATFORM_WIN32_KHR)
 typedef void func_window_resize(u32 Width, u32 Height);
+#if 0
 typedef void exit_application(const char *Reason);
-
+typedef b8 check_keyboard_input_state(u8 KeyCode, KeyState State);
+#endif
 void FillVulkanWin32SurfaceCreateInfo(shoora_platform_presentation_surface *Surface);
 #endif
 
@@ -48,7 +59,6 @@ struct shoora_app_info
     u32 WindowHeight;
 
     func_window_resize *WindowResizeCallback;
-    exit_application *ExitApplication;
 };
 
 struct shoora_platform_frame_packet
@@ -79,6 +89,8 @@ SHU_EXPORT void LogTraceUnformatted(const char *Message);
 
 SHU_EXPORT void LogString(const char *String);
 
+SHU_EXPORT void Platform_ExitApplication(const char *Reason);
+SHU_EXPORT b8 Platform_GetKeyInputState(u8 KeyCode, KeyState State);
 
 #ifdef __cplusplus
 }

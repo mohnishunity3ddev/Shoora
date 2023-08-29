@@ -8,12 +8,26 @@
 #define SHU_DEFAULT_ROLL 0.0f
 
 #define SHU_DEFAULT_SPEED 2.5f
-#define SHU_DEFAULT_SENSITIVITY 0.1f
+#define SHU_DEFAULT_SENSITIVITY 0.33f
 #define SHU_DEFAULT_ZOOM 45.0f
 
 #define SHU_DEFAULT_FRONT Shu::Vec3f(0, 0, 1)
 #define SHU_DEFAULT_RIGHT Shu::Vec3f(1, 0, 0)
 #define SHU_DEFAULT_UP Shu::Vec3f(0, 1, 0)
+
+struct shoora_camera_input
+{
+    f32 MouseDeltaX;
+    f32 MouseDeltaY;
+
+    b8 MoveForwards;
+    b8 MoveBackwards;
+    b8 MoveLeft;
+    b8 MoveRight;
+    b32 MoveFaster;
+
+    f32 DeltaTime;
+};
 
 struct shoora_camera
 {
@@ -32,8 +46,10 @@ struct shoora_camera
     void UpdateCameraVectors();
 
     Shu::mat4f GetViewMatrix(Shu::mat4f &M);
-    void HandleInput(f32 XMovedSinceLastFrame, f32 YMovedSinceLastFrame);
+    void HandleInput(const shoora_camera_input *CameraInput);
 };
+
+
 
 SHU_EXPORT void SetupCamera(shoora_camera *Camera, Shu::vec3f Pos = Shu::Vec3f(0.0f),
                             Shu::vec3f GlobalUp = Shu::Vec3f(0.0f, 1.0f, 0.0f));
