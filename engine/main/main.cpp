@@ -345,11 +345,11 @@ Win32PauseConsoleWindow()
 
     while (true)
     {
-        if (GetKeyState(VK_RETURN) & (1 << 15))
+        if (GetAsyncKeyState(VK_RETURN) & (1 << 15))
         {
             break;
         }
-        else if (GetKeyState(VK_ESCAPE) & (1 << 15))
+        else if (GetAsyncKeyState(VK_ESCAPE) & (1 << 15))
         {
             break;
         }

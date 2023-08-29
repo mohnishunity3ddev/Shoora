@@ -11,13 +11,13 @@
 #include "platform/windows/win_platform.h"
 #endif
 
-// #define SHU_USE_GLM 0
-// #if SHU_USE_GLM
-// #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-// #define GLM_FORCE_LEFT_HANDED
-// #include <glm/glm.hpp>
-// #include <glm/gtc/matrix_transform.hpp>
-// #endif
+#define SHU_USE_GLM 0
+#if SHU_USE_GLM
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_LEFT_HANDED
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#endif
 
 #include <memory.h>
 
