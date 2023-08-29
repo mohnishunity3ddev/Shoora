@@ -6,7 +6,10 @@ layout(location = 2) in vec2 InUV;
 
 layout(set = 0, binding = 0) uniform UniformBuffer
 {
-	mat4 Model;
+	layout(row_major) mat4 Model;
+	layout(row_major) mat4 View;
+	layout(row_major) mat4 Projection;
+
 	vec3 Color;
 } ubo;
 
@@ -20,6 +23,6 @@ void main()
 	OutVertexColor = InColor;
 	OutUV = InUV;
 
-	vec4 pos = ubo.Model*vec4(InPos, 0, 1);
+	vec4 pos = vec4(InPos, 0, 1)*ubo.Model*ubo.View*ubo.Projection;
 	gl_Position = pos;
 }

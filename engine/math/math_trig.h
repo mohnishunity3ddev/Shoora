@@ -20,6 +20,10 @@ namespace Shu
     Cos(f32 Degrees)
     {
         f32 Result = cosf(Degrees*DEG_TO_RAD);
+        if(abs(Result) < 0.001f)
+        {
+            Result = 0;
+        }
         return Result;
     }
 

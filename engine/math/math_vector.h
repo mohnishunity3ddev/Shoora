@@ -584,8 +584,8 @@ namespace Shu
     {
         f32 OneByMagnitude = 1.0f / (f32)A.Magnitude();
         vec3f Result = Vec3f((f32)(A.x*OneByMagnitude),
-                            (f32)(A.y*OneByMagnitude),
-                            (f32)(A.z*OneByMagnitude));
+                             (f32)(A.y*OneByMagnitude),
+                             (f32)(A.z*OneByMagnitude));
         return Result;
     }
 

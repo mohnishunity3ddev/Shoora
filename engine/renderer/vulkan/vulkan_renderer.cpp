@@ -7,9 +7,14 @@
 #include "vulkan_imgui.h"
 #include "loaders/image/png_loader.h"
 
+#define SHU_USE_GLM 0
+#if SHU_USE_GLM
 // TODO)): Remove this after you are done with model, view, projection matrices!
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_LEFT_HANDED
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#endif
 
 #include <memory.h>
 
@@ -26,16 +31,25 @@ static u32 TriangleIndices[] = {0, 1, 2};
 // NOTE: Rectangle
 static shoora_vertex_info RectVertices[] =
 {
-    {.VertexPos = Shu::vec2f{ 0.5f,  0.5f}, .VertexColor = Shu::vec3f{1, 0, 0}, .VertexUV = Shu::vec2f{1, 1}},
-    {.VertexPos = Shu::vec2f{ 0.5f, -0.5f}, .VertexColor = Shu::vec3f{0, 1, 0}, .VertexUV = Shu::vec2f{1, 0}},
-    {.VertexPos = Shu::vec2f{-0.5f, -0.5f}, .VertexColor = Shu::vec3f{0, 0, 1}, .VertexUV = Shu::vec2f{0, 0}},
-    {.VertexPos = Shu::vec2f{-0.5f,  0.5f}, .VertexColor = Shu::vec3f{0, 0, 0}, .VertexUV = Shu::vec2f{0, 1}},
+    {.VertexPos = Shu::vec2f{ 1.0f,  1.0f}, .VertexColor = Shu::vec3f{1, 0, 0}, .VertexUV = Shu::vec2f{1, 1}},
+    {.VertexPos = Shu::vec2f{ 1.0f, -1.0f}, .VertexColor = Shu::vec3f{0, 1, 0}, .VertexUV = Shu::vec2f{1, 0}},
+    {.VertexPos = Shu::vec2f{-1.0f, -1.0f}, .VertexColor = Shu::vec3f{0, 0, 1}, .VertexUV = Shu::vec2f{0, 0}},
+    {.VertexPos = Shu::vec2f{-1.0f,  1.0f}, .VertexColor = Shu::vec3f{0, 0, 0}, .VertexUV = Shu::vec2f{0, 1}},
 };
 static u32 RectIndices[] = {0, 1, 2, 0, 2, 3};
 
 struct uniform_data
 {
+#if SHU_USE_GLM
+    glm::mat4 Model;
+    glm::mat4 View;
+    glm::mat4 Projection;
+#else
     Shu::mat4f Model;
+    Shu::mat4f View;
+    Shu::mat4f Projection;
+#endif
+
     Shu::vec3f Color;
 };
 
@@ -100,6 +114,9 @@ ImGuiNewFrame()
     ImGui::Text("Device: %s", Context->Device.DeviceProperties.deviceName);
     ImGui::Text("FPS: %u", DebugOverlay.Fps);
     ImGui::Text("MS Per Frame: %f", DebugOverlay.MsPerFrame);
+#if SHU_USE_GLM
+    ImGui::TextUnformatted("Using GLM!");
+#endif
     ImGui::End();
 
     ImGui::Render();
@@ -149,6 +166,8 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
 
     PrepareImGui(RenderDevice, &VulkanContext->ImContext, ScreenDim, VulkanContext->GraphicsRenderPass);
 
+    SetupCamera(&VulkanContext->Camera, Shu::Vec3f(0, 0, -10.0f), Shu::Vec3f(0, 1, 0));
+
     AppInfo->WindowResizeCallback = &WindowResizedCallback;
     QuitApplication = AppInfo->ExitApplication;
     ASSERT(QuitApplication);
@@ -177,6 +196,11 @@ AdvanceToNextFrame()
 
 static f32 Angle = 0.0f;
 static const f32 AngleSpeed = 50.0f;
+
+static f32 Yaw = 0.0f;
+static f32 CamXPosDelta = 0.0f;
+static i32 DeltaSign = 1;
+
 void
 WriteUniformData(u32 ImageIndex, f32 Delta)
 {
@@ -186,12 +210,43 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
         Angle = 0.0f;
     }
 
-    Shu::mat4f Model = Mat4Identity;
-    Shu::Scale(Model, Shu::Vec3f(0.5f, 0.5f, 1.0f));
-    Shu::RotateGimbalLock(Model, Shu::Vec3f(0.0f, 0.0f, -1.0f), Angle*AngleSpeed);
-    Shu::Translate(Model, Shu::Vec3f(0.75f, 0.0f, 0.0f));
-
+#if SHU_USE_GLM
+    glm::mat4 Model = glm::mat4(1.0f);
+    Model = glm::scale(Model, glm::vec3(1.0f, 1.0f, 1.0f));
+    Model = glm::rotate(Model, Angle*AngleSpeed/50.0f, glm::vec3(0.0, 0.0f, 1.0f));
+    Model = glm::translate(Model, glm::vec3(0.0f, 0.0f, 0.0f));
     UniformData.Model = Model;
+
+    Context->Camera.Pos.z += Delta;
+    Context->Camera.UpdateCameraVectors();
+
+    f32 ZPos = Context->Camera.Pos.z;
+    glm::mat4 View = glm::mat4(1.0f);
+    View = glm::lookAt(glm::vec3(0.0f, 0.0f, ZPos), glm::vec3(0.0f, 0.0f, ZPos + 1.0f),
+                       glm::vec3(0.0f, 1.0f, 0.0f));
+    UniformData.View = View;
+
+    glm::mat4 Projection = glm::mat4(1.0f);
+    Projection = glm::perspective(45.0f, 1920.0f / 1080.0f, 0.1f, 100.0f);
+    UniformData.Projection = Projection;
+#else
+    Shu::mat4f Model = Mat4Identity;
+    Shu::Scale(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f));
+    Shu::RotateGimbalLock(Model, Shu::Vec3f(0.0f, 0.0f, 1.0f), Angle * AngleSpeed);
+    Shu::Translate(Model, Shu::Vec3f(0.0f, 0.0f, 0.0f));
+    UniformData.Model = Model;
+    Context->Camera.Pos.z += Delta;
+    Context->Camera.UpdateCameraVectors();
+
+    Shu::mat4f View = Mat4Identity;
+    View = Context->Camera.GetViewMatrix(View);
+
+    UniformData.View = View;
+
+    Shu::mat4f Projection = Shu::Perspective(45.0f, 1920.0f / 1080.0f, 0.1f, 100.0f);
+    UniformData.Projection = Projection;
+#endif
+
     UniformData.Color = RenderState.MeshColorUniform;
     memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &UniformData, sizeof(uniform_data));
 }

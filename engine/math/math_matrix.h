@@ -835,9 +835,9 @@ namespace Shu
     Transpose(const mat4<T> &M)
     {
         mat4<T> Result = Mat4<T>(M.m00, M.m10, M.m20, M.m30,
-                                M.m01, M.m11, M.m21, M.m31,
-                                M.m02, M.m12, M.m22, M.m32,
-                                M.m03, M.m13, M.m23, M.m33);
+                                 M.m01, M.m11, M.m21, M.m31,
+                                 M.m02, M.m12, M.m22, M.m32,
+                                 M.m03, M.m13, M.m23, M.m33);
         return Result;
     }
 

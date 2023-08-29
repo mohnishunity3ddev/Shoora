@@ -5,6 +5,7 @@
 #include "volk/volk.h"
 #include "vulkan_defines.h"
 #include "vulkan_device.h"
+#include "camera/camera.h"
 #include <imgui.h>
 
 
@@ -206,7 +207,10 @@ struct shoora_vulkan_context
     shoora_vulkan_buffer IndexBuffer;
     shoora_vulkan_synchronization SyncHandles;
 
+    shoora_camera Camera;
+
     shoora_vulkan_imgui ImContext;
+
 
     b32 IsInitialized;
     u32 CurrentFrame;
