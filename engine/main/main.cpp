@@ -90,8 +90,20 @@ enum platform_input_mouse_button
 
 struct platform_input_state
 {
-    platform_input_button_state MouseButtons[MouseButton_Count];
     f32 MouseXPos, MouseYPos;
+    union
+    {
+        platform_input_button_state MouseButtons[MouseButton_Count];
+
+        struct
+        {
+            platform_input_button_state LeftMouseButton;
+            platform_input_button_state RightMouseButton;
+            platform_input_button_state MiddleMouseButton;
+            platform_input_button_state ExtendedMouseButton0;
+            platform_input_button_state ExtendedMouseButton1;
+        };
+    };
 
     union
     {
@@ -207,6 +219,14 @@ Platform_GetKeyInputState(u8 KeyCode, KeyState State)
 
         case SHU_KEYSTATE_DOWN:
         {
+            if(KeyCode == SU_RIGHTMOUSEBUTTON && GlobalInputState->RightMouseButton.IsCurrentlyDown)
+            {
+                Result = true;
+            }
+            if(KeyCode == SU_LEFTMOUSEBUTTON && GlobalInputState->LeftMouseButton.IsCurrentlyDown)
+            {
+                Result = true;
+            }
             if(KeyCode == 'W' && GlobalInputState->Keyboard_W.IsCurrentlyDown)
             {
                 Result = true;
@@ -769,7 +789,10 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         ScreenToClient(WindowHandle, &ClientRelativeMousePos);
         NewInputState->MouseXPos = ClientRelativeMousePos.x;
         NewInputState->MouseYPos = ClientRelativeMousePos.y;
-        // Win32SetOutOfBoundsCursor(WindowHandle);
+        if(NewInputState->MouseButtons[1].IsCurrentlyDown)
+        {
+            Win32SetOutOfBoundsCursor(WindowHandle);
+        }
 
         for(i32 ButtonIndex = 0;
             ButtonIndex < 5;

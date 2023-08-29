@@ -7,13 +7,17 @@
 #include "vulkan_imgui.h"
 #include "loaders/image/png_loader.h"
 
-#define SHU_USE_GLM 0
-#if SHU_USE_GLM
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_FORCE_LEFT_HANDED
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#ifdef WIN32
+#include "platform/windows/win_platform.h"
 #endif
+
+// #define SHU_USE_GLM 0
+// #if SHU_USE_GLM
+// #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+// #define GLM_FORCE_LEFT_HANDED
+// #include <glm/glm.hpp>
+// #include <glm/gtc/matrix_transform.hpp>
+// #endif
 
 #include <memory.h>
 
@@ -280,12 +284,15 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     }
 
     shoora_camera_input CameraInput = {};
-    CameraInput.DeltaTime       = FramePacket->DeltaTime;
-    CameraInput.MoveForwards    = Platform_GetKeyInputState('W',  KeyState::SHU_KEYSTATE_DOWN);
-    CameraInput.MoveLeft        = Platform_GetKeyInputState('A',  KeyState::SHU_KEYSTATE_DOWN);
-    CameraInput.MoveBackwards   = Platform_GetKeyInputState('S',  KeyState::SHU_KEYSTATE_DOWN);
-    CameraInput.MoveRight       = Platform_GetKeyInputState('D',  KeyState::SHU_KEYSTATE_DOWN);
-    CameraInput.MoveFaster      = Platform_GetKeyInputState(0xA0, KeyState::SHU_KEYSTATE_DOWN);
+    CameraInput.DeltaTime = FramePacket->DeltaTime;
+    if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_DOWN))
+    {
+        CameraInput.MoveForwards    = Platform_GetKeyInputState('W',          KeyState::SHU_KEYSTATE_DOWN);
+        CameraInput.MoveLeft        = Platform_GetKeyInputState('A',          KeyState::SHU_KEYSTATE_DOWN);
+        CameraInput.MoveBackwards   = Platform_GetKeyInputState('S',          KeyState::SHU_KEYSTATE_DOWN);
+        CameraInput.MoveRight       = Platform_GetKeyInputState('D',          KeyState::SHU_KEYSTATE_DOWN);
+        CameraInput.MoveFaster      = Platform_GetKeyInputState(SU_LEFTSHIFT, KeyState::SHU_KEYSTATE_DOWN);
+    }
 
     GetMousePosDelta(FramePacket->MouseXPos, FramePacket->MouseYPos, &CameraInput.MouseDeltaX,
                      &CameraInput.MouseDeltaY);

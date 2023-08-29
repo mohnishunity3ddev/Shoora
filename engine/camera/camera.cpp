@@ -36,9 +36,13 @@ void shoora_camera::
 HandleInput(const shoora_camera_input *CameraInput)
 {
     f32 Yaw = this->Yaw - this->MouseSensitivity*CameraInput->MouseDeltaX;
-    if(Yaw < 0.0f || Yaw >= 360.0f)
+    if(Yaw >= 360.0f)
     {
         Yaw = 0.0f;
+    }
+    else if(Yaw <= 0.0f)
+    {
+        Yaw = 360.0f;
     }
     this->Yaw = Yaw;
 

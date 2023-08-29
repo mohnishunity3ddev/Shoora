@@ -34,9 +34,14 @@ namespace Shu
         vec3f Right = Normalize(Cross(WorldUp, Front));
         vec3f Up    = Cross(Front, Right);
 
-        M.Row0 = Vec4f( Right.x,             Right.y,          Right.z,             0);
-        M.Row1 = Vec4f( Up.x,                Up.y,             Up.z,                0);
-        M.Row2 = Vec4f( Front.x,             Front.y,          Front.z,             0);
+        // This one matrix is a combination of a rotation and translation matrix.
+        // if you divide these into two separate Rotation and Translation Matrices, then you will
+        // see why Dot product of CamPos and Right, Up, Front vectors comes in the fourth row.
+        // Also both of these matrices are negations of the camera's rotation and translation
+        // The Rotation Part is the inverse(transpose of the camera axises)
+        M.Row0 = Vec4f( Right.x,             Up.x,             Front.x,             0);
+        M.Row1 = Vec4f( Right.y,             Up.y,             Front.y,             0);
+        M.Row2 = Vec4f( Right.z,             Up.z,             Front.z,             0);
         M.Row3 = Vec4f(-Dot(CamPos, Right), -Dot(CamPos, Up), -Dot(CamPos, Front),  1);
 
         return M;

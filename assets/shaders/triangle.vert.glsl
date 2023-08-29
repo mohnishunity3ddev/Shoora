@@ -23,6 +23,6 @@ void main()
 	OutVertexColor = InColor;
 	OutUV = InUV;
 
-	vec4 pos = vec4(InPos, 0, 1)*ubo.Model*ubo.View*ubo.Projection;
+	vec4 pos = (((vec4(InPos, 0, 1)*ubo.Model)*ubo.View)*ubo.Projection);
 	gl_Position = pos;
 }
