@@ -782,7 +782,6 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
             SU_SPECIALMOUSEBUTTON2,
         };
 
-
         // Mouse
         POINT ClientRelativeMousePos;
         GetCursorPos(&ClientRelativeMousePos);

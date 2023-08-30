@@ -22,6 +22,12 @@ typedef int64_t int64;
 typedef float f32;
 typedef double f64;
 
+#define SHU_USE_GLM 1
+#if SHU_USE_GLM
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_LEFT_HANDED
+#endif
+
 #define SHU_CRASH_DUMP_ENABLE 0
 // NOTE: To make sure NSight is able to launch the app.
 #define SHU_ENGINE_NAME "Shoora Game Engine"

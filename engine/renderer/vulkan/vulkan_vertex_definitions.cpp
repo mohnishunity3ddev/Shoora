@@ -20,7 +20,7 @@ GetVertexAttributeDescriptions(VkVertexInputAttributeDescription *Attributes, u3
     VkVertexInputAttributeDescription *PositionAttribute = &Attributes[0];
     PositionAttribute->location = 0;
     PositionAttribute->binding = 0;
-    PositionAttribute->format = VK_FORMAT_R32G32_SFLOAT;
+    PositionAttribute->format = VK_FORMAT_R32G32B32_SFLOAT;
     PositionAttribute->offset = (u32)OFFSET_OF(shoora_vertex_info, VertexPos);
 
     VkVertexInputAttributeDescription *ColorAttribute = &Attributes[1];

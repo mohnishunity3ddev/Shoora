@@ -100,3 +100,16 @@ GetViewMatrix(Shu::mat4f &M)
     M = Shu::LookAt(this->Pos, this->Pos + this->Front, this->GlobalUp, M);
     return M;
 }
+
+#if SHU_USE_GLM
+glm::mat4 shoora_camera::
+GetViewMatrix(glm::mat4 &M)
+{
+    glm::vec3 gPos = glm::vec3(Pos.x, Pos.y, Pos.z);
+    glm::vec3 gFront = glm::vec3(Front.x, Front.y, Front.z);
+    glm::vec3 gGlobalUp = glm::vec3(GlobalUp.x, GlobalUp.y, GlobalUp.z);
+
+    M = glm::lookAt(gPos, gPos + gFront, gGlobalUp);
+    return M;
+}
+#endif

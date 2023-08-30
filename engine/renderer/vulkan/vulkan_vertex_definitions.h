@@ -5,7 +5,7 @@
 
 struct shoora_vertex_info
 {
-    Shu::vec2f VertexPos;
+    Shu::vec3f VertexPos;
     Shu::vec3f VertexColor;
     Shu::vec2f VertexUV;
 };

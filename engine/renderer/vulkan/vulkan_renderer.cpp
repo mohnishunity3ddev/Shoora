@@ -11,10 +11,7 @@
 #include "platform/windows/win_platform.h"
 #endif
 
-#define SHU_USE_GLM 0
 #if SHU_USE_GLM
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_FORCE_LEFT_HANDED
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #endif
@@ -25,21 +22,57 @@ static shoora_vulkan_context *Context = nullptr;
 // NOTE: Triangle
 static shoora_vertex_info TriangleVertices[] =
 {
-    {.VertexPos = Shu::vec2f{ 0.0f,  0.5f}, .VertexColor = Shu::vec3f{1, 0, 0}},
-    {.VertexPos = Shu::vec2f{ 0.5f, -0.5f}, .VertexColor = Shu::vec3f{0, 1, 0}},
-    {.VertexPos = Shu::vec2f{-0.5f, -0.5f}, .VertexColor = Shu::vec3f{0, 0, 1}}
+    {.VertexPos = Shu::vec3f{ 0.0f,  0.5f, 0.0f}, .VertexColor = Shu::vec3f{1, 0, 0}},
+    {.VertexPos = Shu::vec3f{ 0.5f, -0.5f, 0.0f}, .VertexColor = Shu::vec3f{0, 1, 0}},
+    {.VertexPos = Shu::vec3f{-0.5f, -0.5f, 0.0f}, .VertexColor = Shu::vec3f{0, 0, 1}}
 };
 static u32 TriangleIndices[] = {0, 1, 2};
 
 // NOTE: Rectangle
 static shoora_vertex_info RectVertices[] =
 {
-    {.VertexPos = Shu::vec2f{ 1.0f,  1.0f}, .VertexColor = Shu::vec3f{1, 0, 0}, .VertexUV = Shu::vec2f{1, 1}},
-    {.VertexPos = Shu::vec2f{ 1.0f, -1.0f}, .VertexColor = Shu::vec3f{0, 1, 0}, .VertexUV = Shu::vec2f{1, 0}},
-    {.VertexPos = Shu::vec2f{-1.0f, -1.0f}, .VertexColor = Shu::vec3f{0, 0, 1}, .VertexUV = Shu::vec2f{0, 0}},
-    {.VertexPos = Shu::vec2f{-1.0f,  1.0f}, .VertexColor = Shu::vec3f{0, 0, 0}, .VertexUV = Shu::vec2f{0, 1}},
+    {.VertexPos = Shu::vec3f{ 1.0f,  1.0f, 0.0f}, .VertexColor = Shu::vec3f{1, 0, 0}, .VertexUV = Shu::vec2f{1, 1}},
+    {.VertexPos = Shu::vec3f{ 1.0f, -1.0f, 0.0f}, .VertexColor = Shu::vec3f{0, 1, 0}, .VertexUV = Shu::vec2f{1, 0}},
+    {.VertexPos = Shu::vec3f{-1.0f, -1.0f, 0.0f}, .VertexColor = Shu::vec3f{0, 0, 1}, .VertexUV = Shu::vec2f{0, 0}},
+    {.VertexPos = Shu::vec3f{-1.0f,  1.0f, 0.0f}, .VertexColor = Shu::vec3f{0, 0, 0}, .VertexUV = Shu::vec2f{0, 1}},
 };
 static u32 RectIndices[] = {0, 1, 2, 0, 2, 3};
+
+static Shu::vec3f CubeVertexPositions[] =
+{
+    Shu::vec3f{ 0.5f,  0.5f,  -0.5f},   // Top-Right
+    Shu::vec3f{ 0.5f, -0.5f,  -0.5f},   // Bottom-Right
+    Shu::vec3f{-0.5f, -0.5f,  -0.5f},   // Bottom-Left
+    Shu::vec3f{-0.5f,  0.5f,  -0.5f},   // Top-Left
+    Shu::vec3f{ 0.5f,  0.5f,   0.5f},   // Top-Right
+    Shu::vec3f{ 0.5f, -0.5f,   0.5f},   // Bottom-Right
+    Shu::vec3f{-0.5f, -0.5f,   0.5f},   // Bottom-Left
+    Shu::vec3f{-0.5f,  0.5f,   0.5f}    // Top-Left
+};
+
+// NOTE: Cube
+static shoora_vertex_info CubeVertices[] =
+{
+    // Front Face
+    {.VertexPos = CubeVertexPositions[0], .VertexUV = Shu::vec2f{1, 1}}, // 0
+    {.VertexPos = CubeVertexPositions[1], .VertexUV = Shu::vec2f{1, 0}}, // 1
+    {.VertexPos = CubeVertexPositions[2], .VertexUV = Shu::vec2f{0, 0}}, // 2
+    {.VertexPos = CubeVertexPositions[3], .VertexUV = Shu::vec2f{0, 1}}, // 3
+    // Right Face
+    {.VertexPos = CubeVertexPositions[0], .VertexUV = Shu::vec2f{0, 1}}, // 4
+    {.VertexPos = CubeVertexPositions[1], .VertexUV = Shu::vec2f{0, 0}}, // 5
+    {.VertexPos = CubeVertexPositions[5], .VertexUV = Shu::vec2f{1, 0}}, // 6
+    {.VertexPos = CubeVertexPositions[4], .VertexUV = Shu::vec2f{1, 1}}, // 7
+    // Back Face
+    {.VertexPos = CubeVertexPositions[7], .VertexUV = Shu::vec2f{1, 1}}, // 8
+    {.VertexPos = CubeVertexPositions[6], .VertexUV = Shu::vec2f{1, 0}}, // 9
+    {.VertexPos = CubeVertexPositions[5], .VertexUV = Shu::vec2f{0, 0}}, // 10
+    {.VertexPos = CubeVertexPositions[4], .VertexUV = Shu::vec2f{0, 1}}, // 11
+};
+static u32 CubeIndices[] = {0,  1, 2, 0, 2,  3,  // Front Face
+                            4,  7, 6, 4, 6,  5,  // Right Face
+                            // 9, 10, 8, 8, 10, 11
+                            }; // Bottom Face
 
 struct uniform_data
 {
@@ -151,7 +184,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     CreateRenderPass(RenderDevice, Swapchain, &VulkanContext->GraphicsRenderPass);
     CreateSwapchainFramebuffers(RenderDevice, Swapchain, VulkanContext->GraphicsRenderPass);
 
-    CreateVertexBuffer(RenderDevice, RectVertices, ARRAY_SIZE(RectVertices), RectIndices, ARRAY_SIZE(RectIndices),
+    CreateVertexBuffer(RenderDevice, CubeVertices, ARRAY_SIZE(CubeVertices), CubeIndices, ARRAY_SIZE(CubeIndices),
                        &VulkanContext->VertexBuffer, &VulkanContext->IndexBuffer);
 
     CreateSwapchainUniformResources(RenderDevice, Swapchain, sizeof(uniform_data),
@@ -213,17 +246,12 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
 #if SHU_USE_GLM
     glm::mat4 Model = glm::mat4(1.0f);
     Model = glm::scale(Model, glm::vec3(1.0f, 1.0f, 1.0f));
-    Model = glm::rotate(Model, Angle*AngleSpeed/50.0f, glm::vec3(0.0, 0.0f, 1.0f));
+    // Model = glm::rotate(Model, Angle*AngleSpeed/50.0f, glm::vec3(0.0, 0.0f, 1.0f));
     Model = glm::translate(Model, glm::vec3(0.0f, 0.0f, 0.0f));
     UniformData.Model = Model;
 
-    Context->Camera.Pos.z += Delta;
-    Context->Camera.UpdateCameraVectors();
-
-    f32 ZPos = Context->Camera.Pos.z;
     glm::mat4 View = glm::mat4(1.0f);
-    View = glm::lookAt(glm::vec3(0.0f, 0.0f, ZPos), glm::vec3(0.0f, 0.0f, ZPos + 1.0f),
-                       glm::vec3(0.0f, 1.0f, 0.0f));
+    View = Context->Camera.GetViewMatrix(View);
     UniformData.View = View;
 
     glm::mat4 Projection = glm::mat4(1.0f);
@@ -259,6 +287,7 @@ GetMousePosDelta(f32 CurrentMouseDeltaX, f32 CurrentMouseDeltaY, f32 *outMouseDe
 
 void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 {
+    // VK_CHECK(vkQueueWaitIdle(Context->Device.GraphicsQueue));
     ASSERT(Context != nullptr);
     ASSERT(FramePacket->DeltaTime > 0.0f);
     if(!Context->IsInitialized || Context->CurrentFrame >= SHU_MAX_FRAMES_IN_FLIGHT)
@@ -328,7 +357,7 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     {
         {RenderState.ClearColor.r, RenderState.ClearColor.g, RenderState.ClearColor.b, 1.0f}
     };
-    ClearValues[1].depthStencil = { .depth = 0.0f, .stencil = 0};
+    ClearValues[1].depthStencil = { .depth = 1.0f, .stencil = 0};
     VkRect2D RenderArea = {};
     RenderArea.offset = {0, 0};
     RenderArea.extent = Context->Swapchain.ImageDimensions;
@@ -352,6 +381,9 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         Viewport.height = -(f32)RenderArea.extent.height;
         Viewport.x = 0;
         Viewport.y = RenderArea.extent.height;
+        Viewport.minDepth = 0.0f;
+        Viewport.maxDepth = 1.0f;
+
         vkCmdSetViewport(DrawCmdBuffer, 0, 1, &Viewport);
         VkRect2D Scissor = {};
         Scissor.extent = Context->Swapchain.ImageDimensions;
@@ -368,14 +400,14 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         vkCmdBindVertexBuffers(DrawCmdBuffer, 0, 1, &Context->VertexBuffer.Handle, offsets);
         vkCmdBindIndexBuffer(DrawCmdBuffer, Context->IndexBuffer.Handle, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(RectIndices), 1, 0, 0, 1);
+        vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(CubeIndices), 1, 0, 0, 1);
 
         if(RenderState.WireframeMode)
         {
             vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                               Context->Pipeline.WireframeGraphicsPipeline);
             vkCmdSetLineWidth(DrawCmdBuffer, RenderState.WireLineWidth);
-            vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(RectIndices), 1, 0, 0, 1);
+            vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(CubeIndices), 1, 0, 0, 1);
         }
 
         ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);

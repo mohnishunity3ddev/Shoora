@@ -45,6 +45,16 @@ CreateRenderPass(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Sw
 
     VkAttachmentDescription Attachments[] = {ColorAttachment, DepthAttachment};
 
+    VkSubpassDependency Dependency = {};
+    Dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    Dependency.dstSubpass = 0;
+    Dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                              VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    Dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                              VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    Dependency.srcAccessMask = 0;
+    Dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
     VkRenderPassCreateInfo RenderPassCreateInfo = {};
     RenderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     RenderPassCreateInfo.pNext = nullptr;
@@ -53,6 +63,8 @@ CreateRenderPass(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Sw
     RenderPassCreateInfo.pAttachments = Attachments;
     RenderPassCreateInfo.subpassCount = 1;
     RenderPassCreateInfo.pSubpasses = &Subpass;
+    RenderPassCreateInfo.dependencyCount = 1;
+    RenderPassCreateInfo.pDependencies = &Dependency;
 
     VK_CHECK(vkCreateRenderPass(RenderDevice->LogicalDevice, &RenderPassCreateInfo, nullptr, RenderPass));
     LogOutput(LogType_Info, "RenderPass Created!\n");

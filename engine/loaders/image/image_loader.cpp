@@ -26,17 +26,17 @@ LoadImageFile(const char *Filename, u32 MipmapCount, u32 DesiredChannelCount)
 #endif
     stbi_set_flip_vertically_on_load(1);
     ImageData.Data = stbi_load(Filename, &ImageData.Dim.w, &ImageData.Dim.h, &ImageData.NumChannels,
-                               DesiredChannelCount);
+                               STBI_rgb_alpha);
 
 
-    ASSERT(ImageData.NumChannels == 4);
+    // ASSERT(ImageData.NumChannels == 4);
 
     if((DesiredChannelCount != 0) &&
        (DesiredChannelCount != ImageData.NumChannels))
     {
         ASSERT(!"Your desired number of channels for this file is not supported!");
     }
-    ImageData.TotalSize = (ImageData.Dim.w)*(ImageData.Dim.h)*(ImageData.NumChannels);
+    ImageData.TotalSize = (ImageData.Dim.w)*(ImageData.Dim.h)*(4);
 
     if(MipmapCount > 0)
     {

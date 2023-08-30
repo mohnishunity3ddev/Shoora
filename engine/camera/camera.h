@@ -3,6 +3,11 @@
 #include "defines.h"
 #include "math/math.h"
 
+#if SHU_USE_GLM
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#endif
+
 #define SHU_DEFAULT_YAW 90.0f
 #define SHU_DEFAULT_PITCH 0.0f
 #define SHU_DEFAULT_ROLL 0.0f
@@ -46,6 +51,9 @@ struct shoora_camera
     void UpdateCameraVectors();
 
     Shu::mat4f GetViewMatrix(Shu::mat4f &M);
+#if SHU_USE_GLM
+    glm::mat4 GetViewMatrix(glm::mat4 &M);
+#endif
     void HandleInput(const shoora_camera_input *CameraInput);
 };
 
@@ -53,6 +61,7 @@ struct shoora_camera
 
 SHU_EXPORT void SetupCamera(shoora_camera *Camera, Shu::vec3f Pos = Shu::Vec3f(0.0f),
                             Shu::vec3f GlobalUp = Shu::Vec3f(0.0f, 1.0f, 0.0f));
+
 
 #define CAMERA_H
 #endif // CAMERA_H
