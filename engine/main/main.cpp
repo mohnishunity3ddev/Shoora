@@ -214,6 +214,17 @@ Platform_GetKeyInputState(u8 KeyCode, KeyState State)
     {
         case SHU_KEYSTATE_PRESS:
         {
+            if(KeyCode == SU_LEFTMOUSEBUTTON &&
+               Win32InputKeyPressed(&GlobalInputState->LeftMouseButton))
+            {
+                Result = true;
+            }
+
+            if(KeyCode == SU_RIGHTMOUSEBUTTON &&
+               Win32InputKeyPressed(&GlobalInputState->RightMouseButton))
+            {
+                Result = true;
+            }
 
         } break;
 

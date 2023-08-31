@@ -2,16 +2,19 @@
 
 layout(set = 0, binding = 0) uniform UniformBuffer
 {
-    mat4 Model;
-    vec3 Color;
-}
-ubo;
+    layout(row_major) mat4 Model;
+    layout(row_major) mat4 View;
+    layout(row_major) mat4 Projection;
 
-layout(location = 0) in vec2 InPos;
+    vec3 Color;
+} ubo;
+
+layout(location = 0) in vec3 InPos;
 layout(location = 1) in vec3 InColor;
+layout(location = 2) in vec2 InUV;
 
 void main()
 {
-    vec4 Pos = ubo.Model*vec4(InPos, 0, 1);
+    vec4 Pos = vec4(InPos, 1.)*ubo.Model*ubo.View*ubo.Projection;
     gl_Position = Pos;
 }

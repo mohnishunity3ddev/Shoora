@@ -322,26 +322,33 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         UiUpdateTimer = 0.0f;
     }
 
-    if(Context->FrameCounter == 0)
+    // if(Context->FrameCounter == 0)
+    // {
+    //     // 1st Frame
+    //     LastFrameMousePos = {FramePacket->MouseXPos, FramePacket->MouseYPos};
+    // }
+
+    if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
     {
-        // 1st Frame
+        LogInfo("Right Mouse Pressed at {%f, %f}\n", FramePacket->MouseXPos, FramePacket->MouseYPos);
         LastFrameMousePos = {FramePacket->MouseXPos, FramePacket->MouseYPos};
     }
 
-    shoora_camera_input CameraInput = {};
-    CameraInput.DeltaTime = FramePacket->DeltaTime;
     if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_DOWN))
     {
+        shoora_camera_input CameraInput = {};
+        CameraInput.DeltaTime = FramePacket->DeltaTime;
         CameraInput.MoveForwards    = Platform_GetKeyInputState('W',          KeyState::SHU_KEYSTATE_DOWN);
         CameraInput.MoveLeft        = Platform_GetKeyInputState('A',          KeyState::SHU_KEYSTATE_DOWN);
         CameraInput.MoveBackwards   = Platform_GetKeyInputState('S',          KeyState::SHU_KEYSTATE_DOWN);
         CameraInput.MoveRight       = Platform_GetKeyInputState('D',          KeyState::SHU_KEYSTATE_DOWN);
         CameraInput.MoveFaster      = Platform_GetKeyInputState(SU_LEFTSHIFT, KeyState::SHU_KEYSTATE_DOWN);
+
+        GetMousePosDelta(FramePacket->MouseXPos, FramePacket->MouseYPos, &CameraInput.MouseDeltaX,
+                         &CameraInput.MouseDeltaY);
+        Context->Camera.HandleInput(&CameraInput);
     }
 
-    GetMousePosDelta(FramePacket->MouseXPos, FramePacket->MouseYPos, &CameraInput.MouseDeltaX,
-                     &CameraInput.MouseDeltaY);
-    Context->Camera.HandleInput(&CameraInput);
 
     shoora_vulkan_fence_handle *pCurrentFrameFence = GetCurrentFrameFencePtr(&Context->SyncHandles,
                                                                              Context->CurrentFrame);
