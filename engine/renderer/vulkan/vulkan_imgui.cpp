@@ -347,12 +347,12 @@ ImGuiDrawFrame(VkCommandBuffer CmdBuffer, shoora_vulkan_imgui *ImContext)
 }
 
 void
-ImGuiUpdateInputState(shoora_platform_frame_packet *InputPacket)
+ImGuiUpdateInputState(f32 MouseX, f32 MouseY, b32 IsLeftMouseDown)
 {
     ImGuiIO &IO = ImGui::GetIO();
 
-    IO.MousePos = ImVec2(InputPacket->MouseXPos, InputPacket->MouseYPos);
-    IO.MouseDown[0] = InputPacket->IsLeftMouseDown;
+    IO.MousePos = ImVec2(MouseX, MouseY);
+    IO.MouseDown[0] = IsLeftMouseDown;
 }
 
 void

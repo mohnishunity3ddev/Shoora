@@ -855,15 +855,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
 #endif
 
         shoora_platform_frame_packet FramePacket = {};
-
-        // TODO)): Refactor this into an array. or get the mouse button info from the actual code which wants it.
-        if(Win32InputKeyPressed(&NewInputState->MouseButtons[0]))
-        {
-            FramePacket.LeftMouseClicked = true;
-            // WIN32_LOG_OUTPUT("Left Mouse Button was pressed at [%f, %f]!\n",
-            //                  NewInputState->MouseXPos, NewInputState->MouseYPos);
-        }
-        FramePacket.IsLeftMouseDown = NewInputState->MouseButtons[0].IsCurrentlyDown;
+        
         FramePacket.MouseXPos = NewInputState->MouseXPos;
         FramePacket.MouseYPos = NewInputState->MouseYPos;
 

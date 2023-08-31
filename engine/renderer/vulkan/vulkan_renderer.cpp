@@ -322,11 +322,7 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         UiUpdateTimer = 0.0f;
     }
 
-    // if(Context->FrameCounter == 0)
-    // {
-    //     // 1st Frame
-    //     LastFrameMousePos = {FramePacket->MouseXPos, FramePacket->MouseYPos};
-    // }
+    b32 LMBDown = Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, KeyState::SHU_KEYSTATE_DOWN);
 
     if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
     {
@@ -466,7 +462,7 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     VK_CHECK(vkQueuePresentKHR(GraphicsQueue, &PresentInfo));
 
     AdvanceToNextFrame();
-    ImGuiUpdateInputState(FramePacket);
+    ImGuiUpdateInputState(FramePacket->MouseXPos, FramePacket->MouseYPos, LMBDown);
     VK_CHECK(vkQueueWaitIdle(Context->Device.GraphicsQueue));
 }
 
