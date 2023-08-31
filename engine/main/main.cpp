@@ -30,7 +30,7 @@ static FILE *WriteFp = nullptr;
 static b32 GlobalIsFPSCap = false;
 static struct platform_input_state *GlobalInputState = nullptr;
 static u32 MonitorRefreshRate;
-static f32 TargetMS;
+static i32 GlobalFPS;
 
 void DummyWinResize(u32 Width, u32 Height) {}
 
@@ -222,7 +222,7 @@ void
 Platform_SetFPS(i32 FPS)
 {
     ASSERT(FPS > 0);
-    TargetMS = 1000.0f / FPS;
+    GlobalFPS = FPS;
 }
 
 b8
@@ -761,7 +761,8 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     DM.dmSize = sizeof(DEVMODE);
     EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &DM);
     MonitorRefreshRate = DM.dmDisplayFrequency;
-    TargetMS = 1000.0f / (f32)MonitorRefreshRate;
+    GlobalFPS = MonitorRefreshRate;
+    f32 TargetMS = 1000.0f / (f32)GlobalFPS;
 #endif
 
     TIMECAPS TimeCaps;
@@ -887,13 +888,14 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         if(GlobalIsFPSCap && (DeltaTime > 0.0f))
         {
             f32 FrameMS = DeltaTime*1000.0f;
-            // LogInfo("FrameMS: %f, TargetMS: %f\n", FrameMS, TargetMS);
+            TargetMS = 1000.0f / (f32)GlobalFPS;
+            if(CreateConsole) LogInfo("FrameMS: %f, TargetMS: %f\n", FrameMS, TargetMS);
             if(TargetMS > FrameMS)
             {
                 u32 SleepMS = (u32)(TargetMS - FrameMS);
                 if(SleepMS > MinSleepGranularity)
                 {
-                    // LogTrace("Sleeping for %u milliseconds.\n", SleepMS);
+                    if(CreateConsole) LogTrace("Sleeping for %u milliseconds.\n", SleepMS);
                     timeBeginPeriod(TimeCaps.wPeriodMin);
                     Sleep(SleepMS);
                     timeEndPeriod(TimeCaps.wPeriodMin);

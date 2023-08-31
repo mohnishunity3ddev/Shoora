@@ -145,10 +145,10 @@ void WindowResizedCallback(u32 Width, u32 Height)
 
 enum FpsOptions
 {
-    FpsOptions_30,
-    FpsOptions_60,
-    FpsOptions_120,
-    FpsOptions_240,
+    FpsOptions_30 = 0,
+    FpsOptions_60 = 1,
+    FpsOptions_120 = 2,
+    FpsOptions_240 = 3,
 };
 
 void
