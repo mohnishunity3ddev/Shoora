@@ -128,6 +128,7 @@ static const f32 UiUpdateWaitTime = 1.0f;
 static const Shu::mat4f Mat4Identity = Shu::Mat4f(1.0f);
 static Shu::vec2f LastFrameMousePos = Shu::Vec2f(FLT_MAX, FLT_MAX);
 static b32 SetFPSCap;
+static i32 SelectedFPSOption = 0;
 
 void WindowResizedCallback(u32 Width, u32 Height)
 {
@@ -149,14 +150,13 @@ enum FpsOptions
     FpsOptions_120,
     FpsOptions_240,
 };
-i32 SelectedFPSOption = 0;
 
 void
 ImGuiNewFrame()
 {
     ImGui::NewFrame();
 
-    ImGui::ShowDemoWindow();
+    // ImGui::ShowDemoWindow();
 
     ImGui::SetNextWindowPos(ImVec2(800, 100), 1 << 2);
     ImGui::SetNextWindowSize(ImVec2(400, 400), 1 << 2);
@@ -374,7 +374,6 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 
     if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
     {
-        LogInfo("Right Mouse Pressed at {%f, %f}\n", FramePacket->MouseXPos, FramePacket->MouseYPos);
         LastFrameMousePos = {FramePacket->MouseXPos, FramePacket->MouseYPos};
     }
 

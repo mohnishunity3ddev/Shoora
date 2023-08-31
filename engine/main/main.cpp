@@ -894,9 +894,9 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
                 if(SleepMS > MinSleepGranularity)
                 {
                     // LogTrace("Sleeping for %u milliseconds.\n", SleepMS);
-                    timeBeginPeriod(SleepMS);
+                    timeBeginPeriod(TimeCaps.wPeriodMin);
                     Sleep(SleepMS);
-                    timeEndPeriod(SleepMS);
+                    timeEndPeriod(TimeCaps.wPeriodMin);
                 }
             }
         }
