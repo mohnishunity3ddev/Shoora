@@ -90,7 +90,10 @@ HandleInput(const shoora_camera_input *CameraInput)
         }
 
         MoveDirection = Shu::Normalize(MoveDirection);
-        this->Pos += MoveDirection * MovementSpeed * CameraInput->DeltaTime;
+        if(MoveDirection.SqMagnitude() - FLT_EPSILON > 0.0f)
+        {
+            this->Pos += MoveDirection*MovementSpeed*CameraInput->DeltaTime;
+        }
     }
 }
 

@@ -22,7 +22,7 @@ typedef int64_t int64;
 typedef float f32;
 typedef double f64;
 
-#define SHU_USE_GLM 1
+#define SHU_USE_GLM 0
 #if SHU_USE_GLM
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_LEFT_HANDED

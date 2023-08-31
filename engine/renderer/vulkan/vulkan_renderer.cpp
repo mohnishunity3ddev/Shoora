@@ -68,11 +68,28 @@ static shoora_vertex_info CubeVertices[] =
     {.VertexPos = CubeVertexPositions[6], .VertexUV = Shu::vec2f{1, 0}}, // 9
     {.VertexPos = CubeVertexPositions[5], .VertexUV = Shu::vec2f{0, 0}}, // 10
     {.VertexPos = CubeVertexPositions[4], .VertexUV = Shu::vec2f{0, 1}}, // 11
+    // Left Face
+    {.VertexPos = CubeVertexPositions[6], .VertexUV = Shu::vec2f{0, 0}}, // 12
+    {.VertexPos = CubeVertexPositions[2], .VertexUV = Shu::vec2f{1, 0}}, // 13
+    {.VertexPos = CubeVertexPositions[3], .VertexUV = Shu::vec2f{1, 1}}, // 14
+    {.VertexPos = CubeVertexPositions[7], .VertexUV = Shu::vec2f{0, 1}}, // 15
+    // Top Face
+    {.VertexPos = CubeVertexPositions[3], .VertexUV = Shu::vec2f{0, 0}}, // 16
+    {.VertexPos = CubeVertexPositions[0], .VertexUV = Shu::vec2f{1, 0}}, // 17
+    {.VertexPos = CubeVertexPositions[4], .VertexUV = Shu::vec2f{1, 1}}, // 18
+    {.VertexPos = CubeVertexPositions[7], .VertexUV = Shu::vec2f{0, 1}}, // 19
+    // Top Face
+    {.VertexPos = CubeVertexPositions[2], .VertexUV = Shu::vec2f{0, 0}}, // 20
+    {.VertexPos = CubeVertexPositions[1], .VertexUV = Shu::vec2f{1, 0}}, // 21
+    {.VertexPos = CubeVertexPositions[5], .VertexUV = Shu::vec2f{1, 1}}, // 22
+    {.VertexPos = CubeVertexPositions[6], .VertexUV = Shu::vec2f{0, 1}}, // 23
 };
-static u32 CubeIndices[] = {0,  1, 2, 0, 2,  3,  // Front Face
-                            4,  7, 6, 4, 6,  5,  // Right Face
-                            // 9, 10, 8, 8, 10, 11
-                            }; // Bottom Face
+static u32 CubeIndices[] = { 0,  1,  2,  0,  2,  3,                      // Front Face
+                             4,  7,  6,  4,  6,  5,                      // Right Face
+                             9, 10,  8,  8, 10, 11,                      // Back Face
+                            14, 13, 12, 15, 14, 12,                      // Left Face
+                            17, 16, 19, 17, 19, 18,                      // Top Face
+                            20, 21, 23, 21, 22, 23};                     // Bottom Face
 
 struct uniform_data
 {
@@ -149,6 +166,9 @@ ImGuiNewFrame()
     ImGui::Text("Device: %s", Context->Device.DeviceProperties.deviceName);
     ImGui::Text("FPS: %u", DebugOverlay.Fps);
     ImGui::Text("MS Per Frame: %f", DebugOverlay.MsPerFrame);
+    ImGui::BeginDisabled();
+    ImGui::Text("Camera: {%.2f, %.2f, %.2f}", Context->Camera.Pos.x, Context->Camera.Pos.y, Context->Camera.Pos.z);
+    ImGui::EndDisabled();
 #if SHU_USE_GLM
     ImGui::TextUnformatted("Using GLM!");
 #endif
@@ -230,10 +250,6 @@ AdvanceToNextFrame()
 static f32 Angle = 0.0f;
 static const f32 AngleSpeed = 50.0f;
 
-static f32 Yaw = 0.0f;
-static f32 CamXPosDelta = 0.0f;
-static i32 DeltaSign = 1;
-
 void
 WriteUniformData(u32 ImageIndex, f32 Delta)
 {
@@ -260,7 +276,7 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
 #else
     Shu::mat4f Model = Mat4Identity;
     Shu::Scale(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f));
-    // Shu::RotateGimbalLock(Model, Shu::Vec3f(0.0f, 0.0f, 1.0f), Angle * AngleSpeed);
+    // Shu::RotateGimbalLock(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f), Angle * AngleSpeed);
     Shu::Translate(Model, Shu::Vec3f(0.0f, 0.0f, 0.0f));
     UniformData.Model = Model;
 
