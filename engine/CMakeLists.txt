@@ -24,3 +24,5 @@ SETUP_WIN32_APP(ShooraEngine "ShooraEngine")
 # target_link_libraries(ShooraEngine PRIVATE extern)
 
 # target_compile_options(ShooraEngine PRIVATE -Wall -Wpedantic -Werror -Wno-gnu-anonymous-struct -Wno-nested-anon-types)
+
+target_link_libraries(ShooraEngine Winmm)

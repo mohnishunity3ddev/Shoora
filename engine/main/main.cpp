@@ -13,6 +13,9 @@
 // TODO)): Remove this and implement your own!
 #include <stdio.h>
 
+// TODO)): Get a different strategy for waiting times. TimeBeginPeriod decreases system performance as per spec.
+#include <timeapi.h>
+
 struct win32_window_context
 {
     HWND Handle;
@@ -24,6 +27,10 @@ static WINDOWPLACEMENT GlobalWin32WindowPosition = {sizeof(GlobalWin32WindowPosi
 static b8 Win32GlobalRunning = false;
 static int64 Win32GlobalPerfFrequency = 0;
 static FILE *WriteFp = nullptr;
+static b32 GlobalIsFPSCap = false;
+static struct platform_input_state *GlobalInputState = nullptr;
+static u32 MonitorRefreshRate;
+static f32 TargetMS;
 
 void DummyWinResize(u32 Width, u32 Height) {}
 
@@ -124,7 +131,6 @@ struct platform_input_state
         };
     };
 };
-static platform_input_state *GlobalInputState = nullptr;
 
 LRESULT CALLBACK
 Win32WindowCallback(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam)
@@ -204,6 +210,19 @@ Win32InputKeyReleased()
 {
     // TODO)) To Implement
     return false;
+}
+
+void
+Platform_ToggleFPSCap()
+{
+    GlobalIsFPSCap = !GlobalIsFPSCap;
+}
+
+void
+Platform_SetFPS(i32 FPS)
+{
+    ASSERT(FPS > 0);
+    TargetMS = 1000.0f / FPS;
 }
 
 b8
@@ -736,6 +755,19 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     QueryPerformanceFrequency(&Frequency);
     Win32GlobalPerfFrequency = Frequency.QuadPart;
 
+    // TODO)): Re-Enable this after removing FPS Capping to specific values.
+#if 1
+    DEVMODE DM;
+    DM.dmSize = sizeof(DEVMODE);
+    EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &DM);
+    MonitorRefreshRate = DM.dmDisplayFrequency;
+    TargetMS = 1000.0f / (f32)MonitorRefreshRate;
+#endif
+
+    TIMECAPS TimeCaps;
+    MMRESULT TimerResult = timeGetDevCaps(&TimeCaps, sizeof(TIMECAPS));
+    u32 MinSleepGranularity = TimeCaps.wPeriodMin;
+
     b32 CreateConsole = ShouldCreateConsole(pCmdLine);
 
     if(CreateConsole)
@@ -826,36 +858,8 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         }
         Win32ProcessWindowsMessageQueue(GlobalWin32WindowContext.Handle, NewInputState);
 
-#if 0
-        // NOTE: Input Key Press Check
-        if(Win32InputKeyPressed(&NewInputState->Keyboard_W))
-        {
-            LogInfoUnformatted("W was pressed!\n");
-        }
-        if(NewInputState->Keyboard_W.IsReleased)
-        {
-            LogInfoUnformatted("A is Released!\n");
-        }
-        if(NewInputState->Keyboard_A.IsCurrentlyDown)
-        {
-            LogInfoUnformatted("A is Down!\n");
-        }
-        if(NewInputState->Keyboard_A.IsReleased)
-        {
-            LogInfoUnformatted("A is Released!\n");
-        }
-        if(NewInputState->Keyboard_LeftShift.IsCurrentlyDown)
-        {
-            LogInfoUnformatted("Keyboard_LeftShift is Down!\n");
-        }
-        if(NewInputState->Keyboard_LeftShift.IsReleased)
-        {
-            LogInfoUnformatted("Left Shift is Released!\n");
-        }
-#endif
-
         shoora_platform_frame_packet FramePacket = {};
-        
+
         FramePacket.MouseXPos = NewInputState->MouseXPos;
         FramePacket.MouseYPos = NewInputState->MouseYPos;
 
@@ -864,8 +868,8 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         {
             DeltaTime = 1.0f;
         }
+
         u32 FPS = (u32)(1.0f / DeltaTime);
-        // LogOutput(LogType_Trace, "DeltaTime: %f, FPS: %u\n", DeltaTime, FPS);
 
         FramePacket.DeltaTime = DeltaTime;
         FramePacket.Fps = FPS;
@@ -879,6 +883,23 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
 
         FrameMarkerStart = FrameMarkerEnd;
         FrameMarkerEnd = Win32GetWallClock();
+
+        if(GlobalIsFPSCap && (DeltaTime > 0.0f))
+        {
+            f32 FrameMS = DeltaTime*1000.0f;
+            // LogInfo("FrameMS: %f, TargetMS: %f\n", FrameMS, TargetMS);
+            if(TargetMS > FrameMS)
+            {
+                u32 SleepMS = (u32)(TargetMS - FrameMS);
+                if(SleepMS > MinSleepGranularity)
+                {
+                    // LogTrace("Sleeping for %u milliseconds.\n", SleepMS);
+                    timeBeginPeriod(SleepMS);
+                    Sleep(SleepMS);
+                    timeEndPeriod(SleepMS);
+                }
+            }
+        }
     }
 
     DestroyRenderer(&RendererContext);

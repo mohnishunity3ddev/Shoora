@@ -53,6 +53,11 @@ enum shoora_quality
     }
 
 #define OFFSET_OF(Var, Member) (u64)(&(((Var *)0)->Member))
+#define SHU_INVALID_DEFAULT                                                                                       \
+    default:                                                                                                      \
+    {                                                                                                             \
+        ASSERT(!"Invalid Default Case");                                                                          \
+    }
 
 #define VK_CHECK(Call)                                                                                            \
     {                                                                                                             \

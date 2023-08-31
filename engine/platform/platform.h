@@ -91,6 +91,8 @@ SHU_EXPORT void LogString(const char *String);
 
 SHU_EXPORT void Platform_ExitApplication(const char *Reason);
 SHU_EXPORT b8 Platform_GetKeyInputState(u8 KeyCode, KeyState State);
+SHU_EXPORT void Platform_ToggleFPSCap();
+SHU_EXPORT void Platform_SetFPS(i32 FPS);
 
 #ifdef __cplusplus
 }

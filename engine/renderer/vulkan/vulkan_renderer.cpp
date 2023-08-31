@@ -124,9 +124,10 @@ struct shoora_debug_overlay
 static f32 DeltaTime = 0.0f;
 static shoora_render_state RenderState;
 static f32 UiUpdateTimer = 0.0f;
-static const f32 UiUpdateWaitTime = 1;
+static const f32 UiUpdateWaitTime = 1.0f;
 static const Shu::mat4f Mat4Identity = Shu::Mat4f(1.0f);
 static Shu::vec2f LastFrameMousePos = Shu::Vec2f(FLT_MAX, FLT_MAX);
+static b32 SetFPSCap;
 
 void WindowResizedCallback(u32 Width, u32 Height)
 {
@@ -141,21 +142,68 @@ void WindowResizedCallback(u32 Width, u32 Height)
     }
 }
 
+enum FpsOptions
+{
+    FpsOptions_30,
+    FpsOptions_60,
+    FpsOptions_120,
+    FpsOptions_240,
+};
+i32 SelectedFPSOption = 0;
+
 void
 ImGuiNewFrame()
 {
     ImGui::NewFrame();
 
-    // ImGui::ShowDemoWindow();
+    ImGui::ShowDemoWindow();
 
     ImGui::SetNextWindowPos(ImVec2(800, 100), 1 << 2);
     ImGui::SetNextWindowSize(ImVec2(400, 400), 1 << 2);
 
     ImGui::Begin("Inspector");
+    u64 sizeofbool = sizeof(bool);
+    bool LocalCap = SetFPSCap;
+    i32 FPS = -1;
+    ImGui::Checkbox("Set FPS Cap", &LocalCap);
+    if(SetFPSCap)
+    {
+        ImGui::Text("Set FPS:");
+        ImGui::RadioButton("30", &SelectedFPSOption, 0); ImGui::SameLine();
+        ImGui::RadioButton("60", &SelectedFPSOption, 1); ImGui::SameLine();
+        ImGui::RadioButton("120", &SelectedFPSOption, 2); ImGui::SameLine();
+        ImGui::RadioButton("240", &SelectedFPSOption, 3);
+        switch(SelectedFPSOption)
+        {
+            case FpsOptions_30:
+            {
+                Platform_SetFPS(30);
+            } break;
+            case FpsOptions_60:
+            {
+                Platform_SetFPS(60);
+            } break;
+            case FpsOptions_120:
+            {
+                Platform_SetFPS(120);
+            } break;
+            case FpsOptions_240:
+            {
+                Platform_SetFPS(240);
+            } break;
+
+            SHU_INVALID_DEFAULT;
+        }
+    }
+
+    if(LocalCap != SetFPSCap)
+    {
+        SetFPSCap = LocalCap;
+        Platform_ToggleFPSCap();
+    }
     ImGui::Checkbox("Toggle Wireframe", (bool *)&RenderState.WireframeMode);
     ImGui::SliderFloat("Wireframe Line Width", &RenderState.WireLineWidth, 1.0f, 10.0f);
     ImGui::ColorEdit3("Clear Color", RenderState.ClearColor.E);
-
     ImGui::ColorEdit3("Rectangle Color", RenderState.MeshColorUniform.E);
 
     ImGui::End();
