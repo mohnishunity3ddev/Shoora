@@ -629,22 +629,21 @@ SetImageSamplerLayoutBindings(VkDescriptorSetLayoutBinding *pSamplerBindings, u3
 
 void
 CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
-                                size_t RequiredSize, VkPipelineLayout *pPipelineLayout)
+                                size_t VertUniformBufferSize, size_t FragUniformBufferSize,
+                                VkPipelineLayout *pPipelineLayout)
 {
     // NOTE: Get all the data the shader is going to use
-    CreateUniformBuffers(RenderDevice, Swapchain->UniformBuffers, Swapchain->ImageCount, RequiredSize);
-    CreateCombinedImageSampler(RenderDevice, "images/cobblestone.png", &Swapchain->FragImageSamplers[0]);
-    CreateCombinedImageSampler(RenderDevice, "images/cobblestone_NRM.png", &Swapchain->FragImageSamplers[1]);
-    CreateCombinedImageSampler(RenderDevice, "images/cobblestone_SPEC.png", &Swapchain->FragImageSamplers[2]);
+    CreateUniformBuffers(RenderDevice, Swapchain->UniformBuffers, Swapchain->ImageCount, VertUniformBufferSize);
 
-    VkDescriptorPoolSize Sizes[2];
+    VkDescriptorPoolSize Sizes[3];
     Sizes[0] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SHU_MAX_FRAMES_IN_FLIGHT);
     Sizes[1] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                                      ARRAY_SIZE(Swapchain->FragImageSamplers));
+    Sizes[2] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SHU_MAX_FRAMES_IN_FLIGHT);
     CreateDescriptorPool(RenderDevice, ARRAY_SIZE(Sizes), Sizes, 100, &Swapchain->UniformDescriptorPool);
 
     // TODO)): Create one merged descirptor which encapsulates data for all the uniform buffers we need.
-    // 1st Descriptor Set(Uniform Buffer used in Vertex Shadder)
+    // NOTE: 1st Descriptor Set(Uniform Buffer used in Vertex Shadder)
     auto SetLayoutBinding = GetDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
                                                           VK_SHADER_STAGE_VERTEX_BIT);
     CreateDescriptorSetLayout(RenderDevice, &SetLayoutBinding, 1, &Swapchain->UniformSetLayout);
@@ -659,11 +658,12 @@ CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulka
                                   Swapchain->UniformBuffers[Index].MemSize);
     }
 
-    // 2nd Descriptor Set(Image Sampler used in Fragment shader)
+    // NOTE: 2nd Descriptor Set(Image Sampler used in Fragment shader)
+    CreateCombinedImageSampler(RenderDevice, "images/cobblestone.png", &Swapchain->FragImageSamplers[0]);
+    CreateCombinedImageSampler(RenderDevice, "images/cobblestone_NRM.png", &Swapchain->FragImageSamplers[1]);
+    CreateCombinedImageSampler(RenderDevice, "images/cobblestone_SPEC.png", &Swapchain->FragImageSamplers[2]);
     auto FragSamplerBinding = GetDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3,
                                                             VK_SHADER_STAGE_FRAGMENT_BIT);
-    // auto FragUniformBinding = GetDescriptorSetLayoutBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-    //                                                         VK_SHADER_STAGE_FRAGMENT_BIT);
     CreateDescriptorSetLayout(RenderDevice, &FragSamplerBinding, 1, &Swapchain->FragSamplersSetLayout);
     AllocateDescriptorSets(RenderDevice, Swapchain->UniformDescriptorPool, 1,
                            &Swapchain->FragSamplersSetLayout, &Swapchain->FragSamplersDescriptorSet);
@@ -681,7 +681,26 @@ CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulka
     UpdateImageDescriptorSets(RenderDevice, Swapchain->FragSamplersDescriptorSet, 0,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, ARRAY_SIZE(ImageInfos), ImageInfos);
 
-    VkDescriptorSetLayout SetLayouts[2] = {Swapchain->UniformSetLayout, Swapchain->FragSamplersSetLayout};
+    // NOTE: 3rd Descriptor Set: Uniform Buffer used in the fragment shader
+    CreateUniformBuffers(RenderDevice, Swapchain->FragUniformBuffers, Swapchain->ImageCount,
+                         FragUniformBufferSize);
+    auto FragUniformBinding = GetDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+                                                            VK_SHADER_STAGE_FRAGMENT_BIT);
+    CreateDescriptorSetLayout(RenderDevice, &FragUniformBinding, 1, &Swapchain->FragUniformsSetLayout);
+
+    for(u32 Index = 0;
+        Index < SHU_MAX_FRAMES_IN_FLIGHT;
+        ++Index)
+    {
+        AllocateDescriptorSets(RenderDevice, Swapchain->UniformDescriptorPool, 1, &Swapchain->FragUniformsSetLayout,
+                               &Swapchain->FragUniformsDescriptorSets[Index]);
+        UpdateBufferDescriptorSet(RenderDevice, Swapchain->FragUniformsDescriptorSets[Index], 0,
+                                  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swapchain->FragUniformBuffers[Index].Handle,
+                                  Swapchain->FragUniformBuffers[Index].MemSize);
+    }
+    
+    VkDescriptorSetLayout SetLayouts[3] = {Swapchain->UniformSetLayout, Swapchain->FragSamplersSetLayout,
+                                           Swapchain->FragUniformsSetLayout};
     CreatePipelineLayout(RenderDevice, ARRAY_SIZE(SetLayouts), SetLayouts, 0, nullptr, pPipelineLayout);
 }
 
@@ -691,10 +710,11 @@ DestroySwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulk
     for (u32 Index = 0; Index < Swapchain->ImageCount; ++Index)
     {
         DestroyUniformBuffer(RenderDevice, &Swapchain->UniformBuffers[Index]);
+        DestroyUniformBuffer(RenderDevice, &Swapchain->FragUniformBuffers[Index]);
     }
 
     vkDestroyDescriptorSetLayout(RenderDevice->LogicalDevice, Swapchain->UniformSetLayout, nullptr);
-    vkDestroyDescriptorPool(RenderDevice->LogicalDevice, Swapchain->UniformDescriptorPool, nullptr);
+    vkDestroyDescriptorSetLayout(RenderDevice->LogicalDevice, Swapchain->FragUniformsSetLayout, nullptr);
 
     for(u32 Index = 0;
         Index < ARRAY_SIZE(Swapchain->FragImageSamplers);
@@ -705,6 +725,7 @@ DestroySwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulk
     }
     vkDestroyDescriptorSetLayout(RenderDevice->LogicalDevice, Swapchain->FragSamplersSetLayout, nullptr);
 
+    vkDestroyDescriptorPool(RenderDevice->LogicalDevice, Swapchain->UniformDescriptorPool, nullptr);
     // VkDescriptorSet UniformDescriptorSets[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
 }
 

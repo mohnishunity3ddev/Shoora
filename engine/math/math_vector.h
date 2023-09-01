@@ -72,7 +72,7 @@ namespace Shu
         inline vec3<T> operator/=(const vec3<T>& A);
         inline vec3<T> operator/=(T A);
         inline T& operator[](size_t Index);
-        inline T SqMagnitude();
+        inline T SqMagnitude() const;
         inline T Magnitude() const;
         inline T Dot(const vec3<T> &A);
         inline vec3<T> Cross(const vec3<T> &A);
@@ -547,7 +547,7 @@ namespace Shu
 
     template <typename T>
     T
-    vec3<T>::SqMagnitude()
+    vec3<T>::SqMagnitude() const
     {
         T Result = this->x*this->x + this->y*this->y + this->z*this->z;
         return Result;
@@ -582,10 +582,13 @@ namespace Shu
     vec3f
     Normalize(const vec3<T> &A)
     {
-        f32 OneByMagnitude = 1.0f / (f32)A.Magnitude();
-        vec3f Result = Vec3f((f32)(A.x*OneByMagnitude),
-                             (f32)(A.y*OneByMagnitude),
-                             (f32)(A.z*OneByMagnitude));
+        vec3f Result = A;
+        f32 SqMagnitude = (f32)A.SqMagnitude();
+        if(SqMagnitude > 0.0f)
+        {
+            f32 OneByMagnitude = 1.0f / sqrtf(SqMagnitude);
+            Result *= OneByMagnitude;
+        }
         return Result;
     }
 

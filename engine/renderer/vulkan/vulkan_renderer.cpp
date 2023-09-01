@@ -91,7 +91,7 @@ static u32 CubeIndices[] = { 0,  1,  2,  0,  2,  3,                      // Fron
                             17, 16, 19, 17, 19, 18,                      // Top Face
                             20, 21, 23, 21, 22, 23};                     // Bottom Face
 
-struct uniform_data
+struct vert_uniform_data
 {
 #if SHU_USE_GLM
     glm::mat4 Model;
@@ -104,12 +104,23 @@ struct uniform_data
 #endif
 
     Shu::vec3f Color;
+    const u32 Padding00 = 0;
 };
-
-static uniform_data UniformData = {};
+struct frag_uniform_data
+{
+    Shu::vec3f DirLightDirection;
+    const u32 Padding00 = 0;
+    Shu::vec3f DirLightColor;
+    const u32 Padding01 = 0;
+};
+static vert_uniform_data VertUniformData = {};
+static frag_uniform_data FragUniformData = {};
 
 struct shoora_render_state
 {
+    Shu::vec3f DirLightDirection = Shu::Vec3f(1, 0, 0);
+    Shu::vec3f DirLightColor = Shu::Vec3f(1, 1, 1);
+
     b8 WireframeMode = false;
     f32 WireLineWidth = 10.0f;
     Shu::vec3f ClearColor = Shu::vec3f{0.2f, 0.3f, 0.3f};
@@ -201,6 +212,9 @@ ImGuiNewFrame()
     ImGui::ColorEdit3("Clear Color", RenderState.ClearColor.E);
     ImGui::ColorEdit3("Rectangle Color", RenderState.MeshColorUniform.E);
 
+    ImGui::DragFloat3("Direction Light Direction", RenderState.DirLightDirection.E);
+    ImGui::ColorEdit3("Direction Light Color", RenderState.DirLightColor.E);
+
     ImGui::End();
 
     ImGui::SetNextWindowPos(ImVec2(0, 0), 1 << 2);
@@ -250,7 +264,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     CreateVertexBuffer(RenderDevice, CubeVertices, ARRAY_SIZE(CubeVertices), CubeIndices, ARRAY_SIZE(CubeIndices),
                        &VulkanContext->VertexBuffer, &VulkanContext->IndexBuffer);
 
-    CreateSwapchainUniformResources(RenderDevice, Swapchain, sizeof(uniform_data),
+    CreateSwapchainUniformResources(RenderDevice, Swapchain, sizeof(vert_uniform_data), sizeof(frag_uniform_data),
                                     &VulkanContext->Pipeline.GraphicsPipelineLayout);
     CreateGraphicsPipeline(VulkanContext, "shaders/spirv/triangle.vert.spv", "shaders/spirv/triangle.frag.spv",
                            &VulkanContext->Pipeline);
@@ -321,18 +335,22 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
     Shu::Scale(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f));
     // Shu::RotateGimbalLock(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f), Angle * AngleSpeed);
     Shu::Translate(Model, Shu::Vec3f(0.0f, 0.0f, 0.0f));
-    UniformData.Model = Model;
+    VertUniformData.Model = Model;
 
     Shu::mat4f View = Mat4Identity;
     View = Context->Camera.GetViewMatrix(View);
-    UniformData.View = View;
+    VertUniformData.View = View;
 
     Shu::mat4f Projection = Shu::Perspective(45.0f, 1920.0f / 1080.0f, 0.1f, 100.0f);
-    UniformData.Projection = Projection;
+    VertUniformData.Projection = Projection;
 #endif
 
-    UniformData.Color = RenderState.MeshColorUniform;
-    memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &UniformData, sizeof(uniform_data));
+    VertUniformData.Color = RenderState.MeshColorUniform;
+    memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &VertUniformData, sizeof(vert_uniform_data));
+
+    FragUniformData.DirLightDirection = RenderState.DirLightDirection;
+    FragUniformData.DirLightColor = RenderState.DirLightColor;
+    memcpy(Context->Swapchain.FragUniformBuffers[ImageIndex].pMapped, &FragUniformData, sizeof(frag_uniform_data));
 }
 
 void
@@ -452,7 +470,8 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         vkCmdSetScissor(DrawCmdBuffer, 0, 1, &Scissor);
 
         VkDescriptorSet DescriptorSets[] = {Context->Swapchain.UniformDescriptorSets[ImageIndex],
-                                            Context->Swapchain.FragSamplersDescriptorSet};
+                                            Context->Swapchain.FragSamplersDescriptorSet,
+                                            Context->Swapchain.FragUniformsDescriptorSets[ImageIndex]};
         vkCmdBindDescriptorSets(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                 Context->Pipeline.GraphicsPipelineLayout, 0, ARRAY_SIZE(DescriptorSets),
                                 DescriptorSets, 0, nullptr);
