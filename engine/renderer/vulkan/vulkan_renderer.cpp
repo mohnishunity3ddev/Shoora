@@ -127,8 +127,8 @@ static f32 UiUpdateTimer = 0.0f;
 static const f32 UiUpdateWaitTime = 1.0f;
 static const Shu::mat4f Mat4Identity = Shu::Mat4f(1.0f);
 static Shu::vec2f LastFrameMousePos = Shu::Vec2f(FLT_MAX, FLT_MAX);
-static b32 SetFPSCap;
-static i32 SelectedFPSOption = 0;
+static b32 SetFPSCap = true;
+static i32 SelectedFPSOption = 2;
 
 void WindowResizedCallback(u32 Width, u32 Height)
 {
@@ -162,10 +162,10 @@ ImGuiNewFrame()
     ImGui::SetNextWindowSize(ImVec2(400, 400), 1 << 2);
 
     ImGui::Begin("Inspector");
-    u64 sizeofbool = sizeof(bool);
-    bool LocalCap = SetFPSCap;
+
     i32 FPS = -1;
-    ImGui::Checkbox("Set FPS Cap", &LocalCap);
+    ImGui::Checkbox("Set FPS Cap", (bool *)&SetFPSCap);
+    Platform_ToggleFPSCap();
     if(SetFPSCap)
     {
         ImGui::Text("Set FPS:");
@@ -196,11 +196,6 @@ ImGuiNewFrame()
         }
     }
 
-    if(LocalCap != SetFPSCap)
-    {
-        SetFPSCap = LocalCap;
-        Platform_ToggleFPSCap();
-    }
     ImGui::Checkbox("Toggle Wireframe", (bool *)&RenderState.WireframeMode);
     ImGui::SliderFloat("Wireframe Line Width", &RenderState.WireLineWidth, 1.0f, 10.0f);
     ImGui::ColorEdit3("Clear Color", RenderState.ClearColor.E);
