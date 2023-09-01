@@ -104,14 +104,11 @@ struct vert_uniform_data
 #endif
 
     Shu::vec3f Color;
-    const u32 Padding00 = 0;
 };
 struct frag_uniform_data
 {
-    Shu::vec3f DirLightDirection;
-    const u32 Padding00 = 0;
-    Shu::vec3f DirLightColor;
-    const u32 Padding01 = 0;
+    SHU_ALIGN_16 Shu::vec3f DirLightDirection;
+    SHU_ALIGN_16 Shu::vec3f DirLightColor;
 };
 static vert_uniform_data VertUniformData = {};
 static frag_uniform_data FragUniformData = {};

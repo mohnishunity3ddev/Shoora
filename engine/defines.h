@@ -37,6 +37,14 @@ typedef double f64;
 #define SHU_DEFAULT_FENCE_TIMEOUT 100000000000
 #define ARRAY_SIZE(Arr) sizeof(Arr) / sizeof(Arr[0])
 
+#ifdef _MSC_VER
+#define SHU_ALIGN_16 __declspec(align(16))
+#elif defined(__clang__)
+#define SHU_ALIGN_16 __attribute__((aligned(16)))
+#else
+#define ALIGN_16
+#endif
+
 enum shoora_quality
 {
     Quality_Low,

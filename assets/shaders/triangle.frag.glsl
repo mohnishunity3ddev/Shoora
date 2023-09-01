@@ -20,6 +20,4 @@ void main()
 {
     vec4 texColor = texture(DIFFUSE_TEX(Textures), InUV);
     FragColor = vec4(texColor.rgb*FragUBO.DirLightColor, texColor.a);
-
-    // FragColor = vec4(FragUBO.DirLightDirection, texColor.a);
 }
