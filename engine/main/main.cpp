@@ -238,26 +238,25 @@ Platform_GetKeyInputState(u8 KeyCode, KeyState State)
             {
                 Result = true;
             }
-
-            if(KeyCode == SU_RIGHTMOUSEBUTTON &&
+            else if(KeyCode == SU_RIGHTMOUSEBUTTON &&
                Win32InputKeyPressed(&GlobalInputState->RightMouseButton))
             {
                 Result = true;
             }
 
         } break;
-
+        
         case SHU_KEYSTATE_DOWN:
         {
             if(KeyCode == SU_RIGHTMOUSEBUTTON && GlobalInputState->RightMouseButton.IsCurrentlyDown)
             {
                 Result = true;
             }
-            if(KeyCode == SU_LEFTMOUSEBUTTON && GlobalInputState->LeftMouseButton.IsCurrentlyDown)
+            else if(KeyCode == SU_LEFTMOUSEBUTTON && GlobalInputState->LeftMouseButton.IsCurrentlyDown)
             {
                 Result = true;
             }
-            if(KeyCode == 'W' && GlobalInputState->Keyboard_W.IsCurrentlyDown)
+            else if(KeyCode == 'W' && GlobalInputState->Keyboard_W.IsCurrentlyDown)
             {
                 Result = true;
             }

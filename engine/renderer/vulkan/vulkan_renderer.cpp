@@ -169,8 +169,8 @@ ImGuiNewFrame()
     if(SetFPSCap)
     {
         ImGui::Text("Set FPS:");
-        ImGui::RadioButton("30", &SelectedFPSOption, 0); ImGui::SameLine();
-        ImGui::RadioButton("60", &SelectedFPSOption, 1); ImGui::SameLine();
+        ImGui::RadioButton("30",  &SelectedFPSOption, 0); ImGui::SameLine();
+        ImGui::RadioButton("60",  &SelectedFPSOption, 1); ImGui::SameLine();
         ImGui::RadioButton("120", &SelectedFPSOption, 2); ImGui::SameLine();
         ImGui::RadioButton("240", &SelectedFPSOption, 3);
         switch(SelectedFPSOption)
@@ -344,7 +344,8 @@ GetMousePosDelta(f32 CurrentMouseDeltaX, f32 CurrentMouseDeltaY, f32 *outMouseDe
     LastFrameMousePos.y = CurrentMouseDeltaY;
 }
 
-void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
+void
+DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 {
     // VK_CHECK(vkQueueWaitIdle(Context->Device.GraphicsQueue));
     ASSERT(Context != nullptr);
@@ -451,7 +452,7 @@ void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         vkCmdSetScissor(DrawCmdBuffer, 0, 1, &Scissor);
 
         VkDescriptorSet DescriptorSets[] = {Context->Swapchain.UniformDescriptorSets[ImageIndex],
-                                            Context->Swapchain.SampledImageDescriptorSet};
+                                            Context->Swapchain.FragSamplersDescriptorSet};
         vkCmdBindDescriptorSets(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                 Context->Pipeline.GraphicsPipelineLayout, 0, ARRAY_SIZE(DescriptorSets),
                                 DescriptorSets, 0, nullptr);

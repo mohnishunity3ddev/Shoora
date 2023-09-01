@@ -129,9 +129,9 @@ struct shoora_vulkan_swapchain
     VkDescriptorSet UniformDescriptorSets[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
     shoora_vulkan_buffer UniformBuffers[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
 
-    VkDescriptorSetLayout SampledImageDescriptorSetLayout;
-    VkDescriptorSet SampledImageDescriptorSet;
-    shoora_vulkan_image_sampler UniformCombinedImageSampler;
+    VkDescriptorSetLayout FragSamplersSetLayout, FragUniformsSetLayout;
+    VkDescriptorSet FragSamplersDescriptorSet, FragUniformsDescriptorSet;
+    shoora_vulkan_image_sampler FragImageSamplers[3];
 
     shoora_vulkan_command_buffer_handle DrawCommandBuffers[SHU_MAX_FRAMES_IN_FLIGHT];
 };

@@ -26,6 +26,18 @@ GetDescriptorSetLayoutBinding(u32 BindingIndex, VkDescriptorType DescriptorType,
     return LayoutBinding;
 }
 
+VkDescriptorSetLayoutBinding
+GetDefaultFragSamplerLayoutBinding()
+{
+    VkDescriptorSetLayoutBinding LayoutBinding = {};
+    LayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    LayoutBinding.descriptorCount = 1;
+    LayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    LayoutBinding.pImmutableSamplers = nullptr;
+
+    return LayoutBinding;
+}
+
 void
 CreatePipelineLayout(shoora_vulkan_device *RenderDevice, u32 SetLayoutCount, VkDescriptorSetLayout *pSetLayouts,
                      u32 PushConstantCount, VkPushConstantRange *pPushConstants, VkPipelineLayout *pPipelineLayout)
@@ -130,15 +142,16 @@ UpdateBufferDescriptorSet(shoora_vulkan_device *RenderDevice, VkDescriptorSet De
 }
 
 void
-UpdateImageDescriptorSet(shoora_vulkan_device *RenderDevice, VkDescriptorSet DescriptorSet, u32 BindingIndex,
-                         VkDescriptorType DescriptorType, VkDescriptorImageInfo *pImageInfo)
+UpdateImageDescriptorSets(shoora_vulkan_device *RenderDevice, VkDescriptorSet DescriptorSet, u32 BindingIndex,
+                          VkDescriptorType DescriptorType, u32 DescriptorCount, VkDescriptorImageInfo *pImageInfos)
 {
     VkWriteDescriptorSet WriteSet = {};
     WriteSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     WriteSet.dstSet = DescriptorSet;
-    WriteSet.descriptorCount = 1;
+    WriteSet.dstBinding = BindingIndex;
+    WriteSet.descriptorCount = DescriptorCount;
     WriteSet.descriptorType = DescriptorType;
-    WriteSet.pImageInfo = pImageInfo;
+    WriteSet.pImageInfo = pImageInfos;
 
     vkUpdateDescriptorSets(RenderDevice->LogicalDevice, 1, &WriteSet, 0, nullptr);
 }

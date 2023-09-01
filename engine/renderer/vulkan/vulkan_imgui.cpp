@@ -132,8 +132,8 @@ InitializeResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_imgui *ImG
                            &ImGUIContext->DescriptorSet);
     auto FontDescriptor = GetImageDescriptorInfo(ImGUIContext->FontSampler, ImGUIContext->FontImageView,
                                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    UpdateImageDescriptorSet(RenderDevice, ImGUIContext->DescriptorSet, 0,
-                             VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &FontDescriptor);
+    UpdateImageDescriptorSets(RenderDevice, ImGUIContext->DescriptorSet, 0,
+                             VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &FontDescriptor);
 
 
     //? Pipeline Stuff
