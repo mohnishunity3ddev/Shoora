@@ -6,6 +6,7 @@
 #include "vulkan_buffer.h"
 #include "vulkan_imgui.h"
 #include "loaders/image/png_loader.h"
+#include "../material/material.h"
 
 #ifdef WIN32
 #include "platform/windows/win_platform.h"
@@ -91,6 +92,8 @@ static u32 CubeIndices[] = { 0,  1,  2,  0,  2,  3,                      // Fron
                             17, 16, 19, 17, 19, 18,                      // Top Face
                             20, 21, 23, 21, 22, 23};                     // Bottom Face
 
+
+#define MATERIAL_VIEWER 1
 struct vert_uniform_data
 {
     Shu::mat4f Model;
@@ -103,6 +106,10 @@ struct lighting_shader_uniform_data
     SHU_ALIGN_16 Shu::vec3f LightColor = Shu::Vec3f(1, 1, 0);
     SHU_ALIGN_16 Shu::vec3f CamPos = Shu::Vec3f(0, 0, -10);
     SHU_ALIGN_16 Shu::vec3f ObjectColor;
+
+#if MATERIAL_VIEWER
+    shoora_material Material;
+#endif
 };
 struct light_shader_data
 {
@@ -140,7 +147,7 @@ static b32 SetFPSCap = true;
 static i32 SelectedFPSOption = 2;
 static vert_uniform_data VertUniformData = {};
 static lighting_shader_uniform_data FragUniformData = {};
-static f32 ImGuiDragFloatStep = 0.05f;
+static f32 ImGuiDragFloatStep = 0.005f;
 
 void
 WindowResizedCallback(u32 Width, u32 Height)
@@ -211,7 +218,21 @@ ImGuiNewFrame()
     ImGui::ColorEdit3("Clear Color", RenderState.ClearColor.E);
     ImGui::Spacing();
     ImGui::TextUnformatted("Object Data:");
-    ImGui::ColorEdit3("Mesh Color", RenderState.MeshColorUniform.E);
+    // ImGui::ColorEdit3("Mesh Color", RenderState.MeshColorUniform.E);
+#if MATERIAL_VIEWER
+    const char *MaterialNames[] =
+    {
+        "Emerald", "Jade", "Obsidian", "Pearl", "Ruby", "Turquoise", "Brass", "Bronze", "Chrome", "Copper",
+        "Gold", "Silver", "Black Plastic", "Cyan Plastic", "Green Plastic", "Red Plastic", "White Plastic",
+        "Yellow Plastic", "Black Rubber", "Cyan Rubber", "Green Rubber", "Red Rubber", "White Rubber",
+        "Yellow Rubber",
+    };
+    static int CurrentItem = 0;
+    if(ImGui::Combo("Select Material", &CurrentItem, MaterialNames, ARRAY_SIZE(MaterialNames)))
+    {
+        GetMaterial((MaterialType)CurrentItem, &FragUniformData.Material);
+    }
+#endif
     ImGui::End();
 
     ImGui::SetNextWindowPos(ImVec2(800, 500), 1 << 2);
@@ -341,6 +362,10 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     SetupCamera(&VulkanContext->Camera, Shu::Vec3f(0, 0, -10.0f), Shu::Vec3f(0, 1, 0));
 
     AppInfo->WindowResizeCallback = &WindowResizedCallback;
+
+#if MATERIAL_VIEWER
+    GetMaterial(MaterialType::BRONZE, &FragUniformData.Material);
+#endif
 
     VulkanContext->CurrentFrame = 0;
     VulkanContext->IsInitialized = true;
