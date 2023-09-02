@@ -101,7 +101,7 @@ struct lighting_shader_uniform_data
 {
     SHU_ALIGN_16 Shu::vec3f LightPos = Shu::Vec3f(1, 0, 0);
     SHU_ALIGN_16 Shu::vec3f LightColor = Shu::Vec3f(1, 1, 0);
-
+    SHU_ALIGN_16 Shu::vec3f CamPos = Shu::Vec3f(0, 0, -10);
     SHU_ALIGN_16 Shu::vec3f ObjectColor;
 };
 struct light_shader_data
@@ -416,6 +416,7 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
     // Light Position is set directly in ImGui
     FragUniformData.LightColor = RenderState.LightData->Color;
     FragUniformData.ObjectColor = RenderState.MeshColorUniform;
+    FragUniformData.CamPos = Context->Camera.Pos;
     memcpy(Context->Swapchain.FragUniformBuffers[ImageIndex].pMapped, &FragUniformData, sizeof(lighting_shader_uniform_data));
 }
 

@@ -14,8 +14,8 @@ layout(set = 0, binding = 0) uniform UniformBuffer
 
 layout(location = 0) out vec3 OutVertexColor;
 layout(location = 1) out vec2 OutUV;
-layout(location = 2) out vec3 OutVertexNormalWorldSpace;
-layout(location = 3) out vec3 OutFragPosWorldSpace; // interpolated
+layout(location = 2) out vec3 OutVertexNormalWS;
+layout(location = 3) out vec3 OutFragPosWS; // interpolated
 
 void main()
 {
@@ -25,8 +25,8 @@ void main()
 	mat4 ModelView = ubo.Model*ubo.View;
 
 	mat3 NormalMatrix = mat3(transpose(inverse(ubo.Model)));
-	OutVertexNormalWorldSpace = InNormal*NormalMatrix;
-	OutFragPosWorldSpace = vec3(vec4(InPos, 1.)*ubo.Model);
+	OutVertexNormalWS = InNormal*NormalMatrix;
+	OutFragPosWS = vec3(vec4(InPos, 1.)*ubo.Model);
 
 	vec4 Pos = vec4(InPos, 1.)*ModelView*ubo.Projection;
 	gl_Position = Pos;
