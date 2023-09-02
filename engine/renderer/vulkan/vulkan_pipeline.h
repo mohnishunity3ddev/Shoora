@@ -37,12 +37,13 @@ VkGraphicsPipelineCreateInfo GetGraphicsPipelineInfo(VkPipelineLayout Layout, Vk
                                                      VkPipelineCreateFlags Flags = 0);
 
 void CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderFile,
-                            const char *FragmentShaderFile, shoora_vulkan_pipeline *pPipeline);
+                            const char *FragmentShaderFile, shoora_vulkan_graphics_pipeline *pPipeline,
+                            VkRenderPass RenderPass = VK_NULL_HANDLE);
 
 void CreateWireframePipeline(shoora_vulkan_context *Context, const char *VertexShaderFile,
                              const char *FragmentShaderFile);
 
-void DestroyPipelines(shoora_vulkan_device *RenderDevice, shoora_vulkan_pipeline *Pipeline);
+void DestroyPipeline(shoora_vulkan_device *RenderDevice, shoora_vulkan_graphics_pipeline *Pipeline);
 
 #define VULKAN_PIPELINE_H
 #endif // VULKAN_PIPELINE_H

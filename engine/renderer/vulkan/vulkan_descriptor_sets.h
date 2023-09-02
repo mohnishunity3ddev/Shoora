@@ -25,7 +25,7 @@ void CreateDescriptorSetLayout(shoora_vulkan_device *RenderDevice, VkDescriptorS
 void AllocateDescriptorSets(shoora_vulkan_device *RenderDevice, VkDescriptorPool Pool, u32 Count,
                             VkDescriptorSetLayout *pSetLayouts, VkDescriptorSet *pSets);
 void UpdateBufferDescriptorSet(shoora_vulkan_device *RenderDevice, VkDescriptorSet DescriptorSet, u32 BindingIndex,
-                               VkDescriptorType DescriptorType, VkBuffer BufferHandle, u64 BufferSize);
+                               VkDescriptorType DescriptorType, VkBuffer BufferHandle, u64 BufferRange, u64 BufferOffset = 0);
 void UpdateImageDescriptorSets(shoora_vulkan_device *RenderDevice, VkDescriptorSet DescriptorSet, u32 BindingIndex,
                                VkDescriptorType DescriptorType, u32 DescriptorCount,
                                VkDescriptorImageInfo *pImageInfos);

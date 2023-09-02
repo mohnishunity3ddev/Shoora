@@ -123,12 +123,13 @@ AllocateDescriptorSets(shoora_vulkan_device *RenderDevice, VkDescriptorPool Pool
 
 void
 UpdateBufferDescriptorSet(shoora_vulkan_device *RenderDevice, VkDescriptorSet DescriptorSet, u32 BindingIndex,
-                          VkDescriptorType DescriptorType, VkBuffer BufferHandle, u64 BufferSize)
+                          VkDescriptorType DescriptorType, VkBuffer BufferHandle, u64 BufferRange,
+                          u64 BufferOffset)
 {
     VkDescriptorBufferInfo BufferInfo = {};
     BufferInfo.buffer = BufferHandle;
-    BufferInfo.offset = 0;
-    BufferInfo.range = BufferSize;
+    BufferInfo.offset = BufferOffset;
+    BufferInfo.range = BufferRange;
 
     VkWriteDescriptorSet WriteSet = {};
     WriteSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

@@ -152,10 +152,6 @@ GetGraphicsPipelineInfo(VkPipelineLayout Layout, VkRenderPass RenderPass, VkPipe
     return pipelineCreateInfo;
 }
 
-
-
-
-
 void
 DestroyPipelineLayout(shoora_vulkan_device *RenderDevice, VkPipelineLayout PipelineLayout)
 {
@@ -164,12 +160,10 @@ DestroyPipelineLayout(shoora_vulkan_device *RenderDevice, VkPipelineLayout Pipel
 }
 
 void
-DestroyPipelines(shoora_vulkan_device *RenderDevice, shoora_vulkan_pipeline *Pipeline)
+DestroyPipeline(shoora_vulkan_device *RenderDevice, shoora_vulkan_graphics_pipeline *Pipeline)
 {
-    DestroyPipelineLayout(RenderDevice, Pipeline->GraphicsPipelineLayout);
-    vkDestroyPipeline(RenderDevice->LogicalDevice, Pipeline->GraphicsPipeline, nullptr);
-    DestroyPipelineLayout(RenderDevice, Pipeline->WireframePipelineLayout);
-    vkDestroyPipeline(RenderDevice->LogicalDevice, Pipeline->WireframeGraphicsPipeline, nullptr);
+    DestroyPipelineLayout(RenderDevice, Pipeline->Layout);
+    vkDestroyPipeline(RenderDevice->LogicalDevice, Pipeline->Handle, nullptr);
     LogOutput(LogType_Warn, "Graphics Pipeline Destroyed!\n");
 }
 
@@ -196,9 +190,10 @@ GetShaderStageInfo(VkShaderModule Shader, VkShaderStageFlagBits StageFlags, cons
 
 void
 CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderFile,
-                       const char *FragmentShaderFile, shoora_vulkan_pipeline *pPipeline)
+                       const char *FragmentShaderFile, shoora_vulkan_graphics_pipeline *pPipeline, VkRenderPass RenderPass)
 {
     ASSERT(pPipeline != nullptr);
+    ASSERT((pPipeline->Layout != VK_NULL_HANDLE));
 
     shoora_vulkan_device *RenderDevice = &Context->Device;
 
@@ -324,7 +319,7 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
     ColorBlendInfo.blendConstants[3] = 0.0f;
 
     //? Pipeline Layout
-    ASSERT((pPipeline->GraphicsPipelineLayout != VK_NULL_HANDLE));
+    // ASSERT((pPipeline->GraphicsPipelineLayout != VK_NULL_HANDLE));
 
     //? Dynamic State
     VkDynamicState DynamicStates[] = {VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT};
@@ -345,14 +340,14 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
     PipelineCreateInfo.pDepthStencilState = &DepthStencilInfo;
     PipelineCreateInfo.pColorBlendState = &ColorBlendInfo;
     PipelineCreateInfo.pDynamicState = &DynamicsInfo;
-    PipelineCreateInfo.layout = pPipeline->GraphicsPipelineLayout;
-    PipelineCreateInfo.renderPass = Context->GraphicsRenderPass;
+    PipelineCreateInfo.layout = pPipeline->Layout;
+    PipelineCreateInfo.renderPass = (RenderPass != VK_NULL_HANDLE) ? RenderPass : Context->GraphicsRenderPass;
     PipelineCreateInfo.subpass = 0;
     PipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
     PipelineCreateInfo.basePipelineIndex = -1;
 
     VK_CHECK(vkCreateGraphicsPipelines(RenderDevice->LogicalDevice, VK_NULL_HANDLE, 1, &PipelineCreateInfo,
-                                       nullptr, &pPipeline->GraphicsPipeline));
+                                       nullptr, &pPipeline->Handle));
 
     LogOutput(LogType_Debug, "Created Graphics Pipeline!\n");
 
@@ -360,7 +355,6 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
     vkDestroyShaderModule(RenderDevice->LogicalDevice, FragmentShader, nullptr);
 }
 
-#if 1
 void
 CreateWireframePipeline(shoora_vulkan_context *Context, const char *VertexShaderFile,
                         const char *FragmentShaderFile)
@@ -486,14 +480,14 @@ CreateWireframePipeline(shoora_vulkan_context *Context, const char *VertexShader
     ColorBlendInfo.blendConstants[3] = 0.0f;
 
 
-    if(Context->Pipeline.WireframePipelineLayout == VK_NULL_HANDLE)
+    if(Context->WireframePipeline.Layout == VK_NULL_HANDLE)
     {
         VkPipelineLayoutCreateInfo PipelineLayoutInfo = {};
         PipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         VK_CHECK(vkCreatePipelineLayout(RenderDevice->LogicalDevice, &PipelineLayoutInfo, nullptr,
-                                        &Context->Pipeline.WireframePipelineLayout));
+                                        &Context->WireframePipeline.Layout));
     }
-    ASSERT(Context->Pipeline.WireframePipelineLayout != VK_NULL_HANDLE);
+    ASSERT(Context->WireframePipeline.Layout != VK_NULL_HANDLE);
 
     //? Dynamic State
     VkDynamicState DynamicStates[] = {VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_LINE_WIDTH};
@@ -514,7 +508,7 @@ CreateWireframePipeline(shoora_vulkan_context *Context, const char *VertexShader
     WireframePipelineCreateInfos[0].pDepthStencilState = &DepthStencilInfo;
     WireframePipelineCreateInfos[0].pColorBlendState = &ColorBlendInfo;
     WireframePipelineCreateInfos[0].pDynamicState = &DynamicsInfo;
-    WireframePipelineCreateInfos[0].layout = Context->Pipeline.WireframePipelineLayout;
+    WireframePipelineCreateInfos[0].layout = Context->WireframePipeline.Layout;
     WireframePipelineCreateInfos[0].renderPass = Context->GraphicsRenderPass;
     WireframePipelineCreateInfos[0].subpass = 0;
     WireframePipelineCreateInfos[0].basePipelineHandle = VK_NULL_HANDLE;
@@ -522,14 +516,13 @@ CreateWireframePipeline(shoora_vulkan_context *Context, const char *VertexShader
 
     VK_CHECK(vkCreateGraphicsPipelines(RenderDevice->LogicalDevice, VK_NULL_HANDLE,
                                        ARRAY_SIZE(WireframePipelineCreateInfos), WireframePipelineCreateInfos,
-                                       nullptr, &Context->Pipeline.WireframeGraphicsPipeline));
+                                       nullptr, &Context->WireframePipeline.Handle));
 
     LogOutput(LogType_Debug, "Created Wireframe Pipeline!\n");
 
     vkDestroyShaderModule(RenderDevice->LogicalDevice, VertexShader, nullptr);
     vkDestroyShaderModule(RenderDevice->LogicalDevice, FragmentShader, nullptr);
 }
-#endif
 
 #if 0
 void

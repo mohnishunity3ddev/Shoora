@@ -157,12 +157,10 @@ struct shoora_vulkan_synchronization
     shoora_vulkan_fence_handle Fences[SHU_MAX_FRAMES_IN_FLIGHT];
 };
 
-struct shoora_vulkan_pipeline
+struct shoora_vulkan_graphics_pipeline
 {
-    VkPipeline GraphicsPipeline;
-    VkPipelineLayout GraphicsPipelineLayout;
-    VkPipeline WireframeGraphicsPipeline;
-    VkPipelineLayout WireframePipelineLayout;
+    VkPipeline Handle;
+    VkPipelineLayout Layout;
 };
 
 struct shoora_imgui_push_constant_block
@@ -204,7 +202,16 @@ struct shoora_vulkan_context
     shoora_vulkan_device Device;
     shoora_vulkan_swapchain Swapchain;
     VkRenderPass GraphicsRenderPass;
-    shoora_vulkan_pipeline Pipeline;
+
+
+    VkDescriptorSetLayout UnlitSetLayout;
+    VkDescriptorSet UnlitSets[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
+    shoora_vulkan_buffer FragUnlitBuffers[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
+
+    shoora_vulkan_graphics_pipeline GraphicsPipeline;
+    shoora_vulkan_graphics_pipeline WireframePipeline;
+    shoora_vulkan_graphics_pipeline UnlitPipeline;
+
     shoora_vulkan_buffer VertexBuffer;
     shoora_vulkan_buffer IndexBuffer;
     shoora_vulkan_synchronization SyncHandles;

@@ -632,9 +632,6 @@ CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulka
                                 size_t VertUniformBufferSize, size_t FragUniformBufferSize,
                                 VkPipelineLayout *pPipelineLayout)
 {
-    // NOTE: Get all the data the shader is going to use
-    CreateUniformBuffers(RenderDevice, Swapchain->UniformBuffers, Swapchain->ImageCount, VertUniformBufferSize);
-
     VkDescriptorPoolSize Sizes[3];
     Sizes[0] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SHU_MAX_FRAMES_IN_FLIGHT);
     Sizes[1] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -644,6 +641,10 @@ CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulka
 
     // TODO)): Create one merged descirptor which encapsulates data for all the uniform buffers we need.
     // NOTE: 1st Descriptor Set(Uniform Buffer used in Vertex Shadder)
+
+    // NOTE: Get all the data the shader is going to use
+    CreateUniformBuffers(RenderDevice, Swapchain->UniformBuffers, Swapchain->ImageCount, VertUniformBufferSize);
+
     auto SetLayoutBinding = GetDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
                                                           VK_SHADER_STAGE_VERTEX_BIT);
     CreateDescriptorSetLayout(RenderDevice, &SetLayoutBinding, 1, &Swapchain->UniformSetLayout);
@@ -698,7 +699,7 @@ CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulka
                                   VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swapchain->FragUniformBuffers[Index].Handle,
                                   Swapchain->FragUniformBuffers[Index].MemSize);
     }
-    
+
     VkDescriptorSetLayout SetLayouts[3] = {Swapchain->UniformSetLayout, Swapchain->FragSamplersSetLayout,
                                            Swapchain->FragUniformsSetLayout};
     CreatePipelineLayout(RenderDevice, ARRAY_SIZE(SetLayouts), SetLayouts, 0, nullptr, pPipelineLayout);

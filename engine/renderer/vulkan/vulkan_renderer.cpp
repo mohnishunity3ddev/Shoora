@@ -54,35 +54,35 @@ static Shu::vec3f CubeVertexPositions[] =
 static shoora_vertex_info CubeVertices[] =
 {
     // Front Face
-    {.VertexPos = CubeVertexPositions[0], .VertexUV = Shu::vec2f{1, 1}}, // 0
-    {.VertexPos = CubeVertexPositions[1], .VertexUV = Shu::vec2f{1, 0}}, // 1
-    {.VertexPos = CubeVertexPositions[2], .VertexUV = Shu::vec2f{0, 0}}, // 2
-    {.VertexPos = CubeVertexPositions[3], .VertexUV = Shu::vec2f{0, 1}}, // 3
+    {.VertexPos = CubeVertexPositions[0], .VertexNormal = Shu::vec3f{ 0,  0, -1}, .VertexUV = Shu::vec2f{1, 1}}, // 0
+    {.VertexPos = CubeVertexPositions[1], .VertexNormal = Shu::vec3f{ 0,  0, -1}, .VertexUV = Shu::vec2f{1, 0}}, // 1
+    {.VertexPos = CubeVertexPositions[2], .VertexNormal = Shu::vec3f{ 0,  0, -1}, .VertexUV = Shu::vec2f{0, 0}}, // 2
+    {.VertexPos = CubeVertexPositions[3], .VertexNormal = Shu::vec3f{ 0,  0, -1}, .VertexUV = Shu::vec2f{0, 1}}, // 3
     // Right Face
-    {.VertexPos = CubeVertexPositions[0], .VertexUV = Shu::vec2f{0, 1}}, // 4
-    {.VertexPos = CubeVertexPositions[1], .VertexUV = Shu::vec2f{0, 0}}, // 5
-    {.VertexPos = CubeVertexPositions[5], .VertexUV = Shu::vec2f{1, 0}}, // 6
-    {.VertexPos = CubeVertexPositions[4], .VertexUV = Shu::vec2f{1, 1}}, // 7
+    {.VertexPos = CubeVertexPositions[0], .VertexNormal = Shu::vec3f{ 1,  0,  0}, .VertexUV = Shu::vec2f{0, 1}}, // 4
+    {.VertexPos = CubeVertexPositions[1], .VertexNormal = Shu::vec3f{ 1,  0,  0}, .VertexUV = Shu::vec2f{0, 0}}, // 5
+    {.VertexPos = CubeVertexPositions[5], .VertexNormal = Shu::vec3f{ 1,  0,  0}, .VertexUV = Shu::vec2f{1, 0}}, // 6
+    {.VertexPos = CubeVertexPositions[4], .VertexNormal = Shu::vec3f{ 1,  0,  0}, .VertexUV = Shu::vec2f{1, 1}}, // 7
     // Back Face
-    {.VertexPos = CubeVertexPositions[7], .VertexUV = Shu::vec2f{1, 1}}, // 8
-    {.VertexPos = CubeVertexPositions[6], .VertexUV = Shu::vec2f{1, 0}}, // 9
-    {.VertexPos = CubeVertexPositions[5], .VertexUV = Shu::vec2f{0, 0}}, // 10
-    {.VertexPos = CubeVertexPositions[4], .VertexUV = Shu::vec2f{0, 1}}, // 11
+    {.VertexPos = CubeVertexPositions[7], .VertexNormal = Shu::vec3f{ 0,  0,  1}, .VertexUV = Shu::vec2f{1, 1}}, // 8
+    {.VertexPos = CubeVertexPositions[6], .VertexNormal = Shu::vec3f{ 0,  0,  1}, .VertexUV = Shu::vec2f{1, 0}}, // 9
+    {.VertexPos = CubeVertexPositions[5], .VertexNormal = Shu::vec3f{ 0,  0,  1}, .VertexUV = Shu::vec2f{0, 0}}, // 10
+    {.VertexPos = CubeVertexPositions[4], .VertexNormal = Shu::vec3f{ 0,  0,  1}, .VertexUV = Shu::vec2f{0, 1}}, // 11
     // Left Face
-    {.VertexPos = CubeVertexPositions[6], .VertexUV = Shu::vec2f{0, 0}}, // 12
-    {.VertexPos = CubeVertexPositions[2], .VertexUV = Shu::vec2f{1, 0}}, // 13
-    {.VertexPos = CubeVertexPositions[3], .VertexUV = Shu::vec2f{1, 1}}, // 14
-    {.VertexPos = CubeVertexPositions[7], .VertexUV = Shu::vec2f{0, 1}}, // 15
+    {.VertexPos = CubeVertexPositions[6], .VertexNormal = Shu::vec3f{-1,  0,  0}, .VertexUV = Shu::vec2f{0, 0}}, // 12
+    {.VertexPos = CubeVertexPositions[2], .VertexNormal = Shu::vec3f{-1,  0,  0}, .VertexUV = Shu::vec2f{1, 0}}, // 13
+    {.VertexPos = CubeVertexPositions[3], .VertexNormal = Shu::vec3f{-1,  0,  0}, .VertexUV = Shu::vec2f{1, 1}}, // 14
+    {.VertexPos = CubeVertexPositions[7], .VertexNormal = Shu::vec3f{-1,  0,  0}, .VertexUV = Shu::vec2f{0, 1}}, // 15
     // Top Face
-    {.VertexPos = CubeVertexPositions[3], .VertexUV = Shu::vec2f{0, 0}}, // 16
-    {.VertexPos = CubeVertexPositions[0], .VertexUV = Shu::vec2f{1, 0}}, // 17
-    {.VertexPos = CubeVertexPositions[4], .VertexUV = Shu::vec2f{1, 1}}, // 18
-    {.VertexPos = CubeVertexPositions[7], .VertexUV = Shu::vec2f{0, 1}}, // 19
-    // Top Face
-    {.VertexPos = CubeVertexPositions[2], .VertexUV = Shu::vec2f{0, 0}}, // 20
-    {.VertexPos = CubeVertexPositions[1], .VertexUV = Shu::vec2f{1, 0}}, // 21
-    {.VertexPos = CubeVertexPositions[5], .VertexUV = Shu::vec2f{1, 1}}, // 22
-    {.VertexPos = CubeVertexPositions[6], .VertexUV = Shu::vec2f{0, 1}}, // 23
+    {.VertexPos = CubeVertexPositions[3], .VertexNormal = Shu::vec3f{ 0,  1,  0}, .VertexUV = Shu::vec2f{0, 0}}, // 16
+    {.VertexPos = CubeVertexPositions[0], .VertexNormal = Shu::vec3f{ 0,  1,  0}, .VertexUV = Shu::vec2f{1, 0}}, // 17
+    {.VertexPos = CubeVertexPositions[4], .VertexNormal = Shu::vec3f{ 0,  1,  0}, .VertexUV = Shu::vec2f{1, 1}}, // 18
+    {.VertexPos = CubeVertexPositions[7], .VertexNormal = Shu::vec3f{ 0,  1,  0}, .VertexUV = Shu::vec2f{0, 1}}, // 19
+    // Bottom Face
+    {.VertexPos = CubeVertexPositions[2], .VertexNormal = Shu::vec3f{ 0, -1,  0}, .VertexUV = Shu::vec2f{0, 0}}, // 20
+    {.VertexPos = CubeVertexPositions[1], .VertexNormal = Shu::vec3f{ 0, -1,  0}, .VertexUV = Shu::vec2f{1, 0}}, // 21
+    {.VertexPos = CubeVertexPositions[5], .VertexNormal = Shu::vec3f{ 0, -1,  0}, .VertexUV = Shu::vec2f{1, 1}}, // 22
+    {.VertexPos = CubeVertexPositions[6], .VertexNormal = Shu::vec3f{ 0, -1,  0}, .VertexUV = Shu::vec2f{0, 1}}, // 23
 };
 static u32 CubeIndices[] = { 0,  1,  2,  0,  2,  3,                      // Front Face
                              4,  7,  6,  4,  6,  5,                      // Right Face
@@ -93,30 +93,31 @@ static u32 CubeIndices[] = { 0,  1,  2,  0,  2,  3,                      // Fron
 
 struct vert_uniform_data
 {
-#if SHU_USE_GLM
-    glm::mat4 Model;
-    glm::mat4 View;
-    glm::mat4 Projection;
-#else
     Shu::mat4f Model;
     Shu::mat4f View;
     Shu::mat4f Projection;
-#endif
-
-    Shu::vec3f Color;
 };
-struct frag_uniform_data
+struct lighting_shader_uniform_data
 {
-    SHU_ALIGN_16 Shu::vec3f DirLightDirection;
-    SHU_ALIGN_16 Shu::vec3f DirLightColor;
-};
-static vert_uniform_data VertUniformData = {};
-static frag_uniform_data FragUniformData = {};
+    SHU_ALIGN_16 Shu::vec3f LightPos = Shu::Vec3f(1, 0, 0);
+    SHU_ALIGN_16 Shu::vec3f LightColor = Shu::Vec3f(1, 1, 0);
 
+    SHU_ALIGN_16 Shu::vec3f ObjectColor;
+};
+struct light_shader_data
+{
+    // Vertex Uniform Buffer
+    Shu::mat4f Model;
+    Shu::mat4f View;
+    Shu::mat4f Projection;
+
+    // Fragment Uniform Buffer
+    SHU_ALIGN_16 Shu::vec3f Color = Shu::vec3f{1, 1, 1};
+};
+static light_shader_data LightShaderData = {};
 struct shoora_render_state
 {
-    Shu::vec3f DirLightDirection = Shu::Vec3f(1, 0, 0);
-    Shu::vec3f DirLightColor = Shu::Vec3f(1, 1, 1);
+    light_shader_data *LightData = &LightShaderData;
 
     b8 WireframeMode = false;
     f32 WireLineWidth = 10.0f;
@@ -137,8 +138,12 @@ static const Shu::mat4f Mat4Identity = Shu::Mat4f(1.0f);
 static Shu::vec2f LastFrameMousePos = Shu::Vec2f(FLT_MAX, FLT_MAX);
 static b32 SetFPSCap = true;
 static i32 SelectedFPSOption = 2;
+static vert_uniform_data VertUniformData = {};
+static lighting_shader_uniform_data FragUniformData = {};
+static f32 ImGuiDragFloatStep = 0.05f;
 
-void WindowResizedCallback(u32 Width, u32 Height)
+void
+WindowResizedCallback(u32 Width, u32 Height)
 {
     LogOutput(LogType_Debug, "Window Resized to {%d, %d}\n", Width, Height);
 
@@ -168,9 +173,7 @@ ImGuiNewFrame()
 
     ImGui::SetNextWindowPos(ImVec2(800, 100), 1 << 2);
     ImGui::SetNextWindowSize(ImVec2(400, 400), 1 << 2);
-
     ImGui::Begin("Inspector");
-
     i32 FPS = -1;
     ImGui::Checkbox("Set FPS Cap", (bool *)&SetFPSCap);
     Platform_ToggleFPSCap();
@@ -203,15 +206,19 @@ ImGuiNewFrame()
             SHU_INVALID_DEFAULT;
         }
     }
-
     ImGui::Checkbox("Toggle Wireframe", (bool *)&RenderState.WireframeMode);
     ImGui::SliderFloat("Wireframe Line Width", &RenderState.WireLineWidth, 1.0f, 10.0f);
     ImGui::ColorEdit3("Clear Color", RenderState.ClearColor.E);
-    ImGui::ColorEdit3("Rectangle Color", RenderState.MeshColorUniform.E);
+    ImGui::Spacing();
+    ImGui::TextUnformatted("Object Data:");
+    ImGui::ColorEdit3("Mesh Color", RenderState.MeshColorUniform.E);
+    ImGui::End();
 
-    ImGui::DragFloat3("Direction Light Direction", RenderState.DirLightDirection.E);
-    ImGui::ColorEdit3("Direction Light Color", RenderState.DirLightColor.E);
-
+    ImGui::SetNextWindowPos(ImVec2(800, 500), 1 << 2);
+    ImGui::SetNextWindowSize(ImVec2(400, 400), 1 << 2);
+    ImGui::Begin("Light Data");
+    ImGui::DragFloat3("Light Position", FragUniformData.LightPos.E, ImGuiDragFloatStep);
+    ImGui::ColorEdit3("Light Color", RenderState.LightData->Color.E);
     ImGui::End();
 
     ImGui::SetNextWindowPos(ImVec2(0, 0), 1 << 2);
@@ -229,6 +236,59 @@ ImGuiNewFrame()
     ImGui::End();
 
     ImGui::Render();
+}
+
+void
+CreateUnlitPipeline(shoora_vulkan_context *Context)
+{
+    shoora_vulkan_device *RenderDevice = &Context->Device;
+    shoora_vulkan_swapchain *Swapchain = &Context->Swapchain;
+
+    CreateUniformBuffers(RenderDevice, Context->FragUnlitBuffers, ARRAY_SIZE(Context->FragUnlitBuffers),
+                         sizeof(light_shader_data));
+
+    VkDescriptorSetLayoutBinding Bindings[2];
+    // NOTE: So, This descriptor's data has already been computed and is being used in other pipelines
+    // This is the one which contains Model, View, Projection Matrices data.
+    Bindings[0] = GetDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+                                                VK_SHADER_STAGE_VERTEX_BIT);
+    Bindings[1] = GetDescriptorSetLayoutBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+                                                VK_SHADER_STAGE_FRAGMENT_BIT);
+    CreateDescriptorSetLayout(RenderDevice, Bindings, ARRAY_SIZE(Bindings), &Context->UnlitSetLayout);
+
+    for(u32 Index = 0;
+        Index < SHU_MAX_FRAMES_IN_FLIGHT;
+        ++Index)
+    {
+        AllocateDescriptorSets(RenderDevice, Swapchain->UniformDescriptorPool, 1, &Context->UnlitSetLayout,
+                               &Context->UnlitSets[Index]);
+        // NOTE: MVP Matrices Data - three 4x4 Matrices
+        UpdateBufferDescriptorSet(RenderDevice, Context->UnlitSets[Index], 0,
+                                  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Context->FragUnlitBuffers[Index].Handle,
+                                  3*sizeof(Shu::mat4f), 0);
+        // NOTE: Light Fragment Data - one vec3 - Color
+        UpdateBufferDescriptorSet(RenderDevice, Context->UnlitSets[Index], 1,
+                                  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Context->FragUnlitBuffers[Index].Handle,
+                                  sizeof(Shu::vec3f), OFFSET_OF(light_shader_data, Color));
+    }
+
+    CreatePipelineLayout(RenderDevice, 1, &Context->UnlitSetLayout, 0, nullptr, &Context->UnlitPipeline.Layout);
+    CreateGraphicsPipeline(Context, "shaders/spirv/unlit.vert.spv", "shaders/spirv/unlit.frag.spv",
+                           &Context->UnlitPipeline);
+}
+
+void
+DestroyUnlitPipelineResources()
+{
+
+    for(u32 Index = 0;
+        Index < ARRAY_SIZE(Context->FragUnlitBuffers);
+        ++Index)
+    {
+        DestroyUniformBuffer(&Context->Device, &Context->FragUnlitBuffers[Index]);
+    }
+    vkDestroyDescriptorSetLayout(Context->Device.LogicalDevice, Context->UnlitSetLayout, nullptr);
+    DestroyPipeline(&Context->Device, &Context->UnlitPipeline);
 }
 
 void
@@ -261,15 +321,18 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     CreateVertexBuffer(RenderDevice, CubeVertices, ARRAY_SIZE(CubeVertices), CubeIndices, ARRAY_SIZE(CubeIndices),
                        &VulkanContext->VertexBuffer, &VulkanContext->IndexBuffer);
 
-    CreateSwapchainUniformResources(RenderDevice, Swapchain, sizeof(vert_uniform_data), sizeof(frag_uniform_data),
-                                    &VulkanContext->Pipeline.GraphicsPipelineLayout);
-    CreateGraphicsPipeline(VulkanContext, "shaders/spirv/triangle.vert.spv", "shaders/spirv/triangle.frag.spv",
-                           &VulkanContext->Pipeline);
+    CreateSwapchainUniformResources(RenderDevice, Swapchain, sizeof(vert_uniform_data), sizeof(lighting_shader_uniform_data),
+                                    &VulkanContext->GraphicsPipeline.Layout);
+    CreateGraphicsPipeline(VulkanContext, "shaders/spirv/blinn-phong.vert.spv", "shaders/spirv/blinn-phong.frag.spv",
+                           &VulkanContext->GraphicsPipeline);
 
     // Wireframe
     CreatePipelineLayout(RenderDevice, 1, &VulkanContext->Swapchain.UniformSetLayout, 0, nullptr,
-                         &VulkanContext->Pipeline.WireframePipelineLayout);
+                         &VulkanContext->WireframePipeline.Layout);
     CreateWireframePipeline(VulkanContext, "shaders/spirv/wireframe.vert.spv", "shaders/spirv/wireframe.frag.spv");
+
+    // Unlit Pipeline
+    CreateUnlitPipeline(VulkanContext);
 
     CreateSynchronizationPrimitives(&VulkanContext->Device, &VulkanContext->SyncHandles);
 
@@ -330,7 +393,7 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
 #else
     Shu::mat4f Model = Mat4Identity;
     Shu::Scale(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f));
-    // Shu::RotateGimbalLock(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f), Angle * AngleSpeed);
+    Shu::RotateGimbalLock(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f), Angle*AngleSpeed);
     Shu::Translate(Model, Shu::Vec3f(0.0f, 0.0f, 0.0f));
     VertUniformData.Model = Model;
 
@@ -341,13 +404,19 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
     Shu::mat4f Projection = Shu::Perspective(45.0f, 1920.0f / 1080.0f, 0.1f, 100.0f);
     VertUniformData.Projection = Projection;
 #endif
-
-    VertUniformData.Color = RenderState.MeshColorUniform;
     memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &VertUniformData, sizeof(vert_uniform_data));
 
-    FragUniformData.DirLightDirection = RenderState.DirLightDirection;
-    FragUniformData.DirLightColor = RenderState.DirLightColor;
-    memcpy(Context->Swapchain.FragUniformBuffers[ImageIndex].pMapped, &FragUniformData, sizeof(frag_uniform_data));
+    LightShaderData.Model = Mat4Identity;
+    Shu::Scale(LightShaderData.Model, Shu::Vec3f(0.25f));
+    Shu::Translate(LightShaderData.Model, FragUniformData.LightPos);
+    LightShaderData.View = View;
+    LightShaderData.Projection = Projection;
+    memcpy(Context->FragUnlitBuffers[ImageIndex].pMapped, &LightShaderData, sizeof(light_shader_data));
+
+    // Light Position is set directly in ImGui
+    FragUniformData.LightColor = RenderState.LightData->Color;
+    FragUniformData.ObjectColor = RenderState.MeshColorUniform;
+    memcpy(Context->Swapchain.FragUniformBuffers[ImageIndex].pMapped, &FragUniformData, sizeof(lighting_shader_uniform_data));
 }
 
 void
@@ -470,9 +539,9 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
                                             Context->Swapchain.FragSamplersDescriptorSet,
                                             Context->Swapchain.FragUniformsDescriptorSets[ImageIndex]};
         vkCmdBindDescriptorSets(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                Context->Pipeline.GraphicsPipelineLayout, 0, ARRAY_SIZE(DescriptorSets),
+                                Context->GraphicsPipeline.Layout, 0, ARRAY_SIZE(DescriptorSets),
                                 DescriptorSets, 0, nullptr);
-        vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->Pipeline.GraphicsPipeline);
+        vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->GraphicsPipeline.Handle);
 
         VkDeviceSize offsets[1] = {0};
         vkCmdBindVertexBuffers(DrawCmdBuffer, 0, 1, &Context->VertexBuffer.Handle, offsets);
@@ -482,11 +551,15 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 
         if(RenderState.WireframeMode)
         {
-            vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                              Context->Pipeline.WireframeGraphicsPipeline);
+            vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->WireframePipeline.Handle);
             vkCmdSetLineWidth(DrawCmdBuffer, RenderState.WireLineWidth);
             vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(CubeIndices), 1, 0, 0, 1);
         }
+
+        vkCmdBindDescriptorSets(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Layout, 0,
+                                1, &Context->UnlitSets[ImageIndex], 0, nullptr);
+        vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Handle);
+        vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(CubeIndices), 1, 0, 0, 1);
 
         ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
 
@@ -532,13 +605,14 @@ DestroyVulkanRenderer(shoora_vulkan_context *Context)
     shoora_vulkan_device *RenderDevice = &Context->Device;
 
     ImGuiCleanup(RenderDevice, &Context->ImContext);
+
+    DestroyUnlitPipelineResources();
     DestroySwapchainUniformResources(RenderDevice, &Context->Swapchain);
 
     DestroyAllSynchronizationPrimitives(RenderDevice, &Context->SyncHandles);
     DestroyVertexBuffer(RenderDevice, &Context->VertexBuffer, &Context->IndexBuffer);
-    // DestroyAllSemaphores(Context);
-    // DestroyAllFences(Context);
-    DestroyPipelines(RenderDevice, &Context->Pipeline);
+    DestroyPipeline(RenderDevice, &Context->GraphicsPipeline);
+    DestroyPipeline(RenderDevice, &Context->WireframePipeline);
     DestroyRenderPass(RenderDevice, Context->GraphicsRenderPass);
     DestroySwapchain(Context);
     DestroyPresentationSurface(Context);
