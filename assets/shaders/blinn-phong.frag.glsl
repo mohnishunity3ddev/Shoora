@@ -7,8 +7,9 @@ layout(set = 1, binding = 0) uniform sampler2D Textures[3];
 #define SPECULAR_TEX(TexArray) TexArray[2]
 
 // TODO)): Make this a shader variant.
-#define MATERIAL_VIEWER 1
+#define MATERIAL_VIEWER 0
 
+#if MATERIAL_VIEWER
 struct Material
 {
     float AmbientStrength;
@@ -16,6 +17,7 @@ struct Material
     vec3 Specular;
     float Shininess;
 };
+#endif
 
 layout(set = 2, binding = 0) uniform FragUniform
 {
@@ -62,29 +64,28 @@ main()
     vec3 Result = (Diffuse + Ambient + Specular);
     FragColor = vec4(Result, 1.);
 #else
-    vec4 texColor = texture(DIFFUSE_TEX(Textures), InUV);
-    vec3 ObjColor = texColor.rgb*FragUBO.ObjectColor;
+    vec4 DiffuseTex = texture(DIFFUSE_TEX(Textures), InUV);
+    vec4 SpecularTex = texture(SPECULAR_TEX(Textures), InUV);
 
     vec3 Normal = normalize(InVertexNormalWS);
     vec3 LightDir = normalize(FragUBO.LightPos - InFragPosWS);
 
     // Ambient
     float AmbientStrength = .1f;
-    vec3 Ambient = AmbientStrength*FragUBO.LightColor;
+    vec3 Ambient = (AmbientStrength*DiffuseTex.rgb) * FragUBO.LightColor;
 
     // Diffuse
     float NDotL = max(dot(Normal, LightDir), 0.);
-    vec3 Diffuse = NDotL*FragUBO.LightColor;
+    vec3 Diffuse = (NDotL*DiffuseTex.rgb) * FragUBO.LightColor;
 
     // Specular
-    float SpecularStrength = .25;
-    vec3 ViewDir = normalize(FragUBO.CamPosWS - InFragPosWS);
+    vec3 ViewDir    = normalize(FragUBO.CamPosWS - InFragPosWS);
     vec3 ReflectDir = reflect(-LightDir, Normal);
-    float Spec = pow(max(dot(ReflectDir, ViewDir), 0.), 64);
-    vec3 Specular = Spec*FragUBO.LightColor;
+    float Spec      = pow(max(dot(ReflectDir, ViewDir), 0.), 64);
+    vec3 Specular   = (Spec*SpecularTex.rgb) * FragUBO.LightColor;
 
-    vec3 Result = (Diffuse + Ambient + Specular)*texColor.rgb;
-    FragColor = vec4(Result, texColor.a);
+    vec3 Result = (Diffuse + Ambient + Specular);
+    FragColor = vec4(Result, 1.);
 #endif
 
 }

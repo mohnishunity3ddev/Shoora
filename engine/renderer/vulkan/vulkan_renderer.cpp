@@ -93,7 +93,7 @@ static u32 CubeIndices[] = { 0,  1,  2,  0,  2,  3,                      // Fron
                             20, 21, 23, 21, 22, 23};                     // Bottom Face
 
 
-#define MATERIAL_VIEWER 1
+#define MATERIAL_VIEWER 0
 struct vert_uniform_data
 {
     Shu::mat4f Model;
