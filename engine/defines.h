@@ -54,6 +54,8 @@ enum shoora_quality
     Quality_Count
 };
 
+#define ABSOLUTE(Val) (Val) < 0 ? -(Val) : (Val)
+
 #define ASSERT(Expression)                                                                                        \
     if (!(Expression))                                                                                            \
     {                                                                                                             \

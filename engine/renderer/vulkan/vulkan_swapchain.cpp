@@ -630,6 +630,7 @@ SetImageSamplerLayoutBindings(VkDescriptorSetLayoutBinding *pSamplerBindings, u3
 void
 CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
                                 size_t VertUniformBufferSize, size_t FragUniformBufferSize,
+                                const char **ppImageFilenames, u32 ImageFilenameCount,
                                 VkPipelineLayout *pPipelineLayout)
 {
     VkDescriptorPoolSize Sizes[3];
@@ -660,9 +661,28 @@ CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulka
     }
 
     // NOTE: 2nd Descriptor Set(Image Sampler used in Fragment shader)
-    CreateCombinedImageSampler(RenderDevice, "images/cobblestone.png", &Swapchain->FragImageSamplers[0]);
-    CreateCombinedImageSampler(RenderDevice, "images/cobblestone_NRM.png", &Swapchain->FragImageSamplers[1]);
-    CreateCombinedImageSampler(RenderDevice, "images/cobblestone_SPEC.png", &Swapchain->FragImageSamplers[2]);
+    for(u32 Index = 0;
+        Index < ImageFilenameCount;
+        ++Index)
+    {
+        CreateCombinedImageSampler(RenderDevice, ppImageFilenames[Index],
+                                   &Swapchain->FragImageSamplers[Index]);
+    }
+
+    for(u32 Index = ImageFilenameCount;
+        Index < ARRAY_SIZE(Swapchain->FragImageSamplers);
+        ++Index)
+    {
+        CreateDefaultTextureSampler(RenderDevice, &Swapchain->FragImageSamplers[Index],
+                                    DefaultTexType::TexType_WHITE);
+    }
+
+#if 0
+    CreateCombinedImageSampler(RenderDevice, "images/wall10/wall10.jpg", &Swapchain->FragImageSamplers[0]);
+    CreateCombinedImageSampler(RenderDevice, "images/wall10/wall10_NRM.jpg", &Swapchain->FragImageSamplers[1]);
+#endif
+
+    // CreateCombinedImageSampler(RenderDevice, "images/wall10/wall10_SPEC.jpg", &Swapchain->FragImageSamplers[2]);
     auto FragSamplerBinding = GetDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3,
                                                             VK_SHADER_STAGE_FRAGMENT_BIT);
     CreateDescriptorSetLayout(RenderDevice, &FragSamplerBinding, 1, &Swapchain->FragSamplersSetLayout);

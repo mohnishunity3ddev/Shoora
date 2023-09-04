@@ -35,7 +35,8 @@ void AcquireNextSwapchainImage(shoora_vulkan_device *RenderDevice, shoora_vulkan
                                shoora_vulkan_semaphore_handle *SignalSemaphore);
 void CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
                                      size_t VertUniformBufferSize, size_t FragUniformBufferSize,
-                                     VkPipelineLayout *pLayout);
+                                     const char **ppImageFilenames, u32 ImageFilenameCount,
+                                     VkPipelineLayout *pPipelineLayout);
 void DestroySwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain);
 
 void DestroyPresentationSurface(shoora_vulkan_context *Context);

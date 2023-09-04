@@ -21,6 +21,14 @@ struct shoora_image_transition
     VkImageAspectFlags Aspect;
 };
 
+enum DefaultTexType
+{
+    TexType_BLACK,
+    TexType_WHITE,
+
+    TexType_MAX_COUNT
+};
+
 void CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, Shu::vec2u Dim, VkFormat Format,
                          VkImageUsageFlags Usage, VkImageAspectFlags Aspect, VkImage *pImage,
                          VkDeviceMemory *pMemory, VkImageView *pView);
@@ -28,7 +36,6 @@ void CreateImageView2D(shoora_vulkan_device *RenderDevice, VkImage Image, VkForm
                        VkImageAspectFlags Aspect, VkImageView *pImageView);
 void CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, const char *ImageFilename,
                                 shoora_vulkan_image_sampler *pImageSampler);
-
 void SetImageLayout(VkCommandBuffer CmdBuffer, VkImage Image, VkImageAspectFlags Aspect,
                     VkImageLayout OldImageLayout, VkImageLayout NewImageLayout, VkPipelineStageFlags SrcStage,
                     VkPipelineStageFlags DstStage);
@@ -39,13 +46,8 @@ VkFormat GetSuitableDepthAttachmentFormat(shoora_vulkan_device *RenderDevice);
 
 void DestroyImage2D(shoora_vulkan_device *RenderDevice, shoora_vulkan_image *pImage);
 
-#if 0
-void Create2DVulkanImageForSampling(shoora_vulkan_device *RenderDevice, u32 ImageWidth, u32 ImageHeight,
-                                    VkFormat ImageFormat, VkImageUsageFlags UsageFlags, b32 GenerateMipMaps,
-                                    VkImage *ImageHandle);
-void GenerateMipMaps(const char *InputFilename, const char *OutputFilename, i32 MipLevelCount, i32 Quality,
-                     u64 *MipOffsets, b32 CapImageToFullHD = false);
-#endif
+void CreateDefaultTextureSampler(shoora_vulkan_device *RenderDevice, shoora_vulkan_image_sampler *Sampler,
+                                 DefaultTexType Type);
 
 #define VULKAN_IMAGE_H
 #endif // VULKAN_IMAGE_H

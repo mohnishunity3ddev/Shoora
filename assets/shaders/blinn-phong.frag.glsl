@@ -32,10 +32,13 @@ layout(set = 2, binding = 0) uniform FragUniform
 
 } FragUBO;
 
-layout(location = 0) in vec3 InVertexColor;
-layout(location = 1) in vec2 InUV;
-layout(location = 2) in vec3 InVertexNormalWS;
-layout(location = 3) in vec3 InFragPosWS; // interpolated
+layout(location = 0) in FS_IN
+{
+    vec3 Color;
+    vec2 UV;
+    vec3 FragPosWS; // interpolated
+    mat3 TBN;
+} FSIn;
 
 layout(location = 0) out vec4 FragColor;
 
@@ -64,25 +67,35 @@ main()
     vec3 Result = (Diffuse + Ambient + Specular);
     FragColor = vec4(Result, 1.);
 #else
-    vec4 DiffuseTex = texture(DIFFUSE_TEX(Textures), InUV);
-    vec4 SpecularTex = texture(SPECULAR_TEX(Textures), InUV);
+    vec4 DiffuseTex = texture(DIFFUSE_TEX(Textures), FSIn.UV);
+    vec4 SpecularTex = texture(SPECULAR_TEX(Textures), FSIn.UV);
+    vec4 NormalTex = texture(NORMAL_TEX(Textures), FSIn.UV);
 
-    vec3 Normal = normalize(InVertexNormalWS);
-    vec3 LightDir = normalize(FragUBO.LightPos - InFragPosWS);
+    vec3 Normal = 2.*NormalTex.rgb - 1.;
+    vec3 NormalWS = normalize(Normal*FSIn.TBN);
+
+    vec3 LightDir = normalize(FragUBO.LightPos - FSIn.FragPosWS);
 
     // Ambient
     float AmbientStrength = .1f;
     vec3 Ambient = (AmbientStrength*DiffuseTex.rgb) * FragUBO.LightColor;
 
     // Diffuse
-    float NDotL = max(dot(Normal, LightDir), 0.);
-    vec3 Diffuse = (NDotL*DiffuseTex.rgb) * FragUBO.LightColor;
+    float NDotL = max(dot(NormalWS, LightDir), 0.);
+    vec3 Diffuse = (NDotL*DiffuseTex.rgb)*FragUBO.LightColor;
 
     // Specular
-    vec3 ViewDir    = normalize(FragUBO.CamPosWS - InFragPosWS);
-    vec3 ReflectDir = reflect(-LightDir, Normal);
-    float Spec      = pow(max(dot(ReflectDir, ViewDir), 0.), 64);
+    vec3 ViewDir    = normalize(FragUBO.CamPosWS - FSIn.FragPosWS);
+    vec3 ReflectDir = reflect(-LightDir, NormalWS);
+    float Spec      = pow(max(dot(ReflectDir, ViewDir), 0.), 128);
     vec3 Specular   = (Spec*SpecularTex.rgb) * FragUBO.LightColor;
+
+#if 0
+    // Read this as Mat[columnIndex][rowIndex]
+    vec3 T = vec3(FSIn.TBN[0][0], FSIn.TBN[1][0], FSIn.TBN[2][0]);
+    vec3 B = vec3(FSIn.TBN[0][1], FSIn.TBN[1][1], FSIn.TBN[2][1]);
+    vec3 N = vec3(FSIn.TBN[0][2], FSIn.TBN[1][2], FSIn.TBN[2][2]);
+#endif
 
     vec3 Result = (Diffuse + Ambient + Specular);
     FragColor = vec4(Result, 1.);

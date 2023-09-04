@@ -5,10 +5,12 @@
 
 struct shoora_vertex_info
 {
-    Shu::vec3f VertexPos;
-    Shu::vec3f VertexNormal;
-    Shu::vec3f VertexColor;
-    Shu::vec2f VertexUV;
+    Shu::vec3f Pos;
+    Shu::vec3f Normal;
+    Shu::vec3f Color;
+    Shu::vec2f UV;
+    Shu::vec3f Tangent;
+    Shu::vec3f BiTangent;
 };
 
 VkVertexInputBindingDescription GetVertexBindingDescription();

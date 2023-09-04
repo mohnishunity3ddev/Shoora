@@ -305,7 +305,7 @@ ImGuiDrawFrame(VkCommandBuffer CmdBuffer, shoora_vulkan_imgui *ImContext)
     ImContext->PushConstantBlock.Translate = Shu::vec2f{-1.0f, -1.0f};
     vkCmdPushConstants(CmdBuffer, ImContext->PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                        sizeof(shoora_imgui_push_constant_block), &ImContext->PushConstantBlock);
-
+    
     // Render commands
     ImDrawData *ImDrawData = ImGui::GetDrawData();
     int32_t VertexOffset = 0;

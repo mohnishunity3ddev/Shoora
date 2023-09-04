@@ -220,7 +220,6 @@ struct shoora_vulkan_context
 
     shoora_vulkan_imgui ImContext;
 
-
     b32 IsInitialized;
     u32 CurrentFrame;
     u32 FrameCounter;

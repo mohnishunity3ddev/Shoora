@@ -6,6 +6,7 @@
 #include "vulkan_buffer.h"
 #include "vulkan_imgui.h"
 #include "loaders/image/png_loader.h"
+#include "vulkan_image.h"
 #include "../material/material.h"
 
 #ifdef WIN32
@@ -23,67 +24,67 @@ static shoora_vulkan_context *Context = nullptr;
 // NOTE: Triangle
 static shoora_vertex_info TriangleVertices[] =
 {
-    {.VertexPos = Shu::vec3f{ 0.0f,  0.5f, 0.0f}, .VertexColor = Shu::vec3f{1, 0, 0}},
-    {.VertexPos = Shu::vec3f{ 0.5f, -0.5f, 0.0f}, .VertexColor = Shu::vec3f{0, 1, 0}},
-    {.VertexPos = Shu::vec3f{-0.5f, -0.5f, 0.0f}, .VertexColor = Shu::vec3f{0, 0, 1}}
+    {.Pos = Shu::vec3f{ 0.0f,  0.5f, 0.0f}, .Color = Shu::vec3f{1, 0, 0}},
+    {.Pos = Shu::vec3f{ 0.5f, -0.5f, 0.0f}, .Color = Shu::vec3f{0, 1, 0}},
+    {.Pos = Shu::vec3f{-0.5f, -0.5f, 0.0f}, .Color = Shu::vec3f{0, 0, 1}}
 };
 static u32 TriangleIndices[] = {0, 1, 2};
 
 // NOTE: Rectangle
 static shoora_vertex_info RectVertices[] =
 {
-    {.VertexPos = Shu::vec3f{ 1.0f,  1.0f, 0.0f}, .VertexColor = Shu::vec3f{1, 0, 0}, .VertexUV = Shu::vec2f{1, 1}},
-    {.VertexPos = Shu::vec3f{ 1.0f, -1.0f, 0.0f}, .VertexColor = Shu::vec3f{0, 1, 0}, .VertexUV = Shu::vec2f{1, 0}},
-    {.VertexPos = Shu::vec3f{-1.0f, -1.0f, 0.0f}, .VertexColor = Shu::vec3f{0, 0, 1}, .VertexUV = Shu::vec2f{0, 0}},
-    {.VertexPos = Shu::vec3f{-1.0f,  1.0f, 0.0f}, .VertexColor = Shu::vec3f{0, 0, 0}, .VertexUV = Shu::vec2f{0, 1}},
+    {.Pos = Shu::vec3f{ 1.0f,  1.0f, 0.0f}, .Color = Shu::vec3f{1, 0, 0}, .UV = Shu::vec2f{1, 1}},
+    {.Pos = Shu::vec3f{ 1.0f, -1.0f, 0.0f}, .Color = Shu::vec3f{0, 1, 0}, .UV = Shu::vec2f{1, 0}},
+    {.Pos = Shu::vec3f{-1.0f, -1.0f, 0.0f}, .Color = Shu::vec3f{0, 0, 1}, .UV = Shu::vec2f{0, 0}},
+    {.Pos = Shu::vec3f{-1.0f,  1.0f, 0.0f}, .Color = Shu::vec3f{0, 0, 0}, .UV = Shu::vec2f{0, 1}},
 };
 static u32 RectIndices[] = {0, 1, 2, 0, 2, 3};
 
 static Shu::vec3f CubeVertexPositions[] =
 {
-    Shu::vec3f{ 0.5f,  0.5f,  -0.5f},   // Top-Right
-    Shu::vec3f{ 0.5f, -0.5f,  -0.5f},   // Bottom-Right
-    Shu::vec3f{-0.5f, -0.5f,  -0.5f},   // Bottom-Left
-    Shu::vec3f{-0.5f,  0.5f,  -0.5f},   // Top-Left
-    Shu::vec3f{ 0.5f,  0.5f,   0.5f},   // Top-Right
-    Shu::vec3f{ 0.5f, -0.5f,   0.5f},   // Bottom-Right
-    Shu::vec3f{-0.5f, -0.5f,   0.5f},   // Bottom-Left
-    Shu::vec3f{-0.5f,  0.5f,   0.5f}    // Top-Left
+    Shu::vec3f{ 1.0f,  1.0f,  -1.0f},   // Top-Right
+    Shu::vec3f{ 1.0f, -1.0f,  -1.0f},   // Bottom-Right
+    Shu::vec3f{-1.0f, -1.0f,  -1.0f},   // Bottom-Left
+    Shu::vec3f{-1.0f,  1.0f,  -1.0f},   // Top-Left
+    Shu::vec3f{ 1.0f,  1.0f,   1.0f},   // Top-Right
+    Shu::vec3f{ 1.0f, -1.0f,   1.0f},   // Bottom-Right
+    Shu::vec3f{-1.0f, -1.0f,   1.0f},   // Bottom-Left
+    Shu::vec3f{-1.0f,  1.0f,   1.0f}    // Top-Left
 };
 
 // NOTE: Cube
 static shoora_vertex_info CubeVertices[] =
 {
     // Front Face
-    {.VertexPos = CubeVertexPositions[0], .VertexNormal = Shu::vec3f{ 0,  0, -1}, .VertexUV = Shu::vec2f{1, 1}}, // 0
-    {.VertexPos = CubeVertexPositions[1], .VertexNormal = Shu::vec3f{ 0,  0, -1}, .VertexUV = Shu::vec2f{1, 0}}, // 1
-    {.VertexPos = CubeVertexPositions[2], .VertexNormal = Shu::vec3f{ 0,  0, -1}, .VertexUV = Shu::vec2f{0, 0}}, // 2
-    {.VertexPos = CubeVertexPositions[3], .VertexNormal = Shu::vec3f{ 0,  0, -1}, .VertexUV = Shu::vec2f{0, 1}}, // 3
+    {.Pos = CubeVertexPositions[0], /* .Normal = Shu::vec3f{ 0,  0, -1}, */ .UV = Shu::vec2f{1, 1}}, // 0
+    {.Pos = CubeVertexPositions[1], /* .Normal = Shu::vec3f{ 0,  0, -1}, */ .UV = Shu::vec2f{1, 0}}, // 1
+    {.Pos = CubeVertexPositions[2], /* .Normal = Shu::vec3f{ 0,  0, -1}, */ .UV = Shu::vec2f{0, 0}}, // 2
+    {.Pos = CubeVertexPositions[3], /* .Normal = Shu::vec3f{ 0,  0, -1}, */ .UV = Shu::vec2f{0, 1}}, // 3
     // Right Face
-    {.VertexPos = CubeVertexPositions[0], .VertexNormal = Shu::vec3f{ 1,  0,  0}, .VertexUV = Shu::vec2f{0, 1}}, // 4
-    {.VertexPos = CubeVertexPositions[1], .VertexNormal = Shu::vec3f{ 1,  0,  0}, .VertexUV = Shu::vec2f{0, 0}}, // 5
-    {.VertexPos = CubeVertexPositions[5], .VertexNormal = Shu::vec3f{ 1,  0,  0}, .VertexUV = Shu::vec2f{1, 0}}, // 6
-    {.VertexPos = CubeVertexPositions[4], .VertexNormal = Shu::vec3f{ 1,  0,  0}, .VertexUV = Shu::vec2f{1, 1}}, // 7
+    {.Pos = CubeVertexPositions[0], /* .Normal = Shu::vec3f{ 1,  0,  0}, */ .UV = Shu::vec2f{0, 1}}, // 4
+    {.Pos = CubeVertexPositions[1], /* .Normal = Shu::vec3f{ 1,  0,  0}, */ .UV = Shu::vec2f{0, 0}}, // 5
+    {.Pos = CubeVertexPositions[5], /* .Normal = Shu::vec3f{ 1,  0,  0}, */ .UV = Shu::vec2f{1, 0}}, // 6
+    {.Pos = CubeVertexPositions[4], /* .Normal = Shu::vec3f{ 1,  0,  0}, */ .UV = Shu::vec2f{1, 1}}, // 7
     // Back Face
-    {.VertexPos = CubeVertexPositions[7], .VertexNormal = Shu::vec3f{ 0,  0,  1}, .VertexUV = Shu::vec2f{1, 1}}, // 8
-    {.VertexPos = CubeVertexPositions[6], .VertexNormal = Shu::vec3f{ 0,  0,  1}, .VertexUV = Shu::vec2f{1, 0}}, // 9
-    {.VertexPos = CubeVertexPositions[5], .VertexNormal = Shu::vec3f{ 0,  0,  1}, .VertexUV = Shu::vec2f{0, 0}}, // 10
-    {.VertexPos = CubeVertexPositions[4], .VertexNormal = Shu::vec3f{ 0,  0,  1}, .VertexUV = Shu::vec2f{0, 1}}, // 11
+    {.Pos = CubeVertexPositions[7], /* .Normal = Shu::vec3f{ 0,  0,  1}, */ .UV = Shu::vec2f{1, 1}}, // 8
+    {.Pos = CubeVertexPositions[6], /* .Normal = Shu::vec3f{ 0,  0,  1}, */ .UV = Shu::vec2f{1, 0}}, // 9
+    {.Pos = CubeVertexPositions[5], /* .Normal = Shu::vec3f{ 0,  0,  1}, */ .UV = Shu::vec2f{0, 0}}, // 10
+    {.Pos = CubeVertexPositions[4], /* .Normal = Shu::vec3f{ 0,  0,  1}, */ .UV = Shu::vec2f{0, 1}}, // 11
     // Left Face
-    {.VertexPos = CubeVertexPositions[6], .VertexNormal = Shu::vec3f{-1,  0,  0}, .VertexUV = Shu::vec2f{0, 0}}, // 12
-    {.VertexPos = CubeVertexPositions[2], .VertexNormal = Shu::vec3f{-1,  0,  0}, .VertexUV = Shu::vec2f{1, 0}}, // 13
-    {.VertexPos = CubeVertexPositions[3], .VertexNormal = Shu::vec3f{-1,  0,  0}, .VertexUV = Shu::vec2f{1, 1}}, // 14
-    {.VertexPos = CubeVertexPositions[7], .VertexNormal = Shu::vec3f{-1,  0,  0}, .VertexUV = Shu::vec2f{0, 1}}, // 15
+    {.Pos = CubeVertexPositions[6], /* .Normal = Shu::vec3f{-1,  0,  0}, */ .UV = Shu::vec2f{0, 0}}, // 12
+    {.Pos = CubeVertexPositions[2], /* .Normal = Shu::vec3f{-1,  0,  0}, */ .UV = Shu::vec2f{1, 0}}, // 13
+    {.Pos = CubeVertexPositions[3], /* .Normal = Shu::vec3f{-1,  0,  0}, */ .UV = Shu::vec2f{1, 1}}, // 14
+    {.Pos = CubeVertexPositions[7], /* .Normal = Shu::vec3f{-1,  0,  0}, */ .UV = Shu::vec2f{0, 1}}, // 15
     // Top Face
-    {.VertexPos = CubeVertexPositions[3], .VertexNormal = Shu::vec3f{ 0,  1,  0}, .VertexUV = Shu::vec2f{0, 0}}, // 16
-    {.VertexPos = CubeVertexPositions[0], .VertexNormal = Shu::vec3f{ 0,  1,  0}, .VertexUV = Shu::vec2f{1, 0}}, // 17
-    {.VertexPos = CubeVertexPositions[4], .VertexNormal = Shu::vec3f{ 0,  1,  0}, .VertexUV = Shu::vec2f{1, 1}}, // 18
-    {.VertexPos = CubeVertexPositions[7], .VertexNormal = Shu::vec3f{ 0,  1,  0}, .VertexUV = Shu::vec2f{0, 1}}, // 19
+    {.Pos = CubeVertexPositions[3], /* .Normal = Shu::vec3f{ 0,  1,  0}, */ .UV = Shu::vec2f{0, 0}}, // 16
+    {.Pos = CubeVertexPositions[0], /* .Normal = Shu::vec3f{ 0,  1,  0}, */ .UV = Shu::vec2f{1, 0}}, // 17
+    {.Pos = CubeVertexPositions[4], /* .Normal = Shu::vec3f{ 0,  1,  0}, */ .UV = Shu::vec2f{1, 1}}, // 18
+    {.Pos = CubeVertexPositions[7], /* .Normal = Shu::vec3f{ 0,  1,  0}, */ .UV = Shu::vec2f{0, 1}}, // 19
     // Bottom Face
-    {.VertexPos = CubeVertexPositions[2], .VertexNormal = Shu::vec3f{ 0, -1,  0}, .VertexUV = Shu::vec2f{0, 0}}, // 20
-    {.VertexPos = CubeVertexPositions[1], .VertexNormal = Shu::vec3f{ 0, -1,  0}, .VertexUV = Shu::vec2f{1, 0}}, // 21
-    {.VertexPos = CubeVertexPositions[5], .VertexNormal = Shu::vec3f{ 0, -1,  0}, .VertexUV = Shu::vec2f{1, 1}}, // 22
-    {.VertexPos = CubeVertexPositions[6], .VertexNormal = Shu::vec3f{ 0, -1,  0}, .VertexUV = Shu::vec2f{0, 1}}, // 23
+    {.Pos = CubeVertexPositions[2], /* .Normal = Shu::vec3f{ 0, -1,  0}, */ .UV = Shu::vec2f{0, 0}}, // 20
+    {.Pos = CubeVertexPositions[1], /* .Normal = Shu::vec3f{ 0, -1,  0}, */ .UV = Shu::vec2f{1, 0}}, // 21
+    {.Pos = CubeVertexPositions[5], /* .Normal = Shu::vec3f{ 0, -1,  0}, */ .UV = Shu::vec2f{1, 1}}, // 22
+    {.Pos = CubeVertexPositions[6], /* .Normal = Shu::vec3f{ 0, -1,  0}, */ .UV = Shu::vec2f{0, 1}}, // 23
 };
 static u32 CubeIndices[] = { 0,  1,  2,  0,  2,  3,                      // Front Face
                              4,  7,  6,  4,  6,  5,                      // Right Face
@@ -92,7 +93,85 @@ static u32 CubeIndices[] = { 0,  1,  2,  0,  2,  3,                      // Fron
                             17, 16, 19, 17, 19, 18,                      // Top Face
                             20, 21, 23, 21, 22, 23};                     // Bottom Face
 
+void
+GenerateNormals(shoora_vertex_info *VertexInfo, u32 *Indices, u32 IndexCount)
+{
+    for(u32 Index = 0;
+        Index < IndexCount;
+        Index += 3)
+    {
+        u32 I0 = Indices[Index + 0];
+        u32 I1 = Indices[Index + 1];
+        u32 I2 = Indices[Index + 2];
 
+        Shu::vec3f Edge1 = VertexInfo[I1].Pos - VertexInfo[I0].Pos;
+        Shu::vec3f Edge2 = VertexInfo[I2].Pos - VertexInfo[I0].Pos;
+
+        Shu::vec3f Normal = Shu::Normalize(Shu::Cross(Edge1, Edge2));
+
+        VertexInfo[I0].Normal = Normal;
+        VertexInfo[I1].Normal = Normal;
+        VertexInfo[I2].Normal = Normal;
+    }
+}
+
+void
+GenerateTangentInformation(shoora_vertex_info *VertexInfo, u32 *Indices, u32 IndexCount)
+{
+    for(u32 Index = 0;
+        Index < IndexCount;
+        Index += 3)
+    {
+        u32 I0 = Indices[Index + 0];
+        u32 I1 = Indices[Index + 1];
+        u32 I2 = Indices[Index + 2];
+
+        shoora_vertex_info *V0 = VertexInfo + I0;
+        shoora_vertex_info *V1 = VertexInfo + I1;
+        shoora_vertex_info *V2 = VertexInfo + I2;
+
+        Shu::vec3f Edge1 = V1->Pos - V0->Pos;
+        Shu::vec3f Edge2 = V2->Pos - V0->Pos;
+
+        f32 DeltaU1 = V1->UV.x - V0->UV.x;
+        f32 DeltaV1 = V1->UV.y - V0->UV.y;
+        f32 DeltaU2 = V2->UV.x - V0->UV.x;
+        f32 DeltaV2 = V2->UV.y - V0->UV.y;
+        f32 Denominator = DeltaU1*DeltaV2 - DeltaV1*DeltaU2;
+        f32 OneByDenominator = 1.0f / Denominator;
+        ASSERT(Denominator != 0.0f);
+
+        Shu::vec3f Tangent;
+        Tangent.x = OneByDenominator * (DeltaV2*Edge1.x - DeltaU2*Edge2.x);
+        Tangent.y = OneByDenominator * (DeltaV2*Edge1.y - DeltaU2*Edge2.y);
+        Tangent.z = OneByDenominator * (DeltaV2*Edge1.z - DeltaU2*Edge2.z);
+        Tangent = Shu::Normalize(Tangent);
+
+        V0->Tangent = Tangent;
+        V1->Tangent = Tangent;
+        V2->Tangent = Tangent;
+
+#if CALCULATE_BITANGENT
+        Shu::vec3f BiTangent;
+        Tangent.x = OneByDenominator * (DeltaU1*Edge2.x - DeltaV1*Edge1.x);
+        Tangent.y = OneByDenominator * (DeltaU1*Edge2.y - DeltaV1*Edge1.y);
+        Tangent.z = OneByDenominator * (DeltaU1*Edge2.z - DeltaV1*Edge1.z);
+        BiTangent = Shu::Normalize(BiTangent);
+        // Orthogonalize the tangent and the bitangent.
+        Shu::vec3f TangentProj = BiTangent*Dot(Tangent, BiTangent);
+        Tangent -= TangentProj;
+        f32 D = Dot(Tangent, BiTangent);
+        ASSERT(ABSOLUTE(D) <= FLT_EPSILON);
+
+        V0->BiTangent = BiTangent;
+        V1->BiTangent = BiTangent;
+        V2->BiTangent = BiTangent;
+#endif
+    }
+}
+
+// NOTE: ALso make the same changes to the lighting shader.
+// TODO)): Automate this so that changing this automatically makes changes to the shader using shader variation.
 #define MATERIAL_VIEWER 0
 struct vert_uniform_data
 {
@@ -102,7 +181,7 @@ struct vert_uniform_data
 };
 struct lighting_shader_uniform_data
 {
-    SHU_ALIGN_16 Shu::vec3f LightPos = Shu::Vec3f(1, 0, 0);
+    SHU_ALIGN_16 Shu::vec3f LightPos = Shu::Vec3f(3, 0, 0);
     SHU_ALIGN_16 Shu::vec3f LightColor = Shu::Vec3f(1, 1, 0);
     SHU_ALIGN_16 Shu::vec3f CamPos = Shu::Vec3f(0, 0, -10);
     SHU_ALIGN_16 Shu::vec3f ObjectColor;
@@ -334,6 +413,9 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     volkLoadDevice(RenderDevice->LogicalDevice);
     CreateCommandPools(RenderDevice);
 
+    GenerateNormals(CubeVertices, CubeIndices, ARRAY_SIZE(CubeIndices));
+    GenerateTangentInformation(CubeVertices, CubeIndices, ARRAY_SIZE(CubeIndices));
+
     Shu::vec2u ScreenDim = Shu::vec2u{AppInfo->WindowWidth, AppInfo->WindowHeight};
     CreateSwapchain(&VulkanContext->Device, &VulkanContext->Swapchain, ScreenDim, &SwapchainInfo);
     CreateRenderPass(RenderDevice, Swapchain, &VulkanContext->GraphicsRenderPass);
@@ -342,8 +424,13 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     CreateVertexBuffer(RenderDevice, CubeVertices, ARRAY_SIZE(CubeVertices), CubeIndices, ARRAY_SIZE(CubeIndices),
                        &VulkanContext->VertexBuffer, &VulkanContext->IndexBuffer);
 
+    const char *ppTexturePaths[] =
+    {
+        "images/brickwall/brickwall.jpg",
+        "images/brickwall/brickwall_NRM.jpg"
+    };
     CreateSwapchainUniformResources(RenderDevice, Swapchain, sizeof(vert_uniform_data), sizeof(lighting_shader_uniform_data),
-                                    &VulkanContext->GraphicsPipeline.Layout);
+                                    ppTexturePaths, ARRAY_SIZE(ppTexturePaths), &VulkanContext->GraphicsPipeline.Layout);
     CreateGraphicsPipeline(VulkanContext, "shaders/spirv/blinn-phong.vert.spv", "shaders/spirv/blinn-phong.frag.spv",
                            &VulkanContext->GraphicsPipeline);
 
@@ -362,6 +449,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     SetupCamera(&VulkanContext->Camera, Shu::Vec3f(0, 0, -10.0f), Shu::Vec3f(0, 1, 0));
 
     AppInfo->WindowResizeCallback = &WindowResizedCallback;
+
 
 #if MATERIAL_VIEWER
     GetMaterial(MaterialType::BRONZE, &FragUniformData.Material);
@@ -390,7 +478,7 @@ AdvanceToNextFrame()
 }
 
 static f32 Angle = 0.0f;
-static const f32 AngleSpeed = 50.0f;
+static const f32 AngleSpeed = 25.0f;
 
 void
 WriteUniformData(u32 ImageIndex, f32 Delta)
@@ -418,7 +506,7 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
 #else
     Shu::mat4f Model = Mat4Identity;
     Shu::Scale(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f));
-    Shu::RotateGimbalLock(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f), Angle*AngleSpeed);
+    // Shu::RotateGimbalLock(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f), Angle*AngleSpeed);
     Shu::Translate(Model, Shu::Vec3f(0.0f, 0.0f, 0.0f));
     VertUniformData.Model = Model;
 
