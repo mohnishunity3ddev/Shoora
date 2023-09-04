@@ -71,8 +71,7 @@ main()
     vec4 SpecularTex = texture(SPECULAR_TEX(Textures), FSIn.UV);
     vec4 NormalTex = texture(NORMAL_TEX(Textures), FSIn.UV);
 
-    vec3 Normal = 2.*NormalTex.rgb - 1.;
-    vec3 NormalWS = normalize(Normal*FSIn.TBN);
+    vec3 NormalWS = normalize((2.*NormalTex.rgb - 1.)*FSIn.TBN);
 
     vec3 LightDir = normalize(FragUBO.LightPos - FSIn.FragPosWS);
 
@@ -86,8 +85,8 @@ main()
 
     // Specular
     vec3 ViewDir    = normalize(FragUBO.CamPosWS - FSIn.FragPosWS);
-    vec3 ReflectDir = reflect(-LightDir, NormalWS);
-    float Spec      = pow(max(dot(ReflectDir, ViewDir), 0.), 128);
+    vec3 HalfwayDir = normalize(ViewDir + LightDir);
+    float Spec      = pow(max(dot(HalfwayDir, NormalWS), 0.), 128);
     vec3 Specular   = (Spec*SpecularTex.rgb) * FragUBO.LightColor;
 
 #if 0

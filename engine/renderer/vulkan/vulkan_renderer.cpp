@@ -426,8 +426,9 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
 
     const char *ppTexturePaths[] =
     {
-        "images/brickwall/brickwall.jpg",
-        "images/brickwall/brickwall_NRM.jpg"
+        "images/cobblestone.png",
+        "images/cobblestone_NRM.png",
+        "images/cobblestone_SPEC.png",
     };
     CreateSwapchainUniformResources(RenderDevice, Swapchain, sizeof(vert_uniform_data), sizeof(lighting_shader_uniform_data),
                                     ppTexturePaths, ARRAY_SIZE(ppTexturePaths), &VulkanContext->GraphicsPipeline.Layout);
@@ -506,7 +507,7 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
 #else
     Shu::mat4f Model = Mat4Identity;
     Shu::Scale(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f));
-    // Shu::RotateGimbalLock(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f), Angle*AngleSpeed);
+    Shu::RotateGimbalLock(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f), Angle*AngleSpeed);
     Shu::Translate(Model, Shu::Vec3f(0.0f, 0.0f, 0.0f));
     VertUniformData.Model = Model;
 
