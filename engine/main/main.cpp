@@ -245,7 +245,7 @@ Platform_GetKeyInputState(u8 KeyCode, KeyState State)
             }
 
         } break;
-        
+
         case SHU_KEYSTATE_DOWN:
         {
             if(KeyCode == SU_RIGHTMOUSEBUTTON && GlobalInputState->RightMouseButton.IsCurrentlyDown)
@@ -888,13 +888,13 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         {
             f32 FrameMS = DeltaTime*1000.0f;
             TargetMS = 1000.0f / (f32)GlobalFPS;
-            if(CreateConsole) LogInfo("FrameMS: %f, TargetMS: %f\n", FrameMS, TargetMS);
+            // if(CreateConsole) LogInfo("FrameMS: %f, TargetMS: %f\n", FrameMS, TargetMS);
             if(TargetMS > FrameMS)
             {
                 u32 SleepMS = (u32)(TargetMS - FrameMS);
                 if(SleepMS > MinSleepGranularity)
                 {
-                    if(CreateConsole) LogTrace("Sleeping for %u milliseconds.\n", SleepMS);
+                    // if(CreateConsole) LogTrace("Sleeping for %u milliseconds.\n", SleepMS);
                     timeBeginPeriod(TimeCaps.wPeriodMin);
                     Sleep(SleepMS);
                     timeEndPeriod(TimeCaps.wPeriodMin);

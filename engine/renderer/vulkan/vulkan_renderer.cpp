@@ -216,17 +216,18 @@ struct shoora_debug_overlay
     u32 Fps = 0;
 } DebugOverlay;
 
-static f32 DeltaTime = 0.0f;
-static shoora_render_state RenderState;
-static f32 UiUpdateTimer = 0.0f;
-static const f32 UiUpdateWaitTime = 1.0f;
-static const Shu::mat4f Mat4Identity = Shu::Mat4f(1.0f);
-static Shu::vec2f LastFrameMousePos = Shu::Vec2f(FLT_MAX, FLT_MAX);
-static b32 SetFPSCap = true;
-static i32 SelectedFPSOption = 2;
-static vert_uniform_data VertUniformData = {};
-static lighting_shader_uniform_data FragUniformData = {};
-static f32 ImGuiDragFloatStep = 0.005f;
+static f32 GlobalDeltaTime = 0.0f;
+static shoora_render_state GlobalRenderState;
+static f32 GlobalUiUpdateTimer = 0.0f;
+static const f32 GlobalUiUpdateWaitTime = 1.0f;
+static const Shu::mat4f GlobalMat4Identity = Shu::Mat4f(1.0f);
+static Shu::vec2f GlobalLastFrameMousePos = Shu::Vec2f(FLT_MAX, FLT_MAX);
+static b32 GlobalSetFPSCap = true;
+static i32 GlobalSelectedFPSOption = 2;
+static vert_uniform_data GlobalVertUniformData = {};
+static lighting_shader_uniform_data GlobalFragUniformData = {};
+static f32 GlobalImGuiDragFloatStep = 0.005f;
+static Shu::vec2u GlobalWindowSize = {};
 
 void
 WindowResizedCallback(u32 Width, u32 Height)
@@ -239,6 +240,7 @@ WindowResizedCallback(u32 Width, u32 Height)
         WindowResized(&Context->Device, &Context->Swapchain, Context->GraphicsRenderPass,
                       Shu::vec2u{Width, Height});
         ImGuiUpdateWindowSize(Shu::vec2u{Width, Height});
+        GlobalWindowSize = {Width, Height};
     }
 }
 
@@ -257,20 +259,23 @@ ImGuiNewFrame()
 
     // ImGui::ShowDemoWindow();
 
-    ImGui::SetNextWindowPos(ImVec2(800, 100), 1 << 2);
-    ImGui::SetNextWindowSize(ImVec2(400, 400), 1 << 2);
-    ImGui::Begin("Inspector");
+    f32 DesiredWidth = 400;
+    ImGui::SetNextWindowPos(ImVec2(GlobalWindowSize.x - DesiredWidth, 0), ImGuiCond_Always);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(DesiredWidth, FLT_MAX));
+    ImGuiWindowFlags WindowFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize |
+                                   ImGuiWindowFlags_NoResize;
+    ImGui::Begin("Inspector", nullptr, WindowFlags);
     i32 FPS = -1;
-    ImGui::Checkbox("Set FPS Cap", (bool *)&SetFPSCap);
+    ImGui::Checkbox("Set FPS Cap", (bool *)&GlobalSetFPSCap);
     Platform_ToggleFPSCap();
-    if(SetFPSCap)
+    if(GlobalSetFPSCap)
     {
         ImGui::Text("Set FPS:");
-        ImGui::RadioButton("30",  &SelectedFPSOption, 0); ImGui::SameLine();
-        ImGui::RadioButton("60",  &SelectedFPSOption, 1); ImGui::SameLine();
-        ImGui::RadioButton("120", &SelectedFPSOption, 2); ImGui::SameLine();
-        ImGui::RadioButton("240", &SelectedFPSOption, 3);
-        switch(SelectedFPSOption)
+        ImGui::RadioButton("30",  &GlobalSelectedFPSOption, 0); ImGui::SameLine();
+        ImGui::RadioButton("60",  &GlobalSelectedFPSOption, 1); ImGui::SameLine();
+        ImGui::RadioButton("120", &GlobalSelectedFPSOption, 2); ImGui::SameLine();
+        ImGui::RadioButton("240", &GlobalSelectedFPSOption, 3);
+        switch(GlobalSelectedFPSOption)
         {
             case FpsOptions_30:
             {
@@ -292,12 +297,9 @@ ImGuiNewFrame()
             SHU_INVALID_DEFAULT;
         }
     }
-    ImGui::Checkbox("Toggle Wireframe", (bool *)&RenderState.WireframeMode);
-    ImGui::SliderFloat("Wireframe Line Width", &RenderState.WireLineWidth, 1.0f, 10.0f);
-    ImGui::ColorEdit3("Clear Color", RenderState.ClearColor.E);
-    ImGui::Spacing();
-    ImGui::TextUnformatted("Object Data:");
-    // ImGui::ColorEdit3("Mesh Color", RenderState.MeshColorUniform.E);
+    ImGui::Checkbox("Toggle Wireframe", (bool *)&GlobalRenderState.WireframeMode);
+    ImGui::SliderFloat("Wireframe Line Width", &GlobalRenderState.WireLineWidth, 1.0f, 10.0f);
+    ImGui::ColorEdit3("Clear Color", GlobalRenderState.ClearColor.E);
 #if MATERIAL_VIEWER
     const char *MaterialNames[] =
     {
@@ -314,16 +316,18 @@ ImGuiNewFrame()
 #endif
     ImGui::End();
 
-    ImGui::SetNextWindowPos(ImVec2(800, 500), 1 << 2);
-    ImGui::SetNextWindowSize(ImVec2(400, 400), 1 << 2);
-    ImGui::Begin("Light Data");
-    ImGui::DragFloat3("Light Position", FragUniformData.LightPos.E, ImGuiDragFloatStep);
-    ImGui::ColorEdit3("Light Color", RenderState.LightData->Color.E);
+    ImVec2 SecondWindowPos = ImVec2(GlobalWindowSize.x - DesiredWidth, 400);
+    ImVec2 SecondWindowSize = ImVec2(0, 0);
+    ImGui::SetNextWindowPos(SecondWindowPos, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(SecondWindowSize, ImGuiCond_Always);
+    ImGui::Begin("Light Data", nullptr, WindowFlags);
+    ImGui::DragFloat3("Light Position", GlobalFragUniformData.LightPos.E, GlobalImGuiDragFloatStep);
+    ImGui::ColorEdit3("Light Color", GlobalRenderState.LightData->Color.E);
     ImGui::End();
 
-    ImGui::SetNextWindowPos(ImVec2(0, 0), 1 << 2);
-    ImGui::SetNextWindowSize(ImVec2(400, 400), 1 << 2);
-    ImGui::Begin("Debug Stats");
+    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(400, 0), ImGuiCond_Always);
+    ImGui::Begin("Debug Stats", nullptr, WindowFlags);
     ImGui::Text("Device: %s", Context->Device.DeviceProperties.deviceName);
     ImGui::Text("FPS: %u", DebugOverlay.Fps);
     ImGui::Text("MS Per Frame: %f", DebugOverlay.MsPerFrame);
@@ -394,6 +398,8 @@ DestroyUnlitPipelineResources()
 void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
 {
+    GlobalWindowSize = {AppInfo->WindowWidth, AppInfo->WindowHeight};
+
     VK_CHECK(volkInitialize());
 
     ShuraInstanceCreateInfo.AppName = AppInfo->AppName;
@@ -460,7 +466,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     VulkanContext->IsInitialized = true;
     VulkanContext->FrameCounter = 0;
 
-    UiUpdateTimer = 0.0f;
+    GlobalUiUpdateTimer = 0.0f;
 
     Context = VulkanContext;
 }
@@ -505,42 +511,43 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
     Projection = glm::perspective(45.0f, 1920.0f / 1080.0f, 0.1f, 100.0f);
     UniformData.Projection = Projection;
 #else
-    Shu::mat4f Model = Mat4Identity;
+    Shu::mat4f Model = GlobalMat4Identity;
     Shu::Scale(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f));
     Shu::RotateGimbalLock(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f), Angle*AngleSpeed);
     Shu::Translate(Model, Shu::Vec3f(0.0f, 0.0f, 0.0f));
-    VertUniformData.Model = Model;
+    GlobalVertUniformData.Model = Model;
 
-    Shu::mat4f View = Mat4Identity;
+    Shu::mat4f View = GlobalMat4Identity;
     View = Context->Camera.GetViewMatrix(View);
-    VertUniformData.View = View;
+    GlobalVertUniformData.View = View;
 
-    Shu::mat4f Projection = Shu::Perspective(45.0f, 1920.0f / 1080.0f, 0.1f, 100.0f);
-    VertUniformData.Projection = Projection;
+    // TODO)) Remove this!!
+    Shu::mat4f Projection = Shu::Perspective(45.0f, ((f32)GlobalWindowSize.x / (f32)GlobalWindowSize.y), 0.1f, 100.0f);
+    GlobalVertUniformData.Projection = Projection;
 #endif
-    memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &VertUniformData, sizeof(vert_uniform_data));
+    memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &GlobalVertUniformData, sizeof(vert_uniform_data));
 
-    LightShaderData.Model = Mat4Identity;
+    LightShaderData.Model = GlobalMat4Identity;
     Shu::Scale(LightShaderData.Model, Shu::Vec3f(0.25f));
-    Shu::Translate(LightShaderData.Model, FragUniformData.LightPos);
+    Shu::Translate(LightShaderData.Model, GlobalFragUniformData.LightPos);
     LightShaderData.View = View;
     LightShaderData.Projection = Projection;
     memcpy(Context->FragUnlitBuffers[ImageIndex].pMapped, &LightShaderData, sizeof(light_shader_data));
 
     // Light Position is set directly in ImGui
-    FragUniformData.LightColor = RenderState.LightData->Color;
-    FragUniformData.ObjectColor = RenderState.MeshColorUniform;
-    FragUniformData.CamPos = Context->Camera.Pos;
-    memcpy(Context->Swapchain.FragUniformBuffers[ImageIndex].pMapped, &FragUniformData, sizeof(lighting_shader_uniform_data));
+    GlobalFragUniformData.LightColor = GlobalRenderState.LightData->Color;
+    GlobalFragUniformData.ObjectColor = GlobalRenderState.MeshColorUniform;
+    GlobalFragUniformData.CamPos = Context->Camera.Pos;
+    memcpy(Context->Swapchain.FragUniformBuffers[ImageIndex].pMapped, &GlobalFragUniformData, sizeof(lighting_shader_uniform_data));
 }
 
 void
 GetMousePosDelta(f32 CurrentMouseDeltaX, f32 CurrentMouseDeltaY, f32 *outMouseDeltaX, f32 *outMouseDeltaY)
 {
-    *outMouseDeltaX = CurrentMouseDeltaX - LastFrameMousePos.x;
-    *outMouseDeltaY = CurrentMouseDeltaY - LastFrameMousePos.y;
-    LastFrameMousePos.x = CurrentMouseDeltaX;
-    LastFrameMousePos.y = CurrentMouseDeltaY;
+    *outMouseDeltaX = CurrentMouseDeltaX - GlobalLastFrameMousePos.x;
+    *outMouseDeltaY = CurrentMouseDeltaY - GlobalLastFrameMousePos.y;
+    GlobalLastFrameMousePos.x = CurrentMouseDeltaX;
+    GlobalLastFrameMousePos.y = CurrentMouseDeltaY;
 }
 
 void
@@ -556,20 +563,20 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
                                  "frame counter.\n");
     }
 
-    DeltaTime = FramePacket->DeltaTime;
-    UiUpdateTimer += DeltaTime;
-    if(UiUpdateTimer >= UiUpdateWaitTime)
+    GlobalDeltaTime = FramePacket->DeltaTime;
+    GlobalUiUpdateTimer += GlobalDeltaTime;
+    if(GlobalUiUpdateTimer >= GlobalUiUpdateWaitTime)
     {
         DebugOverlay.Fps = FramePacket->Fps;
-        DebugOverlay.MsPerFrame = 1000.0f*DeltaTime;
-        UiUpdateTimer = 0.0f;
+        DebugOverlay.MsPerFrame = 1000.0f*GlobalDeltaTime;
+        GlobalUiUpdateTimer = 0.0f;
     }
 
     b32 LMBDown = Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, KeyState::SHU_KEYSTATE_DOWN);
 
     if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
     {
-        LastFrameMousePos = {FramePacket->MouseXPos, FramePacket->MouseYPos};
+        GlobalLastFrameMousePos = {FramePacket->MouseXPos, FramePacket->MouseYPos};
     }
 
     if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_DOWN))
@@ -616,7 +623,7 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     VkClearValue ClearValues[2] = {};
     ClearValues[0].color =
     {
-        {RenderState.ClearColor.r, RenderState.ClearColor.g, RenderState.ClearColor.b, 1.0f}
+        {GlobalRenderState.ClearColor.r, GlobalRenderState.ClearColor.g, GlobalRenderState.ClearColor.b, 1.0f}
     };
     ClearValues[1].depthStencil = { .depth = 1.0f, .stencil = 0};
     VkRect2D RenderArea = {};
@@ -664,10 +671,10 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 
         vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(CubeIndices), 1, 0, 0, 1);
 
-        if(RenderState.WireframeMode)
+        if(GlobalRenderState.WireframeMode)
         {
             vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->WireframePipeline.Handle);
-            vkCmdSetLineWidth(DrawCmdBuffer, RenderState.WireLineWidth);
+            vkCmdSetLineWidth(DrawCmdBuffer, GlobalRenderState.WireLineWidth);
             vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(CubeIndices), 1, 0, 0, 1);
         }
 

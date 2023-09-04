@@ -477,7 +477,7 @@ WindowResized(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapc
     vkDestroySwapchainKHR(RenderDevice->LogicalDevice, OldSwapchain, 0);
 
     LogOutput(LogType_Warn, "Destroyed Old Swapchain!\n");
-
+    
     GetSwapchainImageHandles(RenderDevice, Swapchain);
     CreateSwapchainImageViews(RenderDevice, Swapchain);
     ASSERT(RenderPass != VK_NULL_HANDLE);
