@@ -673,7 +673,7 @@ CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulka
         Index < ARRAY_SIZE(Swapchain->FragImageSamplers);
         ++Index)
     {
-        CreateDefaultTextureSampler(RenderDevice, &Swapchain->FragImageSamplers[Index],
+        CreatePlaceholderTextureSampler(RenderDevice, &Swapchain->FragImageSamplers[Index],
                                     DefaultTexType::TexType_WHITE);
     }
 

@@ -362,6 +362,7 @@ CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, shoora_image_data
                     &pImageSampler->Sampler);
     LogInfoUnformatted("Created Image Sampler!\n");
 }
+
 void
 CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, const char *ImageFilename,
                            shoora_vulkan_image_sampler *pImageSampler)
@@ -471,8 +472,8 @@ DestroyImage2D(shoora_vulkan_device *RenderDevice, shoora_vulkan_image *pImage)
 }
 
 void
-CreateDefaultTextureSampler(shoora_vulkan_device *RenderDevice, shoora_vulkan_image_sampler *Sampler,
-                            DefaultTexType Type)
+CreatePlaceholderTextureSampler(shoora_vulkan_device *RenderDevice, shoora_vulkan_image_sampler *Sampler,
+                                DefaultTexType Type)
 {
     ASSERT(Type < DefaultTexType::TexType_MAX_COUNT);
 
