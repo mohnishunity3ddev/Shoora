@@ -185,10 +185,16 @@ struct vert_uniform_data
     Shu::mat4f View;
     Shu::mat4f Projection;
 };
+struct point_light_data
+{
+    SHU_ALIGN_16 Shu::vec3f PointLightPos = Shu::Vec3f(3, 0, 0);
+    SHU_ALIGN_16 Shu::vec3f PointLightColor = Shu::Vec3f(1, 1, 0);
+    float Intensity;
+};
 struct lighting_shader_uniform_data
 {
-    SHU_ALIGN_16 Shu::vec3f LightPos = Shu::Vec3f(3, 0, 0);
-    SHU_ALIGN_16 Shu::vec3f LightColor = Shu::Vec3f(1, 1, 0);
+    point_light_data PointLightData;
+
     SHU_ALIGN_16 Shu::vec3f CamPos = Shu::Vec3f(0, 0, -10);
     SHU_ALIGN_16 Shu::vec3f ObjectColor;
 
@@ -337,8 +343,9 @@ ImGuiNewFrame()
     ImGui::SetNextWindowPos(SecondWindowPos, ImGuiCond_Always);
     ImGui::SetNextWindowSize(SecondWindowSize, ImGuiCond_Always);
     ImGui::Begin("Light Data", nullptr, WindowFlags);
-    ImGui::DragFloat3("Light Position", GlobalFragUniformData.LightPos.E, GlobalImGuiDragFloatStep);
+    ImGui::DragFloat3("Light Position", GlobalFragUniformData.PointLightData.PointLightPos.E, GlobalImGuiDragFloatStep);
     ImGui::ColorEdit3("Light Color", GlobalRenderState.LightData->Color.E);
+    ImGui::SliderFloat("Light Intensity", &GlobalFragUniformData.PointLightData.Intensity, 0.3f, 10.0f);
     ImGui::End();
 
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
@@ -460,8 +467,8 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
                                     VulkanContext->GraphicsPipeline.PushConstant.Ranges,
                                     VulkanContext->GraphicsPipeline.PushConstant.Count,
                                     &VulkanContext->GraphicsPipeline.Layout);
-    CreateGraphicsPipeline(VulkanContext, "shaders/spirv/blinn-phong.vert.spv", "shaders/spirv/blinn-phong.frag.spv",
-                           &VulkanContext->GraphicsPipeline);
+    CreateGraphicsPipeline(VulkanContext, "shaders/spirv/blinn-phong.vert.spv",
+                           "shaders/spirv/blinn-phong.frag.spv", &VulkanContext->GraphicsPipeline);
 
     // Wireframe
 #if CREATE_WIREFRAME_PIPELINE
@@ -552,14 +559,14 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
     memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &GlobalVertUniformData, sizeof(vert_uniform_data));
 
     GlobalLightShaderData.Model = GlobalMat4Identity;
-    Shu::Scale(GlobalLightShaderData.Model, Shu::Vec3f(0.25f));
-    Shu::Translate(GlobalLightShaderData.Model, GlobalFragUniformData.LightPos);
+    Shu::Scale(GlobalLightShaderData.Model, Shu::Vec3f(0.05f));
+    Shu::Translate(GlobalLightShaderData.Model, GlobalFragUniformData.PointLightData.PointLightPos);
     GlobalLightShaderData.View = View;
     GlobalLightShaderData.Projection = Projection;
     memcpy(Context->FragUnlitBuffers[ImageIndex].pMapped, &GlobalLightShaderData, sizeof(light_shader_data));
 
     // Light Position is set directly in ImGui
-    GlobalFragUniformData.LightColor = GlobalRenderState.LightData->Color;
+    GlobalFragUniformData.PointLightData.PointLightColor = GlobalRenderState.LightData->Color;
     GlobalFragUniformData.ObjectColor = GlobalRenderState.MeshColorUniform;
     GlobalFragUniformData.CamPos = Context->Camera.Pos;
     memcpy(Context->Swapchain.FragUniformBuffers[ImageIndex].pMapped, &GlobalFragUniformData, sizeof(lighting_shader_uniform_data));
@@ -615,8 +622,7 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     if(!Context->IsInitialized || Context->CurrentFrame >= SHU_MAX_FRAMES_IN_FLIGHT)
     {
         Platform_ExitApplication("[RENDERER]: Either the render is not initialized or there was some "
-                                 "problem with the current "
-                                 "frame counter.\n");
+                                 "problem with the current frame counter.\n");
     }
 
     GlobalDeltaTime = FramePacket->DeltaTime;
@@ -649,7 +655,6 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
                          &CameraInput.MouseDeltaY);
         Context->Camera.HandleInput(&CameraInput);
     }
-
 
     shoora_vulkan_fence_handle *pCurrentFrameFence = GetCurrentFrameFencePtr(&Context->SyncHandles,
                                                                              Context->CurrentFrame);
