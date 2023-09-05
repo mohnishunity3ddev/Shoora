@@ -185,15 +185,29 @@ struct vert_uniform_data
     Shu::mat4f View;
     Shu::mat4f Projection;
 };
+struct spotlight_data
+{
+    b32 IsOn;
+
+    SHU_ALIGN_16 Shu::vec3f Pos;
+    SHU_ALIGN_16 Shu::vec3f Color = Shu::Vec3f(1.0f);
+    SHU_ALIGN_16 Shu::vec3f Direction;
+
+    float InnerCutoffAngles = 12.5f;
+    float OuterCutoffAngles = 15.5f;
+    float Intensity = 5.0f;
+
+};
 struct point_light_data
 {
-    SHU_ALIGN_16 Shu::vec3f PointLightPos = Shu::Vec3f(3, 0, 0);
-    SHU_ALIGN_16 Shu::vec3f PointLightColor = Shu::Vec3f(1, 1, 0);
-    float Intensity;
+    SHU_ALIGN_16 Shu::vec3f Pos = Shu::Vec3f(3, 0, 0);
+    SHU_ALIGN_16 Shu::vec3f Color = Shu::Vec3f(1, 1, 0);
+    float Intensity = 5.0f;
 };
 struct lighting_shader_uniform_data
 {
     point_light_data PointLightData;
+    spotlight_data SpotlightData;
 
     SHU_ALIGN_16 Shu::vec3f CamPos = Shu::Vec3f(0, 0, -10);
     SHU_ALIGN_16 Shu::vec3f ObjectColor;
@@ -223,7 +237,8 @@ struct shoora_render_state
 
     b8 WireframeMode = false;
     f32 WireLineWidth = 10.0f;
-    Shu::vec3f ClearColor = Shu::vec3f{0.043f, 0.259f, 0.259f};
+    // Shu::vec3f ClearColor = Shu::vec3f{0.043f, 0.259f, 0.259f};
+    Shu::vec3f ClearColor = Shu::Vec3f(0.0f);
     Shu::vec3f MeshColorUniform = Shu::vec3f{1.0f, 1.0f, 1.0f};
 };
 struct shoora_debug_overlay
@@ -343,9 +358,16 @@ ImGuiNewFrame()
     ImGui::SetNextWindowPos(SecondWindowPos, ImGuiCond_Always);
     ImGui::SetNextWindowSize(SecondWindowSize, ImGuiCond_Always);
     ImGui::Begin("Light Data", nullptr, WindowFlags);
-    ImGui::DragFloat3("Light Position", GlobalFragUniformData.PointLightData.PointLightPos.E, GlobalImGuiDragFloatStep);
-    ImGui::ColorEdit3("Light Color", GlobalRenderState.LightData->Color.E);
-    ImGui::SliderFloat("Light Intensity", &GlobalFragUniformData.PointLightData.Intensity, 0.3f, 10.0f);
+    ImGui::Text("Pnt-Light");
+    ImGui::DragFloat3("Pnt-light Position", GlobalFragUniformData.PointLightData.Pos.E, GlobalImGuiDragFloatStep);
+    ImGui::ColorEdit3("Pnt-light Color", GlobalRenderState.LightData->Color.E);
+    ImGui::SliderFloat("Pnt-light Intensity", &GlobalFragUniformData.PointLightData.Intensity, 0.3f, 10.0f);
+    ImGui::Text("Spot-Light");
+    ImGui::SliderFloat("Spot-light Inner Cutoff", &GlobalFragUniformData.SpotlightData.InnerCutoffAngles, 10.0f, 45.0f);
+    ImGui::SliderFloat("Spot-light Outer Cutoff", &GlobalFragUniformData.SpotlightData.OuterCutoffAngles,
+                       GlobalFragUniformData.SpotlightData.InnerCutoffAngles, 45.0f);
+    ImGui::ColorEdit3("Spot-light Color", GlobalFragUniformData.SpotlightData.Color.E);
+    ImGui::SliderFloat("Spot-light Intensity", &GlobalFragUniformData.SpotlightData.Intensity, 0.3f, 10.0f);
     ImGui::End();
 
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
@@ -560,15 +582,19 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
 
     GlobalLightShaderData.Model = GlobalMat4Identity;
     Shu::Scale(GlobalLightShaderData.Model, Shu::Vec3f(0.05f));
-    Shu::Translate(GlobalLightShaderData.Model, GlobalFragUniformData.PointLightData.PointLightPos);
+    Shu::Translate(GlobalLightShaderData.Model, GlobalFragUniformData.PointLightData.Pos);
     GlobalLightShaderData.View = View;
     GlobalLightShaderData.Projection = Projection;
     memcpy(Context->FragUnlitBuffers[ImageIndex].pMapped, &GlobalLightShaderData, sizeof(light_shader_data));
 
     // Light Position is set directly in ImGui
-    GlobalFragUniformData.PointLightData.PointLightColor = GlobalRenderState.LightData->Color;
+    GlobalFragUniformData.PointLightData.Color = GlobalRenderState.LightData->Color;
     GlobalFragUniformData.ObjectColor = GlobalRenderState.MeshColorUniform;
     GlobalFragUniformData.CamPos = Context->Camera.Pos;
+
+    GlobalFragUniformData.SpotlightData.Direction = Shu::Normalize(Context->Camera.Front);
+    GlobalFragUniformData.SpotlightData.Pos = Context->Camera.Pos;
+
     memcpy(Context->Swapchain.FragUniformBuffers[ImageIndex].pMapped, &GlobalFragUniformData, sizeof(lighting_shader_uniform_data));
 }
 
