@@ -170,6 +170,12 @@ GenerateTangentInformation(shoora_vertex_info *VertexInfo, u32 *Indices, u32 Ind
     }
 }
 
+Shu::vec3f CubePositions[] = {Shu::Vec3f( 0.0f,  0.0f,  0.0f),    Shu::Vec3f( 2.0f,  5.0f, -15.0f),
+                              Shu::Vec3f(-1.5f, -2.2f, -2.5f),    Shu::Vec3f(-3.8f, -2.0f, -12.3f),
+                              Shu::Vec3f( 2.4f, -0.4f, -3.5f),    Shu::Vec3f(-1.7f,  3.0f, -7.5f),
+                              Shu::Vec3f( 1.3f, -2.0f, -2.5f),    Shu::Vec3f( 1.5f,  2.0f, -2.5f),
+                              Shu::Vec3f( 1.5f,  0.2f, -1.5f),    Shu::Vec3f(-1.3f,  1.0f, -1.5f)};
+
 // NOTE: ALso make the same changes to the lighting shader.
 // TODO)): Automate this so that changing this automatically makes changes to the shader using shader variation.
 #define MATERIAL_VIEWER 0
@@ -297,8 +303,10 @@ ImGuiNewFrame()
             SHU_INVALID_DEFAULT;
         }
     }
+#if CREATE_WIREFRAME_PIPELINE
     ImGui::Checkbox("Toggle Wireframe", (bool *)&GlobalRenderState.WireframeMode);
     ImGui::SliderFloat("Wireframe Line Width", &GlobalRenderState.WireLineWidth, 1.0f, 10.0f);
+#endif
     ImGui::ColorEdit3("Clear Color", GlobalRenderState.ClearColor.E);
 #if MATERIAL_VIEWER
     const char *MaterialNames[] =
@@ -442,9 +450,11 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
                            &VulkanContext->GraphicsPipeline);
 
     // Wireframe
+#if CREATE_WIREFRAME_PIPELINE
     CreatePipelineLayout(RenderDevice, 1, &VulkanContext->Swapchain.UniformSetLayout, 0, nullptr,
                          &VulkanContext->WireframePipeline.Layout);
     CreateWireframePipeline(VulkanContext, "shaders/spirv/wireframe.vert.spv", "shaders/spirv/wireframe.frag.spv");
+#endif
 
     // Unlit Pipeline
     CreateUnlitPipeline(VulkanContext);
@@ -671,12 +681,14 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 
         vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(CubeIndices), 1, 0, 0, 1);
 
+#if CREATE_WIREFRAME_PIPELINE
         if(GlobalRenderState.WireframeMode)
         {
             vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->WireframePipeline.Handle);
             vkCmdSetLineWidth(DrawCmdBuffer, GlobalRenderState.WireLineWidth);
             vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(CubeIndices), 1, 0, 0, 1);
         }
+#endif
 
         vkCmdBindDescriptorSets(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Layout, 0,
                                 1, &Context->UnlitSets[ImageIndex], 0, nullptr);
@@ -734,7 +746,9 @@ DestroyVulkanRenderer(shoora_vulkan_context *Context)
     DestroyAllSynchronizationPrimitives(RenderDevice, &Context->SyncHandles);
     DestroyVertexBuffer(RenderDevice, &Context->VertexBuffer, &Context->IndexBuffer);
     DestroyPipeline(RenderDevice, &Context->GraphicsPipeline);
+#if CREATE_WIREFRAME_PIPELINE
     DestroyPipeline(RenderDevice, &Context->WireframePipeline);
+#endif
     DestroyRenderPass(RenderDevice, Context->GraphicsRenderPass);
     DestroySwapchain(Context);
     DestroyPresentationSurface(Context);

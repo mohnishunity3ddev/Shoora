@@ -95,11 +95,6 @@ struct shoora_vulkan_image_sampler
     VkSampler Sampler;
 };
 
-struct shoora_vulkan_descriptor_resource
-{
-
-};
-
 struct shoora_vulkan_swapchain
 {
     VkSurfaceKHR Surface;
@@ -209,7 +204,7 @@ struct shoora_vulkan_context
     shoora_vulkan_buffer FragUnlitBuffers[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
 
     shoora_vulkan_graphics_pipeline GraphicsPipeline;
-    shoora_vulkan_graphics_pipeline WireframePipeline;
+    // shoora_vulkan_graphics_pipeline WireframePipeline;
     shoora_vulkan_graphics_pipeline UnlitPipeline;
 
     shoora_vulkan_buffer VertexBuffer;

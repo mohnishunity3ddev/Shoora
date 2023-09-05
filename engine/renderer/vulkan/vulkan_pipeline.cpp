@@ -355,6 +355,7 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
     vkDestroyShaderModule(RenderDevice->LogicalDevice, FragmentShader, nullptr);
 }
 
+#if CREATE_WIREFRAME_PIPELINE
 void
 CreateWireframePipeline(shoora_vulkan_context *Context, const char *VertexShaderFile,
                         const char *FragmentShaderFile)
@@ -523,6 +524,7 @@ CreateWireframePipeline(shoora_vulkan_context *Context, const char *VertexShader
     vkDestroyShaderModule(RenderDevice->LogicalDevice, VertexShader, nullptr);
     vkDestroyShaderModule(RenderDevice->LogicalDevice, FragmentShader, nullptr);
 }
+#endif
 
 #if 0
 void
