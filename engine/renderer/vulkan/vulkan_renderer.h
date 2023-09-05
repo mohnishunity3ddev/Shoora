@@ -152,10 +152,18 @@ struct shoora_vulkan_synchronization
     shoora_vulkan_fence_handle Fences[SHU_MAX_FRAMES_IN_FLIGHT];
 };
 
+struct shoora_vulkan_push_constant
+{
+    VkPushConstantRange Ranges[4];
+    u32 Count;
+};
+
 struct shoora_vulkan_graphics_pipeline
 {
     VkPipeline Handle;
     VkPipelineLayout Layout;
+
+    shoora_vulkan_push_constant PushConstant;
 };
 
 struct shoora_imgui_push_constant_block

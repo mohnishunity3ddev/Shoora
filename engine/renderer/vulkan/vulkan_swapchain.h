@@ -33,9 +33,12 @@ void CreateSwapchainFramebuffers(shoora_vulkan_device *RenderDevice, shoora_vulk
 
 void AcquireNextSwapchainImage(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
                                shoora_vulkan_semaphore_handle *SignalSemaphore);
+void CreatePushConstantBlock(shoora_vulkan_graphics_pipeline *Pipeline, VkShaderStageFlags ShaderStage, u64 Size,
+                             u64 Offset);
 void CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
                                      size_t VertUniformBufferSize, size_t FragUniformBufferSize,
                                      const char **ppImageFilenames, u32 ImageFilenameCount,
+                                     VkPushConstantRange *PushConstants, u32 PushConstantCount,
                                      VkPipelineLayout *pPipelineLayout);
 void DestroySwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain);
 

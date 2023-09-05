@@ -188,6 +188,17 @@ GetShaderStageInfo(VkShaderModule Shader, VkShaderStageFlagBits StageFlags, cons
     return StageInfo;
 }
 
+VkPushConstantRange
+PushConstantInitialize(VkShaderStageFlags ShaderStage, u64 Size, u64 Offset)
+{
+    VkPushConstantRange PushConstantRange = {};
+    PushConstantRange.stageFlags = ShaderStage;
+    PushConstantRange.offset = Offset;
+    PushConstantRange.size = Size;
+
+    return PushConstantRange;
+}
+
 void
 CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderFile,
                        const char *FragmentShaderFile, shoora_vulkan_graphics_pipeline *pPipeline, VkRenderPass RenderPass)

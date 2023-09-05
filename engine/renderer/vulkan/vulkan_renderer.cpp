@@ -181,7 +181,7 @@ Shu::vec3f CubePositions[] = {Shu::Vec3f( 0.0f,  0.0f,  0.0f),    Shu::Vec3f( 2.
 #define MATERIAL_VIEWER 0
 struct vert_uniform_data
 {
-    Shu::mat4f Model;
+    // Shu::mat4f Model;
     Shu::mat4f View;
     Shu::mat4f Projection;
 };
@@ -196,6 +196,10 @@ struct lighting_shader_uniform_data
     shoora_material Material;
 #endif
 };
+struct push_const_block
+{
+    Shu::mat4f Model;
+};
 struct light_shader_data
 {
     // Vertex Uniform Buffer
@@ -206,14 +210,14 @@ struct light_shader_data
     // Fragment Uniform Buffer
     SHU_ALIGN_16 Shu::vec3f Color = Shu::vec3f{1, 1, 1};
 };
-static light_shader_data LightShaderData = {};
+static light_shader_data GlobalLightShaderData = {};
 struct shoora_render_state
 {
-    light_shader_data *LightData = &LightShaderData;
+    light_shader_data *LightData = &GlobalLightShaderData;
 
     b8 WireframeMode = false;
     f32 WireLineWidth = 10.0f;
-    Shu::vec3f ClearColor = Shu::vec3f{0.2f, 0.3f, 0.3f};
+    Shu::vec3f ClearColor = Shu::vec3f{0.043f, 0.259f, 0.259f};
     Shu::vec3f MeshColorUniform = Shu::vec3f{1.0f, 1.0f, 1.0f};
 };
 struct shoora_debug_overlay
@@ -232,6 +236,7 @@ static b32 GlobalSetFPSCap = true;
 static i32 GlobalSelectedFPSOption = 2;
 static vert_uniform_data GlobalVertUniformData = {};
 static lighting_shader_uniform_data GlobalFragUniformData = {};
+static push_const_block GlobalPushConstBlock = {};
 static f32 GlobalImGuiDragFloatStep = 0.005f;
 static Shu::vec2u GlobalWindowSize = {};
 
@@ -303,11 +308,14 @@ ImGuiNewFrame()
             SHU_INVALID_DEFAULT;
         }
     }
+
 #if CREATE_WIREFRAME_PIPELINE
     ImGui::Checkbox("Toggle Wireframe", (bool *)&GlobalRenderState.WireframeMode);
     ImGui::SliderFloat("Wireframe Line Width", &GlobalRenderState.WireLineWidth, 1.0f, 10.0f);
 #endif
+
     ImGui::ColorEdit3("Clear Color", GlobalRenderState.ClearColor.E);
+
 #if MATERIAL_VIEWER
     const char *MaterialNames[] =
     {
@@ -342,6 +350,7 @@ ImGuiNewFrame()
     ImGui::BeginDisabled();
     ImGui::Text("Camera: {%.2f, %.2f, %.2f}", Context->Camera.Pos.x, Context->Camera.Pos.y, Context->Camera.Pos.z);
     ImGui::EndDisabled();
+
 #if SHU_USE_GLM
     ImGui::TextUnformatted("Using GLM!");
 #endif
@@ -444,8 +453,13 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
         "images/cobblestone_NRM.png",
         "images/cobblestone_SPEC.png",
     };
-    CreateSwapchainUniformResources(RenderDevice, Swapchain, sizeof(vert_uniform_data), sizeof(lighting_shader_uniform_data),
-                                    ppTexturePaths, ARRAY_SIZE(ppTexturePaths), &VulkanContext->GraphicsPipeline.Layout);
+    CreatePushConstantBlock(&VulkanContext->GraphicsPipeline, VK_SHADER_STAGE_VERTEX_BIT, sizeof(push_const_block), 0);
+    CreateSwapchainUniformResources(RenderDevice, Swapchain, sizeof(vert_uniform_data),
+                                    sizeof(lighting_shader_uniform_data), ppTexturePaths,
+                                    ARRAY_SIZE(ppTexturePaths),
+                                    VulkanContext->GraphicsPipeline.PushConstant.Ranges,
+                                    VulkanContext->GraphicsPipeline.PushConstant.Count,
+                                    &VulkanContext->GraphicsPipeline.Layout);
     CreateGraphicsPipeline(VulkanContext, "shaders/spirv/blinn-phong.vert.spv", "shaders/spirv/blinn-phong.frag.spv",
                            &VulkanContext->GraphicsPipeline);
 
@@ -525,7 +539,7 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
     Shu::Scale(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f));
     Shu::RotateGimbalLock(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f), Angle*AngleSpeed);
     Shu::Translate(Model, Shu::Vec3f(0.0f, 0.0f, 0.0f));
-    GlobalVertUniformData.Model = Model;
+    GlobalPushConstBlock.Model = Model;
 
     Shu::mat4f View = GlobalMat4Identity;
     View = Context->Camera.GetViewMatrix(View);
@@ -537,12 +551,12 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
 #endif
     memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &GlobalVertUniformData, sizeof(vert_uniform_data));
 
-    LightShaderData.Model = GlobalMat4Identity;
-    Shu::Scale(LightShaderData.Model, Shu::Vec3f(0.25f));
-    Shu::Translate(LightShaderData.Model, GlobalFragUniformData.LightPos);
-    LightShaderData.View = View;
-    LightShaderData.Projection = Projection;
-    memcpy(Context->FragUnlitBuffers[ImageIndex].pMapped, &LightShaderData, sizeof(light_shader_data));
+    GlobalLightShaderData.Model = GlobalMat4Identity;
+    Shu::Scale(GlobalLightShaderData.Model, Shu::Vec3f(0.25f));
+    Shu::Translate(GlobalLightShaderData.Model, GlobalFragUniformData.LightPos);
+    GlobalLightShaderData.View = View;
+    GlobalLightShaderData.Projection = Projection;
+    memcpy(Context->FragUnlitBuffers[ImageIndex].pMapped, &GlobalLightShaderData, sizeof(light_shader_data));
 
     // Light Position is set directly in ImGui
     GlobalFragUniformData.LightColor = GlobalRenderState.LightData->Color;
@@ -558,6 +572,38 @@ GetMousePosDelta(f32 CurrentMouseDeltaX, f32 CurrentMouseDeltaY, f32 *outMouseDe
     *outMouseDeltaY = CurrentMouseDeltaY - GlobalLastFrameMousePos.y;
     GlobalLastFrameMousePos.x = CurrentMouseDeltaX;
     GlobalLastFrameMousePos.y = CurrentMouseDeltaY;
+}
+
+
+void
+RenderCubes(VkCommandBuffer CmdBuffer)
+{
+    static f32 LocalStaticAngle = 0.0f;
+    LocalStaticAngle += GlobalDeltaTime;
+
+    if(LocalStaticAngle >= 360.0f)
+    {
+        LocalStaticAngle = 360.0f;
+    }
+
+    for(u32 Index = 0;
+        Index < ARRAY_SIZE(CubePositions);
+        ++Index)
+    {
+        Shu::mat4f Model = GlobalMat4Identity;
+        Shu::Scale(Model, Shu::Vec3f(0.5f, 0.5f, 0.5f));
+
+        f32 LocalAngle = LocalStaticAngle*(Index + 1)*0.05f;
+        Shu::RotateGimbalLock(Model, Shu::Vec3f(0.5f*(Index + 1), 0.3f*(Index + 1), 1.0f*(Index + 1)),
+                              LocalAngle*AngleSpeed);
+
+        Shu::Translate(Model, CubePositions[Index]);
+        GlobalPushConstBlock.Model = Model;
+
+        vkCmdPushConstants(CmdBuffer, Context->GraphicsPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+                           sizeof(push_const_block), &GlobalPushConstBlock);
+        vkCmdDrawIndexed(CmdBuffer, ARRAY_SIZE(CubeIndices), 1, 0, 0, 1);
+    }
 }
 
 void
@@ -679,7 +725,7 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         vkCmdBindVertexBuffers(DrawCmdBuffer, 0, 1, &Context->VertexBuffer.Handle, offsets);
         vkCmdBindIndexBuffer(DrawCmdBuffer, Context->IndexBuffer.Handle, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(CubeIndices), 1, 0, 0, 1);
+        RenderCubes(DrawCmdBuffer);
 
 #if CREATE_WIREFRAME_PIPELINE
         if(GlobalRenderState.WireframeMode)

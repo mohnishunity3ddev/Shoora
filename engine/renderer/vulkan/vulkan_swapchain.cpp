@@ -477,7 +477,7 @@ WindowResized(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapc
     vkDestroySwapchainKHR(RenderDevice->LogicalDevice, OldSwapchain, 0);
 
     LogOutput(LogType_Warn, "Destroyed Old Swapchain!\n");
-    
+
     GetSwapchainImageHandles(RenderDevice, Swapchain);
     CreateSwapchainImageViews(RenderDevice, Swapchain);
     ASSERT(RenderPass != VK_NULL_HANDLE);
@@ -628,9 +628,22 @@ SetImageSamplerLayoutBindings(VkDescriptorSetLayoutBinding *pSamplerBindings, u3
 }
 
 void
+CreatePushConstantBlock(shoora_vulkan_graphics_pipeline *Pipeline, VkShaderStageFlags ShaderStage, u64 Size, u64 Offset)
+{
+    VkPushConstantRange PushConstant = {};
+    PushConstant.stageFlags = ShaderStage;
+    PushConstant.offset = Offset;
+    PushConstant.size = Size;
+
+    Pipeline->PushConstant.Ranges[0] = PushConstant;
+    ++Pipeline->PushConstant.Count;
+}
+
+void
 CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
                                 size_t VertUniformBufferSize, size_t FragUniformBufferSize,
                                 const char **ppImageFilenames, u32 ImageFilenameCount,
+                                VkPushConstantRange *PushConstants, u32 PushConstantCount,
                                 VkPipelineLayout *pPipelineLayout)
 {
     VkDescriptorPoolSize Sizes[3];
@@ -674,7 +687,7 @@ CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulka
         ++Index)
     {
         CreatePlaceholderTextureSampler(RenderDevice, &Swapchain->FragImageSamplers[Index],
-                                    DefaultTexType::TexType_WHITE);
+                                        DefaultTexType::TexType_WHITE);
     }
 
 #if 0
@@ -722,7 +735,9 @@ CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulka
 
     VkDescriptorSetLayout SetLayouts[3] = {Swapchain->UniformSetLayout, Swapchain->FragSamplersSetLayout,
                                            Swapchain->FragUniformsSetLayout};
-    CreatePipelineLayout(RenderDevice, ARRAY_SIZE(SetLayouts), SetLayouts, 0, nullptr, pPipelineLayout);
+
+    CreatePipelineLayout(RenderDevice, ARRAY_SIZE(SetLayouts), SetLayouts, PushConstantCount, PushConstants,
+                         pPipelineLayout);
 }
 
 void

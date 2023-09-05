@@ -9,10 +9,14 @@ layout(location = 5) in vec3 InBiTangent;
 
 layout(set = 0, binding = 0) uniform UniformBuffer
 {
-	layout(row_major) mat4 Model;
 	layout(row_major) mat4 View;
 	layout(row_major) mat4 Projection;
 } ubo;
+
+layout(push_constant) uniform PushConsts
+{
+	layout(row_major) mat4 Model;
+} pushConsts;
 
 layout(location = 0) out VS_OUT
 {
@@ -27,10 +31,10 @@ void main()
 	VSOut.Color = InColor;
 	VSOut.UV = InUV;
 
-	mat4 ModelView = ubo.Model*ubo.View;
+	mat4 ModelView = pushConsts.Model*ubo.View;
 
-	vec3 TangentWS = normalize(vec3(vec4(InTangent, 0.)*ubo.Model));
-	vec3 NormalWS = normalize(vec3(vec4(InNormal, 0.)*ubo.Model));
+	vec3 TangentWS = normalize(vec3(vec4(InTangent, 0.)*pushConsts.Model));
+	vec3 NormalWS = normalize(vec3(vec4(InNormal, 0.)*pushConsts.Model));
 
 	TangentWS = normalize(TangentWS - dot(TangentWS, NormalWS)*NormalWS);
 
@@ -43,7 +47,7 @@ void main()
 	// NOTE: This was when we were not using the TBN Matrix to transform the normals.
 	// mat3 NormalMatrix = mat3(transpose(inverse(ubo.Model)));
 	// OutVertexNormalWS = InNormal*NormalMatrix;
-	VSOut.FragPosWS = vec3(vec4(InPos, 1.)*ubo.Model);
+	VSOut.FragPosWS = vec3(vec4(InPos, 1.)*pushConsts.Model);
 
 	vec4 Pos = vec4(InPos, 1.)*ModelView*ubo.Projection;
 	gl_Position = Pos;
