@@ -261,7 +261,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
     static bool show_app_fullscreen = false;
     static bool show_app_window_titles = false;
     static bool show_app_custom_rendering = false;
-    
+
     if (show_app_main_menu_bar)       ShowExampleAppMainMenuBar();
     if (show_app_documents)           ShowExampleAppDocuments(&show_app_documents);
     if (show_app_console)             ShowExampleAppConsole(&show_app_console);
@@ -392,7 +392,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
 
     ImGui::Text("dear imgui says hello! (%s) (%d)", IMGUI_VERSION, IMGUI_VERSION_NUM);
     ImGui::Spacing();
-
+    
     IMGUI_DEMO_MARKER("Help");
     if (ImGui::CollapsingHeader("Help"))
     {

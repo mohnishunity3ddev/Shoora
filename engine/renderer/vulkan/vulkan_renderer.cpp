@@ -179,12 +179,14 @@ Shu::vec3f CubePositions[] = {Shu::Vec3f( 0.0f,  0.0f,  0.0f),    Shu::Vec3f( 2.
 // NOTE: ALso make the same changes to the lighting shader.
 // TODO)): Automate this so that changing this automatically makes changes to the shader using shader variation.
 #define MATERIAL_VIEWER 0
+
 struct vert_uniform_data
 {
     // Shu::mat4f Model;
     Shu::mat4f View;
     Shu::mat4f Projection;
 };
+
 struct spotlight_data
 {
     b32 IsOn;
@@ -196,17 +198,18 @@ struct spotlight_data
     float InnerCutoffAngles = 12.5f;
     float OuterCutoffAngles = 15.5f;
     float Intensity = 5.0f;
-
 };
+
 struct point_light_data
 {
     SHU_ALIGN_16 Shu::vec3f Pos = Shu::Vec3f(3, 0, 0);
     SHU_ALIGN_16 Shu::vec3f Color = Shu::Vec3f(1, 1, 0);
     float Intensity = 5.0f;
 };
+
 struct lighting_shader_uniform_data
 {
-    point_light_data PointLightData;
+    point_light_data PointLightData[4];
     spotlight_data SpotlightData;
 
     SHU_ALIGN_16 Shu::vec3f CamPos = Shu::Vec3f(0, 0, -10);
@@ -216,31 +219,35 @@ struct lighting_shader_uniform_data
     shoora_material Material;
 #endif
 };
+
 struct push_const_block
 {
     Shu::mat4f Model;
 };
-struct light_shader_data
+
+struct light_shader_vert_data
 {
-    // Vertex Uniform Buffer
-    Shu::mat4f Model;
     Shu::mat4f View;
     Shu::mat4f Projection;
 
-    // Fragment Uniform Buffer
-    SHU_ALIGN_16 Shu::vec3f Color = Shu::vec3f{1, 1, 1};
+    // Fragment Shader
 };
-static light_shader_data GlobalLightShaderData = {};
+
+struct light_shader_push_constant_data
+{
+    Shu::mat4f Model;
+    Shu::vec3f Color = {1, 1, 1};
+};
+
 struct shoora_render_state
 {
-    light_shader_data *LightData = &GlobalLightShaderData;
-
     b8 WireframeMode = false;
     f32 WireLineWidth = 10.0f;
     // Shu::vec3f ClearColor = Shu::vec3f{0.043f, 0.259f, 0.259f};
     Shu::vec3f ClearColor = Shu::Vec3f(0.0f);
     Shu::vec3f MeshColorUniform = Shu::vec3f{1.0f, 1.0f, 1.0f};
 };
+
 struct shoora_debug_overlay
 {
     f32 MsPerFrame = 0.0f;
@@ -257,6 +264,8 @@ static b32 GlobalSetFPSCap = true;
 static i32 GlobalSelectedFPSOption = 2;
 static vert_uniform_data GlobalVertUniformData = {};
 static lighting_shader_uniform_data GlobalFragUniformData = {};
+static light_shader_vert_data GlobalLightShaderData;
+static light_shader_push_constant_data GlobalLightPushConstantData[4];
 static push_const_block GlobalPushConstBlock = {};
 static f32 GlobalImGuiDragFloatStep = 0.005f;
 static Shu::vec2u GlobalWindowSize = {};
@@ -358,16 +367,46 @@ ImGuiNewFrame()
     ImGui::SetNextWindowPos(SecondWindowPos, ImGuiCond_Always);
     ImGui::SetNextWindowSize(SecondWindowSize, ImGuiCond_Always);
     ImGui::Begin("Light Data", nullptr, WindowFlags);
-    ImGui::Text("Pnt-Light");
-    ImGui::DragFloat3("Pnt-light Position", GlobalFragUniformData.PointLightData.Pos.E, GlobalImGuiDragFloatStep);
-    ImGui::ColorEdit3("Pnt-light Color", GlobalRenderState.LightData->Color.E);
-    ImGui::SliderFloat("Pnt-light Intensity", &GlobalFragUniformData.PointLightData.Intensity, 0.3f, 10.0f);
-    ImGui::Text("Spot-Light");
-    ImGui::SliderFloat("Spot-light Inner Cutoff", &GlobalFragUniformData.SpotlightData.InnerCutoffAngles, 10.0f, 45.0f);
-    ImGui::SliderFloat("Spot-light Outer Cutoff", &GlobalFragUniformData.SpotlightData.OuterCutoffAngles,
-                       GlobalFragUniformData.SpotlightData.InnerCutoffAngles, 45.0f);
-    ImGui::ColorEdit3("Spot-light Color", GlobalFragUniformData.SpotlightData.Color.E);
-    ImGui::SliderFloat("Spot-light Intensity", &GlobalFragUniformData.SpotlightData.Intensity, 0.3f, 10.0f);
+
+    if(ImGui::CollapsingHeader("Point Light Data"))
+    {
+        if(ImGui::CollapsingHeader("Point Light 01"))
+        {
+            ImGui::DragFloat3("Position 01", GlobalFragUniformData.PointLightData[0].Pos.E, GlobalImGuiDragFloatStep);
+            ImGui::ColorEdit3("Color 01", GlobalFragUniformData.PointLightData[0].Color.E);
+            ImGui::SliderFloat("Intensity 01", &GlobalFragUniformData.PointLightData[0].Intensity, 0.3f, 10.0f);
+        }
+
+        if(ImGui::CollapsingHeader("Point Light 02"))
+        {
+            ImGui::DragFloat3("Position 02", GlobalFragUniformData.PointLightData[1].Pos.E, GlobalImGuiDragFloatStep);
+            ImGui::ColorEdit3("Color 02", GlobalFragUniformData.PointLightData[1].Color.E);
+            ImGui::SliderFloat("Intensity 02", &GlobalFragUniformData.PointLightData[1].Intensity, 0.3f, 10.0f);
+        }
+
+        if(ImGui::CollapsingHeader("Point Light 03"))
+        {
+            ImGui::DragFloat3("Position 03", GlobalFragUniformData.PointLightData[2].Pos.E, GlobalImGuiDragFloatStep);
+            ImGui::ColorEdit3("Color 03", GlobalFragUniformData.PointLightData[2].Color.E);
+            ImGui::SliderFloat("Intensity 03", &GlobalFragUniformData.PointLightData[2].Intensity, 0.3f, 10.0f);
+        }
+
+        if(ImGui::CollapsingHeader("Point Light 04"))
+        {
+            ImGui::DragFloat3("Position 04", GlobalFragUniformData.PointLightData[3].Pos.E, GlobalImGuiDragFloatStep);
+            ImGui::ColorEdit3("Color 04", GlobalFragUniformData.PointLightData[3].Color.E);
+            ImGui::SliderFloat("Intensity 04", &GlobalFragUniformData.PointLightData[3].Intensity, 0.3f, 10.0f);
+        }
+    }
+
+    if(ImGui::CollapsingHeader("Spot Light"))
+    {
+        ImGui::SliderFloat("Inner Cutoff", &GlobalFragUniformData.SpotlightData.InnerCutoffAngles, 10.0f, 45.0f);
+        ImGui::SliderFloat("Outer Cutoff", &GlobalFragUniformData.SpotlightData.OuterCutoffAngles,
+                           GlobalFragUniformData.SpotlightData.InnerCutoffAngles, 45.0f);
+        ImGui::ColorEdit3("Color", GlobalFragUniformData.SpotlightData.Color.E);
+        ImGui::SliderFloat("Intensity", &GlobalFragUniformData.SpotlightData.Intensity, 0.3f, 10.0f);
+    }
     ImGui::End();
 
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
@@ -395,15 +434,13 @@ CreateUnlitPipeline(shoora_vulkan_context *Context)
     shoora_vulkan_swapchain *Swapchain = &Context->Swapchain;
 
     CreateUniformBuffers(RenderDevice, Context->FragUnlitBuffers, ARRAY_SIZE(Context->FragUnlitBuffers),
-                         sizeof(light_shader_data));
+                         sizeof(light_shader_vert_data));
 
-    VkDescriptorSetLayoutBinding Bindings[2];
+    VkDescriptorSetLayoutBinding Bindings[1];
     // NOTE: So, This descriptor's data has already been computed and is being used in other pipelines
     // This is the one which contains Model, View, Projection Matrices data.
     Bindings[0] = GetDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
                                                 VK_SHADER_STAGE_VERTEX_BIT);
-    Bindings[1] = GetDescriptorSetLayoutBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-                                                VK_SHADER_STAGE_FRAGMENT_BIT);
     CreateDescriptorSetLayout(RenderDevice, Bindings, ARRAY_SIZE(Bindings), &Context->UnlitSetLayout);
 
     for(u32 Index = 0;
@@ -415,14 +452,20 @@ CreateUnlitPipeline(shoora_vulkan_context *Context)
         // NOTE: MVP Matrices Data - three 4x4 Matrices
         UpdateBufferDescriptorSet(RenderDevice, Context->UnlitSets[Index], 0,
                                   VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Context->FragUnlitBuffers[Index].Handle,
-                                  3*sizeof(Shu::mat4f), 0);
+                                  2*sizeof(Shu::mat4f), 0);
         // NOTE: Light Fragment Data - one vec3 - Color
-        UpdateBufferDescriptorSet(RenderDevice, Context->UnlitSets[Index], 1,
-                                  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Context->FragUnlitBuffers[Index].Handle,
-                                  sizeof(Shu::vec3f), OFFSET_OF(light_shader_data, Color));
+        // UpdateBufferDescriptorSet(RenderDevice, Context->UnlitSets[Index], 1,
+        //                           VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Context->FragUnlitBuffers[Index].Handle,
+        //                           sizeof(Shu::vec3f), OFFSET_OF(light_shader_vert_data, Color));
     }
 
-    CreatePipelineLayout(RenderDevice, 1, &Context->UnlitSetLayout, 0, nullptr, &Context->UnlitPipeline.Layout);
+    VkPushConstantRange PushConstants[1];
+    PushConstants[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    PushConstants[0].offset = 0;
+    PushConstants[0].size = sizeof(light_shader_push_constant_data);
+
+    CreatePipelineLayout(RenderDevice, 1, &Context->UnlitSetLayout, ARRAY_SIZE(PushConstants), PushConstants,
+                         &Context->UnlitPipeline.Layout);
     CreateGraphicsPipeline(Context, "shaders/spirv/unlit.vert.spv", "shaders/spirv/unlit.frag.spv",
                            &Context->UnlitPipeline);
 }
@@ -430,7 +473,6 @@ CreateUnlitPipeline(shoora_vulkan_context *Context)
 void
 DestroyUnlitPipelineResources()
 {
-
     for(u32 Index = 0;
         Index < ARRAY_SIZE(Context->FragUnlitBuffers);
         ++Index)
@@ -442,9 +484,35 @@ DestroyUnlitPipelineResources()
 }
 
 void
+InitializeLightData()
+{
+    GlobalFragUniformData.PointLightData[0].Pos = Shu::Vec3f(1.62f, 3.2f, -1.65f);
+    GlobalFragUniformData.PointLightData[0].Color = Shu::Vec3f(1.0f, 0.0f, 0.0f);
+    GlobalFragUniformData.PointLightData[0].Intensity = 2.575f;
+
+    GlobalFragUniformData.PointLightData[1].Pos = Shu::Vec3f(1.615f, 0.0f, -5.105f);
+    GlobalFragUniformData.PointLightData[1].Color = Shu::Vec3f(0.0f, 1.0f, 0.0f);
+    GlobalFragUniformData.PointLightData[1].Intensity = 3.535f;
+
+    GlobalFragUniformData.PointLightData[2].Pos = Shu::Vec3f(2.47f, 3.27f, -13.645f);
+    GlobalFragUniformData.PointLightData[2].Color = Shu::Vec3f(0.0f, 0.0f, 1.0f);
+    GlobalFragUniformData.PointLightData[2].Intensity = 2.575f;
+
+    GlobalFragUniformData.PointLightData[3].Pos = Shu::Vec3f(-2.575f, 0.785f, -11.24f);
+    GlobalFragUniformData.PointLightData[3].Color = Shu::Vec3f(1.0f, 0.0f, 1.0f);
+    GlobalFragUniformData.PointLightData[3].Intensity = 2.575f;
+
+    GlobalFragUniformData.SpotlightData.InnerCutoffAngles = 10.0f;
+    GlobalFragUniformData.SpotlightData.OuterCutoffAngles = 14.367f;
+    GlobalFragUniformData.SpotlightData.Color = Shu::Vec3f(30.0f / 255.0f, 194.0 / 255.0f, 165.0 / 255.0f);
+    GlobalFragUniformData.SpotlightData.Intensity = 5.0f;
+}
+
+void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
 {
     GlobalWindowSize = {AppInfo->WindowWidth, AppInfo->WindowHeight};
+    InitializeLightData();
 
     VK_CHECK(volkInitialize());
 
@@ -578,24 +646,23 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
     Shu::mat4f Projection = Shu::Perspective(45.0f, ((f32)GlobalWindowSize.x / (f32)GlobalWindowSize.y), 0.1f, 100.0f);
     GlobalVertUniformData.Projection = Projection;
 #endif
-    memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &GlobalVertUniformData, sizeof(vert_uniform_data));
+    memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &GlobalVertUniformData,
+           sizeof(vert_uniform_data));
 
-    GlobalLightShaderData.Model = GlobalMat4Identity;
-    Shu::Scale(GlobalLightShaderData.Model, Shu::Vec3f(0.05f));
-    Shu::Translate(GlobalLightShaderData.Model, GlobalFragUniformData.PointLightData.Pos);
     GlobalLightShaderData.View = View;
     GlobalLightShaderData.Projection = Projection;
-    memcpy(Context->FragUnlitBuffers[ImageIndex].pMapped, &GlobalLightShaderData, sizeof(light_shader_data));
+    memcpy(Context->FragUnlitBuffers[ImageIndex].pMapped, &GlobalLightShaderData, sizeof(light_shader_vert_data));
 
     // Light Position is set directly in ImGui
-    GlobalFragUniformData.PointLightData.Color = GlobalRenderState.LightData->Color;
+    // GlobalFragUniformData.PointLightData.Color = ;
     GlobalFragUniformData.ObjectColor = GlobalRenderState.MeshColorUniform;
     GlobalFragUniformData.CamPos = Context->Camera.Pos;
 
     GlobalFragUniformData.SpotlightData.Direction = Shu::Normalize(Context->Camera.Front);
     GlobalFragUniformData.SpotlightData.Pos = Context->Camera.Pos;
 
-    memcpy(Context->Swapchain.FragUniformBuffers[ImageIndex].pMapped, &GlobalFragUniformData, sizeof(lighting_shader_uniform_data));
+    memcpy(Context->Swapchain.FragUniformBuffers[ImageIndex].pMapped, &GlobalFragUniformData,
+           sizeof(lighting_shader_uniform_data));
 }
 
 void
@@ -635,6 +702,27 @@ RenderCubes(VkCommandBuffer CmdBuffer)
 
         vkCmdPushConstants(CmdBuffer, Context->GraphicsPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                            sizeof(push_const_block), &GlobalPushConstBlock);
+        vkCmdDrawIndexed(CmdBuffer, ARRAY_SIZE(CubeIndices), 1, 0, 0, 1);
+    }
+}
+
+void
+RenderLightCubes(VkCommandBuffer CmdBuffer)
+{
+    for(u32 Index = 0;
+        Index < ARRAY_SIZE(GlobalLightPushConstantData);
+        ++Index)
+    {
+        Shu::mat4f *pModel = &GlobalLightPushConstantData[Index].Model;
+        *pModel = GlobalMat4Identity;
+        Shu::Scale(*pModel, Shu::Vec3f(0.05f));
+        Shu::Translate(*pModel, GlobalFragUniformData.PointLightData[Index].Pos);
+
+        GlobalLightPushConstantData[Index].Color = GlobalFragUniformData.PointLightData[Index].Color;
+
+        vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+                           sizeof(light_shader_push_constant_data), &GlobalLightPushConstantData[Index]);
+
         vkCmdDrawIndexed(CmdBuffer, ARRAY_SIZE(CubeIndices), 1, 0, 0, 1);
     }
 }
@@ -770,7 +858,8 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         vkCmdBindDescriptorSets(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Layout, 0,
                                 1, &Context->UnlitSets[ImageIndex], 0, nullptr);
         vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Handle);
-        vkCmdDrawIndexed(DrawCmdBuffer, ARRAY_SIZE(CubeIndices), 1, 0, 0, 1);
+
+        RenderLightCubes(DrawCmdBuffer);
 
         ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
 

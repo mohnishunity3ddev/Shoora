@@ -124,7 +124,7 @@ struct SpotLight
 
 layout(set = 2, binding = 0) uniform FragUniform
 {
-    PointLight PointLight;
+    PointLight PointLights[4];
     SpotLight SpotLight;
 
     vec3 CamPosWS;
@@ -208,9 +208,16 @@ main()
     vec4 NormalTex = texture(NORMAL_TEX(Textures), FSIn.UV);
     vec3 NormalWS = normalize((2.*NormalTex.rgb - 1.) * FSIn.TBN);
 
-    PointLight Point = FragUBO.PointLight;
-    float PointDist = distance(Point.Pos, FSIn.FragPosWS);
-    float PointAttenuation = Point.Intensity*GetAttenuation(PointDist);
+    vec3 Result = vec3(0.);
+
+    for(int i = 0; i < 4; ++i)
+    {
+        PointLight PtLight = FragUBO.PointLights[i];
+        float PointDist = distance(PtLight.Pos, FSIn.FragPosWS);
+        float PointAttenuation = PtLight.Intensity*GetAttenuation(PointDist);
+
+        Result += CalculatePointLight(PtLight, PointAttenuation, NormalWS, DiffuseTex.rgb, SpecularTex.rgb);
+    }
 
     SpotLight Spot = FragUBO.SpotLight;
     float SpotLightInnerCutoff = cos(DEG_TO_RAD(Spot.InnerCutoffAngles));
@@ -218,7 +225,6 @@ main()
     float SpotDist = distance(Spot.Pos, FSIn.FragPosWS);
     float SpotAttenuation = Spot.Intensity*GetAttenuation(SpotDist);
 
-    vec3 Result = CalculatePointLight(Point, PointAttenuation, NormalWS, DiffuseTex.rgb, SpecularTex.rgb);
     Result += CalculateSpotLight(Spot, SpotLightInnerCutoff, SpotLightOuterCutoff, SpotAttenuation, NormalWS,
                                  DiffuseTex.rgb, SpecularTex.rgb);
 
