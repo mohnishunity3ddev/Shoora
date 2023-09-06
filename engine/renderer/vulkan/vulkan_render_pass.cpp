@@ -5,22 +5,28 @@
 void
 CreateRenderPass(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, VkRenderPass *RenderPass)
 {
+    b32 MSAA = RenderDevice->MsaaSamples > VK_SAMPLE_COUNT_1_BIT;
+
     VkAttachmentDescription ColorAttachment;
     ColorAttachment.flags = 0;
     ColorAttachment.format = Swapchain->SurfaceFormat.format;
-    ColorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    ColorAttachment.samples = RenderDevice->MsaaSamples;
     ColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     ColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     ColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     ColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     ColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    ColorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    //? NOTE: Multisampled images cannot be presented to the presentation engine directly.
+    //? We need to resolve them to a regular image.
+    //? We do not need to do this for the depth attachment, since it is never presented to the queue.
+    ColorAttachment.finalLayout = MSAA ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+                                       : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     VkAttachmentDescription DepthAttachment;
     DepthAttachment.flags = 0;
     // TODO)): Get this Depth Format!
     DepthAttachment.format = Swapchain->DepthFormat;
-    DepthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    DepthAttachment.samples = RenderDevice->MsaaSamples;
     DepthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     DepthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     DepthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -28,6 +34,26 @@ CreateRenderPass(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Sw
     DepthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     DepthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+
+    //? Resolve multisampled image into a regular image.
+    VkAttachmentDescription ColorResolveAttachment = {};
+    VkAttachmentReference ColorResolveRef = {};
+    if(MSAA)
+    {
+        ColorResolveAttachment.flags = 0;
+        ColorResolveAttachment.format = Swapchain->SurfaceFormat.format;
+        ColorResolveAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+        ColorResolveAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        ColorResolveAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        ColorResolveAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        ColorResolveAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        ColorResolveAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        ColorResolveAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+        ColorResolveRef.attachment = 2;
+        ColorResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    }
+    
     VkAttachmentReference ColorAttachmentRef;
     ColorAttachmentRef.attachment = 0;
     ColorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -42,8 +68,15 @@ CreateRenderPass(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Sw
     // Subpass.pDepthStencilAttachment = ;
     Subpass.pColorAttachments = &ColorAttachmentRef;
     Subpass.pDepthStencilAttachment = &DepthAttachmentRef;
+    Subpass.pResolveAttachments = MSAA ? &ColorResolveRef : nullptr;
 
-    VkAttachmentDescription Attachments[] = {ColorAttachment, DepthAttachment};
+    VkAttachmentDescription Attachments[4] = {ColorAttachment, DepthAttachment};
+    u32 AttachmentCount = 2;
+
+    if(MSAA)
+    {
+        Attachments[AttachmentCount++] = ColorResolveAttachment;
+    }
 
     VkSubpassDependency Dependency = {};
     Dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -59,7 +92,7 @@ CreateRenderPass(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Sw
     RenderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     RenderPassCreateInfo.pNext = nullptr;
     RenderPassCreateInfo.flags = 0;
-    RenderPassCreateInfo.attachmentCount = ARRAY_SIZE(Attachments);
+    RenderPassCreateInfo.attachmentCount = AttachmentCount;
     RenderPassCreateInfo.pAttachments = Attachments;
     RenderPassCreateInfo.subpassCount = 1;
     RenderPassCreateInfo.pSubpasses = &Subpass;

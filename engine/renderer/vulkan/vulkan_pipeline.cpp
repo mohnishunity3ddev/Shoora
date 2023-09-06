@@ -201,12 +201,17 @@ PushConstantInitialize(VkShaderStageFlags ShaderStage, u64 Size, u64 Offset)
 
 void
 CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderFile,
-                       const char *FragmentShaderFile, shoora_vulkan_graphics_pipeline *pPipeline, VkRenderPass RenderPass)
+                       const char *FragmentShaderFile, shoora_vulkan_graphics_pipeline *pPipeline,
+                       VkRenderPass RenderPass, b32 EnableMultisampling)
 {
     ASSERT(pPipeline != nullptr);
     ASSERT((pPipeline->Layout != VK_NULL_HANDLE));
 
     shoora_vulkan_device *RenderDevice = &Context->Device;
+    if(EnableMultisampling)
+    {
+        ASSERT(RenderDevice->MsaaSamples > VK_SAMPLE_COUNT_1_BIT);
+    }
 
     //? Shader Stages
     auto VertexShader = CreateShaderModule(RenderDevice, VertexShaderFile);
@@ -280,7 +285,7 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
     MultisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     MultisampleInfo.pNext = nullptr;
     MultisampleInfo.flags = 0;
-    MultisampleInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    MultisampleInfo.rasterizationSamples = RenderDevice->MsaaSamples;
     MultisampleInfo.sampleShadingEnable = VK_FALSE;
     MultisampleInfo.minSampleShading = 1.0f;
     MultisampleInfo.pSampleMask = nullptr;
@@ -295,7 +300,6 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
     DepthStencilInfo.depthTestEnable = VK_TRUE;
     DepthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS;
     DepthStencilInfo.depthWriteEnable = VK_TRUE;
-
     DepthStencilInfo.depthBoundsTestEnable = VK_FALSE;
     DepthStencilInfo.stencilTestEnable = VK_FALSE;
     DepthStencilInfo.front = {};

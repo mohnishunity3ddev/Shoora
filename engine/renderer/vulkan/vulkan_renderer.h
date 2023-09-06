@@ -50,6 +50,7 @@ struct shoora_vulkan_device
     VkPhysicalDeviceProperties DeviceProperties;
     VkPhysicalDeviceFeatures Features;
     VkPhysicalDeviceMemoryProperties MemoryProperties;
+    VkSampleCountFlagBits MsaaSamples;
 
     VkDevice LogicalDevice;
 
@@ -115,6 +116,9 @@ struct shoora_vulkan_swapchain
     u32 ImageCount;
     VkImage Images[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
     VkImageView ImageViews[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
+
+    shoora_vulkan_image MultiSampledColorImage;
+
     shoora_vulkan_image DepthStencilImage;
     VkFramebuffer ImageFramebuffers[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
 

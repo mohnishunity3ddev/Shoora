@@ -38,7 +38,7 @@ VkGraphicsPipelineCreateInfo GetGraphicsPipelineInfo(VkPipelineLayout Layout, Vk
 
 void CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderFile,
                             const char *FragmentShaderFile, shoora_vulkan_graphics_pipeline *pPipeline,
-                            VkRenderPass RenderPass = VK_NULL_HANDLE);
+                            VkRenderPass RenderPass = VK_NULL_HANDLE, b32 EnableMultisampling = false);
 
 void CreateWireframePipeline(shoora_vulkan_context *Context, const char *VertexShaderFile,
                              const char *FragmentShaderFile);

@@ -668,6 +668,41 @@ ResetAllCommandPools(shoora_vulkan_device *RenderDevice, b32 ReleaseResources)
     LogOutput(LogType_Info, "All Command Pools are Reset!\n");
 }
 
+VkSampleCountFlagBits
+GetMaxUsableSampleCount(const VkPhysicalDeviceProperties *GPUProperties)
+{
+    VkSampleCountFlagBits Result = {};
+    VkSampleCountFlags SampleCountLimit = GPUProperties->limits.framebufferColorSampleCounts &
+                                          GPUProperties->limits.framebufferDepthSampleCounts;
+
+    if(SampleCountLimit & VK_SAMPLE_COUNT_64_BIT)
+    {
+        Result = VK_SAMPLE_COUNT_64_BIT;
+    }
+    else if(SampleCountLimit & VK_SAMPLE_COUNT_32_BIT)
+    {
+        Result = VK_SAMPLE_COUNT_32_BIT;
+    }
+    else if(SampleCountLimit & VK_SAMPLE_COUNT_16_BIT)
+    {
+        Result = VK_SAMPLE_COUNT_16_BIT;
+    }
+    else if(SampleCountLimit & VK_SAMPLE_COUNT_8_BIT)
+    {
+        Result = VK_SAMPLE_COUNT_8_BIT;
+    }
+    else if(SampleCountLimit & VK_SAMPLE_COUNT_4_BIT)
+    {
+        Result = VK_SAMPLE_COUNT_4_BIT;
+    }
+    else if(SampleCountLimit & VK_SAMPLE_COUNT_2_BIT)
+    {
+        Result = VK_SAMPLE_COUNT_2_BIT;
+    }
+
+    return Result;
+}
+
 void
 CreateDeviceAndQueues(shoora_vulkan_context *Context, shoora_device_create_info *ShuraDeviceCreateInfo)
 {
@@ -681,6 +716,12 @@ CreateDeviceAndQueues(shoora_vulkan_context *Context, shoora_device_create_info 
     vkGetPhysicalDeviceProperties(PhysicalDevice, &Context->Device.DeviceProperties);
     vkGetPhysicalDeviceFeatures(PhysicalDevice, &Context->Device.Features);
     vkGetPhysicalDeviceMemoryProperties(PhysicalDevice, &Context->Device.MemoryProperties);
+
+#if SHU_VK_ENABLE_MSAA
+    Context->Device.MsaaSamples = GetMaxUsableSampleCount(&Context->Device.DeviceProperties);
+#else
+    Context->Device.MsaaSamples = VK_SAMPLE_COUNT_1_BIT;
+#endif
 
     VkDeviceQueueCreateInfo QueueCreateInfos[32] = {};
     FillRequiredDeviceQueueInfos(&Context->Device, &QueueCreateInfos[0]);

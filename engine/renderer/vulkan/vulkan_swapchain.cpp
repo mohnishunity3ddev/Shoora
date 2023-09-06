@@ -287,6 +287,18 @@ CreateSwapchainImageViews(shoora_vulkan_device *RenderDevice, shoora_vulkan_swap
 }
 
 void
+SetupMultisampledColorResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain)
+{
+    Shu::vec2u ImageDim = Shu::Vec2u(Swapchain->ImageDimensions.width, Swapchain->ImageDimensions.height);
+    VkImageUsageFlags Usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                              VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    VkFormat Format = Swapchain->SurfaceFormat.format;
+
+    CreateSimpleImage2D(RenderDevice, ImageDim, RenderDevice->MsaaSamples, Format, Usage,
+                        VK_IMAGE_ASPECT_COLOR_BIT, &Swapchain->MultiSampledColorImage);
+}
+
+void
 SetupDepthStencil(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain)
 {
     shoora_vulkan_image *pImage = &Swapchain->DepthStencilImage;
@@ -299,30 +311,41 @@ SetupDepthStencil(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *S
         Aspect |= VK_IMAGE_ASPECT_STENCIL_BIT;
     }
 
-    CreateSimpleImage2D(RenderDevice, Dim, Swapchain->DepthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                        Aspect, &pImage->Handle, &pImage->ImageMemory, &pImage->ImageView);
+    CreateSimpleImage2D(RenderDevice, Dim, RenderDevice->MsaaSamples, Swapchain->DepthFormat,
+                        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, Aspect, &Swapchain->DepthStencilImage);
 }
 
 void
 CreateSwapchainFramebuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, VkRenderPass RenderPass)
 {
     ASSERT(Swapchain->ImageCount <= ARRAY_SIZE(Swapchain->ImageFramebuffers))
+    b32 MSAA = (RenderDevice->MsaaSamples > VK_SAMPLE_COUNT_1_BIT);
 
-    VkImageView Attachments[2];
+    VkImageView Attachments[4];
+    u32 AttachmentCount = 2;
+    u32 SwapchainAttachmentIndex = 0;
+
     Attachments[1] = Swapchain->DepthStencilImage.ImageView;
+
+    if(MSAA)
+    {
+        AttachmentCount++;
+        Attachments[0] = Swapchain->MultiSampledColorImage.ImageView;
+        SwapchainAttachmentIndex = 2;
+    }
 
     for(u32 Index = 0;
         Index < Swapchain->ImageCount;
         ++Index)
     {
-        Attachments[0] = Swapchain->ImageViews[Index];
+        Attachments[SwapchainAttachmentIndex] = Swapchain->ImageViews[Index];
 
         VkFramebufferCreateInfo CreateInfo;
         CreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         CreateInfo.pNext = nullptr;
         CreateInfo.flags = 0;
         CreateInfo.renderPass = RenderPass;
-        CreateInfo.attachmentCount = 2;
+        CreateInfo.attachmentCount = AttachmentCount;
         CreateInfo.pAttachments = Attachments;
         CreateInfo.width = Swapchain->ImageDimensions.width;
         CreateInfo.height = Swapchain->ImageDimensions.height;
@@ -470,6 +493,7 @@ WindowResized(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapc
     }
 
     // DestroySwapchainUniformResources(&Context->Device, &Context->Swapchain);
+    DestroyImage2D(RenderDevice, &Swapchain->MultiSampledColorImage);
     DestroyImage2D(RenderDevice, &Swapchain->DepthStencilImage);
     DestroySwapchainFramebuffers(RenderDevice, Swapchain);
     DestroySwapchainImageViews(RenderDevice, Swapchain);
@@ -481,10 +505,10 @@ WindowResized(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapc
     GetSwapchainImageHandles(RenderDevice, Swapchain);
     CreateSwapchainImageViews(RenderDevice, Swapchain);
     ASSERT(RenderPass != VK_NULL_HANDLE);
-    CreateSimpleImage2D(RenderDevice, ScreenDim, Swapchain->DepthFormat,
-                        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT,
-                        &Swapchain->DepthStencilImage.Handle, &Swapchain->DepthStencilImage.ImageMemory,
-                        &Swapchain->DepthStencilImage.ImageView);
+
+    SetupMultisampledColorResources(RenderDevice, Swapchain);
+    SetupDepthStencil(RenderDevice, Swapchain);
+
     CreateSwapchainFramebuffers(RenderDevice, Swapchain, RenderPass);
 
     AllocateDrawCommandBuffers(RenderDevice, Swapchain);
@@ -536,7 +560,10 @@ CreateSwapchain(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swa
 
     GetSwapchainImageHandles(RenderDevice, Swapchain);
     CreateSwapchainImageViews(RenderDevice, Swapchain);
+
+    SetupMultisampledColorResources(RenderDevice, Swapchain);
     SetupDepthStencil(RenderDevice, Swapchain);
+
     AllocateDrawCommandBuffers(RenderDevice, Swapchain);
 
     LogOutput(LogType_Info, "Swapchain Created!\n");
@@ -648,8 +675,7 @@ CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulka
 {
     VkDescriptorPoolSize Sizes[3];
     Sizes[0] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SHU_MAX_FRAMES_IN_FLIGHT);
-    Sizes[1] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                                     ARRAY_SIZE(Swapchain->FragImageSamplers));
+    Sizes[1] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, ARRAY_SIZE(Swapchain->FragImageSamplers));
     Sizes[2] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SHU_MAX_FRAMES_IN_FLIGHT);
     CreateDescriptorPool(RenderDevice, ARRAY_SIZE(Sizes), Sizes, 100, &Swapchain->UniformDescriptorPool);
 
@@ -678,7 +704,7 @@ CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulka
         Index < ImageFilenameCount;
         ++Index)
     {
-        CreateCombinedImageSampler(RenderDevice, ppImageFilenames[Index],
+        CreateCombinedImageSampler(RenderDevice, ppImageFilenames[Index], VK_SAMPLE_COUNT_1_BIT,
                                    &Swapchain->FragImageSamplers[Index]);
     }
 
@@ -778,6 +804,7 @@ DestroySwapchain(shoora_vulkan_context *Context)
     DestroySwapchainFramebuffers(&Context->Device, &Context->Swapchain);
     DestroySwapchainImageViews(&Context->Device, &Context->Swapchain);
     DestroyImage2D(&Context->Device, &Context->Swapchain.DepthStencilImage);
+    DestroyImage2D(&Context->Device, &Context->Swapchain.MultiSampledColorImage);
     vkDestroySwapchainKHR(Context->Device.LogicalDevice, Context->Swapchain.Handle, 0);
     LogOutput(LogType_Warn, "Destroyed Swapchain!\n");
 }

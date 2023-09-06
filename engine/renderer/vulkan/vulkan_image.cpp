@@ -62,7 +62,7 @@ CreateImageView2D(shoora_vulkan_device *RenderDevice, VkImage Image, VkFormat Fo
 }
 
 void
-CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, Shu::vec2u Dim, VkFormat Format, VkImageUsageFlags Usage,
+CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, Shu::vec2u Dim, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageUsageFlags Usage,
                     VkImageAspectFlags Aspect, VkImage *pImage, VkDeviceMemory *pMemory, VkImageView *pView)
 {
     VkImageCreateInfo ImageInfo = {};
@@ -70,7 +70,7 @@ CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, Shu::vec2u Dim, VkFormat
     ImageInfo.imageType = VK_IMAGE_TYPE_2D;
     ImageInfo.mipLevels = 1;
     ImageInfo.arrayLayers = 1;
-    ImageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    ImageInfo.samples = NumSamples;
     ImageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     ImageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     ImageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -97,11 +97,12 @@ CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, Shu::vec2u Dim, VkFormat
 }
 
 void
-CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, Shu::vec2u Dim, VkFormat Format, VkImageUsageFlags Usage,
-                    VkImageAspectFlags Aspect, shoora_vulkan_image *pImage)
+CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, Shu::vec2u Dim, VkSampleCountFlagBits NumSamples,
+                    VkFormat Format, VkImageUsageFlags Usage, VkImageAspectFlags Aspect,
+                    shoora_vulkan_image *pImage)
 {
-    CreateSimpleImage2D(RenderDevice, Dim, Format, Usage, Aspect, &pImage->Handle, &pImage->ImageMemory,
-                        &pImage->ImageView);
+    CreateSimpleImage2D(RenderDevice, Dim, NumSamples, Format, Usage, Aspect, &pImage->Handle,
+                        &pImage->ImageMemory, &pImage->ImageView);
 }
 
 
@@ -291,6 +292,7 @@ GetSuitableImageFormat(shoora_vulkan_device *RenderDevice, VkFormat *FormatCandi
 
 void
 CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, shoora_image_data ImageData,
+                           VkSampleCountFlagBits NumSamples,
                            shoora_vulkan_image_sampler *pImageSampler)
 {
     LogInfoUnformatted("Creating Image Sampler!\n");
@@ -318,9 +320,9 @@ CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, shoora_image_data
                                                   VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT,
                                                   DesiredImageFormat);
 
-    CreateSimpleImage2D(RenderDevice, Shu::vec2u{(u32)ImageData.Dim.w, (u32)ImageData.Dim.h}, ImageFormat,
-                        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
-                        &pImageSampler->Image);
+    CreateSimpleImage2D(RenderDevice, Shu::vec2u{(u32)ImageData.Dim.w, (u32)ImageData.Dim.h}, NumSamples,
+                        ImageFormat, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                        VK_IMAGE_ASPECT_COLOR_BIT, &pImageSampler->Image);
 
     // Create buffer to store store font data.
     shoora_vulkan_buffer StagingBuffer = CreateBuffer(RenderDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -365,6 +367,7 @@ CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, shoora_image_data
 
 void
 CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, const char *ImageFilename,
+                           VkSampleCountFlagBits NumSamples,
                            shoora_vulkan_image_sampler *pImageSampler)
 {
     LogInfoUnformatted("Creating Image Sampler!\n");
@@ -393,9 +396,9 @@ CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, const char *Image
                                                   VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT,
                                                   DesiredImageFormat);
 
-    CreateSimpleImage2D(RenderDevice, Shu::vec2u{(u32)ImageData.Dim.w, (u32)ImageData.Dim.h}, ImageFormat,
-                        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
-                        &pImageSampler->Image);
+    CreateSimpleImage2D(RenderDevice, Shu::vec2u{(u32)ImageData.Dim.w, (u32)ImageData.Dim.h}, NumSamples,
+                        ImageFormat, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                        VK_IMAGE_ASPECT_COLOR_BIT, &pImageSampler->Image);
 
     // Create buffer to store store font data.
     shoora_vulkan_buffer StagingBuffer = CreateBuffer(RenderDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -494,5 +497,5 @@ CreatePlaceholderTextureSampler(shoora_vulkan_device *RenderDevice, shoora_vulka
     ImageData.TotalSize = 4*sizeof(u8);
     ImageData.Data = (u8 *)&PixelColor;
 
-    CreateCombinedImageSampler(RenderDevice, ImageData, Sampler);
+    CreateCombinedImageSampler(RenderDevice, ImageData, VK_SAMPLE_COUNT_1_BIT, Sampler);
 }

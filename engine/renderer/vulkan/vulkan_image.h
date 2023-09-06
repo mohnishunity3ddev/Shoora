@@ -29,15 +29,19 @@ enum DefaultTexType
     TexType_MAX_COUNT
 };
 
-void CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, Shu::vec2u Dim, VkFormat Format,
-                         VkImageUsageFlags Usage, VkImageAspectFlags Aspect, VkImage *pImage,
+void CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, Shu::vec2u Dim, VkSampleCountFlagBits NumSamples,
+                         VkFormat Format, VkImageUsageFlags Usage, VkImageAspectFlags Aspect, VkImage *pImage,
                          VkDeviceMemory *pMemory, VkImageView *pView);
+
+void CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, Shu::vec2u Dim, VkSampleCountFlagBits NumSamples,
+                         VkFormat Format, VkImageUsageFlags Usage, VkImageAspectFlags Aspect,
+                         shoora_vulkan_image *pImage);
 
 void CreateImageView2D(shoora_vulkan_device *RenderDevice, VkImage Image, VkFormat Format,
                        VkImageAspectFlags Aspect, VkImageView *pImageView);
 
 void CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, const char *ImageFilename,
-                                shoora_vulkan_image_sampler *pImageSampler);
+                                VkSampleCountFlagBits NumSamples, shoora_vulkan_image_sampler *pImageSampler);
 
 void SetImageLayout(VkCommandBuffer CmdBuffer, VkImage Image, VkImageAspectFlags Aspect,
                     VkImageLayout OldImageLayout, VkImageLayout NewImageLayout, VkPipelineStageFlags SrcStage,

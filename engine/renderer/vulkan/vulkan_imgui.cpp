@@ -79,9 +79,10 @@ InitializeResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_imgui *ImG
     ASSERT(TexWidth > 0 && TexHeight > 0);
 
     // Create Image resources to hold font data which can be used in shaders in the future.
-    CreateSimpleImage2D(RenderDevice, Shu::vec2u{(u32)TexWidth, (u32)TexHeight}, VK_FORMAT_R8G8B8A8_UNORM,
-                        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
-                        &ImGUIContext->FontImage, &ImGUIContext->FontMemory, &ImGUIContext->FontImageView);
+    CreateSimpleImage2D(RenderDevice, Shu::vec2u{(u32)TexWidth, (u32)TexHeight}, VK_SAMPLE_COUNT_1_BIT,
+                        VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                        VK_IMAGE_ASPECT_COLOR_BIT, &ImGUIContext->FontImage, &ImGUIContext->FontMemory,
+                        &ImGUIContext->FontImageView);
 
     // Create buffer to store store font data.
     shoora_vulkan_buffer StagingBuffer = CreateBuffer(RenderDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -169,7 +170,7 @@ InitializeResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_imgui *ImG
 
     auto ViewPortInfo = GetPipelineViewportInfo(1, 1);
 
-    auto MultiSampleInfo = GetPipelineMultiSampleInfo(VK_SAMPLE_COUNT_1_BIT);
+    auto MultiSampleInfo = GetPipelineMultiSampleInfo(RenderDevice->MsaaSamples);
 
     auto DepthStencilInfo = GetPipelineDepthStencilInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS_OR_EQUAL);
 

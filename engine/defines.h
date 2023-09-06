@@ -36,6 +36,7 @@ typedef double f64;
 #define SHU_VULKAN_EXAMPLE 1
 #define SHU_DEFAULT_FENCE_TIMEOUT 100000000000
 #define ARRAY_SIZE(Arr) sizeof(Arr) / sizeof(Arr[0])
+#define SHU_VK_ENABLE_MSAA 1
 
 #ifdef _MSC_VER
 #define SHU_ALIGN_16 __declspec(align(16))
