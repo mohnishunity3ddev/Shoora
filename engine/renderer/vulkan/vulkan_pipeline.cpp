@@ -286,8 +286,8 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
     MultisampleInfo.pNext = nullptr;
     MultisampleInfo.flags = 0;
     MultisampleInfo.rasterizationSamples = RenderDevice->MsaaSamples;
-    MultisampleInfo.sampleShadingEnable = VK_FALSE;
-    MultisampleInfo.minSampleShading = 1.0f;
+    MultisampleInfo.sampleShadingEnable = EnableMultisampling ? VK_TRUE : VK_FALSE;
+    MultisampleInfo.minSampleShading = EnableMultisampling ? 0.2f : 1.0f;
     MultisampleInfo.pSampleMask = nullptr;
     MultisampleInfo.alphaToCoverageEnable = VK_FALSE;
     MultisampleInfo.alphaToOneEnable = VK_FALSE;
