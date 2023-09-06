@@ -114,7 +114,7 @@ struct platform_input_state
 
     union
     {
-        platform_input_button_state KeyboardButtons[10];
+        platform_input_button_state KeyboardButtons[11];
 
         struct
         {
@@ -122,6 +122,7 @@ struct platform_input_state
             platform_input_button_state Keyboard_A;
             platform_input_button_state Keyboard_S;
             platform_input_button_state Keyboard_D;
+            platform_input_button_state Keyboard_F;
             platform_input_button_state Keyboard_UpArrow;
             platform_input_button_state Keyboard_DownArrow;
             platform_input_button_state Keyboard_LeftArrow;
@@ -240,6 +241,11 @@ Platform_GetKeyInputState(u8 KeyCode, KeyState State)
             }
             else if(KeyCode == SU_RIGHTMOUSEBUTTON &&
                Win32InputKeyPressed(&GlobalInputState->RightMouseButton))
+            {
+                Result = true;
+            }
+            else if(KeyCode == 'F' &&
+                    Win32InputKeyPressed(&GlobalInputState->Keyboard_F))
             {
                 Result = true;
             }
@@ -610,6 +616,10 @@ Win32ProcessWindowsMessageQueue(HWND WindowHandle, platform_input_state *Input)
                 else if(KeyCode == 'D')
                 {
                     Win32UpdateInputButtonState(&Input->Keyboard_D, KeyIsCurrentlyDown);
+                }
+                else if(KeyCode == 'F')
+                {
+                    Win32UpdateInputButtonState(&Input->Keyboard_F, KeyIsCurrentlyDown);
                 }
                 else if(KeyCode == SU_UPARROW)
                 {

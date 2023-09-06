@@ -220,13 +220,16 @@ main()
     }
 
     SpotLight Spot = FragUBO.SpotLight;
-    float SpotLightInnerCutoff = cos(DEG_TO_RAD(Spot.InnerCutoffAngles));
-    float SpotLightOuterCutoff = cos(DEG_TO_RAD(Spot.OuterCutoffAngles));
-    float SpotDist = distance(Spot.Pos, FSIn.FragPosWS);
-    float SpotAttenuation = Spot.Intensity*GetAttenuation(SpotDist);
+    if(Spot.IsOn)
+    {
+        float SpotLightInnerCutoff = cos(DEG_TO_RAD(Spot.InnerCutoffAngles));
+        float SpotLightOuterCutoff = cos(DEG_TO_RAD(Spot.OuterCutoffAngles));
+        float SpotDist = distance(Spot.Pos, FSIn.FragPosWS);
+        float SpotAttenuation = Spot.Intensity*GetAttenuation(SpotDist);
 
-    Result += CalculateSpotLight(Spot, SpotLightInnerCutoff, SpotLightOuterCutoff, SpotAttenuation, NormalWS,
-                                 DiffuseTex.rgb, SpecularTex.rgb);
+        Result += CalculateSpotLight(Spot, SpotLightInnerCutoff, SpotLightOuterCutoff, SpotAttenuation, NormalWS,
+                                    DiffuseTex.rgb, SpecularTex.rgb);
+    }
 
     FragColor = vec4(Result, 1.);
 }

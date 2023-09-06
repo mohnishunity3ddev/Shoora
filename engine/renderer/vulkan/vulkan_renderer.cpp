@@ -209,8 +209,8 @@ struct point_light_data
 
 struct lighting_shader_uniform_data
 {
-    point_light_data PointLightData[4];
-    spotlight_data SpotlightData;
+    SHU_ALIGN_16 point_light_data PointLightData[4];
+    SHU_ALIGN_16 spotlight_data SpotlightData;
 
     SHU_ALIGN_16 Shu::vec3f CamPos = Shu::Vec3f(0, 0, -10);
     SHU_ALIGN_16 Shu::vec3f ObjectColor;
@@ -405,7 +405,7 @@ ImGuiNewFrame()
         ImGui::SliderFloat("Outer Cutoff", &GlobalFragUniformData.SpotlightData.OuterCutoffAngles,
                            GlobalFragUniformData.SpotlightData.InnerCutoffAngles, 45.0f);
         ImGui::ColorEdit3("Color", GlobalFragUniformData.SpotlightData.Color.E);
-        ImGui::SliderFloat("Intensity", &GlobalFragUniformData.SpotlightData.Intensity, 0.3f, 10.0f);
+        ImGui::SliderFloat("Intensity", &GlobalFragUniformData.SpotlightData.Intensity, 0.3f, 100.0f);
     }
     ImGui::End();
 
@@ -571,9 +571,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     CreateUnlitPipeline(VulkanContext);
 
     CreateSynchronizationPrimitives(&VulkanContext->Device, &VulkanContext->SyncHandles);
-
     PrepareImGui(RenderDevice, &VulkanContext->ImContext, ScreenDim, VulkanContext->GraphicsRenderPass);
-
     SetupCamera(&VulkanContext->Camera, Shu::Vec3f(0, 0, -10.0f), Shu::Vec3f(0, 1, 0));
 
     AppInfo->WindowResizeCallback = &WindowResizedCallback;
@@ -768,6 +766,11 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         GetMousePosDelta(FramePacket->MouseXPos, FramePacket->MouseYPos, &CameraInput.MouseDeltaX,
                          &CameraInput.MouseDeltaY);
         Context->Camera.HandleInput(&CameraInput);
+    }
+
+    if(Platform_GetKeyInputState('F', KeyState::SHU_KEYSTATE_PRESS))
+    {
+        GlobalFragUniformData.SpotlightData.IsOn = !GlobalFragUniformData.SpotlightData.IsOn;
     }
 
     shoora_vulkan_fence_handle *pCurrentFrameFence = GetCurrentFrameFencePtr(&Context->SyncHandles,
