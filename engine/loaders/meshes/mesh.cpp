@@ -10,8 +10,6 @@
 #endif
 #include "meshloader/fast_obj.h"
 
-
-
 void
 LoadMesh(const char *Path)
 {
@@ -34,7 +32,7 @@ LoadMesh(const char *Path)
     Result = cgltf_validate(MeshData);
     if (Result != cgltf_result_success)
     {
-        ASSERT("Validation Failed!");
+        ASSERT(!"Validation Failed!");
     }
 
     for(cgltf_size MeshIndex = 0;
@@ -57,8 +55,6 @@ LoadMesh(const char *Path)
 
             // Access material data
             const cgltf_material *Material = Primitive->material;
-
-            int x = 0;
         }
     }
 
@@ -80,9 +76,7 @@ LoadMesh(const char *Path)
                 char *Uri = Image->uri;
                 int Width, Height, BytesPerPixel;
             }
-
         }
-
     }
 
     Free((void **)&MeshData);
@@ -91,13 +85,9 @@ LoadMesh(const char *Path)
 void
 Free(void **Data)
 {
-#if SHU_CUSTOM_IMPLEMENTATION
-    free((void *)*Data);
-#else
     if (*Data != nullptr)
     {
         cgltf_free((cgltf_data *)*Data);
         *Data = nullptr;
     }
-#endif
 }
