@@ -6,6 +6,7 @@
 #include "vulkan_buffer.h"
 #include "vulkan_imgui.h"
 #include "loaders/image/png_loader.h"
+#include "loaders/meshes/mesh.h"
 #include "vulkan_image.h"
 #include "../material/material.h"
 
@@ -511,6 +512,8 @@ InitializeLightData()
 void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
 {
+    LoadMesh("meshes/sponza/Sponza.gltf");
+
     GlobalWindowSize = {AppInfo->WindowWidth, AppInfo->WindowHeight};
     InitializeLightData();
 

@@ -64,6 +64,7 @@ set(EXTERNAL_INCLUDE_DIR $ENV{CPP_LIBRARIES})
 # include_directories(${EXTERNAL_INCLUDE_DIR}/glfw/include)
 include_directories(${EXTERNAL_INCLUDE_DIR}/glm)
 include_directories(${EXTERNAL_INCLUDE_DIR}/stb)
+include_directories(${EXTERNAL_INCLUDE_DIR}/meshoptimizer/src)
 # include_directories(${EXTERNAL_INCLUDE_DIR}/imgui)
 
 include_directories(engine)

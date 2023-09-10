@@ -9,6 +9,7 @@
                 "${CPP_LIBRARIES}\\glm",
                 "${CPP_LIBRARIES}\\volk",
                 "${CPP_LIBRARIES}\\stb",
+                "${CPP_LIBRARIES}\\meshoptimizer\\src",
                 "${workspaceFolder}/engine"
             ],
             "defines": [
