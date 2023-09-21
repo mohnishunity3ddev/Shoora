@@ -226,8 +226,7 @@ namespace Shu
     f32 quat::
     AngleDegrees() const
     {
-        f32 Result = CosInverse(this->real)*RAD_TO_DEG;
-
+        f32 Result = 2.0f*(CosInverse(this->real)*RAD_TO_DEG);
         return Result;
     }
 
@@ -274,6 +273,7 @@ namespace Shu
     quat
     QuatSlerp(quat A, quat B, f32 T)
     {
+        T = ClampToRange(T, 0.0f, 1.0f);
         quat Result;
 
         // NOTE: Cos of the angle between A and B
@@ -313,5 +313,123 @@ namespace Shu
         Result.vz = A.vz*K0 + B.vz*K1;
 
         return Result;
+    }
+
+    vec3f quat::
+    ToEuler() const
+    {
+        f32 xAngle, yAngle, zAngle;
+
+        f32 SinX = -2.0f*(vy*vz - w*vx);
+
+        // NOTE: Check for Gimbal Lock
+        if(fabsf(SinX) > .9999f)
+        {
+            // NOTE: Looking straight up or down
+            xAngle = SHU_PI_BY_2 * SinX;
+
+            yAngle = atan2f(-vx*vz + w*vy, .5f - vy*vy - vz*vz);
+            zAngle = 0.0f;
+        }
+        else
+        {
+            xAngle = asinf(SinX);
+            yAngle = atan2f(vx*vz + w*vy, .5f - vx*vx - vy*vy);
+            zAngle = atan2f(vx*vy + w*vz, .5f - vx*vx - vz*vz);
+        }
+
+        vec3f Euler = Shu::Vec3f(xAngle, yAngle, zAngle) * RAD_TO_DEG;
+        return Euler;
+    }
+
+    // Returns rotation in YXZ sequence
+    quat
+    QuatFromEuler(f32 xDegrees, f32 yDegrees, f32 zDegrees)
+    {
+        Shu::vec3f HalfAngles = Shu::Vec3f(xDegrees*0.5f, yDegrees*0.5f, zDegrees*0.5f);
+
+        f32 CosXBy2 = Cos(HalfAngles.x); f32 SinXBy2 = Sin(HalfAngles.x);
+        f32 CosYBy2 = Cos(HalfAngles.y); f32 SinYBy2 = Sin(HalfAngles.y);
+        f32 CosZBy2 = Cos(HalfAngles.z); f32 SinZBy2 = Sin(HalfAngles.z);
+
+        quat Result;
+
+        Result.w  = CosYBy2*CosXBy2*CosZBy2 + SinYBy2*SinXBy2*SinZBy2;
+        Result.vx = CosYBy2*SinXBy2*CosZBy2 + SinYBy2*CosXBy2*SinZBy2;
+        Result.vy = SinYBy2*CosXBy2*CosZBy2 - CosYBy2*SinXBy2*SinZBy2;
+        Result.vz = CosYBy2*CosXBy2*SinZBy2 - SinYBy2*SinXBy2*CosZBy2;
+
+        return Result;
+    }
+
+    void
+    QuaternionTest()
+    {
+        // A = 3 + i − 2j + k,
+        // B = 2 − i + 2j + 3k.
+        // Result = 8 − 9i − 2j + 11k.
+        Shu::quat A = Shu::Quat(1, 2, 3, 4);
+        Shu::quat B = Shu::Quat(2, 3, 4, 5);
+        Shu::quat R = Shu::QuatConjugate(B);
+        Shu::QuatNormalize(A);
+        f32 AMag = Shu::QuatMagnitude(A);
+        f32 AMag2 = Shu::QuatSqMagnitude(A);
+
+        // Shu::vec3f P = Shu::Vec3f(0.7f, -0.3f, 0.649f);
+        Shu::vec3f P = Shu::Vec3f(1, 0, 0);
+        Shu::vec3f Axis = Shu::Normalize(Shu::Vec3f(0.235f, 0.235f, -0.942f));
+        Shu::vec3f PT = Shu::QuatRotateVec(54.74f, Axis, P);
+
+        Shu::quat Quat = Shu::QuatAngleAxis(54.74f, Shu::Vec3f(0.235f, 0.235f, -0.942f));
+        f32 AngleInDegrees = Quat.AngleDegrees();
+        Shu::vec3f At = Quat.AxisNormalized();
+
+        Shu::quat SQ0 = Shu::QuatAngleAxis(90, Shu::Vec3f( 0, 0, 1));
+        Shu::quat SQ1 = Shu::QuatAngleAxis(90, Shu::Vec3f( 0, 1, 0));
+        Shu::quat SQ01 = Shu::QuatSlerp(SQ0, SQ1, 0.5f);
+        Shu::vec3f sqEuler0 = SQ0.ToEuler();
+        Shu::vec3f sqEuler1 = SQ1.ToEuler();
+        Shu::vec3f SlerpedAxis = SQ01.AxisNormalized();
+        f32 SlerpedAngle = SQ01.AngleDegrees();
+        Shu::vec3f RotatedVec0 = Shu::QuatRotateVec(SQ01, Shu::Vec3f(1, 0, 0));
+
+#if 0
+        Shu::mat4f Identity = Shu::Mat4f(1.0f);
+        Shu::mat4f QuatMat0 = Shu::GetRotationMatrix(Identity, SQ01);
+        Identity = Shu::Mat4f(1.0f);
+        Shu::mat4f QuatMat1 = Shu::RotateGimbalLock(Identity, SlerpedAxis, SlerpedAngle);
+#endif
+
+#if 1
+        Shu::vec3f RotatedVec3s[20];
+        Shu::quat SlerpedQuats[20];
+        f32 SlerpedQuatAngles[20];
+        Shu::vec3f SlerpedQuatAxiss[20];
+
+        u32 TestQuatCount = ARRAY_SIZE(SlerpedQuats);
+        for(u32 Index = 0;
+            Index < TestQuatCount;
+            ++Index)
+        {
+            f32 T = (f32)(Index + 1) / (f32)TestQuatCount;
+            Shu::quat Slerped = Shu::QuatSlerp(SQ0, SQ1, T);
+            SlerpedQuats[Index] = Slerped;
+            Shu::vec3f R0 = Shu::QuatRotateVec(Slerped, Shu::Vec3f(1, 0, 0));
+            RotatedVec3s[Index] = R0;
+            SlerpedQuatAngles[Index] = Slerped.AngleDegrees();
+            SlerpedQuatAxiss[Index] = Slerped.AxisNormalized();
+        }
+
+        Shu::quat qX = Shu::QuatAngleAxis(30, Shu::Vec3f(1, 0, 0)); // X-Axis
+        Shu::quat qY = Shu::QuatAngleAxis(30, Shu::Vec3f(0, 1, 0)); // Y-Axis
+        Shu::quat qZ = Shu::QuatAngleAxis(30, Shu::Vec3f(0, 0, 1)); // Z-Axis
+        // NOTE: How Unity rotates a point. First around Y then X then Z
+        Shu::quat FinalQuat = qY*qX*qZ;
+        Shu::quat FinalQuat1 = Shu::QuatFromEuler(30, 30, 30);
+        Shu::vec3f RotateVec = Shu::QuatRotateVec(FinalQuat, Shu::Vec3f(1, 0, 0));
+        Shu::vec3f Euler = FinalQuat.ToEuler();
+        f32 FinalAngle = FinalQuat.AngleDegrees();
+        Shu::vec3f FinalAxis = FinalQuat.AxisNormalized();
+#endif
     }
 }

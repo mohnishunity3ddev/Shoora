@@ -29,6 +29,7 @@ namespace Shu
         f32 AngleDegrees() const;
         f32 AngleRadians() const;
         vec3f AxisNormalized() const;
+        vec3f ToEuler() const;
     };
 
     SHU_EXPORT quat Quat(f32 w, f32 vx, f32 vy, f32 vz);
@@ -51,6 +52,7 @@ namespace Shu
     SHU_EXPORT vec3f QuatRotateVec(f32 AngleInDegrees, const vec3f &Axis, const vec3f &V);
     SHU_EXPORT vec3f QuatRotateVec(const quat &Q, const vec3f &V);
     SHU_EXPORT quat QuatSlerp(quat A, quat B, f32 T);
+    SHU_EXPORT quat QuatFromEuler(f32 xDegrees, f32 yDegrees, f32 zDegrees);
 }
 
 #endif

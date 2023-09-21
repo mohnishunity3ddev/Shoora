@@ -4,6 +4,26 @@
 namespace Shu
 {
     mat4f
+    GetRotationMatrix(mat4f &Mat, const quat &Q)
+    {
+        quat Quat = QuatNormalize(Q);
+        f32 w = Q.real; // cos(theta / 2)
+        f32 x = Q.complex.x; // nx*sin(theta / 2)
+        f32 y = Q.complex.y; // ny*sin(theta / 2)
+        f32 z = Q.complex.z; // nz*sin(theta / 2)
+
+        Shu::vec4f Row0 = Shu::Vec4f(1.0f - 2.0f*y*y - 2.0f*z*z,    2.0f*x*y + 2.0f*w*z,            2.0f*x*z - 2.0f*w*y,            0.0f);
+        Shu::vec4f Row1 = Shu::Vec4f(2.0f*x*y - 2.0f*w*z,           1.0f - 2.0f*x*x - 2.0f*z*z,     2.0f*y*z + 2.0f*w*x,            0.0f);
+        Shu::vec4f Row2 = Shu::Vec4f(2.0f*x*z + 2.0f*w*y,           2.0f*y*z - 2.0f*w*x,            1.0f - 2.0f*x*x - 2.0f*y*y,     0.0f);
+        Shu::vec4f Row3 = Shu::Vec4f(0.0f,                          0.0f,                           0.0f,                           1.0f);
+
+        Shu::mat4f RotateMat = Shu::Mat4f(Row0, Row1, Row2, Row3);
+
+        Mat *= RotateMat;
+        return Mat;
+    }
+
+    mat4f
     RotateGimbalLock(mat4f &Mat, const vec3f &Axis, f32 AngleInDegrees)
     {
         f32 Cos = Shu::Cos(AngleInDegrees);
