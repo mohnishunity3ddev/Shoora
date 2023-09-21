@@ -36,6 +36,7 @@ namespace Shu
     template <typename T> SHU_EXPORT vec2<T> Vec2();
     template <typename T> SHU_EXPORT vec2<T> Vec2(T A);
     template <typename T> SHU_EXPORT vec2<T> Vec2(T x, T y);
+    template <typename T> SHU_EXPORT vec2<T> MakeVec2(const T *const Ptr);
     template <typename T> SHU_EXPORT T Dot(const vec2<T>& A, const vec2<T>& B);
     template <typename T> SHU_EXPORT vec2<T> operator+(const vec2<T>& A, const vec2<T>& B);
     template <typename T> SHU_EXPORT vec2<T> operator-(const vec2<T>& A, const vec2<T>& B);
@@ -57,12 +58,12 @@ namespace Shu
             struct { T u, v, w_; };
             struct { T r, g, b; };
             struct { T w, h, d; };
-            struct { vec2<T> xy; T Reserved_0; };
-            struct { T Reserved_1; vec2<T> yz; };
-            struct { vec2<T> uv; T Reserved_2; };
-            struct { T Reserved_3; vec2<T> vw; };
-            struct { vec2<T> rg; T Reserved_4; };
-            struct { T Reserved_5; vec2<T> gb; };
+            struct { vec2<T> xy; T Unused_0; };
+            struct { T Unused_1; vec2<T> yz; };
+            struct { vec2<T> uv; T Unused_2; };
+            struct { T Unused_3; vec2<T> vw; };
+            struct { vec2<T> rg; T Unused_4; };
+            struct { T Unused_5; vec2<T> gb; };
             T E[3];
         };
 
@@ -87,6 +88,7 @@ namespace Shu
     template <typename T> SHU_EXPORT vec3<T> Vec3();
     template <typename T> SHU_EXPORT vec3<T> Vec3(T A);
     template <typename T> SHU_EXPORT vec3<T> Vec3(T x, T y, T z);
+    template <typename T> SHU_EXPORT vec3<T> MakeVec3(const T *const Ptr);
     template <typename T> SHU_EXPORT vec3<T> Vec3(const vec2<T>& xy, T z);
     template <typename T> SHU_EXPORT vec3<T> ToVec3(const vec2<T>& A);
     template <typename T> SHU_EXPORT vec2<T> ToVec2(const vec3<T>& A);
@@ -94,6 +96,7 @@ namespace Shu
     template <typename T> SHU_EXPORT vec3<T> Cross(const vec3<T>& A, const vec3<T>& B);
     template <typename T> SHU_EXPORT vec3<T> operator+(const vec3<T>& A, const vec3<T>& B);
     template <typename T> SHU_EXPORT vec3<T> operator-(const vec3<T>& A, const vec3<T>& B);
+    template <typename T> SHU_EXPORT vec3<T> operator-(const vec3<T>& A);
     template <typename T> SHU_EXPORT vec3<T> operator*(const vec3<T>& A, T B);
     template <typename T> SHU_EXPORT vec3<T> operator/(const vec3<T>& A, const vec3<T>& B);
     template <typename T> SHU_EXPORT vec3<T> operator/(const vec3<T>& A, T B);
@@ -131,7 +134,8 @@ namespace Shu
     template <typename T> SHU_EXPORT vec4<T> Vec4();
     template <typename T> SHU_EXPORT vec4<T> Vec4(T A);
     template <typename T> SHU_EXPORT vec4<T> Vec4(T x, T y, T z, T w);
-    template <typename T> SHU_EXPORT T Dot(const vec4<T>& A, const vec4<T>& B);
+    template <typename T> SHU_EXPORT vec4<T> MakeVec4(const T *const Ptr);
+    template <typename T> SHU_EXPORT T Dot(const vec4<T> &A, const vec4<T> &B);
     template <typename T> SHU_EXPORT vec4<T> operator+(const vec4<T>& A, const vec4<T>& B);
     template <typename T> SHU_EXPORT vec4<T> operator-(const vec4<T>& A, const vec4<T>& B);
     template <typename T> SHU_EXPORT vec4<T> operator*(const vec4<T>& A, const vec4<T>& B);
@@ -163,6 +167,15 @@ namespace Shu
     Vec2(T A)
     {
         vec2<T> Result = {A, A};
+        return Result;
+    }
+
+    template <typename T>
+    vec2<T>
+    MakeVec2(const T * const Ptr)
+    {
+        vec2<T> Result = {};
+        memcpy(Result.E, Ptr, sizeof(T)*2);
         return Result;
     }
 
@@ -366,6 +379,17 @@ namespace Shu
 
     template <typename T>
     vec3<T>
+    MakeVec3(const T * const Ptr)
+    {
+        vec3<T> Result = {};
+
+        memcpy(Result.E, Ptr, sizeof(T) * 3);
+
+        return Result;
+    }
+
+    template <typename T>
+    vec3<T>
     Vec3(const vec2<T>& xy, T z)
     {
         vec3<T> Result = Vec3(xy.x, xy.y, z);
@@ -446,6 +470,19 @@ namespace Shu
         Result.x = A.x - B.x;
         Result.y = A.y - B.y;
         Result.z = A.z - B.z;
+
+        return Result;
+    }
+
+    template <typename T>
+    vec3<T>
+    operator-(const vec3<T>& A)
+    {
+        vec3<T> Result;
+
+        Result.x = -A.x;
+        Result.y = -A.y;
+        Result.z = -A.z;
 
         return Result;
     }
@@ -620,6 +657,15 @@ namespace Shu
         Result.y = y;
         Result.z = z;
         Result.w = w;
+        return Result;
+    }
+
+    template <typename T>
+    vec4<T>
+    MakeVec4(const T *const Ptr)
+    {
+        vec4<T> Result = {};
+        memcpy(Result.E, Ptr, sizeof(T)*4);
         return Result;
     }
 

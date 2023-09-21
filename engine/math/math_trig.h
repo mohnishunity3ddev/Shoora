@@ -28,6 +28,20 @@ namespace Shu
     }
 
     inline f32
+    CosInverse(f32 Value)
+    {
+        f32 Result = acosf(Value);
+        return Result;
+    }
+
+    inline f32
+    SinInverse(f32 Value)
+    {
+        f32 Result = asinf(Value);
+        return Result;
+    }
+
+    inline f32
     Tan(f32 Degrees)
     {
         f32 Result = tanf(Degrees*DEG_TO_RAD);
