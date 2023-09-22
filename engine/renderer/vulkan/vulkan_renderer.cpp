@@ -552,13 +552,13 @@ SetupSponzaDescriptors(shoora_vulkan_device *RenderDevice, sponza_stuff *Sponza)
 {
     VkDescriptorPoolSize PoolSizes[2];
     PoolSizes[0] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1);
-    // Each material uses color and a normal map.
-    PoolSizes[1] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Sponza->Model.MaterialCount*2);
+    // Each material uses color, normal map and a metallic map.
+    PoolSizes[1] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Sponza->Model.MaterialCount*3);
     const u32 MaxSetCount = Sponza->Model.TextureCount + 1;
     CreateDescriptorPool(RenderDevice, ARRAY_SIZE(PoolSizes), PoolSizes, 100, &Sponza->DescriptorPool);
 
     // Descriptor Set layouts for the scene. set 0 = matrices set 1 = textures
-    VkDescriptorSetLayoutBinding SetLayoutBindings[2];
+    VkDescriptorSetLayoutBinding SetLayoutBindings[3];
     SetLayoutBindings[0] = GetDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT);
     VkDescriptorSetLayoutCreateInfo DescriptorSetLayoutCreateInfo = {};
     DescriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -567,7 +567,8 @@ SetupSponzaDescriptors(shoora_vulkan_device *RenderDevice, sponza_stuff *Sponza)
     VK_CHECK(vkCreateDescriptorSetLayout(RenderDevice->LogicalDevice, &DescriptorSetLayoutCreateInfo, nullptr, &Sponza->MatricesSetLayout));
     SetLayoutBindings[0] = GetDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT);
     SetLayoutBindings[1] = GetDescriptorSetLayoutBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT);
-    DescriptorSetLayoutCreateInfo.bindingCount = 2;
+    SetLayoutBindings[2] = GetDescriptorSetLayoutBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT);
+    DescriptorSetLayoutCreateInfo.bindingCount = 3;
     DescriptorSetLayoutCreateInfo.pBindings = SetLayoutBindings;
     VK_CHECK(vkCreateDescriptorSetLayout(RenderDevice->LogicalDevice, &DescriptorSetLayoutCreateInfo, nullptr, &Sponza->TexturesSetLayout));
 
@@ -596,7 +597,7 @@ SetupSponzaDescriptors(shoora_vulkan_device *RenderDevice, sponza_stuff *Sponza)
         AllocateDescriptorSets(RenderDevice, Sponza->DescriptorPool, 1, &Sponza->TexturesSetLayout,
                                &Mat->DescriptorSet);
 
-        VkWriteDescriptorSet WriteSets[2];
+        VkWriteDescriptorSet WriteSets[3];
         u32 WriteSetCount = 0;
         if(Mat->BaseColorTextureIndex >= 0)
         {
@@ -613,6 +614,14 @@ SetupSponzaDescriptors(shoora_vulkan_device *RenderDevice, sponza_stuff *Sponza)
             VkDescriptorImageInfo NormalMapInfo = GetImageDescriptorInfo(NormalMap);
             WriteSets[WriteSetCount++] = GetWriteDescriptorSet(Mat->DescriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
                                                     &NormalMapInfo);
+        }
+
+        if(Mat->MetallicTextureIndex >= 0)
+        {
+            shoora_vulkan_image_sampler *MetallicMap = Sponza->ImageBuffers + Mat->MetallicTextureIndex;
+            VkDescriptorImageInfo MetallicMapInfo = GetImageDescriptorInfo(MetallicMap);
+            WriteSets[WriteSetCount++] = GetWriteDescriptorSet(Mat->DescriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2,
+                                                    &MetallicMapInfo);
         }
 
         vkUpdateDescriptorSets(RenderDevice->LogicalDevice, WriteSetCount, WriteSets, 0, nullptr);
@@ -730,14 +739,10 @@ DrawSponzaNode(VkCommandBuffer CommandBuffer, VkPipelineLayout PipelineLayout, s
             {
                 shoora_model_material *PrimitiveMaterial = Sponza->Model.Materials + Primitive->MaterialIndex;
 
-                if(PrimitiveMaterial->NormalTextureIndex != -1 &&
-                   PrimitiveMaterial->BaseColorTextureIndex != -1)
-                {
-                    vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PrimitiveMaterial->Pipeline);
-                    vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 1, 1,
-                                            &PrimitiveMaterial->DescriptorSet, 0, nullptr);
-                    vkCmdDrawIndexed(CommandBuffer, Primitive->IndexCount, 1, Primitive->FirstIndex, 0, 0);
-                }
+                vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PrimitiveMaterial->Pipeline);
+                vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 1, 1,
+                                        &PrimitiveMaterial->DescriptorSet, 0, nullptr);
+                vkCmdDrawIndexed(CommandBuffer, Primitive->IndexCount, 1, Primitive->FirstIndex, 0, 0);
             }
         }
     }

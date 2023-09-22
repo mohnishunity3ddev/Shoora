@@ -76,7 +76,7 @@ LoadTextureImages(cgltf_image *Images, u32 ImageCount, const char *BasePath, sho
         // TODO)): Load the Image Data.
         LogInfo("Image[%d]: %s \n", Index, ImagePath);
 
-        Tex->ImageData = LoadImageFile(ImagePath);
+        Tex->ImageData = LoadImageFile(ImagePath, false);
         Model->TotalTextureSize += Tex->ImageData.TotalSize;
     }
 }
@@ -88,6 +88,9 @@ GetMaterialIndex(cgltf_material *glTFMaterials, cgltf_material *PrimitiveMateria
     return Result;
 }
 
+static int UsedTexIndices[4096];
+u32 UsedCount = 0;
+
 void
 LoadMaterials(cgltf_material *Materials, u32 MaterialCount, shoora_model *Model)
 {
@@ -98,35 +101,55 @@ LoadMaterials(cgltf_material *Materials, u32 MaterialCount, shoora_model *Model)
         Index < MaterialCount;
         ++Index)
     {
-        cgltf_material *GLTFMat = Materials + Index;
+        cgltf_material *glTFMat = Materials + Index;
         shoora_model_material *Mat = Model->Materials + Index;
 
-        if(GLTFMat->has_pbr_metallic_roughness &&
-           GLTFMat->pbr_metallic_roughness.base_color_texture.texture != nullptr)
+        cgltf_texture *glTFColorTex = glTFMat->pbr_metallic_roughness.base_color_texture.texture;
+        if(glTFMat->has_pbr_metallic_roughness &&
+           glTFColorTex != nullptr)
         {
-            const char* BaseColorTexUri = GLTFMat->pbr_metallic_roughness.base_color_texture.texture->image->uri;
+            const char* BaseColorTexUri = glTFColorTex->image->uri;
             ASSERT(BaseColorTexUri);
             Mat->BaseColorTextureIndex = GetImageIndex(BaseColorTexUri, Model);
+            UsedTexIndices[UsedCount++] = Mat->BaseColorTextureIndex;
         }
         else
         {
-            Mat->BaseColorTextureIndex = -1;
+            // NOTE: The last texture loaded in this mesh is the default white texture which we will use for this case.
+            Mat->BaseColorTextureIndex = Model->TextureCount - 1;
         }
 
-        if(GLTFMat->normal_texture.texture != nullptr)
+        cgltf_texture *glTFMetallicTex = glTFMat->pbr_metallic_roughness.metallic_roughness_texture.texture;
+        if (glTFMat->has_pbr_metallic_roughness && glTFMetallicTex != nullptr)
         {
-            const char *NormalTexUri = GLTFMat->normal_texture.texture->image->uri;
+            const char *MetallicRoughnessTex = glTFMetallicTex->image->uri;
+            ASSERT(MetallicRoughnessTex);
+            Mat->MetallicTextureIndex = GetImageIndex(MetallicRoughnessTex, Model);
+            UsedTexIndices[UsedCount++] = Mat->MetallicTextureIndex;
+        }
+        else
+        {
+            // NOTE: The last texture loaded in this mesh is the default white texture which we will use for this case.
+            Mat->MetallicTextureIndex = Model->TextureCount - 1;
+        }
+
+        cgltf_texture *glTFNormalTex = glTFMat->normal_texture.texture;
+        if(glTFNormalTex != nullptr)
+        {
+            const char *NormalTexUri = glTFNormalTex->image->uri;
             ASSERT(NormalTexUri);
             Mat->NormalTextureIndex = GetImageIndex(NormalTexUri, Model);
+            UsedTexIndices[UsedCount++] = Mat->NormalTextureIndex;
         }
         else
         {
-            Mat->NormalTextureIndex = -1;
+            // NOTE: The last texture loaded in this mesh is the default white texture which we will use for this case.
+            Mat->NormalTextureIndex = Model->TextureCount - 1;
         }
 
-        Mat->AlphaCutoff = GLTFMat->alpha_cutoff;
-        Mat->AlphaMode = (shoora_model_alpha_mode)GLTFMat->alpha_mode;
-        Mat->DoubleSided = GLTFMat->double_sided;
+        Mat->AlphaCutoff = glTFMat->alpha_cutoff;
+        Mat->AlphaMode = (shoora_model_alpha_mode)glTFMat->alpha_mode;
+        Mat->DoubleSided = glTFMat->double_sided;
         // Mat->BaseColorFactor = GLTFMat->BaseColorFactor;
     }
 }
@@ -373,7 +396,7 @@ LoadGLTFNode(cgltf_node *InputNode, cgltf_material *glTFMaterials, shoora_model 
             CurrentNode->Mesh.Primitives[PrimitiveIndex] = MeshPrimitive;
         }
     }
-    
+
     if(Parent)
     {
         Parent->ChildNodes[Parent->ChildrenCount++] = CurrentNode;

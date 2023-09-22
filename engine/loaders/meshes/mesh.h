@@ -21,6 +21,7 @@ struct shoora_model_material
     Shu::vec4f BaseColorFactor;
     i32 BaseColorTextureIndex = -1;
     i32 NormalTextureIndex = -1;
+    i32 MetallicTextureIndex = -1;
 
     f32 AlphaCutoff;
     b32 DoubleSided;

@@ -25,7 +25,8 @@ struct shoora_image_data
     u8 *Data;
 };
 
-shoora_image_data LoadImageFile(const char *Filename, u32 MipmapCount = 0, u32 DesiredChannelCount = 0);
+shoora_image_data LoadImageFile(const char *Filename, b32 FlipImageVertically = true, u32 MipmapCount = 0,
+                                u32 DesiredChannelCount = 0);
 void FreeImageData(shoora_image_data *Data);
 
 #define IMAGE_LOADER_H

@@ -16,7 +16,7 @@ GetMipmapLevelData()
 
 // TODO)): Check the filename for png/jpeg format and choose appropriately.
 shoora_image_data
-LoadImageFile(const char *Filename, u32 MipmapCount, u32 DesiredChannelCount)
+LoadImageFile(const char *Filename, b32 FlipImage, u32 MipmapCount, u32 DesiredChannelCount)
 {
     shoora_image_data ImageData = {};
 
@@ -24,7 +24,10 @@ LoadImageFile(const char *Filename, u32 MipmapCount, u32 DesiredChannelCount)
 #if 0
     stbi_info(Filename, &ImageData.Dim.Width, &ImageData.Dim.Height, &ChannelCount);
 #endif
-    stbi_set_flip_vertically_on_load(1);
+    if(FlipImage)
+    {
+        stbi_set_flip_vertically_on_load(1);
+    }
     ImageData.Data = stbi_load(Filename, &ImageData.Dim.w, &ImageData.Dim.h, &ImageData.NumChannels,
                                STBI_rgb_alpha);
 
@@ -41,6 +44,11 @@ LoadImageFile(const char *Filename, u32 MipmapCount, u32 DesiredChannelCount)
     if(MipmapCount > 0)
     {
         ASSERT(!"Mipmaps are not supported right now!\n");
+    }
+
+    if(FlipImage)
+    {
+        stbi_set_flip_vertically_on_load(0);
     }
 #else
     LoadPNG(Filename);
