@@ -3,18 +3,24 @@
 #include "volk/volk.h"
 #include "vulkan_renderer.h"
 
+#define CALCULATE_BITANGENT 0
+
 struct shoora_vertex_info
 {
     Shu::vec3f Pos;
     Shu::vec3f Normal;
-    Shu::vec3f Color;
     Shu::vec2f UV;
-    Shu::vec3f Tangent;
+    Shu::vec3f Color;
+    Shu::vec4f Tangent;
+#if CALCULATE_BITANGENT
     Shu::vec3f BiTangent;
+#endif
 };
 
 VkVertexInputBindingDescription GetVertexBindingDescription();
 void GetVertexAttributeDescriptions(VkVertexInputAttributeDescription *Attributes, u32 *AttributeCount);
+VkVertexInputAttributeDescription GetVertexAttributeDescription(u32 BindingIndex, u32 Location, VkFormat Format,
+                                                                u32 Offset);
 
 #define VULKAN_VERTEX_DEFINITIONS_H
 #endif // VULKAN_VERTEX_DEFINITIONS_H

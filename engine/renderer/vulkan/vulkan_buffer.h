@@ -17,9 +17,12 @@ struct shoora_buffer_transition_info
     u32 NewQueueFamily;
 };
 
-void CreateVertexBuffer(shoora_vulkan_device *RenderDevice, shoora_vertex_info *Vertices, u32 VertexCount,
+void CreateVertexBuffers(shoora_vulkan_device *RenderDevice, shoora_vertex_info *Vertices, u32 VertexCount,
                         u32 *Indices, u32 IndexCount, shoora_vulkan_buffer *outVertexBuffer,
                         shoora_vulkan_buffer *outIndexBuffer);
+void CreateVertexBuffers(shoora_vulkan_device *RenderDevice, shoora_model *Model,
+                         shoora_vulkan_vertex_buffers *VertBuffers);
+
 void DestroyVertexBuffer(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *pVertexBuffer,
                          shoora_vulkan_buffer *pIndexBuffer);
 

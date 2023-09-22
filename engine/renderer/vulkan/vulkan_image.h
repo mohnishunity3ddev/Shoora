@@ -42,6 +42,8 @@ void CreateImageView2D(shoora_vulkan_device *RenderDevice, VkImage Image, VkForm
 
 void CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, const char *ImageFilename,
                                 VkSampleCountFlagBits NumSamples, shoora_vulkan_image_sampler *pImageSampler);
+void CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, shoora_image_data *ImageData,
+                                VkSampleCountFlagBits NumSamples, shoora_vulkan_image_sampler *pImageSampler);
 
 void SetImageLayout(VkCommandBuffer CmdBuffer, VkImage Image, VkImageAspectFlags Aspect,
                     VkImageLayout OldImageLayout, VkImageLayout NewImageLayout, VkPipelineStageFlags SrcStage,

@@ -30,11 +30,21 @@ VkVertexInputAttributeDescription GetPipelineVertexAttribInfo(u32 Binding, u32 L
                                                               u32 Offset);
 VkPipelineShaderStageCreateInfo GetShaderStageInfo(VkShaderModule Shader, VkShaderStageFlagBits StageFlags,
                                                    const char *EntryPointName);
+VkPipelineShaderStageCreateInfo GetShaderStageInfo(shoora_vulkan_device *RenderDevice, const char *ShaderFile,
+                                                   VkShaderStageFlagBits StageFlags, const char *EntryPointName);
 
 VkPipelineVertexInputStateCreateInfo PipelineVertexInputInfo();
+VkPipelineVertexInputStateCreateInfo GetPipelineVertexInputInfo(u32 VertexBindingCount,
+                                                                VkVertexInputBindingDescription *VertexBindingDesc,
+                                                                u32 AttribCount,
+                                                                VkVertexInputAttributeDescription *Attribs);
 
-VkGraphicsPipelineCreateInfo GetGraphicsPipelineInfo(VkPipelineLayout Layout, VkRenderPass RenderPass,
+VkGraphicsPipelineCreateInfo GetPipelineCreateInfo(VkPipelineLayout Layout, VkRenderPass RenderPass,
                                                      VkPipelineCreateFlags Flags = 0);
+
+VkSpecializationMapEntry GetSpecializationMapEntry(u32 ConstantID, u32 Offset, size_t Size);
+VkSpecializationInfo GetSpecializationInfo(u32 MapEntryCount, VkSpecializationMapEntry *MapEntries,
+                                           size_t DataSize, const void *Data);
 
 void CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderFile,
                             const char *FragmentShaderFile, shoora_vulkan_graphics_pipeline *pPipeline,

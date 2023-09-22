@@ -9,6 +9,7 @@
 #include "loaders/meshes/mesh.h"
 #include "vulkan_image.h"
 #include "../material/material.h"
+#include <loaders/meshes/mesh.h>
 
 #ifdef WIN32
 #include "platform/windows/win_platform.h"
@@ -34,10 +35,10 @@ static u32 TriangleIndices[] = {0, 1, 2};
 // NOTE: Rectangle
 static shoora_vertex_info RectVertices[] =
 {
-    {.Pos = Shu::vec3f{ 1.0f,  1.0f, 0.0f}, .Color = Shu::vec3f{1, 0, 0}, .UV = Shu::vec2f{1, 1}},
-    {.Pos = Shu::vec3f{ 1.0f, -1.0f, 0.0f}, .Color = Shu::vec3f{0, 1, 0}, .UV = Shu::vec2f{1, 0}},
-    {.Pos = Shu::vec3f{-1.0f, -1.0f, 0.0f}, .Color = Shu::vec3f{0, 0, 1}, .UV = Shu::vec2f{0, 0}},
-    {.Pos = Shu::vec3f{-1.0f,  1.0f, 0.0f}, .Color = Shu::vec3f{0, 0, 0}, .UV = Shu::vec2f{0, 1}},
+    {.Pos = Shu::vec3f{ 1.0f,  1.0f, 0.0f}, .UV = Shu::vec2f{1, 1}, .Color = Shu::vec3f{1, 0, 0}},
+    {.Pos = Shu::vec3f{ 1.0f, -1.0f, 0.0f}, .UV = Shu::vec2f{1, 0}, .Color = Shu::vec3f{0, 1, 0}},
+    {.Pos = Shu::vec3f{-1.0f, -1.0f, 0.0f}, .UV = Shu::vec2f{0, 0}, .Color = Shu::vec3f{0, 0, 1}},
+    {.Pos = Shu::vec3f{-1.0f,  1.0f, 0.0f}, .UV = Shu::vec2f{0, 1}, .Color = Shu::vec3f{0, 0, 0}},
 };
 static u32 RectIndices[] = {0, 1, 2, 0, 2, 3};
 
@@ -142,11 +143,12 @@ GenerateTangentInformation(shoora_vertex_info *VertexInfo, u32 *Indices, u32 Ind
         f32 OneByDenominator = 1.0f / Denominator;
         ASSERT(Denominator != 0.0f);
 
-        Shu::vec3f Tangent;
+        Shu::vec4f Tangent;
         Tangent.x = OneByDenominator * (DeltaV2*Edge1.x - DeltaU2*Edge2.x);
         Tangent.y = OneByDenominator * (DeltaV2*Edge1.y - DeltaU2*Edge2.y);
         Tangent.z = OneByDenominator * (DeltaV2*Edge1.z - DeltaU2*Edge2.z);
-        Tangent = Shu::Normalize(Tangent);
+        Tangent.w = 1.0f;
+        Tangent.xyz = Shu::Normalize(Tangent.xyz);
 
         V0->Tangent = Tangent;
         V1->Tangent = Tangent;
@@ -480,6 +482,7 @@ DestroyUnlitPipelineResources()
     {
         DestroyUniformBuffer(&Context->Device, &Context->FragUnlitBuffers[Index]);
     }
+
     vkDestroyDescriptorSetLayout(Context->Device.LogicalDevice, Context->UnlitSetLayout, nullptr);
     DestroyPipeline(&Context->Device, &Context->UnlitPipeline);
 }
@@ -510,10 +513,263 @@ InitializeLightData()
 }
 
 void
+CreateSponzaImageBuffers(shoora_vulkan_device *RenderDevice, sponza_stuff *Sponza)
+{
+    Sponza->ImageBuffers = (shoora_vulkan_image_sampler *)malloc(Sponza->Model.TextureCount *
+                                                                 sizeof(shoora_vulkan_image_sampler));
+    for(u32 Index = 0;
+        Index < Sponza->Model.TextureCount;
+        ++Index)
+    {
+        CreateCombinedImageSampler(RenderDevice, &Sponza->Model.Textures[Index].ImageData, VK_SAMPLE_COUNT_1_BIT,
+                                   &Sponza->ImageBuffers[Index]);
+    }
+}
+
+void
+UpdateSponzaUniformBuffers(sponza_stuff *Sponza, shoora_camera *Camera)
+{
+    shader_data *ShaderData = &Sponza->ShaderData;
+    ShaderData->Values.Projection = GlobalVertUniformData.Projection;
+    ShaderData->Values.View = Camera->GetViewMatrix(ShaderData->Values.View);
+    ShaderData->Values.ViewPosition = Shu::Vec4f(Camera->Pos.x, Camera->Pos.y, Camera->Pos.z, 1.0f);
+    ShaderData->Values.LightPosition = Shu::Vec4f(0.0f, 5.0f, 0.0f, 1.0f);
+    memcpy(Sponza->ShaderData.Buffer.pMapped, &Sponza->ShaderData.Values, sizeof(shader_data));
+}
+
+void
+CreateSponzaUniformBuffers(shoora_vulkan_device *RenderDevice, sponza_stuff *Sponza, shoora_camera *Camera)
+{
+    Sponza->ShaderData.Buffer = CreateBuffer(RenderDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                             VK_SHARING_MODE_EXCLUSIVE,
+                                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                             nullptr, sizeof(shader_data));
+    UpdateSponzaUniformBuffers(Sponza, Camera);
+}
+
+void
+SetupSponzaDescriptors(shoora_vulkan_device *RenderDevice, sponza_stuff *Sponza)
+{
+    VkDescriptorPoolSize PoolSizes[2];
+    PoolSizes[0] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1);
+    // Each material uses color and a normal map.
+    PoolSizes[1] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Sponza->Model.MaterialCount*2);
+    const u32 MaxSetCount = Sponza->Model.TextureCount + 1;
+    CreateDescriptorPool(RenderDevice, ARRAY_SIZE(PoolSizes), PoolSizes, 100, &Sponza->DescriptorPool);
+
+    // Descriptor Set layouts for the scene. set 0 = matrices set 1 = textures
+    VkDescriptorSetLayoutBinding SetLayoutBindings[2];
+    SetLayoutBindings[0] = GetDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT);
+    VkDescriptorSetLayoutCreateInfo DescriptorSetLayoutCreateInfo = {};
+    DescriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    DescriptorSetLayoutCreateInfo.bindingCount = 1;
+    DescriptorSetLayoutCreateInfo.pBindings = SetLayoutBindings;
+    VK_CHECK(vkCreateDescriptorSetLayout(RenderDevice->LogicalDevice, &DescriptorSetLayoutCreateInfo, nullptr, &Sponza->MatricesSetLayout));
+    SetLayoutBindings[0] = GetDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT);
+    SetLayoutBindings[1] = GetDescriptorSetLayoutBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT);
+    DescriptorSetLayoutCreateInfo.bindingCount = 2;
+    DescriptorSetLayoutCreateInfo.pBindings = SetLayoutBindings;
+    VK_CHECK(vkCreateDescriptorSetLayout(RenderDevice->LogicalDevice, &DescriptorSetLayoutCreateInfo, nullptr, &Sponza->TexturesSetLayout));
+
+    // Pipeline layout
+    VkDescriptorSetLayout SetLayouts[2] = { Sponza->MatricesSetLayout, Sponza->TexturesSetLayout };
+    // Push Constants
+    VkPushConstantRange PushConstantRange = {};
+    PushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    PushConstantRange.offset = 0;
+    PushConstantRange.size = sizeof(Shu::mat4f);
+    CreatePipelineLayout(RenderDevice, 2, SetLayouts, 1, &PushConstantRange, &Sponza->PipelineLayout);
+
+    // Descritpro Set for matrices.
+    shoora_vulkan_buffer *VertBuffer = &Sponza->VertBuffers.VertexBuffer;
+    AllocateDescriptorSets(RenderDevice, Sponza->DescriptorPool, 1, &SetLayouts[0], &Sponza->DescriptorSet);
+    shoora_vulkan_buffer *UniformBuffer = &Sponza->ShaderData.Buffer;
+    UpdateBufferDescriptorSet(RenderDevice, Sponza->DescriptorSet, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                              UniformBuffer->Handle, UniformBuffer->MemSize);
+
+    // Descriptor Set for materials.
+    for(u32 MaterialIndex = 0;
+        MaterialIndex < Sponza->Model.MaterialCount;
+        ++MaterialIndex)
+    {
+        shoora_model_material *Mat = Sponza->Model.Materials + MaterialIndex;
+        AllocateDescriptorSets(RenderDevice, Sponza->DescriptorPool, 1, &Sponza->TexturesSetLayout,
+                               &Mat->DescriptorSet);
+
+        VkWriteDescriptorSet WriteSets[2];
+        u32 WriteSetCount = 0;
+        if(Mat->BaseColorTextureIndex >= 0)
+        {
+            shoora_vulkan_image_sampler *ColorMap = Sponza->ImageBuffers + Mat->BaseColorTextureIndex;
+            VkDescriptorImageInfo ColorMapInfo = GetImageDescriptorInfo(ColorMap);
+            WriteSets[WriteSetCount++] = GetWriteDescriptorSet(Mat->DescriptorSet,
+                                                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0,
+                                                               &ColorMapInfo);
+        }
+
+        if(Mat->NormalTextureIndex >= 0)
+        {
+            shoora_vulkan_image_sampler *NormalMap = Sponza->ImageBuffers + Mat->NormalTextureIndex;
+            VkDescriptorImageInfo NormalMapInfo = GetImageDescriptorInfo(NormalMap);
+            WriteSets[WriteSetCount++] = GetWriteDescriptorSet(Mat->DescriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
+                                                    &NormalMapInfo);
+        }
+
+        vkUpdateDescriptorSets(RenderDevice->LogicalDevice, WriteSetCount, WriteSets, 0, nullptr);
+    }
+}
+
+struct material_specialization_data
+{
+    VkBool32 AlphaMask;
+    f32 AlphaMaskCutoff;
+};
+
+void
+SetupSponzaPipeline(shoora_vulkan_device *RenderDevice, VkRenderPass RenderPass, sponza_stuff *Sponza)
+{
+    auto InputAssemblyInfo = GetInputAssemblyInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE);
+    auto RasterizationInfo = GetRasterizationInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE,
+                                                  VK_FRONT_FACE_CLOCKWISE);
+    VkPipelineColorBlendAttachmentState ColorBlendAttachmentState{};
+    ColorBlendAttachmentState.colorWriteMask = 0xF;
+    ColorBlendAttachmentState.blendEnable = VK_FALSE;
+    auto ColorBlendInfo = GetPipelineColorBlendInfo(1, &ColorBlendAttachmentState);
+    auto DepthStencilInfo = GetPipelineDepthStencilInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
+    auto ViewportInfo = GetPipelineViewportInfo(1, 1);
+    auto MultiSampleInfo = GetPipelineMultiSampleInfo(RenderDevice->MsaaSamples, 0);
+    VkDynamicState DynamicStates[] =
+    {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR
+    };
+    auto DynamicStateInfo = GetPipelineDynamicStateInfo(ARRAY_SIZE(DynamicStates), DynamicStates, 0);
+
+    VkPipelineShaderStageCreateInfo ShaderStageCreateInfos[2];
+    ShaderStageCreateInfos[0] = GetShaderStageInfo(RenderDevice, "shaders/spirv/sponza.vert.spv",
+                                                   VK_SHADER_STAGE_VERTEX_BIT, "main");
+    ShaderStageCreateInfos[1] = GetShaderStageInfo(RenderDevice, "shaders/spirv/sponza.frag.spv",
+                                                   VK_SHADER_STAGE_FRAGMENT_BIT, "main");
+
+    auto VertexBindingDesc = GetVertexBindingDescription();
+    VkVertexInputAttributeDescription AttributeDescriptions[] = {
+        GetVertexAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT,     OFFSET_OF(shoora_vertex_info, Pos)),
+        GetVertexAttributeDescription(0, 1, VK_FORMAT_R32G32B32_SFLOAT,     OFFSET_OF(shoora_vertex_info, Normal)),
+        GetVertexAttributeDescription(0, 2, VK_FORMAT_R32G32_SFLOAT,        OFFSET_OF(shoora_vertex_info, UV)),
+        GetVertexAttributeDescription(0, 3, VK_FORMAT_R32G32B32_SFLOAT,     OFFSET_OF(shoora_vertex_info, Color)),
+        GetVertexAttributeDescription(0, 4, VK_FORMAT_R32G32B32A32_SFLOAT,  OFFSET_OF(shoora_vertex_info, Tangent))
+    };
+
+    auto VertexInputInfo = GetPipelineVertexInputInfo(1, &VertexBindingDesc, ARRAY_SIZE(AttributeDescriptions),
+                                                      AttributeDescriptions);
+
+    auto PipelineCreateInfo = GetPipelineCreateInfo(Sponza->PipelineLayout, RenderPass);
+    PipelineCreateInfo.pVertexInputState = &VertexInputInfo;
+    PipelineCreateInfo.pInputAssemblyState = &InputAssemblyInfo;
+    PipelineCreateInfo.pRasterizationState = &RasterizationInfo;
+    PipelineCreateInfo.pColorBlendState = &ColorBlendInfo;
+    PipelineCreateInfo.pMultisampleState = &MultiSampleInfo;
+    PipelineCreateInfo.pViewportState = &ViewportInfo;
+    PipelineCreateInfo.pDepthStencilState = &DepthStencilInfo;
+    PipelineCreateInfo.pDynamicState = &DynamicStateInfo;
+    PipelineCreateInfo.stageCount = ARRAY_SIZE(ShaderStageCreateInfos);
+    PipelineCreateInfo.pStages = ShaderStageCreateInfos;
+
+    for(u32 MaterialIndex = 0;
+        MaterialIndex < Sponza->Model.MaterialCount;
+        ++MaterialIndex)
+    {
+        shoora_model_material *Mat = Sponza->Model.Materials + MaterialIndex;
+
+        material_specialization_data MaterialSpecialData = {};
+        MaterialSpecialData.AlphaMask = (Mat->AlphaMode == shoora_model_alpha_mode::AlphaMode_Mask);
+        MaterialSpecialData.AlphaMaskCutoff = (Mat->AlphaCutoff);
+
+        VkSpecializationMapEntry SpecialEntries[2] = {
+            GetSpecializationMapEntry(0, OFFSET_OF(material_specialization_data, AlphaMask),
+                                      sizeof(material_specialization_data::AlphaMask)),
+            GetSpecializationMapEntry(1, OFFSET_OF(material_specialization_data, AlphaMaskCutoff),
+                                      sizeof(material_specialization_data::AlphaMaskCutoff))
+        };
+
+        auto SpecializationInfo = GetSpecializationInfo(ARRAY_SIZE(SpecialEntries), SpecialEntries,
+                                                        sizeof(material_specialization_data),
+                                                        &MaterialSpecialData);
+        ShaderStageCreateInfos[1].pSpecializationInfo = &SpecializationInfo;
+        RasterizationInfo.cullMode = Mat->DoubleSided ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT;
+        // RasterizationInfo.cullMode = VK_CULL_MODE_NONE;
+
+        VK_CHECK(vkCreateGraphicsPipelines(RenderDevice->LogicalDevice, VK_NULL_HANDLE, 1, &PipelineCreateInfo,
+                                           nullptr, &Mat->Pipeline));
+    }
+}
+
+void
+DrawSponzaNode(VkCommandBuffer CommandBuffer, VkPipelineLayout PipelineLayout, shoora_model_node *Node,
+               sponza_stuff *Sponza)
+{
+    if(Node->Mesh.PrimitiveCount > 0)
+    {
+        Shu::mat4f NodeMatrix = Node->ModelMatrix;
+        shoora_model_node *ParentNode = Node->ParentNode;
+
+        while(ParentNode)
+        {
+            NodeMatrix = ParentNode->ModelMatrix*NodeMatrix;
+            ParentNode = ParentNode->ParentNode;
+        }
+
+        vkCmdPushConstants(CommandBuffer, PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Shu::mat4f),
+                           &NodeMatrix);
+        for(u32 PrimitiveIndex = 0;
+            PrimitiveIndex < Node->Mesh.PrimitiveCount;
+            ++PrimitiveIndex)
+        {
+            shoora_mesh_primitive *Primitive = Node->Mesh.Primitives + PrimitiveIndex;
+            if(Primitive->IndexCount > 0)
+            {
+                shoora_model_material *PrimitiveMaterial = Sponza->Model.Materials + Primitive->MaterialIndex;
+
+                if(PrimitiveMaterial->NormalTextureIndex != -1 &&
+                   PrimitiveMaterial->BaseColorTextureIndex != -1)
+                {
+                    vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PrimitiveMaterial->Pipeline);
+                    vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 1, 1,
+                                            &PrimitiveMaterial->DescriptorSet, 0, nullptr);
+                    vkCmdDrawIndexed(CommandBuffer, Primitive->IndexCount, 1, Primitive->FirstIndex, 0, 0);
+                }
+            }
+        }
+    }
+    for(u32 ChildIndex = 0;
+        ChildIndex < Node->ChildrenCount;
+        ++ChildIndex)
+    {
+        shoora_model_node *ChildNode = Node->ChildNodes[ChildIndex];
+        DrawSponzaNode(CommandBuffer, PipelineLayout, ChildNode, Sponza);
+    }
+}
+
+void
+DrawSponza(VkCommandBuffer CommandBuffer, VkPipelineLayout PipelineLayout, sponza_stuff *Sponza)
+{
+    VkDeviceSize Offsets[1] = { 0 };
+    vkCmdBindVertexBuffers(CommandBuffer, 0, 1, &Sponza->VertBuffers.VertexBuffer.Handle, Offsets);
+    vkCmdBindIndexBuffer(CommandBuffer, Sponza->VertBuffers.IndexBuffer.Handle, 0, VK_INDEX_TYPE_UINT32);
+
+    // NOTE: Render all nodes.
+    for(u32 NodeIndex = 0;
+        NodeIndex < Sponza->Model.NodeCount;
+        ++NodeIndex)
+    {
+        shoora_model_node *Node = Sponza->Model.Nodes[NodeIndex];
+        DrawSponzaNode(CommandBuffer, PipelineLayout, Node, Sponza);
+    }
+}
+
+void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
 {
-    LoadMesh("meshes/sponza/Sponza.gltf");
-
     GlobalWindowSize = {AppInfo->WindowWidth, AppInfo->WindowHeight};
     InitializeLightData();
 
@@ -536,16 +792,24 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     volkLoadDevice(RenderDevice->LogicalDevice);
     CreateCommandPools(RenderDevice);
 
+#if 0
     GenerateNormals(CubeVertices, CubeIndices, ARRAY_SIZE(CubeIndices));
     GenerateTangentInformation(CubeVertices, CubeIndices, ARRAY_SIZE(CubeIndices));
+#endif
 
     Shu::vec2u ScreenDim = Shu::vec2u{AppInfo->WindowWidth, AppInfo->WindowHeight};
     CreateSwapchain(&VulkanContext->Device, &VulkanContext->Swapchain, ScreenDim, &SwapchainInfo);
     CreateRenderPass(RenderDevice, Swapchain, &VulkanContext->GraphicsRenderPass);
     CreateSwapchainFramebuffers(RenderDevice, Swapchain, VulkanContext->GraphicsRenderPass);
 
-    CreateVertexBuffer(RenderDevice, CubeVertices, ARRAY_SIZE(CubeVertices), CubeIndices, ARRAY_SIZE(CubeIndices),
-                       &VulkanContext->VertexBuffer, &VulkanContext->IndexBuffer);
+    SetupCamera(&VulkanContext->Camera, Shu::Vec3f(0, 0, -10.0f), Shu::Vec3f(0, 1, 0));
+    LoadModel(&VulkanContext->Sponza.Model, "meshes/sponza/Sponza.gltf");
+    shoora_mesh_primitive *Primitives = VulkanContext->Sponza.Model.Nodes[0]->Mesh.Primitives;
+    CreateVertexBuffers(RenderDevice, &VulkanContext->Sponza.Model, &VulkanContext->Sponza.VertBuffers);
+    CreateSponzaUniformBuffers(RenderDevice, &VulkanContext->Sponza, &VulkanContext->Camera);
+    CreateSponzaImageBuffers(RenderDevice, &VulkanContext->Sponza);
+    SetupSponzaDescriptors(&VulkanContext->Device, &VulkanContext->Sponza);
+    SetupSponzaPipeline(&VulkanContext->Device, VulkanContext->GraphicsRenderPass, &VulkanContext->Sponza);
 
     const char *ppTexturePaths[] =
     {
@@ -575,7 +839,6 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
 
     CreateSynchronizationPrimitives(&VulkanContext->Device, &VulkanContext->SyncHandles);
     PrepareImGui(RenderDevice, &VulkanContext->ImContext, ScreenDim, VulkanContext->GraphicsRenderPass);
-    SetupCamera(&VulkanContext->Camera, Shu::Vec3f(0, 0, -10.0f), Shu::Vec3f(0, 1, 0));
 
     AppInfo->WindowResizeCallback = &WindowResizedCallback;
 
@@ -664,6 +927,8 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
 
     memcpy(Context->Swapchain.FragUniformBuffers[ImageIndex].pMapped, &GlobalFragUniformData,
            sizeof(lighting_shader_uniform_data));
+
+    UpdateSponzaUniformBuffers(&Context->Sponza, &Context->Camera);
 }
 
 void
@@ -795,6 +1060,7 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 
     // RenderState.MeshColor = Vec3(1, 1, 0);
     WriteUniformData(ImageIndex, FramePacket->DeltaTime);
+    UpdateSponzaUniformBuffers(&Context->Sponza, &Context->Camera);
 
     VK_CHECK(vkResetFences(Context->Device.LogicalDevice, 1, &pCurrentFrameFence->Handle));
     VK_CHECK(vkResetCommandBuffer(DrawCmdBuffer, 0));
@@ -838,6 +1104,12 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         Scissor.extent = Context->Swapchain.ImageDimensions;
         vkCmdSetScissor(DrawCmdBuffer, 0, 1, &Scissor);
 
+        sponza_stuff *Sponza = &Context->Sponza;
+        vkCmdBindDescriptorSets(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Sponza->PipelineLayout, 0, 1,
+                                &Sponza->DescriptorSet, 0, nullptr);
+        DrawSponza(DrawCmdBuffer, Sponza->PipelineLayout, Sponza);
+
+#if CUBE_SCENE
         VkDescriptorSet DescriptorSets[] = {Context->Swapchain.UniformDescriptorSets[ImageIndex],
                                             Context->Swapchain.FragSamplersDescriptorSet,
                                             Context->Swapchain.FragUniformsDescriptorSets[ImageIndex]};
@@ -847,11 +1119,13 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->GraphicsPipeline.Handle);
 
         VkDeviceSize offsets[1] = {0};
-        vkCmdBindVertexBuffers(DrawCmdBuffer, 0, 1, &Context->VertexBuffer.Handle, offsets);
-        vkCmdBindIndexBuffer(DrawCmdBuffer, Context->IndexBuffer.Handle, 0, VK_INDEX_TYPE_UINT32);
+        shoora_vulkan_vertex_buffers *VertBuffers = &Context->Sponza.VertBuffers;
+        vkCmdBindVertexBuffers(DrawCmdBuffer, 0, 1, &VertBuffers->VertexBuffer.Handle, offsets);
+        vkCmdBindIndexBuffer(DrawCmdBuffer, VertBuffers->IndexBuffer.Handle, 0,
+                             VK_INDEX_TYPE_UINT32);
 
         RenderCubes(DrawCmdBuffer);
-
+#endif
 #if CREATE_WIREFRAME_PIPELINE
         if(GlobalRenderState.WireframeMode)
         {
@@ -861,11 +1135,13 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         }
 #endif
 
+#if UNLIT_PIPELINE
         vkCmdBindDescriptorSets(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Layout, 0,
                                 1, &Context->UnlitSets[ImageIndex], 0, nullptr);
         vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Handle);
 
         RenderLightCubes(DrawCmdBuffer);
+#endif
 
         ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
 
@@ -916,7 +1192,8 @@ DestroyVulkanRenderer(shoora_vulkan_context *Context)
     DestroySwapchainUniformResources(RenderDevice, &Context->Swapchain);
 
     DestroyAllSynchronizationPrimitives(RenderDevice, &Context->SyncHandles);
-    DestroyVertexBuffer(RenderDevice, &Context->VertexBuffer, &Context->IndexBuffer);
+    DestroyVertexBuffer(RenderDevice, &Context->Sponza.VertBuffers.VertexBuffer,
+                        &Context->Sponza.VertBuffers.IndexBuffer);
     DestroyPipeline(RenderDevice, &Context->GraphicsPipeline);
 #if CREATE_WIREFRAME_PIPELINE
     DestroyPipeline(RenderDevice, &Context->WireframePipeline);

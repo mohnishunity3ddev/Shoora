@@ -3,7 +3,8 @@
 #include "defines.h"
 #include <math/math.h>
 
-struct shoora_material
+#if 0
+struct shoora_model_material
 {
     f32 Ambient;
     SHU_ALIGN_16 Shu::vec3f Diffuse;
@@ -40,8 +41,8 @@ enum MaterialType
 
     MAX_MATERIAL_COUNT
 };
-
-void GetMaterial(MaterialType Type, shoora_material *OutMaterial);
+void GetMaterial(MaterialType Type, shoora_model_material *OutMaterial);
+#endif
 
 #define MATERIAL_H
 #endif // MATERIAL_H

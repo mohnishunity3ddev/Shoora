@@ -6,6 +6,7 @@
 #include "vulkan_defines.h"
 #include "vulkan_device.h"
 #include "camera/camera.h"
+#include <loaders/meshes/mesh.h>
 #include <imgui.h>
 
 
@@ -88,6 +89,7 @@ struct shoora_vulkan_image
     VkImage Handle;
     VkImageView ImageView;
     VkDeviceMemory ImageMemory;
+    VkImageLayout ImageLayout;
 };
 
 struct shoora_vulkan_image_sampler
@@ -202,6 +204,42 @@ struct shoora_vulkan_imgui
     shoora_imgui_push_constant_block PushConstantBlock;
 };
 
+struct shoora_vulkan_vertex_buffers
+{
+    shoora_vulkan_buffer VertexBuffer;
+    shoora_vulkan_buffer IndexBuffer;
+};
+
+struct shader_data
+{
+    shoora_vulkan_buffer Buffer;
+    struct values
+    {
+        Shu::mat4f Projection;
+        Shu::mat4f View;
+        Shu::vec4f LightPosition;
+        Shu::vec4f ViewPosition;
+    } Values;
+};
+
+struct sponza_stuff
+{
+    shoora_model Model;
+    shoora_vulkan_vertex_buffers VertBuffers;
+    shoora_vulkan_image_sampler *ImageBuffers;
+
+    VkDescriptorPool DescriptorPool;
+
+    shader_data ShaderData;
+
+    VkDescriptorSetLayout MatricesSetLayout;
+    VkDescriptorSetLayout TexturesSetLayout;
+    VkPipelineLayout PipelineLayout;
+    VkDescriptorSet DescriptorSet;
+
+    VkPipeline Pipeline;
+};
+
 struct shoora_vulkan_context
 {
     VkInstance Instance;
@@ -209,7 +247,6 @@ struct shoora_vulkan_context
     shoora_vulkan_device Device;
     shoora_vulkan_swapchain Swapchain;
     VkRenderPass GraphicsRenderPass;
-
 
     VkDescriptorSetLayout UnlitSetLayout;
     VkDescriptorSet UnlitSets[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
@@ -219,13 +256,13 @@ struct shoora_vulkan_context
     // shoora_vulkan_graphics_pipeline WireframePipeline;
     shoora_vulkan_graphics_pipeline UnlitPipeline;
 
-    shoora_vulkan_buffer VertexBuffer;
-    shoora_vulkan_buffer IndexBuffer;
     shoora_vulkan_synchronization SyncHandles;
 
     shoora_camera Camera;
 
     shoora_vulkan_imgui ImContext;
+
+    sponza_stuff Sponza;
 
     b32 IsInitialized;
     u32 CurrentFrame;

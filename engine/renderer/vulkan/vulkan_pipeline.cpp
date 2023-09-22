@@ -99,7 +99,7 @@ GetPipelineMultiSampleInfo(VkSampleCountFlagBits Samples, VkPipelineMultisampleS
 
 VkPipelineDynamicStateCreateInfo
 GetPipelineDynamicStateInfo(u32 DynamicStateCount, VkDynamicState *pDynamicStates,
-                       VkPipelineDynamicStateCreateFlags Flags)
+                            VkPipelineDynamicStateCreateFlags Flags)
 {
     VkPipelineDynamicStateCreateInfo PipelineDynamicStateInfo = {};
     PipelineDynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
@@ -139,8 +139,23 @@ PipelineVertexInputInfo()
     return VertexInputStateInfo;
 }
 
+VkPipelineVertexInputStateCreateInfo
+GetPipelineVertexInputInfo(u32 VertexBindingCount, VkVertexInputBindingDescription *VertexBindingDesc,
+                           u32 AttribCount, VkVertexInputAttributeDescription *Attribs)
+{
+    VkPipelineVertexInputStateCreateInfo VertexInputStateInfo = {};
+
+    VertexInputStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    VertexInputStateInfo.vertexBindingDescriptionCount = VertexBindingCount;
+    VertexInputStateInfo.pVertexBindingDescriptions = VertexBindingDesc;
+    VertexInputStateInfo.vertexAttributeDescriptionCount = AttribCount;
+    VertexInputStateInfo.pVertexAttributeDescriptions = Attribs;
+
+    return VertexInputStateInfo;
+}
+
 VkGraphicsPipelineCreateInfo
-GetGraphicsPipelineInfo(VkPipelineLayout Layout, VkRenderPass RenderPass, VkPipelineCreateFlags Flags)
+GetPipelineCreateInfo(VkPipelineLayout Layout, VkRenderPass RenderPass, VkPipelineCreateFlags Flags)
 {
     VkGraphicsPipelineCreateInfo pipelineCreateInfo{};
     pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -150,6 +165,29 @@ GetGraphicsPipelineInfo(VkPipelineLayout Layout, VkRenderPass RenderPass, VkPipe
     pipelineCreateInfo.basePipelineIndex = -1;
     pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
     return pipelineCreateInfo;
+}
+
+VkSpecializationMapEntry
+GetSpecializationMapEntry(u32 ConstantID, u32 Offset, size_t Size)
+{
+    VkSpecializationMapEntry Entry = {};
+    Entry.constantID = ConstantID;
+    Entry.offset = Offset;
+    Entry.size = Size;
+
+    return Entry;
+}
+
+VkSpecializationInfo
+GetSpecializationInfo(u32 MapEntryCount, VkSpecializationMapEntry *MapEntries, size_t DataSize, const void *Data)
+{
+    VkSpecializationInfo SpecializationInfo = {};
+    SpecializationInfo.mapEntryCount = MapEntryCount;
+    SpecializationInfo.pMapEntries = MapEntries;
+    SpecializationInfo.dataSize = DataSize;
+    SpecializationInfo.pData = Data;
+
+    return SpecializationInfo;
 }
 
 void
@@ -186,6 +224,15 @@ GetShaderStageInfo(VkShaderModule Shader, VkShaderStageFlagBits StageFlags, cons
     StageInfo.pSpecializationInfo = nullptr;
 
     return StageInfo;
+}
+
+VkPipelineShaderStageCreateInfo
+GetShaderStageInfo(shoora_vulkan_device *RenderDevice, const char *ShaderFile, VkShaderStageFlagBits StageFlags,
+                   const char *EntryPointName)
+{
+    VkShaderModule Module = CreateShaderModule(RenderDevice, ShaderFile);
+    auto Result = GetShaderStageInfo(Module, StageFlags, EntryPointName);
+    return Result;
 }
 
 VkPushConstantRange

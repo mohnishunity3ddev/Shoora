@@ -198,7 +198,7 @@ InitializeResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_imgui *ImG
         GetShaderStageInfo(FragmentShader, VK_SHADER_STAGE_FRAGMENT_BIT, "main")
     };
 
-    auto GraphicsPipelineCreateInfo = GetGraphicsPipelineInfo(ImGUIContext->PipelineLayout,
+    auto GraphicsPipelineCreateInfo = GetPipelineCreateInfo(ImGUIContext->PipelineLayout,
                                                               RenderPass);
     GraphicsPipelineCreateInfo.pInputAssemblyState = &InputAssemblyInfo;
     GraphicsPipelineCreateInfo.pRasterizationState = &RasterizationState;

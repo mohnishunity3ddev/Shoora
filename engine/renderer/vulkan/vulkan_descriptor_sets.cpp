@@ -2,6 +2,21 @@
 #include "vulkan_image.h"
 // #include <stb_image.h>
 
+VkWriteDescriptorSet
+GetWriteDescriptorSet(VkDescriptorSet Set, VkDescriptorType DescriptorType, u32 BindingIndex,
+                      VkDescriptorImageInfo *ImageInfo)
+{
+    VkWriteDescriptorSet WriteSet = {};
+    WriteSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    WriteSet.dstSet = Set;
+    WriteSet.descriptorCount = 1;
+    WriteSet.descriptorType = DescriptorType;
+    WriteSet.pImageInfo = ImageInfo;
+    WriteSet.dstBinding = BindingIndex;
+
+    return WriteSet;
+}
+
 VkDescriptorImageInfo
 GetImageDescriptorInfo(VkSampler Sampler, VkImageView ImageView, VkImageLayout ImageLayout)
 {
@@ -11,6 +26,14 @@ GetImageDescriptorInfo(VkSampler Sampler, VkImageView ImageView, VkImageLayout I
     ImageInfo.imageLayout = ImageLayout;
 
     return ImageInfo;
+}
+
+VkDescriptorImageInfo
+GetImageDescriptorInfo(shoora_vulkan_image_sampler *Sampler)
+{
+    VkDescriptorImageInfo Result = GetImageDescriptorInfo(Sampler->Sampler, Sampler->Image.ImageView,
+                                                          Sampler->Image.ImageLayout);
+    return Result;
 }
 
 VkDescriptorSetLayoutBinding

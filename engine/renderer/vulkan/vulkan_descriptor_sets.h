@@ -5,7 +5,11 @@
 #include "vulkan_renderer.h"
 
 // Initializers!!!!
+VkWriteDescriptorSet GetWriteDescriptorSet(VkDescriptorSet Set, VkDescriptorType DescriptorType, u32 BindingIndex,
+                                           VkDescriptorImageInfo *ImageInfo);
+
 VkDescriptorImageInfo GetImageDescriptorInfo(VkSampler Sampler, VkImageView ImageView, VkImageLayout ImageLayout);
+VkDescriptorImageInfo GetImageDescriptorInfo(shoora_vulkan_image_sampler *Sampler);
 
 VkDescriptorPoolSize GetDescriptorPoolSize(VkDescriptorType DescriptorType, u32 DescriptorCount);
 void CreateDescriptorPool(shoora_vulkan_device *RenderDevice, u32 PoolSizeCount, VkDescriptorPoolSize *pSizes,

@@ -62,8 +62,9 @@ CreateImageView2D(shoora_vulkan_device *RenderDevice, VkImage Image, VkFormat Fo
 }
 
 void
-CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, Shu::vec2u Dim, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageUsageFlags Usage,
-                    VkImageAspectFlags Aspect, VkImage *pImage, VkDeviceMemory *pMemory, VkImageView *pView)
+CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, Shu::vec2u Dim, VkSampleCountFlagBits NumSamples,
+                    VkFormat Format, VkImageUsageFlags Usage, VkImageAspectFlags Aspect, VkImage *pImage,
+                    VkDeviceMemory *pMemory, VkImageView *pView)
 {
     VkImageCreateInfo ImageInfo = {};
     ImageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -295,7 +296,7 @@ CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, shoora_image_data
                            VkSampleCountFlagBits NumSamples,
                            shoora_vulkan_image_sampler *pImageSampler)
 {
-    LogInfoUnformatted("Creating Image Sampler!\n");
+    // LogInfoUnformatted("Creating Image Sampler!\n");
 
     VkFormat DesiredImageFormat = VK_FORMAT_UNDEFINED;
     VkFormat *Candidates = nullptr;
@@ -329,7 +330,7 @@ CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, shoora_image_data
                                                       VK_SHARING_MODE_EXCLUSIVE,
                                                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                                                       ImageData.Data, ImageData.TotalSize);
-    LogInfoUnformatted("Created Staging Buffer!\n");
+    // LogInfoUnformatted("Created Staging Buffer!\n");
 
     // Get command buffer to store transfer data from buffer to image
     VkCommandBuffer CopyCmdBuffer = CreateTransientCommandBuffer(RenderDevice, RenderDevice->GraphicsCommandPool,
@@ -362,17 +363,14 @@ CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, shoora_image_data
     CreateSampler2D(RenderDevice, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_LINEAR,
                     VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
                     &pImageSampler->Sampler);
-    LogInfoUnformatted("Created Image Sampler!\n");
+    // LogInfoUnformatted("Created Image Sampler!\n");
 }
 
 void
-CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, const char *ImageFilename,
+CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, shoora_image_data *ImageData,
                            VkSampleCountFlagBits NumSamples,
                            shoora_vulkan_image_sampler *pImageSampler)
 {
-    LogInfoUnformatted("Creating Image Sampler!\n");
-    shoora_image_data ImageData = LoadImageFile(ImageFilename);
-
     VkFormat DesiredImageFormat = VK_FORMAT_UNDEFINED;
     VkFormat *Candidates = nullptr;
     u32 CandidateCount = 0;
@@ -396,7 +394,7 @@ CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, const char *Image
                                                   VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT,
                                                   DesiredImageFormat);
 
-    CreateSimpleImage2D(RenderDevice, Shu::vec2u{(u32)ImageData.Dim.w, (u32)ImageData.Dim.h}, NumSamples,
+    CreateSimpleImage2D(RenderDevice, Shu::vec2u{(u32)ImageData->Dim.w, (u32)ImageData->Dim.h}, NumSamples,
                         ImageFormat, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                         VK_IMAGE_ASPECT_COLOR_BIT, &pImageSampler->Image);
 
@@ -404,7 +402,7 @@ CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, const char *Image
     shoora_vulkan_buffer StagingBuffer = CreateBuffer(RenderDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                                       VK_SHARING_MODE_EXCLUSIVE,
                                                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                                      ImageData.Data, ImageData.TotalSize);
+                                                      ImageData->Data, ImageData->TotalSize);
     LogInfoUnformatted("Created Staging Buffer!\n");
 
     // Get command buffer to store transfer data from buffer to image
@@ -419,13 +417,14 @@ CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, const char *Image
     VkBufferImageCopy BufferCopy = {};
     BufferCopy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     BufferCopy.imageSubresource.layerCount = 1;
-    BufferCopy.imageExtent.width = ImageData.Dim.w;
-    BufferCopy.imageExtent.height = ImageData.Dim.h;
+    BufferCopy.imageExtent.width = ImageData->Dim.w;
+    BufferCopy.imageExtent.height = ImageData->Dim.h;
     BufferCopy.imageExtent.depth = 1;
     vkCmdCopyBufferToImage(CopyCmdBuffer, StagingBuffer.Handle, pImageSampler->Image.Handle,
                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &BufferCopy);
-    FreeImageData(&ImageData);
+    FreeImageData(ImageData);
 
+    pImageSampler->Image.ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     // Prepare for shader read
     SetImageLayout(CopyCmdBuffer, pImageSampler->Image.Handle, VK_IMAGE_ASPECT_COLOR_BIT,
                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -436,9 +435,20 @@ CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, const char *Image
 
     // Descriptor Set Stuff
     CreateSampler2D(RenderDevice, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_LINEAR,
-                    VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+                    VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
                     &pImageSampler->Sampler);
-    LogInfoUnformatted("Created Image Sampler!\n");
+    // LogInfoUnformatted("Created Image Sabumpler!\n");
+}
+
+void
+CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, const char *ImageFilename,
+                           VkSampleCountFlagBits NumSamples,
+                           shoora_vulkan_image_sampler *pImageSampler)
+{
+    LogInfoUnformatted("Creating Image Sampler!\n");
+    shoora_image_data ImageData = LoadImageFile(ImageFilename);
+
+    CreateCombinedImageSampler(RenderDevice, &ImageData, NumSamples, pImageSampler);
 }
 
 VkFormat

@@ -1,11 +1,15 @@
 #version 450
 
+#define CALCULATE_BITANGENT 0
+
 layout(location = 0) in vec3 InPos;
 layout(location = 1) in vec3 InNormal;
 layout(location = 2) in vec3 InColor;
 layout(location = 3) in vec2 InUV;
-layout(location = 4) in vec3 InTangent;
-layout(location = 5) in vec3 InBiTangent;
+layout(location = 4) in vec4 InTangent;
+#if CALCULATE_BITANGENT
+	layout(location = 5) in vec3 InBiTangent;
+#endif
 
 layout(set = 0, binding = 0) uniform UniformBuffer
 {
@@ -33,7 +37,7 @@ void main()
 
 	mat4 ModelView = pushConsts.Model*ubo.View;
 
-	vec3 TangentWS = normalize(vec3(vec4(InTangent, 0.)*pushConsts.Model));
+	vec3 TangentWS = normalize(vec3(vec4(InTangent.xyz, 0.)*pushConsts.Model))*InTangent.w;
 	vec3 NormalWS = normalize(vec3(vec4(InNormal, 0.)*pushConsts.Model));
 
 	TangentWS = normalize(TangentWS - dot(TangentWS, NormalWS)*NormalWS);

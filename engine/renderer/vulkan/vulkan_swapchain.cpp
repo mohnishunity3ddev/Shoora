@@ -752,8 +752,8 @@ CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulka
         Index < SHU_MAX_FRAMES_IN_FLIGHT;
         ++Index)
     {
-        AllocateDescriptorSets(RenderDevice, Swapchain->UniformDescriptorPool, 1, &Swapchain->FragUniformsSetLayout,
-                               &Swapchain->FragUniformsDescriptorSets[Index]);
+        AllocateDescriptorSets(RenderDevice, Swapchain->UniformDescriptorPool, 1,
+                               &Swapchain->FragUniformsSetLayout, &Swapchain->FragUniformsDescriptorSets[Index]);
         UpdateBufferDescriptorSet(RenderDevice, Swapchain->FragUniformsDescriptorSets[Index], 0,
                                   VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swapchain->FragUniformBuffers[Index].Handle,
                                   Swapchain->FragUniformBuffers[Index].MemSize);

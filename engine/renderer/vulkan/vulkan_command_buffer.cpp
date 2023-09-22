@@ -51,7 +51,7 @@ FlushTransientCommandBuffer(shoora_vulkan_device *RenderDevice, VkCommandBuffer 
 
     VK_CHECK(vkQueueSubmit(Queue, 1, &SubmitInfo, Fence));
     VK_CHECK(vkWaitForFences(RenderDevice->LogicalDevice, 1, &Fence, VK_TRUE, SHU_DEFAULT_FENCE_TIMEOUT));
-
+    
     vkDestroyFence(RenderDevice->LogicalDevice, Fence, nullptr);
 
     if(Free)

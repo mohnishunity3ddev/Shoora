@@ -116,8 +116,8 @@ CopyBuffers(shoora_vulkan_device *RenderDevice, VkBuffer *SrcBuffers, VkBuffer *
 }
 
 void
-CreateVertexBuffer(shoora_vulkan_device *RenderDevice, shoora_vertex_info *Vertices, u32 VertexCount, u32 *Indices,
-                   u32 IndexCount, shoora_vulkan_buffer *outVertexBuffer, shoora_vulkan_buffer *outIndexBuffer)
+CreateVertexBuffers(shoora_vulkan_device *RenderDevice, shoora_vertex_info *Vertices, u32 VertexCount, u32 *Indices,
+                    u32 IndexCount, shoora_vulkan_buffer *outVertexBuffer, shoora_vulkan_buffer *outIndexBuffer)
 {
     size_t RequiredVertexBufferSize = VertexCount*sizeof(shoora_vertex_info);
     size_t RequiredIndexBufferSize = IndexCount*sizeof(u32);
@@ -159,6 +159,14 @@ CreateVertexBuffer(shoora_vulkan_device *RenderDevice, shoora_vertex_info *Verti
     LogOutput(LogType_Info, "Created Vertex buffer and Index buffers\n");
 }
 
+void
+CreateVertexBuffers(shoora_vulkan_device *RenderDevice, shoora_model *Model,
+                    shoora_vulkan_vertex_buffers *VertBuffers)
+{
+    CreateVertexBuffers(RenderDevice, Model->Vertices, Model->VertexCount, Model->Indices, Model->IndicesCount,
+                        &VertBuffers->VertexBuffer, &VertBuffers->IndexBuffer);
+}
+
 // TODO)): Instead of creating 4 separate uniform buffers, create a single one with each having an offset.
 void
 CreateUniformBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *pUniformBuffers,
@@ -195,7 +203,7 @@ CreateUniformBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *p
         VK_CHECK_RESULT(vkAllocateMemory(RenderDevice->LogicalDevice, &MemAllocInfo, nullptr,
                                          &pUniformBuffer->Memory));
         LogInfoUnformatted("Allocation Complete!\n");
-
+        
         VK_CHECK(vkBindBufferMemory(RenderDevice->LogicalDevice, pUniformBuffer->Handle, pUniformBuffer->Memory, 0));
         VK_CHECK(vkMapMemory(RenderDevice->LogicalDevice, pUniformBuffer->Memory, 0, MemAllocInfo.allocationSize,
                              0, (void **)&pUniformBuffer->pMapped));

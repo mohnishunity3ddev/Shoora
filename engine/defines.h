@@ -303,8 +303,9 @@ enum shoora_quality
 #define MAX(A, B) (A) > (B) ? A : B
 #define MIN(A, B) (A) < (B) ? A : B
 
-inline u32
-ClampToRange(u32 Value, u32 Min, u32 Max)
+template <typename T>
+inline T
+ClampToRange(T Value, T Min, T Max)
 {
     if(Value < Min) {Value = Min;}
     else if(Value > Max) {Value = Max;}

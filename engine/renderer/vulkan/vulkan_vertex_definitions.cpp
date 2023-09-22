@@ -12,10 +12,26 @@ GetVertexBindingDescription()
     return BindingDesc;
 }
 
+VkVertexInputAttributeDescription
+GetVertexAttributeDescription(u32 BindingIndex, u32 Location, VkFormat Format, u32 Offset)
+{
+    VkVertexInputAttributeDescription Desc;
+    Desc.location = Location;
+    Desc.binding = BindingIndex;
+    Desc.format = Format;
+    Desc.offset = Offset;
+
+    return Desc;
+}
+
 void
 GetVertexAttributeDescriptions(VkVertexInputAttributeDescription *Attributes, u32 *AttributeCount)
 {
+#if CALCULATE_BITANGENT
     *AttributeCount = 6;
+#else
+    *AttributeCount = 5;
+#endif
 
     VkVertexInputAttributeDescription *PositionAttribute = &Attributes[0];
     PositionAttribute->location = 0;
@@ -44,12 +60,15 @@ GetVertexAttributeDescriptions(VkVertexInputAttributeDescription *Attributes, u3
     VkVertexInputAttributeDescription *TangentAttribute = &Attributes[4];
     TangentAttribute->location = 4;
     TangentAttribute->binding = 0;
-    TangentAttribute->format = VK_FORMAT_R32G32B32_SFLOAT;
+    TangentAttribute->format = VK_FORMAT_R32G32B32A32_SFLOAT;
     TangentAttribute->offset = (u32)OFFSET_OF(shoora_vertex_info, Tangent);
 
+    // TODO)): Do we need to calculate the bitangent in the CPU since we are already calculating this in the shaders.
+#if CALCULATE_BITANGENT
     VkVertexInputAttributeDescription *BiTangentAttribute = &Attributes[5];
     BiTangentAttribute->location = 5;
     BiTangentAttribute->binding = 0;
     BiTangentAttribute->format = VK_FORMAT_R32G32B32_SFLOAT;
     BiTangentAttribute->offset = (u32)OFFSET_OF(shoora_vertex_info, BiTangent);
+#endif
 }

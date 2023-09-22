@@ -181,8 +181,9 @@ static const shoora_material_internal Materials[] =
     },
 };
 
+#if 0
 void
-GetMaterial(MaterialType Type, shoora_material *OutMaterial)
+GetMaterial(MaterialType Type, shoora_model_material *OutMaterial)
 {
     ASSERT(ARRAY_SIZE(Materials) == MaterialType::MAX_MATERIAL_COUNT);
     ASSERT(Type < MaterialType::MAX_MATERIAL_COUNT);
@@ -197,5 +198,5 @@ GetMaterial(MaterialType Type, shoora_material *OutMaterial)
     OutMaterial->Specular = Mat.Specular;
     OutMaterial->Shininess = Shininess;
 }
-
+#endif
 // content of material.cpp goes here

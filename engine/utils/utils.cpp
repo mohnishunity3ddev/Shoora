@@ -1,5 +1,6 @@
 #include "utils.h"
 
+
 u32
 GetMaxValueIndex(u32 *NumsArray, u32 NumsCount)
 {
@@ -31,4 +32,101 @@ LogBase2(u32 Num)
         ++Result;
     }
     return Result;
+}
+
+u32
+StringLength(const char *A)
+{
+    u32 Count = 0;
+    const char *Ptr = A;
+    while (*Ptr++ != '\0') {
+        ++Count;
+    }
+    return Count;
+}
+
+void
+StringConcat(const char *A, const char *B, char *Out)
+{
+    u32 Index = 0;
+    while(A[Index] != '\0')
+    {
+        Out[Index] = A[Index];
+        ++Index;
+    }
+
+    u32 sIndex = 0;
+    while(B[sIndex] != '\0')
+    {
+        Out[Index++] = B[sIndex++];
+    }
+
+    Out[Index] = '\0';
+}
+
+void
+StringNCopy(const char *Src, char *Dst, i32 Num)
+{
+    i32 Index = 0;
+    for(; Index < Num; ++Index)
+    {
+        Dst[Index] = Src[Index];
+    }
+
+    Dst[Index] = '\0';
+}
+
+void
+StringCopy(const char *Src, char *Dst)
+{
+    u32 Index = 0;
+    while(Src[Index] != '\0')
+    {
+        Dst[Index] = Src[Index];
+        Index++;
+    }
+    Dst[Index] = '\0';
+}
+
+b32
+StringsEqual(const char *A, const char *B)
+{
+    u32 LenA = StringLength(A);
+    u32 LenB = StringLength(B);
+    if(LenA != LenB)
+        return false;
+
+    for(u32 Index = 0; Index < LenA; ++Index)
+    {
+        if(A[Index] != B[Index])
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+u32
+StringFindLastOf(const char *String, char Separator)
+{
+    u32 StrLen = StringLength(String);
+
+    while(String[StrLen] != Separator)
+    {
+        --StrLen;
+    }
+
+    return StrLen;
+}
+
+void
+StringSubString(const char *SrcString, u32 StartIndex, u32 EndIndex, char *OutString)
+{
+    for(u32 Index = StartIndex; Index <= EndIndex; ++Index)
+    {
+        OutString[Index - StartIndex] = SrcString[Index];
+    }
+
+    OutString[EndIndex - StartIndex + 1] = '\0';
 }
