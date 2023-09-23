@@ -115,7 +115,7 @@ LoadMaterials(cgltf_material *Materials, u32 MaterialCount, shoora_model *Model)
         }
         else
         {
-            // NOTE: The last texture loaded in this mesh is the default white texture which we will use for this case.
+            // NOTE: The last texture loaded in this mesh is the default white texture which we will use as default
             Mat->BaseColorTextureIndex = Model->TextureCount - 1;
         }
 
@@ -129,7 +129,7 @@ LoadMaterials(cgltf_material *Materials, u32 MaterialCount, shoora_model *Model)
         }
         else
         {
-            // NOTE: The last texture loaded in this mesh is the default white texture which we will use for this case.
+            // NOTE: The last texture loaded in this mesh is the default white texture which we will use as default
             Mat->MetallicTextureIndex = Model->TextureCount - 1;
         }
 
@@ -143,7 +143,7 @@ LoadMaterials(cgltf_material *Materials, u32 MaterialCount, shoora_model *Model)
         }
         else
         {
-            // NOTE: The last texture loaded in this mesh is the default white texture which we will use for this case.
+            // NOTE: The last texture loaded in this mesh is the default white texture which we will use as default
             Mat->NormalTextureIndex = Model->TextureCount - 1;
         }
 

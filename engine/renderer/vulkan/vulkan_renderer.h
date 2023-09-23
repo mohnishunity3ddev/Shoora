@@ -222,7 +222,7 @@ struct shader_data
     } Values;
 };
 
-struct sponza_stuff
+struct shoora_vulkan_geometry
 {
     shoora_model Model;
     shoora_vulkan_vertex_buffers VertBuffers;
@@ -236,8 +236,6 @@ struct sponza_stuff
     VkDescriptorSetLayout TexturesSetLayout;
     VkPipelineLayout PipelineLayout;
     VkDescriptorSet DescriptorSet;
-
-    VkPipeline Pipeline;
 };
 
 struct shoora_vulkan_context
@@ -262,7 +260,7 @@ struct shoora_vulkan_context
 
     shoora_vulkan_imgui ImContext;
 
-    sponza_stuff Sponza;
+    shoora_vulkan_geometry Geometry;
 
     b32 IsInitialized;
     u32 CurrentFrame;

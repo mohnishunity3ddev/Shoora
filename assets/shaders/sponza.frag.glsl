@@ -47,4 +47,5 @@ main()
     float specular = pow(max(dot(N, H), 0.0), 256);
 
     outFragColor = vec4(diffuse*color.rgb + specular, color.a);
+    // outFragColor = vec4(N, color.a);
 }
