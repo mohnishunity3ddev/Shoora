@@ -240,7 +240,7 @@ Platform_GetKeyInputState(u8 KeyCode, KeyState State)
                 Result = true;
             }
             else if(KeyCode == SU_RIGHTMOUSEBUTTON &&
-               Win32InputKeyPressed(&GlobalInputState->RightMouseButton))
+                    Win32InputKeyPressed(&GlobalInputState->RightMouseButton))
             {
                 Result = true;
             }

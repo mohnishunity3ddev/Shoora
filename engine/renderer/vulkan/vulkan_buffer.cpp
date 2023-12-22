@@ -36,7 +36,7 @@ CreateBuffer(shoora_vulkan_device *RenderDevice, VkBufferUsageFlags Usage, VkSha
 
     u8 *pBufferData;
     VK_CHECK(vkMapMemory(RenderDevice->LogicalDevice, Memory, 0, MemRequirements.size, 0, (void **)&pBufferData));
-    
+
     if (pData != nullptr)
     {
         ASSERT(DesiredMemoryType != VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT &&

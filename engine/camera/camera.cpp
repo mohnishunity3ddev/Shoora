@@ -1,4 +1,5 @@
 #include "camera.h"
+#include <float.h>
 
 void
 SetupCamera(shoora_camera *Camera, Shu::vec3f Pos, Shu::vec3f GlobalUp)

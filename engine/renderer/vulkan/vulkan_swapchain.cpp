@@ -678,7 +678,7 @@ CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulka
     Sizes[1] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, ARRAY_SIZE(Swapchain->FragImageSamplers));
     Sizes[2] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SHU_MAX_FRAMES_IN_FLIGHT);
     CreateDescriptorPool(RenderDevice, ARRAY_SIZE(Sizes), Sizes, 100, &Swapchain->UniformDescriptorPool);
-
+    
     // TODO)): Create one merged descirptor which encapsulates data for all the uniform buffers we need.
     // NOTE: 1st Descriptor Set(Uniform Buffer used in Vertex Shadder)
 

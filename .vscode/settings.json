@@ -1,8 +1,9 @@
 {
-    "editor.fontFamily": " 'Maple Mono NF', 'CaskaydiaCove NF Mono', 'IosevkaTerm Nerd Font Mono', 'JetBrainsMono Nerd Font Mono'",
+    "editor.fontFamily": "'Maple Mono NF', 'comic mono', 'comic code demo regular', 'CaskaydiaCove NF Mono', 'IosevkaTerm Nerd Font Mono', 'JetBrainsMono Nerd Font Mono'",
     "editor.fontSize": 14,
     "editor.fontLigatures": true,
     "editor.fontWeight": "normal",
+    // "editor.letterSpacing": 1,
 
     "terminal.integrated.profiles.windows": {
         "Default Profile": {

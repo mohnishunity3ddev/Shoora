@@ -208,7 +208,7 @@ SetupPipeline(shoora_vulkan_device *RenderDevice, VkRenderPass RenderPass, shoor
                                            nullptr, &Mat->Pipeline));
 
     }
-
+    
     vkDestroyShaderModule(RenderDevice->LogicalDevice, ShaderStageCreateInfos[0].module, nullptr);
     vkDestroyShaderModule(RenderDevice->LogicalDevice, ShaderStageCreateInfos[1].module, nullptr);
 }

@@ -19,6 +19,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #endif
 
+#define UNLIT_PIPELINE 1
+
 #include <memory.h>
 
 static shoora_vulkan_context *Context = nullptr;
@@ -435,6 +437,12 @@ CreateUnlitPipeline(shoora_vulkan_context *Context)
     shoora_vulkan_device *RenderDevice = &Context->Device;
     shoora_vulkan_swapchain *Swapchain = &Context->Swapchain;
 
+    VkDescriptorPoolSize Sizes[1];
+    Sizes[0] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SHU_MAX_FRAMES_IN_FLIGHT);
+    CreateDescriptorPool(&Context->Device, ARRAY_SIZE(Sizes), Sizes, 4, &Context->UnlitDescriptorPool);
+
+    CreateVertexBuffers(RenderDevice, RectVertices, ARRAY_SIZE(RectVertices), RectIndices, ARRAY_SIZE(RectIndices),
+                        &Context->UnlitVertexBuffer.VertexBuffer, &Context->UnlitVertexBuffer.IndexBuffer);
     CreateUniformBuffers(RenderDevice, Context->FragUnlitBuffers, ARRAY_SIZE(Context->FragUnlitBuffers),
                          sizeof(light_shader_vert_data));
 
@@ -449,7 +457,7 @@ CreateUnlitPipeline(shoora_vulkan_context *Context)
         Index < SHU_MAX_FRAMES_IN_FLIGHT;
         ++Index)
     {
-        AllocateDescriptorSets(RenderDevice, Swapchain->UniformDescriptorPool, 1, &Context->UnlitSetLayout,
+        AllocateDescriptorSets(RenderDevice, Context->UnlitDescriptorPool, 1, &Context->UnlitSetLayout,
                                &Context->UnlitSets[Index]);
         // NOTE: MVP Matrices Data - three 4x4 Matrices
         UpdateBufferDescriptorSet(RenderDevice, Context->UnlitSets[Index], 0,
@@ -547,10 +555,12 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     CreateSwapchainFramebuffers(RenderDevice, Swapchain, VulkanContext->GraphicsRenderPass);
 
     SetupCamera(&VulkanContext->Camera, Shu::Vec3f(0, 0, -10.0f), Shu::Vec3f(0, 1, 0));
+
+#if RENDER_SPONZA
+    // NOTE: This is for Sponza Scene Gemoetry. Loading all meshes, textures and everything else related to it!.
     SetupGeometry(RenderDevice, &VulkanContext->Geometry, &VulkanContext->Camera, GlobalVertUniformData.Projection,
                   VulkanContext->GraphicsRenderPass, "meshes/sponza/Sponza.gltf", "shaders/spirv/sponza.vert.spv",
                   "shaders/spirv/sponza.frag.spv");
-
     const char *ppTexturePaths[] =
     {
         "images/cobblestone.png",
@@ -566,6 +576,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
                                     &VulkanContext->GraphicsPipeline.Layout);
     CreateGraphicsPipeline(VulkanContext, "shaders/spirv/blinn-phong.vert.spv",
                            "shaders/spirv/blinn-phong.frag.spv", &VulkanContext->GraphicsPipeline);
+#endif
 
     // Wireframe
 #if CREATE_WIREFRAME_PIPELINE
@@ -581,7 +592,6 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     PrepareImGui(RenderDevice, &VulkanContext->ImContext, ScreenDim, VulkanContext->GraphicsRenderPass);
 
     AppInfo->WindowResizeCallback = &WindowResizedCallback;
-
 
 #if MATERIAL_VIEWER
     GetMaterial(MaterialType::BRONZE, &FragUniformData.Material);
@@ -643,15 +653,17 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
     GlobalPushConstBlock.Model = Model;
 
     Shu::mat4f View = GlobalMat4Identity;
-    View = Context->Camera.GetViewMatrix(View);
+    // View = Context->Camera.GetViewMatrix(View);
     GlobalVertUniformData.View = View;
 
     // TODO)) Remove this!!
-    Shu::mat4f Projection = Shu::Perspective(45.0f, ((f32)GlobalWindowSize.x / (f32)GlobalWindowSize.y), 0.1f, 100.0f);
+    // Shu::mat4f Projection = Shu::Perspective(45.0f, ((f32)GlobalWindowSize.x / (f32)GlobalWindowSize.y), 0.1f,
+    //                                          100.0f);
+    Shu::mat4f Projection = Shu::Orthographic((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y, 0.1f, 100.0f);
     GlobalVertUniformData.Projection = Projection;
 #endif
-    memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &GlobalVertUniformData,
-           sizeof(vert_uniform_data));
+    // memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &GlobalVertUniformData,
+    //        sizeof(vert_uniform_data));
 
     GlobalLightShaderData.View = View;
     GlobalLightShaderData.Projection = Projection;
@@ -665,10 +677,10 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
     GlobalFragUniformData.SpotlightData.Direction = Shu::Normalize(Context->Camera.Front);
     GlobalFragUniformData.SpotlightData.Pos = Context->Camera.Pos;
 
-    memcpy(Context->Swapchain.FragUniformBuffers[ImageIndex].pMapped, &GlobalFragUniformData,
-           sizeof(lighting_shader_uniform_data));
+    // memcpy(Context->Swapchain.FragUniformBuffers[ImageIndex].pMapped, &GlobalFragUniformData,
+    //        sizeof(lighting_shader_uniform_data));
 
-    UpdateGeometryUniformBuffers(&Context->Geometry, &Context->Camera, GlobalVertUniformData.Projection);
+    // UpdateGeometryUniformBuffers(&Context->Geometry, &Context->Camera, GlobalVertUniformData.Projection);
 }
 
 void
@@ -731,6 +743,23 @@ RenderLightCubes(VkCommandBuffer CmdBuffer)
 
         vkCmdDrawIndexed(CmdBuffer, ARRAY_SIZE(CubeIndices), 1, 0, 0, 1);
     }
+}
+
+void RenderSquare(VkCommandBuffer CmdBuffer)
+{
+    Shu::mat4f Model = GlobalMat4Identity;
+    Shu::Scale(Model, Shu::Vec3f(50.0f));
+    Shu::Translate(Model, Shu::Vec3f(0, 0, 50));
+
+    light_shader_push_constant_data Value = {.Model = Model, .Color = Shu::Vec3f(1, 1, 1)};
+
+    VkDeviceSize offsets[1] = {0};
+    vkCmdBindVertexBuffers(CmdBuffer, 0, 1, &Context->UnlitVertexBuffer.VertexBuffer.Handle, offsets);
+    vkCmdBindIndexBuffer(CmdBuffer, Context->UnlitVertexBuffer.IndexBuffer.Handle, 0, VK_INDEX_TYPE_UINT32);
+
+    vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+                       sizeof(light_shader_push_constant_data), &Value);
+    vkCmdDrawIndexed(CmdBuffer, ARRAY_SIZE(RectIndices), 1, 0, 0, 1);
 }
 
 void
@@ -843,7 +872,8 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         Scissor.extent = Context->Swapchain.ImageDimensions;
         vkCmdSetScissor(DrawCmdBuffer, 0, 1, &Scissor);
 
-        DrawGeometry(DrawCmdBuffer, &Context->Geometry);
+        // NOTE: This is the call which draws the sponza scene
+        // DrawGeometry(DrawCmdBuffer, &Context->Geometry);
 
 #if CUBE_SCENE
         VkDescriptorSet DescriptorSets[] = {Context->Swapchain.UniformDescriptorSets[ImageIndex],
@@ -876,10 +906,11 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
                                 1, &Context->UnlitSets[ImageIndex], 0, nullptr);
         vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Handle);
 
-        RenderLightCubes(DrawCmdBuffer);
+        // RenderLightCubes(DrawCmdBuffer);
+        RenderSquare(DrawCmdBuffer);
 #endif
 
-        ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
+        // ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
 
         vkCmdEndRenderPass(DrawCmdBuffer);
     VK_CHECK(vkEndCommandBuffer(DrawCmdBuffer));

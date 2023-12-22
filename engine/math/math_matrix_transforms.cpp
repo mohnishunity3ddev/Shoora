@@ -75,11 +75,25 @@ namespace Shu
         f32 const TanHalfFov = Shu::Tan(FOV / 2);
 
         mat4f Result = Mat4f(0.0f);
-        Result.m00 = 1.0f / (Aspect * TanHalfFov);
+        Result.m00 = 1.0f / (Aspect*TanHalfFov);
         Result.m11 = 1.0f / TanHalfFov;
-        Result.m22 = Far / (Far - Near);
+        Result.m22 = Far / (Far-Near);
         Result.m23 = 1.0f;
-        Result.m32 = -(Far * Near) / (Far - Near);
+        Result.m32 = -(Far*Near) / (Far-Near);
+        return Result;
+    }
+
+    mat4f
+    Orthographic(f32 Width, f32 Height, f32 Near, f32 Far)
+    {
+        mat4f Result = Mat4f(0.0f);
+
+        Result.m00 = (2.0f / (Width));
+        Result.m11 = (2.0f / Height);
+        Result.m22 = (1.0f / (Far-Near));
+        Result.m32 = (-Near / (Far-Near));
+        Result.m33 = 1.0f;
+
         return Result;
     }
 }

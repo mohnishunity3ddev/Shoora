@@ -15,7 +15,7 @@
             "defines": [
                 "WIN32",
                 "_DEBUG",
-                "__clang__",
+                "MSVC",
                 "UNICODE",
                 "_UNICODE",
                 "VK_USE_PLATFORM_WIN32_KHR",

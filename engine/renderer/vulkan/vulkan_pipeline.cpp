@@ -319,7 +319,7 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
     RasterizerInfo.depthClampEnable = VK_FALSE;
     RasterizerInfo.rasterizerDiscardEnable = VK_FALSE;
     RasterizerInfo.polygonMode = VK_POLYGON_MODE_FILL;
-    RasterizerInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+    RasterizerInfo.cullMode = VK_CULL_MODE_NONE;
     RasterizerInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
     RasterizerInfo.depthBiasEnable = VK_FALSE;
     RasterizerInfo.depthBiasConstantFactor = 0.0f;
@@ -344,9 +344,9 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
     DepthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
     DepthStencilInfo.pNext = nullptr;
     DepthStencilInfo.flags = 0;
-    DepthStencilInfo.depthTestEnable = VK_TRUE;
+    DepthStencilInfo.depthTestEnable = VK_FALSE;
     DepthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS;
-    DepthStencilInfo.depthWriteEnable = VK_TRUE;
+    DepthStencilInfo.depthWriteEnable = VK_FALSE;
     DepthStencilInfo.depthBoundsTestEnable = VK_FALSE;
     DepthStencilInfo.stencilTestEnable = VK_FALSE;
     DepthStencilInfo.front = {};

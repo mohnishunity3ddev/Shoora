@@ -14,17 +14,18 @@ namespace Shu
     SHU_EXPORT mat4f GetRotationMatrix(mat4f &Mat, const quat &Q);
     SHU_EXPORT mat4f LookAt(const vec3f &CamPos, const vec3f &LookingTowards, const vec3f WorldUp, mat4f &M);
     SHU_EXPORT mat4f Perspective(f32 FOVy, f32 Aspect, f32 ZNear, f32 ZFar);
+    SHU_EXPORT mat4f Orthographic(f32 Width, f32 Height, f32 Near, f32 Far);
 
     template <typename T>
     mat4<T>
     Translate(mat4<T> &Mat, const vec3<T> &Tv)
     {
+        // We are following row major form. Where vectors takes as rows are PRE-Multiplied by the matrix. That's
+        // why the translation values in x,y,z and written in the rwos of the matrix.
         Mat.m30 = Tv.x;
         Mat.m31 = Tv.y;
         Mat.m32 = Tv.z;
-
         // Mat = Transpose(Mat);
-
         return Mat;
     }
 
