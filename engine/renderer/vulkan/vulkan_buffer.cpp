@@ -36,7 +36,7 @@ CreateBuffer(shoora_vulkan_device *RenderDevice, VkBufferUsageFlags Usage, VkSha
 
     u8 *pBufferData;
     VK_CHECK(vkMapMemory(RenderDevice->LogicalDevice, Memory, 0, MemRequirements.size, 0, (void **)&pBufferData));
-
+    
     if (pData != nullptr)
     {
         ASSERT(DesiredMemoryType != VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT &&
@@ -203,7 +203,7 @@ CreateUniformBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_buffer *p
         VK_CHECK_RESULT(vkAllocateMemory(RenderDevice->LogicalDevice, &MemAllocInfo, nullptr,
                                          &pUniformBuffer->Memory));
         LogInfoUnformatted("Allocation Complete!\n");
-        
+
         VK_CHECK(vkBindBufferMemory(RenderDevice->LogicalDevice, pUniformBuffer->Handle, pUniformBuffer->Memory, 0));
         VK_CHECK(vkMapMemory(RenderDevice->LogicalDevice, pUniformBuffer->Memory, 0, MemAllocInfo.allocationSize,
                              0, (void **)&pUniformBuffer->pMapped));

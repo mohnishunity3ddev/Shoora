@@ -8,7 +8,7 @@
 
 
 void
-CreateGeometryImageBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_geometry *Geometry)
+CreateImageBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_geometry *Geometry)
 {
     Geometry->ImageBuffers = (shoora_vulkan_image_sampler *)malloc(Geometry->Model.TextureCount *
                                                                  sizeof(shoora_vulkan_image_sampler));
@@ -33,7 +33,7 @@ UpdateGeometryUniformBuffers(shoora_vulkan_geometry *Geometry, shoora_camera *Ca
 }
 
 void
-CreateGeometryUniformBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_geometry *Geometry, shoora_camera *Camera, const Shu::mat4f &Projection)
+CreateUniformBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_geometry *Geometry, shoora_camera *Camera, const Shu::mat4f &Projection)
 {
     Geometry->ShaderData.Buffer = CreateBuffer(RenderDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                              VK_SHARING_MODE_EXCLUSIVE,
@@ -43,7 +43,7 @@ CreateGeometryUniformBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_g
 }
 
 void
-SetupGeometryDescriptors(shoora_vulkan_device *RenderDevice, shoora_vulkan_geometry *Geometry)
+SetupDescriptors(shoora_vulkan_device *RenderDevice, shoora_vulkan_geometry *Geometry)
 {
     VkDescriptorPoolSize PoolSizes[2];
     PoolSizes[0] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1);
@@ -130,9 +130,8 @@ struct material_specialization_data
 };
 
 void
-SetupGeometryPipeline(shoora_vulkan_device *RenderDevice, VkRenderPass RenderPass,
-                      shoora_vulkan_geometry *Geometry, const char *VertexShaderFile,
-                      const char *FragmentShaderFile)
+SetupPipeline(shoora_vulkan_device *RenderDevice, VkRenderPass RenderPass, shoora_vulkan_geometry *Geometry,
+              const char *VertexShaderFile, const char *FragmentShaderFile)
 {
     auto InputAssemblyInfo = GetInputAssemblyInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE);
     auto RasterizationInfo = GetRasterizationInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE,
@@ -284,7 +283,7 @@ CleanupGeometry(shoora_vulkan_device *RenderDevice, shoora_vulkan_geometry *Geom
     vkDestroyDescriptorSetLayout(RenderDevice->LogicalDevice, Geometry->TexturesSetLayout, nullptr);
     vkDestroyPipelineLayout(RenderDevice->LogicalDevice, Geometry->PipelineLayout, nullptr);
     vkDestroyDescriptorPool(RenderDevice->LogicalDevice, Geometry->DescriptorPool, nullptr);
-    
+
     for(u32 MatIndex = 0;
         MatIndex < Model->MaterialCount;
         ++MatIndex)
@@ -303,10 +302,10 @@ SetupGeometry(shoora_vulkan_device *RenderDevice, shoora_vulkan_geometry *Geomet
     shoora_model *Model = &Geometry->Model;
     LoadModel(Model, MeshFile);
     CreateVertexBuffers(RenderDevice, Model, &Geometry->VertBuffers);
-    CreateGeometryUniformBuffers(RenderDevice, Geometry, Camera, Projection);
-    CreateGeometryImageBuffers(RenderDevice, Geometry);
-    SetupGeometryDescriptors(RenderDevice, Geometry);
-    SetupGeometryPipeline(RenderDevice, RenderPass, Geometry, VertexShaderFile, FragmentShaderFile);
+    CreateUniformBuffers(RenderDevice, Geometry, Camera, Projection);
+    CreateImageBuffers(RenderDevice, Geometry);
+    SetupDescriptors(RenderDevice, Geometry);
+    SetupPipeline(RenderDevice, RenderPass, Geometry, VertexShaderFile, FragmentShaderFile);
 }
 
 void
