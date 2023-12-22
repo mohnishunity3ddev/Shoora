@@ -24,7 +24,6 @@ VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT MessageSeverityFlags,
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
         {
             LogOutput(LogType_Error, "Validation Layer[ERROR]: %s\n", pCallbackData->pMessage);
-            // ASSERT(0);
         }
         break;
         default: {} break;

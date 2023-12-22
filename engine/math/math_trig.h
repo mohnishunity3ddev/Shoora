@@ -17,9 +17,27 @@ namespace Shu
     }
 
     inline f32
+    SinRad(f32 Radians)
+    {
+        f32 Result = sinf(Radians);
+        return Result;
+    }
+
+    inline f32
     Cos(f32 Degrees)
     {
         f32 Result = cosf(Degrees*DEG_TO_RAD);
+        if(abs(Result) < 0.001f)
+        {
+            Result = 0;
+        }
+        return Result;
+    }
+
+    inline f32
+    CosRad(f32 Radians)
+    {
+        f32 Result = cosf(Radians);
         if(abs(Result) < 0.001f)
         {
             Result = 0;

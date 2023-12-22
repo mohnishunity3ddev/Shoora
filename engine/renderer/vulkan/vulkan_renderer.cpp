@@ -36,12 +36,52 @@ static u32 TriangleIndices[] = {0, 1, 2};
 // NOTE: Rectangle
 static shoora_vertex_info RectVertices[] =
 {
-    {.Pos = Shu::vec3f{ 1.0f,  1.0f, 0.0f}, .UV = Shu::vec2f{1, 1}, .Color = Shu::vec3f{1, 0, 0}},
-    {.Pos = Shu::vec3f{ 1.0f, -1.0f, 0.0f}, .UV = Shu::vec2f{1, 0}, .Color = Shu::vec3f{0, 1, 0}},
-    {.Pos = Shu::vec3f{-1.0f, -1.0f, 0.0f}, .UV = Shu::vec2f{0, 0}, .Color = Shu::vec3f{0, 0, 1}},
-    {.Pos = Shu::vec3f{-1.0f,  1.0f, 0.0f}, .UV = Shu::vec2f{0, 1}, .Color = Shu::vec3f{0, 0, 0}},
+    {.Pos = Shu::vec3f{ 0.5f,  0.5f, 0.0f}, .UV = Shu::vec2f{1, 1}, .Color = Shu::vec3f{1, 0, 0}},
+    {.Pos = Shu::vec3f{ 0.5f, -0.5f, 0.0f}, .UV = Shu::vec2f{1, 0}, .Color = Shu::vec3f{0, 1, 0}},
+    {.Pos = Shu::vec3f{-0.5f, -0.5f, 0.0f}, .UV = Shu::vec2f{0, 0}, .Color = Shu::vec3f{0, 0, 1}},
+    {.Pos = Shu::vec3f{-0.5f,  0.5f, 0.0f}, .UV = Shu::vec2f{0, 1}, .Color = Shu::vec3f{0, 0, 0}},
 };
 static u32 RectIndices[] = {0, 1, 2, 0, 2, 3};
+
+static shoora_vertex_info *CircleVertices;
+static u32 CircleVertexCount = 0;
+static u32 *CircleIndices;
+static u32 CircleIndexCount;
+void
+CreateCircleMesh(u32 Resolution)
+{
+    CircleVertexCount = Resolution + 1;
+    size_t SizeRequired = sizeof(shoora_vertex_info);
+    CircleVertices = (shoora_vertex_info *)malloc(SizeRequired*CircleVertexCount);
+    CircleVertices[0] = {0, 0, 0};
+
+    f32 AngleStep = (2.0f*SHU_PI) / Resolution;
+    f32 Radius = 1.0f;
+    for(u32 Index = 0; Index < Resolution; ++Index)
+    {
+        f32 xPos = Shu::CosRad(AngleStep * Index);
+        f32 yPos = Shu::SinRad(AngleStep * Index);
+
+        CircleVertices[Index + 1] = {xPos, yPos, 0.0f};
+    }
+
+    CircleIndexCount = Resolution * 3;
+    CircleIndices = (u32 *)malloc(sizeof(u32) * CircleIndexCount);
+
+    for(u32 Index = 1; Index < Resolution; ++Index)
+    {
+        u32 t = 3*(Index - 1);
+        CircleIndices[t + 0] = Index;
+        CircleIndices[t + 1] = 0;
+        CircleIndices[t + 2] = Index + 1;
+    }
+
+    u32 NextPos = (3 * (Resolution - 1));
+    CircleIndices[NextPos] = Resolution;
+    CircleIndices[NextPos + 1] = 0;
+    CircleIndices[NextPos + 2] = 1;
+}
+
 
 static Shu::vec3f CubeVertexPositions[] =
 {
@@ -434,6 +474,8 @@ ImGuiNewFrame()
 void
 CreateUnlitPipeline(shoora_vulkan_context *Context)
 {
+    CreateCircleMesh(8);
+
     shoora_vulkan_device *RenderDevice = &Context->Device;
     shoora_vulkan_swapchain *Swapchain = &Context->Swapchain;
 
@@ -441,7 +483,7 @@ CreateUnlitPipeline(shoora_vulkan_context *Context)
     Sizes[0] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SHU_MAX_FRAMES_IN_FLIGHT);
     CreateDescriptorPool(&Context->Device, ARRAY_SIZE(Sizes), Sizes, 4, &Context->UnlitDescriptorPool);
 
-    CreateVertexBuffers(RenderDevice, RectVertices, ARRAY_SIZE(RectVertices), RectIndices, ARRAY_SIZE(RectIndices),
+    CreateVertexBuffers(RenderDevice, CircleVertices, CircleVertexCount, CircleIndices, CircleIndexCount,
                         &Context->UnlitVertexBuffer.VertexBuffer, &Context->UnlitVertexBuffer.IndexBuffer);
     CreateUniformBuffers(RenderDevice, Context->FragUnlitBuffers, ARRAY_SIZE(Context->FragUnlitBuffers),
                          sizeof(light_shader_vert_data));
@@ -745,13 +787,13 @@ RenderLightCubes(VkCommandBuffer CmdBuffer)
     }
 }
 
-void RenderSquare(VkCommandBuffer CmdBuffer)
+void RenderCircle(VkCommandBuffer CmdBuffer)
 {
     Shu::mat4f Model = GlobalMat4Identity;
-    Shu::Scale(Model, Shu::Vec3f(50.0f));
+    Shu::Scale(Model, Shu::Vec3f(50));
     Shu::Translate(Model, Shu::Vec3f(0, 0, 50));
 
-    light_shader_push_constant_data Value = {.Model = Model, .Color = Shu::Vec3f(1, 1, 1)};
+    light_shader_push_constant_data Value = {.Model = Model, .Color = Shu::Vec3f(1, 0, 0)};
 
     VkDeviceSize offsets[1] = {0};
     vkCmdBindVertexBuffers(CmdBuffer, 0, 1, &Context->UnlitVertexBuffer.VertexBuffer.Handle, offsets);
@@ -759,7 +801,7 @@ void RenderSquare(VkCommandBuffer CmdBuffer)
 
     vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                        sizeof(light_shader_push_constant_data), &Value);
-    vkCmdDrawIndexed(CmdBuffer, ARRAY_SIZE(RectIndices), 1, 0, 0, 1);
+    vkCmdDrawIndexed(CmdBuffer, CircleIndexCount, 1, 0, 0, 1);
 }
 
 void
@@ -907,10 +949,10 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Handle);
 
         // RenderLightCubes(DrawCmdBuffer);
-        RenderSquare(DrawCmdBuffer);
+        RenderCircle(DrawCmdBuffer);
 #endif
 
-        // ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
+        ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
 
         vkCmdEndRenderPass(DrawCmdBuffer);
     VK_CHECK(vkEndCommandBuffer(DrawCmdBuffer));

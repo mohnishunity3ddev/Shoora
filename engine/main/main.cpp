@@ -898,7 +898,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         {
             f32 FrameMS = DeltaTime*1000.0f;
             TargetMS = 1000.0f / (f32)GlobalFPS;
-#if 0
+#if 1
             // if(CreateConsole) LogInfo("FrameMS: %f, TargetMS: %f\n", FrameMS, TargetMS);
             if(TargetMS > FrameMS)
             {
