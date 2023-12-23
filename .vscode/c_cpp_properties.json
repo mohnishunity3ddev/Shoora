@@ -15,6 +15,7 @@
             "defines": [
                 "WIN32",
                 "_DEBUG",
+                "_SHU_DEBUG",
                 "MSVC",
                 "UNICODE",
                 "_UNICODE",

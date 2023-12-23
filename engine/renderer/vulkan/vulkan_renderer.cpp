@@ -474,7 +474,7 @@ ImGuiNewFrame()
 void
 CreateUnlitPipeline(shoora_vulkan_context *Context)
 {
-    CreateCircleMesh(8);
+    CreateCircleMesh(25);
 
     shoora_vulkan_device *RenderDevice = &Context->Device;
     shoora_vulkan_swapchain *Swapchain = &Context->Swapchain;
@@ -485,6 +485,14 @@ CreateUnlitPipeline(shoora_vulkan_context *Context)
 
     CreateVertexBuffers(RenderDevice, CircleVertices, CircleVertexCount, CircleIndices, CircleIndexCount,
                         &Context->UnlitVertexBuffer.VertexBuffer, &Context->UnlitVertexBuffer.IndexBuffer);
+#ifdef _SHU_DEBUG
+    // NOTE: This is how we name vulkan objects. Easier to read validation errors if errors are there!
+    LogInfo("This is a debug build brother!\n");
+    SetObjectName(RenderDevice, (u64)Context->UnlitVertexBuffer.VertexBuffer.Handle, VK_OBJECT_TYPE_BUFFER,
+                  "Unlit Vertex Buffer");
+#elif defined(_SHU_RELEASE)
+    LogInfo("This is a RELEASE build brother!\n");
+#endif
     CreateUniformBuffers(RenderDevice, Context->FragUnlitBuffers, ARRAY_SIZE(Context->FragUnlitBuffers),
                          sizeof(light_shader_vert_data));
 
@@ -520,6 +528,14 @@ CreateUnlitPipeline(shoora_vulkan_context *Context)
                          &Context->UnlitPipeline.Layout);
     CreateGraphicsPipeline(Context, "shaders/spirv/unlit.vert.spv", "shaders/spirv/unlit.frag.spv",
                            &Context->UnlitPipeline);
+}
+
+void
+CleanupUnlitPipeline()
+{
+    DestroyBuffer(&Context->Device, &Context->UnlitVertexBuffer.VertexBuffer);
+    DestroyBuffer(&Context->Device, &Context->UnlitVertexBuffer.IndexBuffer);
+    vkDestroyDescriptorPool(Context->Device.LogicalDevice, Context->UnlitDescriptorPool, nullptr);
 }
 
 void
@@ -998,6 +1014,7 @@ DestroyVulkanRenderer(shoora_vulkan_context *Context)
     ImGuiCleanup(RenderDevice, &Context->ImContext);
     CleanupGeometry(RenderDevice, &Context->Geometry);
 
+    CleanupUnlitPipeline();
     DestroyUnlitPipelineResources();
     DestroySwapchainUniformResources(RenderDevice, &Context->Swapchain);
 

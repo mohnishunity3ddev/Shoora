@@ -32,6 +32,19 @@ VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT MessageSeverityFlags,
     return VK_FALSE;
 }
 
+void
+SetObjectName(const shoora_vulkan_device *RenderDevice, u64 Handle, VkObjectType HandleType,
+              const char *HandleName)
+{
+    VkDebugUtilsObjectNameInfoEXT nameInfo = {};
+    nameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+    nameInfo.objectType = HandleType;
+    nameInfo.objectHandle = Handle;
+    nameInfo.pObjectName = HandleName;
+
+    VK_CHECK(vkSetDebugUtilsObjectNameEXT(RenderDevice->LogicalDevice, &nameInfo));
+}
+
 static VKAPI_ATTR VkBool32 VKAPI_CALL
 VulkanDebugReportCallback(VkDebugReportFlagsEXT Flags, VkDebugReportObjectTypeEXT ObjectType, u64 Object,
                           size_t Location, i32 MessageCode, const char *pLayerPrefix, const char *pMessage,

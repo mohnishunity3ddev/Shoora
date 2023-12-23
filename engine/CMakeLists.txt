@@ -25,4 +25,10 @@ SETUP_WIN32_APP(ShooraEngine "ShooraEngine")
 
 # target_compile_options(ShooraEngine PRIVATE -Wall -Wpedantic -Werror -Wno-gnu-anonymous-struct -Wno-nested-anon-types)
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+add_definitions(-D_SHU_DEBUG)
+else()
+add_definitions(-D_SHU_RELEASE)
+endif()
+
 target_link_libraries(ShooraEngine Winmm)
