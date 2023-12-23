@@ -1,4 +1,4 @@
-#if !defined(MESH_H)
+#if !defined(MESH_LOADER_H)
 
 #define SHU_CUSTOM_IMPLEMENTATION 0
 // #undef SHU_CUSTOM_IMPLEMENTATION
@@ -7,8 +7,9 @@
 #include <loaders/image/image_loader.h>
 #include <math/math.h>
 #include <volk/volk.h>
+#include <mesh/mesh_filter.h>
 
-enum shoora_model_alpha_mode
+enum shoora_mesh_alpha_mode
 {
     AlphaMode_Opaque,
     AlphaMode_Mask,
@@ -16,7 +17,7 @@ enum shoora_model_alpha_mode
     AlphaMode_MaxCount,
 };
 
-struct shoora_model_material
+struct shoora_mesh_material
 {
     Shu::vec4f BaseColorFactor;
     i32 BaseColorTextureIndex = -1;
@@ -26,13 +27,13 @@ struct shoora_model_material
     f32 AlphaCutoff;
     b32 DoubleSided;
 
-    shoora_model_alpha_mode AlphaMode;
+    shoora_mesh_alpha_mode AlphaMode;
 
     VkDescriptorSet DescriptorSet;
     VkPipeline Pipeline;
 };
 
-struct shoora_model_texture
+struct shoora_mesh_texture
 {
     const char *ImageFilename;
     shoora_image_data ImageData;
@@ -45,45 +46,36 @@ struct shoora_mesh_primitive
     i32 MaterialIndex;
 };
 
-struct shoora_model_mesh
+struct shoora_mesh_cgltf_node
 {
+    const char *Name;
+    shoora_mesh_cgltf_node *ParentNode;
+
+    shoora_mesh_cgltf_node **ChildNodes;
+    u32 ChildrenCount;
+
+    Shu::mat4f ModelMatrix;
     shoora_mesh_primitive *Primitives;
     u32 PrimitiveCount;
 };
 
-struct shoora_model_node
-{
-    const char *Name;
-    shoora_model_node *ParentNode;
-
-    shoora_model_node **ChildNodes;
-    u32 ChildrenCount;
-
-    Shu::mat4f ModelMatrix;
-    shoora_model_mesh Mesh;
-};
-
 struct shoora_model
 {
-    shoora_model_texture *Textures;
+    shoora_mesh_texture *Textures;
     u32 TextureCount;
     size_t TotalTextureSize;
 
-    shoora_model_material *Materials;
+    shoora_mesh_material *Materials;
     u32 MaterialCount;
 
-    shoora_model_node **Nodes;
+    shoora_mesh_cgltf_node **Nodes;
     u32 NodeCount;
 
-    struct shoora_vertex_info *Vertices;
-    u32 VertexCount;
-
-    u32 *Indices;
-    u32 IndicesCount;
+    shoora_mesh_filter MeshFilter;
 };
 
 void LoadModel(shoora_model *Model, const char *Path);
 void CleanupModelResources(shoora_model *Model);
 
-#define MESH_H
-#endif // MESH_H
+#define MESH_LOADER_H
+#endif // MESH_LOADER_H

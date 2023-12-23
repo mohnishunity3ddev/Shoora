@@ -6,7 +6,7 @@
 #include "vulkan_defines.h"
 #include "vulkan_device.h"
 #include "camera/camera.h"
-#include <loaders/meshes/mesh.h>
+#include <loaders/meshes/mesh_loader.h>
 #include <imgui.h>
 
 

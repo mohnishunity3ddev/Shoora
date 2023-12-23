@@ -1,14 +1,18 @@
-#include "vulkan_input_info.h"
-#include "vulkan_work_submission.h"
-#include "vulkan_descriptor_sets.h"
-#include "vulkan_render_pass.h"
-#include "vulkan_pipeline.h"
-#include "vulkan_buffer.h"
-#include "vulkan_imgui.h"
 #include "loaders/image/png_loader.h"
-#include "loaders/meshes/mesh.h"
-#include "vulkan_image.h"
+#include "loaders/meshes/mesh_loader.h"
+#include "vulkan_buffer.h"
+#include "vulkan_descriptor_sets.h"
 #include "vulkan_geometry.h"
+#include "vulkan_image.h"
+#include "vulkan_imgui.h"
+#include "vulkan_input_info.h"
+#include "vulkan_pipeline.h"
+#include "vulkan_render_pass.h"
+#include "vulkan_work_submission.h"
+
+#include <mesh/primitive/geometry_primitive.h>
+#include <physics/particle.h>
+
 
 #ifdef WIN32
 #include "platform/windows/win_platform.h"
@@ -24,201 +28,6 @@
 #include <memory.h>
 
 static shoora_vulkan_context *Context = nullptr;
-// NOTE: Triangle
-static shoora_vertex_info TriangleVertices[] =
-{
-    {.Pos = Shu::vec3f{ 0.0f,  0.5f, 0.0f}, .Color = Shu::vec3f{1, 0, 0}},
-    {.Pos = Shu::vec3f{ 0.5f, -0.5f, 0.0f}, .Color = Shu::vec3f{0, 1, 0}},
-    {.Pos = Shu::vec3f{-0.5f, -0.5f, 0.0f}, .Color = Shu::vec3f{0, 0, 1}}
-};
-static u32 TriangleIndices[] = {0, 1, 2};
-
-// NOTE: Rectangle
-static shoora_vertex_info RectVertices[] =
-{
-    {.Pos = Shu::vec3f{ 0.5f,  0.5f, 0.0f}, .UV = Shu::vec2f{1, 1}, .Color = Shu::vec3f{1, 0, 0}},
-    {.Pos = Shu::vec3f{ 0.5f, -0.5f, 0.0f}, .UV = Shu::vec2f{1, 0}, .Color = Shu::vec3f{0, 1, 0}},
-    {.Pos = Shu::vec3f{-0.5f, -0.5f, 0.0f}, .UV = Shu::vec2f{0, 0}, .Color = Shu::vec3f{0, 0, 1}},
-    {.Pos = Shu::vec3f{-0.5f,  0.5f, 0.0f}, .UV = Shu::vec2f{0, 1}, .Color = Shu::vec3f{0, 0, 0}},
-};
-static u32 RectIndices[] = {0, 1, 2, 0, 2, 3};
-
-static shoora_vertex_info *CircleVertices;
-static u32 CircleVertexCount = 0;
-static u32 *CircleIndices;
-static u32 CircleIndexCount;
-void
-CreateCircleMesh(u32 Resolution)
-{
-    CircleVertexCount = Resolution + 1;
-    size_t SizeRequired = sizeof(shoora_vertex_info);
-    CircleVertices = (shoora_vertex_info *)malloc(SizeRequired*CircleVertexCount);
-    CircleVertices[0] = {0, 0, 0};
-
-    f32 AngleStep = (2.0f*SHU_PI) / Resolution;
-    f32 Radius = 1.0f;
-    for(u32 Index = 0; Index < Resolution; ++Index)
-    {
-        f32 xPos = Shu::CosRad(AngleStep * Index);
-        f32 yPos = Shu::SinRad(AngleStep * Index);
-
-        CircleVertices[Index + 1] = {xPos, yPos, 0.0f};
-    }
-
-    CircleIndexCount = Resolution * 3;
-    CircleIndices = (u32 *)malloc(sizeof(u32) * CircleIndexCount);
-
-    for(u32 Index = 1; Index < Resolution; ++Index)
-    {
-        u32 t = 3*(Index - 1);
-        CircleIndices[t + 0] = Index;
-        CircleIndices[t + 1] = 0;
-        CircleIndices[t + 2] = Index + 1;
-    }
-
-    u32 NextPos = (3 * (Resolution - 1));
-    CircleIndices[NextPos] = Resolution;
-    CircleIndices[NextPos + 1] = 0;
-    CircleIndices[NextPos + 2] = 1;
-}
-
-
-static Shu::vec3f CubeVertexPositions[] =
-{
-    Shu::vec3f{ 1.0f,  1.0f,  -1.0f},   // Top-Right
-    Shu::vec3f{ 1.0f, -1.0f,  -1.0f},   // Bottom-Right
-    Shu::vec3f{-1.0f, -1.0f,  -1.0f},   // Bottom-Left
-    Shu::vec3f{-1.0f,  1.0f,  -1.0f},   // Top-Left
-    Shu::vec3f{ 1.0f,  1.0f,   1.0f},   // Top-Right
-    Shu::vec3f{ 1.0f, -1.0f,   1.0f},   // Bottom-Right
-    Shu::vec3f{-1.0f, -1.0f,   1.0f},   // Bottom-Left
-    Shu::vec3f{-1.0f,  1.0f,   1.0f}    // Top-Left
-};
-
-// NOTE: Cube
-static shoora_vertex_info CubeVertices[] =
-{
-    // Front Face
-    {.Pos = CubeVertexPositions[0], .UV = Shu::vec2f{1, 1}}, // 0
-    {.Pos = CubeVertexPositions[1], .UV = Shu::vec2f{1, 0}}, // 1
-    {.Pos = CubeVertexPositions[2], .UV = Shu::vec2f{0, 0}}, // 2
-    {.Pos = CubeVertexPositions[3], .UV = Shu::vec2f{0, 1}}, // 3
-    // Right Face
-    {.Pos = CubeVertexPositions[0], .UV = Shu::vec2f{0, 1}}, // 4
-    {.Pos = CubeVertexPositions[1], .UV = Shu::vec2f{0, 0}}, // 5
-    {.Pos = CubeVertexPositions[5], .UV = Shu::vec2f{1, 0}}, // 6
-    {.Pos = CubeVertexPositions[4], .UV = Shu::vec2f{1, 1}}, // 7
-    // Back Face
-    {.Pos = CubeVertexPositions[7], .UV = Shu::vec2f{1, 1}}, // 8
-    {.Pos = CubeVertexPositions[6], .UV = Shu::vec2f{1, 0}}, // 9
-    {.Pos = CubeVertexPositions[5], .UV = Shu::vec2f{0, 0}}, // 10
-    {.Pos = CubeVertexPositions[4], .UV = Shu::vec2f{0, 1}}, // 11
-    // Left Face
-    {.Pos = CubeVertexPositions[6], .UV = Shu::vec2f{0, 0}}, // 12
-    {.Pos = CubeVertexPositions[2], .UV = Shu::vec2f{1, 0}}, // 13
-    {.Pos = CubeVertexPositions[3], .UV = Shu::vec2f{1, 1}}, // 14
-    {.Pos = CubeVertexPositions[7], .UV = Shu::vec2f{0, 1}}, // 15
-    // Top Face
-    {.Pos = CubeVertexPositions[3], .UV = Shu::vec2f{0, 0}}, // 16
-    {.Pos = CubeVertexPositions[0], .UV = Shu::vec2f{1, 0}}, // 17
-    {.Pos = CubeVertexPositions[4], .UV = Shu::vec2f{1, 1}}, // 18
-    {.Pos = CubeVertexPositions[7], .UV = Shu::vec2f{0, 1}}, // 19
-    // Bottom Face
-    {.Pos = CubeVertexPositions[2], .UV = Shu::vec2f{0, 0}}, // 20
-    {.Pos = CubeVertexPositions[1], .UV = Shu::vec2f{1, 0}}, // 21
-    {.Pos = CubeVertexPositions[5], .UV = Shu::vec2f{1, 1}}, // 22
-    {.Pos = CubeVertexPositions[6], .UV = Shu::vec2f{0, 1}}, // 23
-};
-static u32 CubeIndices[] = { 0,  1,  2,  0,  2,  3,                      // Front Face
-                             4,  7,  6,  4,  6,  5,                      // Right Face
-                             9, 10,  8,  8, 10, 11,                      // Back Face
-                            14, 13, 12, 15, 14, 12,                      // Left Face
-                            17, 16, 19, 17, 19, 18,                      // Top Face
-                            20, 21, 23, 21, 22, 23};                     // Bottom Face
-
-void
-GenerateNormals(shoora_vertex_info *VertexInfo, u32 *Indices, u32 IndexCount)
-{
-    for(u32 Index = 0;
-        Index < IndexCount;
-        Index += 3)
-    {
-        u32 I0 = Indices[Index + 0];
-        u32 I1 = Indices[Index + 1];
-        u32 I2 = Indices[Index + 2];
-
-        Shu::vec3f Edge1 = VertexInfo[I1].Pos - VertexInfo[I0].Pos;
-        Shu::vec3f Edge2 = VertexInfo[I2].Pos - VertexInfo[I0].Pos;
-
-        Shu::vec3f Normal = Shu::Normalize(Shu::Cross(Edge1, Edge2));
-
-        VertexInfo[I0].Normal = Normal;
-        VertexInfo[I1].Normal = Normal;
-        VertexInfo[I2].Normal = Normal;
-    }
-}
-
-void
-GenerateTangentInformation(shoora_vertex_info *VertexInfo, u32 *Indices, u32 IndexCount)
-{
-    for(u32 Index = 0;
-        Index < IndexCount;
-        Index += 3)
-    {
-        u32 I0 = Indices[Index + 0];
-        u32 I1 = Indices[Index + 1];
-        u32 I2 = Indices[Index + 2];
-
-        shoora_vertex_info *V0 = VertexInfo + I0;
-        shoora_vertex_info *V1 = VertexInfo + I1;
-        shoora_vertex_info *V2 = VertexInfo + I2;
-
-        Shu::vec3f Edge1 = V1->Pos - V0->Pos;
-        Shu::vec3f Edge2 = V2->Pos - V0->Pos;
-
-        f32 DeltaU1 = V1->UV.x - V0->UV.x;
-        f32 DeltaV1 = V1->UV.y - V0->UV.y;
-        f32 DeltaU2 = V2->UV.x - V0->UV.x;
-        f32 DeltaV2 = V2->UV.y - V0->UV.y;
-        f32 Denominator = DeltaU1*DeltaV2 - DeltaV1*DeltaU2;
-        f32 OneByDenominator = 1.0f / Denominator;
-        ASSERT(Denominator != 0.0f);
-
-        Shu::vec4f Tangent;
-        Tangent.x = OneByDenominator * (DeltaV2*Edge1.x - DeltaU2*Edge2.x);
-        Tangent.y = OneByDenominator * (DeltaV2*Edge1.y - DeltaU2*Edge2.y);
-        Tangent.z = OneByDenominator * (DeltaV2*Edge1.z - DeltaU2*Edge2.z);
-        Tangent.w = 1.0f;
-        Tangent.xyz = Shu::Normalize(Tangent.xyz);
-
-        V0->Tangent = Tangent;
-        V1->Tangent = Tangent;
-        V2->Tangent = Tangent;
-
-#if CALCULATE_BITANGENT
-        Shu::vec3f BiTangent;
-        Tangent.x = OneByDenominator * (DeltaU1*Edge2.x - DeltaV1*Edge1.x);
-        Tangent.y = OneByDenominator * (DeltaU1*Edge2.y - DeltaV1*Edge1.y);
-        Tangent.z = OneByDenominator * (DeltaU1*Edge2.z - DeltaV1*Edge1.z);
-        BiTangent = Shu::Normalize(BiTangent);
-        // Orthogonalize the tangent and the bitangent.
-        Shu::vec3f TangentProj = BiTangent*Dot(Tangent, BiTangent);
-        Tangent -= TangentProj;
-        f32 D = Dot(Tangent, BiTangent);
-        ASSERT(ABSOLUTE(D) <= FLT_EPSILON);
-
-        V0->BiTangent = BiTangent;
-        V1->BiTangent = BiTangent;
-        V2->BiTangent = BiTangent;
-#endif
-    }
-}
-
-Shu::vec3f CubePositions[] = {Shu::Vec3f( 0.0f,  0.0f,  0.0f),    Shu::Vec3f( 2.0f,  5.0f, -15.0f),
-                              Shu::Vec3f(-1.5f, -2.2f, -2.5f),    Shu::Vec3f(-3.8f, -2.0f, -12.3f),
-                              Shu::Vec3f( 2.4f, -0.4f, -3.5f),    Shu::Vec3f(-1.7f,  3.0f, -7.5f),
-                              Shu::Vec3f( 1.3f, -2.0f, -2.5f),    Shu::Vec3f( 1.5f,  2.0f, -2.5f),
-                              Shu::Vec3f( 1.5f,  0.2f, -1.5f),    Shu::Vec3f(-1.3f,  1.0f, -1.5f)};
 
 // NOTE: ALso make the same changes to the lighting shader.
 // TODO)): Automate this so that changing this automatically makes changes to the shader using shader variation.
@@ -471,10 +280,92 @@ ImGuiNewFrame()
     ImGui::Render();
 }
 
+static shoora_particle *Particles;
+static u32 ParticleCount;
+
+struct unlit_shader_data
+{
+    Shu::mat4f Model;
+    Shu::vec3f Color = {1, 1, 1};
+};
+
+void
+InitializeParticle()
+{
+    ParticleCount = 1;
+    Particles = (shoora_particle *)malloc(ParticleCount * sizeof(shoora_particle));
+
+    shoora_particle *Particle = &Particles[0];
+
+    Particle->Position = Shu::Vec3f(0.0f, 0.0f, 0.0f);
+    Particle->Size = 25.0f;
+    Particle->Velocity = Shu::Vec3f(-50.0f, -3.0f, 0.0f);
+    Particle->Acceleration = Shu::Vec3f(0.0f, -9.8f, 0.0f);
+
+    Particle->PrimitiveType = shoora_primitive_type::PRIMITIVE_TYPE_CIRCLE;
+    Particle->MeshFilter = GetPrimitive2d(Particle->PrimitiveType);
+}
+
+inline void
+UpdateParticle(shoora_particle *Particle, f32 dt)
+{
+    Particle->Velocity += (Particle->Acceleration * dt);
+    Particle->Position += Particle->Velocity * dt + Particle->Acceleration*dt*dt*0.5f;
+
+
+    if(ABSOLUTE(Particle->Position.y - Particle->Size) >= (f32)GlobalWindowSize.y*0.5f)
+    {
+        Particle->Position.y = GlobalWindowSize.y * 0.5f;
+        Particle->Velocity.y *= -1;
+    }
+    if(ABSOLUTE(Particle->Position.x - Particle->Size) >= (f32)GlobalWindowSize.x*0.5f)
+    {
+        Particle->Position.x = GlobalWindowSize.x * 0.5f;
+        Particle->Velocity.x *= -1;
+    }
+
+
+    LogTrace("Position: [%f, %f, %f].\n", Particle->Position.x, Particle->Position.y, Particle->Position.z);
+    LogTrace("Window Size: [%u, %u].\n", GlobalWindowSize.x, GlobalWindowSize.y);
+}
+
+void
+DrawParticles(VkCommandBuffer CmdBuffer, f32 DeltaTime)
+{
+    VkDeviceSize offsets[1] = {0};
+    vkCmdBindVertexBuffers(CmdBuffer, 0, 1, &Context->UnlitVertexBuffer.VertexBuffer.Handle, offsets);
+    vkCmdBindIndexBuffer(CmdBuffer, Context->UnlitVertexBuffer.IndexBuffer.Handle, 0, VK_INDEX_TYPE_UINT32);
+
+    for (u32 ParticleIndex = 0; ParticleIndex < ParticleCount; ++ParticleIndex)
+    {
+        shoora_particle *Particle = Particles + ParticleIndex;
+        UpdateParticle(Particle, DeltaTime);
+
+        Shu::mat4f Model = GlobalMat4Identity;
+        Shu::Scale(Model, Shu::Vec3f(Particle->Size));
+        Shu::Translate(Model, Particle->Position);
+
+
+        unlit_shader_data Value = {.Model = Model, .Color = Shu::Vec3f(1, 0, 0)};
+
+        vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+                           sizeof(unlit_shader_data), &Value);
+        vkCmdDrawIndexed(CmdBuffer, Particle->MeshFilter->IndexCount, 1, 0, 0, 1);
+    }
+}
+
+void
+DestroyParticles()
+{
+    ParticleCount = 0;
+    free(Particles);
+    Particles = nullptr;
+}
+
 void
 CreateUnlitPipeline(shoora_vulkan_context *Context)
 {
-    CreateCircleMesh(25);
+    InitializeParticle();
 
     shoora_vulkan_device *RenderDevice = &Context->Device;
     shoora_vulkan_swapchain *Swapchain = &Context->Swapchain;
@@ -483,8 +374,11 @@ CreateUnlitPipeline(shoora_vulkan_context *Context)
     Sizes[0] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SHU_MAX_FRAMES_IN_FLIGHT);
     CreateDescriptorPool(&Context->Device, ARRAY_SIZE(Sizes), Sizes, 4, &Context->UnlitDescriptorPool);
 
-    CreateVertexBuffers(RenderDevice, CircleVertices, CircleVertexCount, CircleIndices, CircleIndexCount,
-                        &Context->UnlitVertexBuffer.VertexBuffer, &Context->UnlitVertexBuffer.IndexBuffer);
+    shoora_mesh_filter *ParticleMesh = Particles[0].MeshFilter;
+
+    CreateVertexBuffers(RenderDevice, ParticleMesh->Vertices, ParticleMesh->VertexCount, ParticleMesh->Indices,
+                        ParticleMesh->IndexCount, &Context->UnlitVertexBuffer.VertexBuffer,
+                        &Context->UnlitVertexBuffer.IndexBuffer);
 #ifdef _SHU_DEBUG
     // NOTE: This is how we name vulkan objects. Easier to read validation errors if errors are there!
     LogInfo("This is a debug build brother!\n");
@@ -533,6 +427,7 @@ CreateUnlitPipeline(shoora_vulkan_context *Context)
 void
 CleanupUnlitPipeline()
 {
+    DestroyParticles();
     DestroyBuffer(&Context->Device, &Context->UnlitVertexBuffer.VertexBuffer);
     DestroyBuffer(&Context->Device, &Context->UnlitVertexBuffer.IndexBuffer);
     vkDestroyDescriptorPool(Context->Device.LogicalDevice, Context->UnlitDescriptorPool, nullptr);
@@ -582,6 +477,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
 {
     GlobalWindowSize = {AppInfo->WindowWidth, AppInfo->WindowHeight};
     InitializeLightData();
+    InitializePrimitives();
 
     VK_CHECK(volkInitialize());
 
@@ -717,6 +613,8 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
     // TODO)) Remove this!!
     // Shu::mat4f Projection = Shu::Perspective(45.0f, ((f32)GlobalWindowSize.x / (f32)GlobalWindowSize.y), 0.1f,
     //                                          100.0f);
+
+    LogInfo("WindowSize: [%u, %u]\n", GlobalWindowSize.x, GlobalWindowSize.y);
     Shu::mat4f Projection = Shu::Orthographic((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y, 0.1f, 100.0f);
     GlobalVertUniformData.Projection = Projection;
 #endif
@@ -750,7 +648,7 @@ GetMousePosDelta(f32 CurrentMouseDeltaX, f32 CurrentMouseDeltaY, f32 *outMouseDe
     GlobalLastFrameMousePos.y = CurrentMouseDeltaY;
 }
 
-
+#if 0
 void
 RenderCubes(VkCommandBuffer CmdBuffer)
 {
@@ -781,7 +679,9 @@ RenderCubes(VkCommandBuffer CmdBuffer)
         vkCmdDrawIndexed(CmdBuffer, ARRAY_SIZE(CubeIndices), 1, 0, 0, 1);
     }
 }
+#endif
 
+#if 0
 void
 RenderLightCubes(VkCommandBuffer CmdBuffer)
 {
@@ -802,23 +702,7 @@ RenderLightCubes(VkCommandBuffer CmdBuffer)
         vkCmdDrawIndexed(CmdBuffer, ARRAY_SIZE(CubeIndices), 1, 0, 0, 1);
     }
 }
-
-void RenderCircle(VkCommandBuffer CmdBuffer)
-{
-    Shu::mat4f Model = GlobalMat4Identity;
-    Shu::Scale(Model, Shu::Vec3f(50));
-    Shu::Translate(Model, Shu::Vec3f(0, 0, 50));
-
-    light_shader_push_constant_data Value = {.Model = Model, .Color = Shu::Vec3f(1, 0, 0)};
-
-    VkDeviceSize offsets[1] = {0};
-    vkCmdBindVertexBuffers(CmdBuffer, 0, 1, &Context->UnlitVertexBuffer.VertexBuffer.Handle, offsets);
-    vkCmdBindIndexBuffer(CmdBuffer, Context->UnlitVertexBuffer.IndexBuffer.Handle, 0, VK_INDEX_TYPE_UINT32);
-
-    vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
-                       sizeof(light_shader_push_constant_data), &Value);
-    vkCmdDrawIndexed(CmdBuffer, CircleIndexCount, 1, 0, 0, 1);
-}
+#endif
 
 void
 DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
@@ -965,10 +849,10 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Handle);
 
         // RenderLightCubes(DrawCmdBuffer);
-        RenderCircle(DrawCmdBuffer);
+        DrawParticles(DrawCmdBuffer, GlobalDeltaTime);
 #endif
 
-        ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
+        // ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
 
         vkCmdEndRenderPass(DrawCmdBuffer);
     VK_CHECK(vkEndCommandBuffer(DrawCmdBuffer));

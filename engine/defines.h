@@ -68,7 +68,7 @@ enum shoora_quality
     default:                                                                                                      \
     {                                                                                                             \
         ASSERT(!"Invalid Default Case");                                                                          \
-    }
+    } break;
 #define SHU_INVALID_CODEPATH ASSERT(!"Invalid Code Path")
 
 #define VK_CHECK(Call)                                                                                            \

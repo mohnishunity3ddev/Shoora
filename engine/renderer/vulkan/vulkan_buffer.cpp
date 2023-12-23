@@ -116,33 +116,39 @@ CopyBuffers(shoora_vulkan_device *RenderDevice, VkBuffer *SrcBuffers, VkBuffer *
 }
 
 void
+CreateVertexBuffers(shoora_vulkan_device *RenderDevice, u8 *Vertices, u32 VertexCount,
+                    u8 *Indices, u32 IndexCount, size_t VertexBufferSize, size_t IndexBufferSize,
+                    shoora_vulkan_buffer *outVertexBuffer, shoora_vulkan_buffer *outIndexBuffer)
+{}
+
+void
 CreateVertexBuffers(shoora_vulkan_device *RenderDevice, shoora_vertex_info *Vertices, u32 VertexCount, u32 *Indices,
                     u32 IndexCount, shoora_vulkan_buffer *outVertexBuffer, shoora_vulkan_buffer *outIndexBuffer)
 {
-    size_t RequiredVertexBufferSize = VertexCount*sizeof(shoora_vertex_info);
-    size_t RequiredIndexBufferSize = IndexCount*sizeof(u32);
+    size_t VertexBufferSize = VertexCount*sizeof(shoora_vertex_info);
+    size_t IndexBufferSize = IndexCount*sizeof(u32);
 
     auto StagingVertexBuffer = CreateBuffer(RenderDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                             VK_SHARING_MODE_EXCLUSIVE,
                                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                            (u8 *)Vertices, RequiredVertexBufferSize);
+                                            (u8  *)Vertices, VertexBufferSize);
     auto VertexBuffer = CreateBuffer(RenderDevice,
                                      VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                      VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, nullptr,
-                                     RequiredVertexBufferSize);
+                                     VertexBufferSize);
 
     auto StagingIndexBuffer = CreateBuffer(RenderDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                            VK_SHARING_MODE_EXCLUSIVE,
                                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                           (u8 *)Indices, RequiredIndexBufferSize);
+                                           (u8 *)Indices, IndexBufferSize);
     auto IndexBuffer = CreateBuffer(RenderDevice,
                                     VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                     VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, nullptr,
-                                    RequiredIndexBufferSize);
+                                    IndexBufferSize);
 
     VkBuffer SourceBuffers[] = {StagingVertexBuffer.Handle, StagingIndexBuffer.Handle};
     VkBuffer DestinationBuffers[] = {VertexBuffer.Handle, IndexBuffer.Handle};
-    size_t CopySizes[] = {RequiredVertexBufferSize, RequiredIndexBufferSize};
+    size_t CopySizes[] = {VertexBufferSize, IndexBufferSize};
     CopyBuffers(RenderDevice, SourceBuffers, DestinationBuffers, CopySizes, ARRAY_SIZE(CopySizes));
 
     vkDestroyBuffer(RenderDevice->LogicalDevice, StagingVertexBuffer.Handle, nullptr);
@@ -163,8 +169,9 @@ void
 CreateVertexBuffers(shoora_vulkan_device *RenderDevice, shoora_model *Model,
                     shoora_vulkan_vertex_buffers *VertBuffers)
 {
-    CreateVertexBuffers(RenderDevice, Model->Vertices, Model->VertexCount, Model->Indices, Model->IndicesCount,
-                        &VertBuffers->VertexBuffer, &VertBuffers->IndexBuffer);
+    CreateVertexBuffers(RenderDevice, Model->MeshFilter.Vertices, Model->MeshFilter.VertexCount,
+                        Model->MeshFilter.Indices, Model->MeshFilter.IndexCount, &VertBuffers->VertexBuffer,
+                        &VertBuffers->IndexBuffer);
 }
 
 // TODO)): Instead of creating 4 separate uniform buffers, create a single one with each having an offset.

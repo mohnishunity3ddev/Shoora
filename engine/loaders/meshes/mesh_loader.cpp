@@ -1,4 +1,4 @@
-#include "mesh.h"
+#include "mesh_loader.h"
 
 #include <platform/platform.h>
 #include <utils/utils.h>
@@ -59,15 +59,15 @@ void
 LoadTextureImages(cgltf_image *Images, u32 ImageCount, const char *BasePath, shoora_model *Model)
 {
     Model->TextureCount = ImageCount;
-    Model->Textures = (shoora_model_texture *)malloc(sizeof(shoora_model_texture)*ImageCount);
-    memset(Model->Textures, 0, sizeof(shoora_model_texture) * ImageCount);
+    Model->Textures = (shoora_mesh_texture *)malloc(sizeof(shoora_mesh_texture)*ImageCount);
+    memset(Model->Textures, 0, sizeof(shoora_mesh_texture) * ImageCount);
     LogInfoUnformatted("Images are: \n");
 
     for(u32 Index = 0;
         Index < ImageCount;
         ++Index)
     {
-        shoora_model_texture *Tex = Model->Textures + Index;
+        shoora_mesh_texture *Tex = Model->Textures + Index;
         Tex->ImageFilename = Images[Index].uri;
 
         char ImagePath[512];
@@ -94,7 +94,7 @@ u32 UsedCount = 0;
 void
 LoadMaterials(cgltf_material *Materials, u32 MaterialCount, shoora_model *Model)
 {
-    Model->Materials = (shoora_model_material *)malloc(sizeof(shoora_model_material)*MaterialCount);
+    Model->Materials = (shoora_mesh_material *)malloc(sizeof(shoora_mesh_material)*MaterialCount);
     Model->MaterialCount = MaterialCount;
 
     for(u32 Index = 0;
@@ -102,7 +102,7 @@ LoadMaterials(cgltf_material *Materials, u32 MaterialCount, shoora_model *Model)
         ++Index)
     {
         cgltf_material *glTFMat = Materials + Index;
-        shoora_model_material *Mat = Model->Materials + Index;
+        shoora_mesh_material *Mat = Model->Materials + Index;
 
         cgltf_texture *glTFColorTex = glTFMat->pbr_metallic_roughness.base_color_texture.texture;
         if(glTFMat->has_pbr_metallic_roughness &&
@@ -148,7 +148,7 @@ LoadMaterials(cgltf_material *Materials, u32 MaterialCount, shoora_model *Model)
         }
 
         Mat->AlphaCutoff = glTFMat->alpha_cutoff;
-        Mat->AlphaMode = (shoora_model_alpha_mode)glTFMat->alpha_mode;
+        Mat->AlphaMode = (shoora_mesh_alpha_mode)glTFMat->alpha_mode;
         Mat->DoubleSided = glTFMat->double_sided;
         // Mat->BaseColorFactor = GLTFMat->BaseColorFactor;
     }
@@ -200,12 +200,12 @@ GetTotalVertexIndicesCount(const cgltf_scene *pScenes, const u32 SceneCount,
 }
 
 void
-LoadGLTFNode(cgltf_node *InputNode, cgltf_material *glTFMaterials, shoora_model *Model, shoora_model_node *Parent)
+LoadGLTFNode(cgltf_node *InputNode, cgltf_material *glTFMaterials, shoora_model *Model, shoora_mesh_cgltf_node *Parent)
 {
     cgltf_mesh *NodeMesh = InputNode->mesh;
 
-    shoora_model_node *CurrentNode = (shoora_model_node *)malloc(sizeof(shoora_model_node));
-    memset(CurrentNode, 0, sizeof(shoora_model_node));
+    shoora_mesh_cgltf_node *CurrentNode = (shoora_mesh_cgltf_node *)malloc(sizeof(shoora_mesh_cgltf_node));
+    memset(CurrentNode, 0, sizeof(shoora_mesh_cgltf_node));
 
     CurrentNode->Name = InputNode->name;
     CurrentNode->ParentNode = Parent;
@@ -241,10 +241,12 @@ LoadGLTFNode(cgltf_node *InputNode, cgltf_material *glTFMaterials, shoora_model 
         }
     }
 
-    CurrentNode->Mesh.PrimitiveCount = NodeMesh->primitives_count;
-    CurrentNode->Mesh.Primitives = (shoora_mesh_primitive *)malloc(CurrentNode->Mesh.PrimitiveCount *
+    CurrentNode->PrimitiveCount = NodeMesh->primitives_count;
+    CurrentNode->Primitives = (shoora_mesh_primitive *)malloc(CurrentNode->PrimitiveCount *
                                                                    sizeof(shoora_mesh_primitive));
-    memset(CurrentNode->Mesh.Primitives, 0, sizeof(shoora_mesh_primitive));
+    memset(CurrentNode->Primitives, 0, sizeof(shoora_mesh_primitive));
+
+    shoora_mesh_filter *MeshFilter = &Model->MeshFilter;
 
     for(u32 PrimitiveIndex = 0;
         PrimitiveIndex < NodeMesh->primitives_count;
@@ -253,7 +255,7 @@ LoadGLTFNode(cgltf_node *InputNode, cgltf_material *glTFMaterials, shoora_model 
         cgltf_primitive *Primitive = NodeMesh->primitives + PrimitiveIndex;
         ASSERT(Primitive->type == cgltf_primitive_type_triangles);
 
-        u32 VertexStart = Model->VertexCount;
+        u32 VertexStart = MeshFilter->VertexCount;
 
         // NOTE: Vertices
         {
@@ -335,13 +337,13 @@ LoadGLTFNode(cgltf_node *InputNode, cgltf_material *glTFMaterials, shoora_model 
                 Vert.UV         = TexCoordsBuffer ? Shu::MakeVec2(&TexCoordsBuffer[VertexIndex*2]) : Shu::Vec2(0.0f);
                 Vert.Tangent    = TangentsBuffer ? Shu::MakeVec4(&TangentsBuffer[VertexIndex*4]) : Shu::Vec4(0.0f);
 
-                Model->Vertices[Model->VertexCount++] = Vert;
+                MeshFilter->Vertices[MeshFilter->VertexCount++] = Vert;
             }
         }
 
         // NOTE: Indices
         {
-            u32 FirstIndex = Model->IndicesCount;
+            u32 FirstIndex = MeshFilter->IndexCount;
 
             cgltf_accessor *IndexAccessor = Primitive->indices;
             cgltf_buffer_view *IndexBufferView = IndexAccessor->buffer_view;
@@ -357,7 +359,7 @@ LoadGLTFNode(cgltf_node *InputNode, cgltf_material *glTFMaterials, shoora_model 
                         Index < IndexAccessor->count;
                         ++Index)
                     {
-                        Model->Indices[Model->IndicesCount++] = Buf[Index] + VertexStart;
+                        MeshFilter->Indices[MeshFilter->IndexCount++] = Buf[Index] + VertexStart;
                     }
                 } break;
 
@@ -369,7 +371,7 @@ LoadGLTFNode(cgltf_node *InputNode, cgltf_material *glTFMaterials, shoora_model 
                         Index < IndexAccessor->count;
                         ++Index)
                     {
-                        Model->Indices[Model->IndicesCount++] = (u32)(Buf[Index] + VertexStart);
+                        MeshFilter->Indices[MeshFilter->IndexCount++] = (u32)(Buf[Index] + VertexStart);
                     }
                 } break;
 
@@ -381,7 +383,7 @@ LoadGLTFNode(cgltf_node *InputNode, cgltf_material *glTFMaterials, shoora_model 
                         Index < IndexAccessor->count;
                         ++Index)
                     {
-                        Model->Indices[Model->IndicesCount++] = (u32)(Buf[Index] + VertexStart);
+                        MeshFilter->Indices[MeshFilter->IndexCount++] = (u32)(Buf[Index] + VertexStart);
                     }
                 } break;
 
@@ -393,7 +395,7 @@ LoadGLTFNode(cgltf_node *InputNode, cgltf_material *glTFMaterials, shoora_model 
             MeshPrimitive.IndexCount = IndexAccessor->count;
             // TODO)): This is remaining!
             MeshPrimitive.MaterialIndex = GetMaterialIndex(glTFMaterials, Primitive->material);
-            CurrentNode->Mesh.Primitives[PrimitiveIndex] = MeshPrimitive;
+            CurrentNode->Primitives[PrimitiveIndex] = MeshPrimitive;
         }
     }
 
@@ -425,6 +427,8 @@ LoadModel(shoora_model *Model, const char *Path)
     cgltf_result Result = cgltf_parse_file(&Options, Path, &MeshData);
     *Model = {};
 
+    shoora_mesh_filter *MeshFilter = &Model->MeshFilter;
+
     if(Result != cgltf_result_success)
     {
         Free((void **)&MeshData);
@@ -453,12 +457,12 @@ LoadModel(shoora_model *Model, const char *Path)
     u32 TotalNodesCount = 0;
     GetTotalVertexIndicesCount(MeshData->scenes, MeshData->scenes_count,
                                &TotalVerticesCount, &TotalIndicesCount, &TotalNodesCount);
-    Model->Vertices = (shoora_vertex_info *)malloc(TotalVerticesCount * sizeof(shoora_vertex_info));
-    memset(Model->Vertices, 0, sizeof(shoora_vertex_info)*TotalVerticesCount);
-    Model->Indices = (u32 *)malloc(TotalIndicesCount * sizeof(u32));
-    memset(Model->Indices, 0, sizeof(u32)*TotalIndicesCount);
-    Model->Nodes = (shoora_model_node **)malloc(TotalNodesCount*sizeof(shoora_model_node *));
-    memset(Model->Nodes, 0, sizeof(shoora_model_node *)*TotalNodesCount);
+    MeshFilter->Vertices = (shoora_vertex_info *)malloc(TotalVerticesCount * sizeof(shoora_vertex_info));
+    memset(MeshFilter->Vertices, 0, sizeof(shoora_vertex_info) * TotalVerticesCount);
+    MeshFilter->Indices = (u32 *)malloc(TotalIndicesCount * sizeof(u32));
+    memset(MeshFilter->Indices, 0, sizeof(u32) * TotalIndicesCount);
+    Model->Nodes = (shoora_mesh_cgltf_node **)malloc(TotalNodesCount*sizeof(shoora_mesh_cgltf_node *));
+    memset(Model->Nodes, 0, sizeof(shoora_mesh_cgltf_node *)*TotalNodesCount);
 
     for(u32 SceneIndex = 0;
         SceneIndex < MeshData->scenes_count;
@@ -474,8 +478,8 @@ LoadModel(shoora_model *Model, const char *Path)
         }
     }
 
-    ASSERT(Model->VertexCount == TotalVerticesCount);
-    ASSERT(Model->IndicesCount == TotalIndicesCount);
+    ASSERT(MeshFilter->VertexCount == TotalVerticesCount);
+    ASSERT(MeshFilter->IndexCount == TotalIndicesCount);
     ASSERT(Model->NodeCount == TotalNodesCount);
 }
 

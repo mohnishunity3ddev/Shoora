@@ -1,11 +1,10 @@
 #include "vulkan_geometry.h"
 
 #include "vulkan_buffer.h"
-#include "vulkan_image.h"
 #include "vulkan_descriptor_sets.h"
+#include "vulkan_image.h"
 #include "vulkan_pipeline.h"
-#include <loaders/meshes/mesh.h>
-
+#include <loaders/meshes/mesh_loader.h>
 
 void
 CreateImageBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_geometry *Geometry)
@@ -88,7 +87,7 @@ SetupDescriptors(shoora_vulkan_device *RenderDevice, shoora_vulkan_geometry *Geo
         MaterialIndex < Geometry->Model.MaterialCount;
         ++MaterialIndex)
     {
-        shoora_model_material *Mat = Geometry->Model.Materials + MaterialIndex;
+        shoora_mesh_material *Mat = Geometry->Model.Materials + MaterialIndex;
         AllocateDescriptorSets(RenderDevice, Geometry->DescriptorPool, 1, &Geometry->TexturesSetLayout,
                                &Mat->DescriptorSet);
 
@@ -184,10 +183,10 @@ SetupPipeline(shoora_vulkan_device *RenderDevice, VkRenderPass RenderPass, shoor
         MaterialIndex < Geometry->Model.MaterialCount;
         ++MaterialIndex)
     {
-        shoora_model_material *Mat = Geometry->Model.Materials + MaterialIndex;
+        shoora_mesh_material *Mat = Geometry->Model.Materials + MaterialIndex;
 
         material_specialization_data MaterialSpecialData = {};
-        MaterialSpecialData.AlphaMask = (Mat->AlphaMode == shoora_model_alpha_mode::AlphaMode_Mask);
+        MaterialSpecialData.AlphaMask = (Mat->AlphaMode == shoora_mesh_alpha_mode::AlphaMode_Mask);
         MaterialSpecialData.AlphaMaskCutoff = (Mat->AlphaCutoff);
 
         VkSpecializationMapEntry SpecialEntries[2] = {
@@ -208,19 +207,19 @@ SetupPipeline(shoora_vulkan_device *RenderDevice, VkRenderPass RenderPass, shoor
                                            nullptr, &Mat->Pipeline));
 
     }
-    
+
     vkDestroyShaderModule(RenderDevice->LogicalDevice, ShaderStageCreateInfos[0].module, nullptr);
     vkDestroyShaderModule(RenderDevice->LogicalDevice, ShaderStageCreateInfos[1].module, nullptr);
 }
 
 void
-DrawGeometryNode(VkCommandBuffer CommandBuffer, VkPipelineLayout PipelineLayout, shoora_model_node *Node,
+DrawGeometryNode(VkCommandBuffer CommandBuffer, VkPipelineLayout PipelineLayout, shoora_mesh_cgltf_node *Node,
                shoora_vulkan_geometry *Geometry)
 {
-    if(Node->Mesh.PrimitiveCount > 0)
+    if(Node->PrimitiveCount > 0)
     {
         Shu::mat4f NodeMatrix = Node->ModelMatrix;
-        shoora_model_node *ParentNode = Node->ParentNode;
+        shoora_mesh_cgltf_node *ParentNode = Node->ParentNode;
 
         while(ParentNode)
         {
@@ -231,13 +230,13 @@ DrawGeometryNode(VkCommandBuffer CommandBuffer, VkPipelineLayout PipelineLayout,
         vkCmdPushConstants(CommandBuffer, PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Shu::mat4f),
                            &NodeMatrix);
         for(u32 PrimitiveIndex = 0;
-            PrimitiveIndex < Node->Mesh.PrimitiveCount;
+            PrimitiveIndex < Node->PrimitiveCount;
             ++PrimitiveIndex)
         {
-            shoora_mesh_primitive *Primitive = Node->Mesh.Primitives + PrimitiveIndex;
+            shoora_mesh_primitive *Primitive = Node->Primitives + PrimitiveIndex;
             if(Primitive->IndexCount > 0)
             {
-                shoora_model_material *PrimitiveMaterial = Geometry->Model.Materials + Primitive->MaterialIndex;
+                shoora_mesh_material *PrimitiveMaterial = Geometry->Model.Materials + Primitive->MaterialIndex;
 
                 vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PrimitiveMaterial->Pipeline);
                 vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 1, 1,
@@ -250,7 +249,7 @@ DrawGeometryNode(VkCommandBuffer CommandBuffer, VkPipelineLayout PipelineLayout,
         ChildIndex < Node->ChildrenCount;
         ++ChildIndex)
     {
-        shoora_model_node *ChildNode = Node->ChildNodes[ChildIndex];
+        shoora_mesh_cgltf_node *ChildNode = Node->ChildNodes[ChildIndex];
         DrawGeometryNode(CommandBuffer, PipelineLayout, ChildNode, Geometry);
     }
 }
@@ -267,7 +266,7 @@ CleanupGeometry(shoora_vulkan_device *RenderDevice, shoora_vulkan_geometry *Geom
         TexIndex < Model->TextureCount;
         ++TexIndex)
     {
-        shoora_model_texture *Tex = Model->Textures + TexIndex;
+        shoora_mesh_texture *Tex = Model->Textures + TexIndex;
         u8 *ImageData = Tex->ImageData.Data;
         if(ImageData)
         {
@@ -288,7 +287,7 @@ CleanupGeometry(shoora_vulkan_device *RenderDevice, shoora_vulkan_geometry *Geom
         MatIndex < Model->MaterialCount;
         ++MatIndex)
     {
-        shoora_model_material *Mat = Model->Materials + MatIndex;
+        shoora_mesh_material *Mat = Model->Materials + MatIndex;
 
         vkDestroyPipeline(RenderDevice->LogicalDevice, Mat->Pipeline, nullptr);
     }
@@ -323,7 +322,7 @@ DrawGeometry(VkCommandBuffer DrawCmdBuffer, shoora_vulkan_geometry *Geometry)
         NodeIndex < Geometry->Model.NodeCount;
         ++NodeIndex)
     {
-        shoora_model_node *Node = Geometry->Model.Nodes[NodeIndex];
+        shoora_mesh_cgltf_node *Node = Geometry->Model.Nodes[NodeIndex];
         DrawGeometryNode(DrawCmdBuffer, Geometry->PipelineLayout, Node, Geometry);
     }
 }
