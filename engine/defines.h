@@ -56,6 +56,7 @@ enum shoora_quality
 };
 
 #define ABSOLUTE(Val) (Val) < 0 ? -(Val) : (Val)
+#define SIGN(Val) (Val) < 0 ? -1 : 1
 
 #define ASSERT(Expression)                                                                                        \
     if (!(Expression))                                                                                            \

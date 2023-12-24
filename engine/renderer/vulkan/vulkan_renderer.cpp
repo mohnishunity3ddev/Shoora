@@ -298,9 +298,9 @@ InitializeParticle()
     shoora_particle *Particle = &Particles[0];
 
     Particle->Position = Shu::Vec3f(0.0f, 0.0f, 0.0f);
-    Particle->Size = 25.0f;
-    Particle->Velocity = Shu::Vec3f(-50.0f, -3.0f, 0.0f);
-    Particle->Acceleration = Shu::Vec3f(0.0f, -9.8f, 0.0f);
+    Particle->Size = 10.0f;
+    Particle->Velocity = Shu::Vec3f(200.0f, -100.0f, 0.0f);
+    Particle->Acceleration = Shu::Vec3f(50.0f, -980.0f, 0.0f);
 
     Particle->PrimitiveType = shoora_primitive_type::PRIMITIVE_TYPE_CIRCLE;
     Particle->MeshFilter = GetPrimitive2d(Particle->PrimitiveType);
@@ -309,24 +309,32 @@ InitializeParticle()
 inline void
 UpdateParticle(shoora_particle *Particle, f32 dt)
 {
-    Particle->Velocity += (Particle->Acceleration * dt);
-    Particle->Position += Particle->Velocity * dt + Particle->Acceleration*dt*dt*0.5f;
+    Shu::vec3f deltaV = Particle->Acceleration * dt;
+    Particle->Position += Particle->Velocity*dt + Particle->Acceleration*dt*dt*0.5f;
+    Particle->Velocity += deltaV;
 
+    Shu::vec2f Bounds = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y)*0.5f;
 
-    if(ABSOLUTE(Particle->Position.y - Particle->Size) >= (f32)GlobalWindowSize.y*0.5f)
+    if((Particle->Position.y - Particle->Size) < -Bounds.y)
     {
-        Particle->Position.y = GlobalWindowSize.y * 0.5f;
+        Particle->Position.y = -Bounds.y + Particle->Size;
         Particle->Velocity.y *= -1;
     }
-    if(ABSOLUTE(Particle->Position.x - Particle->Size) >= (f32)GlobalWindowSize.x*0.5f)
+    if((Particle->Position.y + Particle->Size) > Bounds.y)
     {
-        Particle->Position.x = GlobalWindowSize.x * 0.5f;
+        Particle->Position.y = Bounds.y - Particle->Size;
+        Particle->Velocity.y *= -1;
+    }
+    if((Particle->Position.x - Particle->Size) < -Bounds.x)
+    {
+        Particle->Position.x = -Bounds.x + Particle->Size;
         Particle->Velocity.x *= -1;
     }
-
-
-    LogTrace("Position: [%f, %f, %f].\n", Particle->Position.x, Particle->Position.y, Particle->Position.z);
-    LogTrace("Window Size: [%u, %u].\n", GlobalWindowSize.x, GlobalWindowSize.y);
+    if((Particle->Position.x + Particle->Size) > Bounds.x)
+    {
+        Particle->Position.x = Bounds.x - Particle->Size;
+        Particle->Velocity.x *= -1;
+    }
 }
 
 void
@@ -614,7 +622,6 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
     // Shu::mat4f Projection = Shu::Perspective(45.0f, ((f32)GlobalWindowSize.x / (f32)GlobalWindowSize.y), 0.1f,
     //                                          100.0f);
 
-    LogInfo("WindowSize: [%u, %u]\n", GlobalWindowSize.x, GlobalWindowSize.y);
     Shu::mat4f Projection = Shu::Orthographic((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y, 0.1f, 100.0f);
     GlobalVertUniformData.Projection = Projection;
 #endif
@@ -852,7 +859,7 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         DrawParticles(DrawCmdBuffer, GlobalDeltaTime);
 #endif
 
-        // ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
+        ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
 
         vkCmdEndRenderPass(DrawCmdBuffer);
     VK_CHECK(vkEndCommandBuffer(DrawCmdBuffer));
