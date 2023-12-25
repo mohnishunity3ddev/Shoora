@@ -244,6 +244,26 @@ Platform_GetKeyInputState(u8 KeyCode, KeyState State)
             {
                 Result = true;
             }
+            else if(KeyCode == SU_LEFTARROW &&
+                    Win32InputKeyPressed(&GlobalInputState->Keyboard_LeftArrow))
+            {
+                Result = true;
+            }
+            else if(KeyCode == SU_RIGHTARROW &&
+                    Win32InputKeyPressed(&GlobalInputState->Keyboard_RightArrow))
+            {
+                Result = true;
+            }
+            else if(KeyCode == SU_UPARROW &&
+                    Win32InputKeyPressed(&GlobalInputState->Keyboard_UpArrow))
+            {
+                Result = true;
+            }
+            else if(KeyCode == SU_DOWNARROW &&
+                    Win32InputKeyPressed(&GlobalInputState->Keyboard_DownArrow))
+            {
+                Result = true;
+            }
             else if(KeyCode == 'F' &&
                     Win32InputKeyPressed(&GlobalInputState->Keyboard_F))
             {
@@ -275,6 +295,22 @@ Platform_GetKeyInputState(u8 KeyCode, KeyState State)
                 Result = true;
             }
             else if(KeyCode == 'D' && GlobalInputState->Keyboard_D.IsCurrentlyDown)
+            {
+                Result = true;
+            }
+            else if(KeyCode == SU_LEFTARROW && GlobalInputState->Keyboard_LeftArrow.IsCurrentlyDown)
+            {
+                Result = true;
+            }
+            else if(KeyCode == SU_RIGHTARROW && GlobalInputState->Keyboard_RightArrow.IsCurrentlyDown)
+            {
+                Result = true;
+            }
+            else if(KeyCode == SU_UPARROW && GlobalInputState->Keyboard_UpArrow.IsCurrentlyDown)
+            {
+                Result = true;
+            }
+            else if(KeyCode == SU_DOWNARROW && GlobalInputState->Keyboard_DownArrow.IsCurrentlyDown)
             {
                 Result = true;
             }

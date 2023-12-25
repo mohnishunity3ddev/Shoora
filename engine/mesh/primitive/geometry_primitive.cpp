@@ -200,7 +200,7 @@ GenerateCircleMesh(shoora_mesh_filter *MeshFilter, u32 Resolution)
 void
 InitializePrimitives()
 {
-    PrimitiveCollection.Circle.PrimitiveType = shoora_primitive_type::PRIMITIVE_TYPE_CIRCLE;
+    PrimitiveCollection.Circle.PrimitiveType = shoora_primitive_type::CIRCLE;
     GenerateCircleMesh(&PrimitiveCollection.Circle.MeshFilter, 40);
 }
 
@@ -210,7 +210,7 @@ GetPrimitive2d(shoora_primitive_type Type)
     shoora_mesh_filter *Result = nullptr;
     switch (Type)
     {
-        case shoora_primitive_type::PRIMITIVE_TYPE_CIRCLE:
+        case shoora_primitive_type::CIRCLE:
         {
             Result = &PrimitiveCollection.Circle.MeshFilter;
         } break;

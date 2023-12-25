@@ -6,12 +6,12 @@
 
 enum shoora_primitive_type
 {
-    PRIMITIVE_TYPE_NONE,
-    PRIMITIVE_TYPE_SQUARE,
-    PRIMITIVE_TYPE_CIRCLE,
-    PRIMITIVE_TYPE_CUBE,
-    PRIMITIVE_TYPE_SPHERE,
-    PRIMITIVE_MAX_COUNT
+    NONE,
+    SQUARE,
+    CIRCLE,
+    CUBE,
+    SPHERE,
+    MAX_COUNT
 };
 
 struct shoora_primitive

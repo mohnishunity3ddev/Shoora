@@ -290,50 +290,77 @@ struct unlit_shader_data
 };
 
 void
-InitializeParticle()
+InitializeParticles()
 {
-    ParticleCount = 1;
+    ParticleCount = 2;
     Particles = (shoora_particle *)malloc(ParticleCount * sizeof(shoora_particle));
 
     shoora_particle *Particle = &Particles[0];
-
-    Particle->Position = Shu::Vec3f(0.0f, 0.0f, 0.0f);
-    Particle->Size = 10.0f;
-    Particle->Velocity = Shu::Vec3f(200.0f, -100.0f, 0.0f);
-    Particle->Acceleration = Shu::Vec3f(50.0f, -980.0f, 0.0f);
-
-    Particle->PrimitiveType = shoora_primitive_type::PRIMITIVE_TYPE_CIRCLE;
-    Particle->MeshFilter = GetPrimitive2d(Particle->PrimitiveType);
+    Particle->Initialize(Shu::Vec3f(0, 1, 0), Shu::vec2f::Zero(), 5.0f, 1.0f, shoora_primitive_type::CIRCLE,
+                         GetPrimitive2d(shoora_primitive_type::CIRCLE));
+    Particle = &Particles[1];
+    Particle->Initialize(Shu::Vec3f(1, 0, 0), Shu::vec2f::Zero(), 15.0f, 3.0f, shoora_primitive_type::CIRCLE,
+                         GetPrimitive2d(shoora_primitive_type::CIRCLE));
 }
 
 inline void
 UpdateParticle(shoora_particle *Particle, f32 dt)
 {
-    Shu::vec3f deltaV = Particle->Acceleration * dt;
-    Particle->Position += Particle->Velocity*dt + Particle->Acceleration*dt*dt*0.5f;
-    Particle->Velocity += deltaV;
+    // NOTE: If I am debugging, the frametime is going to be huge. So hence, clamping here.
+#if _SHU_DEBUG
+    if(dt > 1.0f/29.0f)
+    {
+        dt = 1.0f / 29.0f;
+    }
+#endif
+
+    Shu::vec2f GravityForce = Shu::Vec2f(0.0f, -9.8f*SHU_PIXELS_PER_METER*Particle->Mass);
+    Particle->AddForce(GravityForce);
+
+    Shu::vec2f WindForce = Shu::Vec2f(1.0f, 1.0f)*(SHU_PIXELS_PER_METER*30);
+    Shu::vec2f ParticleForce = Shu::vec2f::Zero();
+    if(Platform_GetKeyInputState(SU_UPARROW, KeyState::SHU_KEYSTATE_DOWN))
+    {
+        ParticleForce.y += WindForce.y;
+    }
+    if(Platform_GetKeyInputState(SU_DOWNARROW, KeyState::SHU_KEYSTATE_DOWN))
+    {
+        ParticleForce.y -= WindForce.y;
+    }
+    if(Platform_GetKeyInputState(SU_LEFTARROW, KeyState::SHU_KEYSTATE_DOWN))
+    {
+        ParticleForce.x -= WindForce.x;
+    }
+    if(Platform_GetKeyInputState(SU_RIGHTARROW, KeyState::SHU_KEYSTATE_DOWN))
+    {
+        ParticleForce.x += WindForce.x;
+    }
+    Particle->AddForce(ParticleForce);
+    Particle->Integrate(dt);
+
+
 
     Shu::vec2f Bounds = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y)*0.5f;
 
     if((Particle->Position.y - Particle->Size) < -Bounds.y)
     {
         Particle->Position.y = -Bounds.y + Particle->Size;
-        Particle->Velocity.y *= -1;
+        Particle->Velocity.y *= -0.8f;
     }
     if((Particle->Position.y + Particle->Size) > Bounds.y)
     {
         Particle->Position.y = Bounds.y - Particle->Size;
-        Particle->Velocity.y *= -1;
+        Particle->Velocity.y *= -0.8f;
     }
     if((Particle->Position.x - Particle->Size) < -Bounds.x)
     {
         Particle->Position.x = -Bounds.x + Particle->Size;
-        Particle->Velocity.x *= -1;
+        Particle->Velocity.x *= -0.8f;
     }
     if((Particle->Position.x + Particle->Size) > Bounds.x)
     {
         Particle->Position.x = Bounds.x - Particle->Size;
-        Particle->Velocity.x *= -1;
+        Particle->Velocity.x *= -0.8f;
     }
 }
 
@@ -354,7 +381,7 @@ DrawParticles(VkCommandBuffer CmdBuffer, f32 DeltaTime)
         Shu::Translate(Model, Particle->Position);
 
 
-        unlit_shader_data Value = {.Model = Model, .Color = Shu::Vec3f(1, 0, 0)};
+        unlit_shader_data Value = {.Model = Model, .Color = Particle->Color};
 
         vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                            sizeof(unlit_shader_data), &Value);
@@ -373,7 +400,7 @@ DestroyParticles()
 void
 CreateUnlitPipeline(shoora_vulkan_context *Context)
 {
-    InitializeParticle();
+    InitializeParticles();
 
     shoora_vulkan_device *RenderDevice = &Context->Device;
     shoora_vulkan_swapchain *Swapchain = &Context->Swapchain;

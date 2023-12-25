@@ -24,6 +24,11 @@ namespace Shu
         inline T Dot(const vec2<T>& A);
         inline T SqMagnitude();
         inline T Magnitude();
+        static vec2<T> Zero()
+        {
+            vec2<T> Result = {(T)0, (T)0};
+            return Result;
+        }
     };
 
     typedef vec2<i32> vec2i;
@@ -77,6 +82,11 @@ namespace Shu
         inline T Magnitude() const;
         inline T Dot(const vec3<T> &A);
         inline vec3<T> Cross(const vec3<T> &A);
+        static vec3<T> Zero()
+        {
+            vec3<T> Result = {(T)0, (T)0, (T)0};
+            return Result;
+        }
     };
     typedef vec3<i32> vec3i;
     typedef vec3<f32> vec3f;
@@ -104,7 +114,7 @@ namespace Shu
     template <typename T> SHU_EXPORT T Magnitude(const vec3<T> &A);
 
     template <typename T> SHU_EXPORT vec3f Normalize(const vec3<T> &A);
-
+    
     // ----------------------------------------------------------------------------------------------------------------
 
     template <typename T>
