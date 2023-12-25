@@ -1,5 +1,17 @@
 #include "utils.h"
 
+Shu::vec3f
+GetColor(u32 Col)
+{
+    f32 m = 1.0f / 255.0f;
+    
+    u32 r = (Col & 0x00ff0000) >> 16;
+    u32 g = (Col & 0x0000ff00) >> 8;
+    u32 b = (Col & 0x000000ff) >> 0;
+
+    Shu::vec3f Result = Shu::Vec3f(r, g, b) * m;
+    return Result;
+}
 
 u32
 GetMaxValueIndex(u32 *NumsArray, u32 NumsCount)

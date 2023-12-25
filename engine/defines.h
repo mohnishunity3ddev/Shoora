@@ -38,6 +38,7 @@ typedef double f64;
 #define ARRAY_SIZE(Arr) sizeof(Arr) / sizeof(Arr[0])
 #define SHU_VK_ENABLE_MSAA 1
 #define SHU_PIXELS_PER_METER 100.0f
+#define FPS_CAPPING_ENABLED 0
 
 #ifdef _MSC_VER
 #define SHU_ALIGN_16 __declspec(align(16))

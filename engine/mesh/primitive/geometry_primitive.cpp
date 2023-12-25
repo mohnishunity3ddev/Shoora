@@ -2,36 +2,44 @@
 
 #include <memory.h>
 #include <renderer/vulkan/vulkan_vertex_definitions.h>
+#include <renderer/vulkan/vulkan_debug.h>
 
-static shoora_primitive_collection PrimitiveCollection = {};
+static void *Memory;
+static shoora_vertex_info *TotalVertices;
+static u32 TotalVertexCount = 0;
+static u32 *TotalIndices;
+static u32 TotalIndexCount = 0;
+static u32 RunningVertexCount = 0;
+static u32 RunningIndexCount = 0;
+
 
 static shoora_vertex_info TriangleVertices[] =
 {
-    {.Pos = Shu::vec3f{ 0.0f,  0.5f, 0.0f}, .Color = Shu::vec3f{1, 0, 0}},
-    {.Pos = Shu::vec3f{ 0.5f, -0.5f, 0.0f}, .Color = Shu::vec3f{0, 1, 0}},
-    {.Pos = Shu::vec3f{-0.5f, -0.5f, 0.0f}, .Color = Shu::vec3f{0, 0, 1}}
+    {.Pos = Shu::vec3f{ 0.0f,  0.5f, 1.0f}, .Color = Shu::vec3f{1, 0, 0}},
+    {.Pos = Shu::vec3f{ 0.5f, -0.5f, 1.0f}, .Color = Shu::vec3f{0, 1, 0}},
+    {.Pos = Shu::vec3f{-0.5f, -0.5f, 1.0f}, .Color = Shu::vec3f{0, 0, 1}}
 };
 static u32 TriangleIndices[] = {0, 1, 2};
 
 static shoora_vertex_info RectVertices[] =
 {
-    {.Pos = Shu::vec3f{ 0.5f,  0.5f, 0.0f}, .UV = Shu::vec2f{1, 1}, .Color = Shu::vec3f{1, 0, 0}},
-    {.Pos = Shu::vec3f{ 0.5f, -0.5f, 0.0f}, .UV = Shu::vec2f{1, 0}, .Color = Shu::vec3f{0, 1, 0}},
-    {.Pos = Shu::vec3f{-0.5f, -0.5f, 0.0f}, .UV = Shu::vec2f{0, 0}, .Color = Shu::vec3f{0, 0, 1}},
-    {.Pos = Shu::vec3f{-0.5f,  0.5f, 0.0f}, .UV = Shu::vec2f{0, 1}, .Color = Shu::vec3f{0, 0, 0}},
+    {.Pos = Shu::vec3f{ 0.5f,  0.5f, 1.0f}, .UV = Shu::vec2f{1, 1}, .Color = Shu::vec3f{1, 0, 0}},
+    {.Pos = Shu::vec3f{ 0.5f, -0.5f, 1.0f}, .UV = Shu::vec2f{1, 0}, .Color = Shu::vec3f{0, 1, 0}},
+    {.Pos = Shu::vec3f{-0.5f, -0.5f, 1.0f}, .UV = Shu::vec2f{0, 0}, .Color = Shu::vec3f{0, 0, 1}},
+    {.Pos = Shu::vec3f{-0.5f,  0.5f, 1.0f}, .UV = Shu::vec2f{0, 1}, .Color = Shu::vec3f{0, 0, 0}},
 };
 static u32 RectIndices[] = {0, 1, 2, 0, 2, 3};
 
 static Shu::vec3f CubeVertexPositions[] =
 {
-    Shu::vec3f{ 1.0f,  1.0f,  -1.0f},   // Top-Right
-    Shu::vec3f{ 1.0f, -1.0f,  -1.0f},   // Bottom-Right
-    Shu::vec3f{-1.0f, -1.0f,  -1.0f},   // Bottom-Left
-    Shu::vec3f{-1.0f,  1.0f,  -1.0f},   // Top-Left
-    Shu::vec3f{ 1.0f,  1.0f,   1.0f},   // Top-Right
-    Shu::vec3f{ 1.0f, -1.0f,   1.0f},   // Bottom-Right
-    Shu::vec3f{-1.0f, -1.0f,   1.0f},   // Bottom-Left
-    Shu::vec3f{-1.0f,  1.0f,   1.0f}    // Top-Left
+    Shu::vec3f{ 0.5f,  0.5f,  -0.5f},   // Top-Right
+    Shu::vec3f{ 0.5f, -0.5f,  -0.5f},   // Bottom-Right
+    Shu::vec3f{-0.5f, -0.5f,  -0.5f},   // Bottom-Left
+    Shu::vec3f{-0.5f,  0.5f,  -0.5f},   // Top-Left
+    Shu::vec3f{ 0.5f,  0.5f,   0.5f},   // Top-Right
+    Shu::vec3f{ 0.5f, -0.5f,   0.5f},   // Bottom-Right
+    Shu::vec3f{-0.5f, -0.5f,   0.5f},   // Bottom-Left
+    Shu::vec3f{-0.5f,  0.5f,   0.5f}    // Top-Left
 };
 
 // NOTE: Cube
@@ -153,17 +161,24 @@ GenerateCubeTangentInformation(shoora_vertex_info *VertexInfo, u32 *Indices, u32
     }
 }
 
+#if 0
 Shu::vec3f RandomCubePositions[] = {Shu::Vec3f(0.0f, 0.0f, 0.0f),    Shu::Vec3f(2.0f, 5.0f, -15.0f),
                                     Shu::Vec3f(-1.5f, -2.2f, -2.5f), Shu::Vec3f(-3.8f, -2.0f, -12.3f),
                                     Shu::Vec3f(2.4f, -0.4f, -3.5f),  Shu::Vec3f(-1.7f, 3.0f, -7.5f),
                                     Shu::Vec3f(1.3f, -2.0f, -2.5f),  Shu::Vec3f(1.5f, 2.0f, -2.5f),
                                     Shu::Vec3f(1.5f, 0.2f, -1.5f),   Shu::Vec3f(-1.3f, 1.0f, -1.5f)};
+#endif
 
 void
-GenerateCircleMesh(shoora_mesh_filter *MeshFilter, u32 Resolution)
+GenerateCircleMesh(shoora_primitive *Primitive, u32 Resolution)
 {
+    Primitive->VertexOffset = RunningVertexCount;
+    Primitive->IndexOffset = RunningIndexCount;
+
+    shoora_mesh_filter *MeshFilter = &Primitive->MeshFilter;
+
     MeshFilter->VertexCount = Resolution + 1;
-    MeshFilter->Vertices = (shoora_vertex_info *)malloc(sizeof(shoora_vertex_info) * MeshFilter->VertexCount);
+    MeshFilter->Vertices = (shoora_vertex_info *)TotalVertices + RunningVertexCount;
     MeshFilter->Vertices[0].Pos = {0.0f, 0.0f, 1.0f};
 
     f32 AngleStep = (2.0f * SHU_PI) / Resolution;
@@ -179,7 +194,7 @@ GenerateCircleMesh(shoora_mesh_filter *MeshFilter, u32 Resolution)
     }
 
     MeshFilter->IndexCount = Resolution*3;
-    MeshFilter->Indices = (u32 *)malloc(sizeof(u32) * MeshFilter->IndexCount);
+    MeshFilter->Indices = TotalIndices + RunningIndexCount;
 
     for(u32 Index = 1;
         Index < Resolution;
@@ -195,24 +210,112 @@ GenerateCircleMesh(shoora_mesh_filter *MeshFilter, u32 Resolution)
     MeshFilter->Indices[NextPos] = Resolution;
     MeshFilter->Indices[NextPos + 1] = 0;
     MeshFilter->Indices[NextPos + 2] = 1;
+
+    RunningIndexCount += MeshFilter->IndexCount;
+    RunningVertexCount += MeshFilter->VertexCount;
 }
 
-void
-InitializePrimitives()
+shoora_primitive_collection::shoora_primitive_collection(shoora_vulkan_device *Device, u32 CircleResolution)
 {
-    PrimitiveCollection.Circle.PrimitiveType = shoora_primitive_type::CIRCLE;
-    GenerateCircleMesh(&PrimitiveCollection.Circle.MeshFilter, 40);
+    this->RenderDevice = Device;
+
+    ASSERT(CircleResolution >= 1);
+    TotalVertexCount = (CircleResolution + 1) + ARRAY_SIZE(CubeVertices) + ARRAY_SIZE(RectVertices) +
+                       ARRAY_SIZE(TriangleVertices);
+    TotalIndexCount = (CircleResolution * 3) + ARRAY_SIZE(CubeIndices) + ARRAY_SIZE(RectIndices) +
+                      ARRAY_SIZE(TriangleIndices);
+    Memory = malloc(TotalVertexCount*sizeof(shoora_vertex_info) + TotalIndexCount*sizeof(u32));
+    TotalVertices = (shoora_vertex_info *)Memory;
+    TotalIndices = (u32 *)(TotalVertices + TotalVertexCount);
+
+    this->Circle.PrimitiveType = shoora_primitive_type::CIRCLE;
+    GenerateCircleMesh(&this->Circle, CircleResolution);
+
+    shoora_primitive *CubePrimitive = &this->Cube;
+    CubePrimitive->PrimitiveType = shoora_primitive_type::CUBE;
+    CubePrimitive->VertexOffset = RunningVertexCount;
+    CubePrimitive->IndexOffset = RunningIndexCount;
+    shoora_mesh_filter *CubeMeshFilter = &CubePrimitive->MeshFilter;
+    CubeMeshFilter->Vertices = TotalVertices + RunningVertexCount;
+    CubeMeshFilter->VertexCount = ARRAY_SIZE(CubeVertices);
+    CubeMeshFilter->Indices = TotalIndices + RunningIndexCount;
+    CubeMeshFilter->IndexCount = ARRAY_SIZE(CubeIndices);
+    memcpy(CubeMeshFilter->Vertices, CubeVertices, CubeMeshFilter->VertexCount * sizeof(shoora_vertex_info));
+    memcpy(CubeMeshFilter->Indices, CubeIndices, CubeMeshFilter->IndexCount * sizeof(u32));
+    RunningVertexCount += CubeMeshFilter->VertexCount;
+    RunningIndexCount += CubeMeshFilter->IndexCount;
+
+    shoora_primitive *RectPrimitive = &this->Rect2D;
+    RectPrimitive->PrimitiveType = shoora_primitive_type::RECT_2D;
+    RectPrimitive->VertexOffset = RunningVertexCount;
+    RectPrimitive->IndexOffset = RunningIndexCount;
+    shoora_mesh_filter *RectMeshFilter = &RectPrimitive->MeshFilter;
+    RectMeshFilter->Vertices = TotalVertices + RunningVertexCount;
+    RectMeshFilter->VertexCount = ARRAY_SIZE(RectVertices);
+    RectMeshFilter->Indices = TotalIndices + RunningIndexCount;
+    RectMeshFilter->IndexCount = ARRAY_SIZE(RectIndices);
+    memcpy(RectMeshFilter->Vertices, RectVertices, RectMeshFilter->VertexCount * sizeof(shoora_vertex_info));
+    memcpy(RectMeshFilter->Indices, RectIndices, RectMeshFilter->IndexCount * sizeof(u32));
+    RunningVertexCount += RectMeshFilter->VertexCount;
+    RunningIndexCount += RectMeshFilter->IndexCount;
+
+    shoora_primitive *TrianglePrimitive = &this->Triangle;
+    TrianglePrimitive->PrimitiveType = shoora_primitive_type::TRIANGLE;
+    TrianglePrimitive->VertexOffset = RunningVertexCount;
+    TrianglePrimitive->IndexOffset = RunningIndexCount;
+    shoora_mesh_filter *TriangleMeshFilter = &TrianglePrimitive->MeshFilter;
+    TriangleMeshFilter->Vertices = TotalVertices + RunningVertexCount;
+    TriangleMeshFilter->VertexCount = ARRAY_SIZE(TriangleVertices);
+    TriangleMeshFilter->Indices = TotalIndices + RunningIndexCount;
+    TriangleMeshFilter->IndexCount = ARRAY_SIZE(TriangleIndices);
+    memcpy(TriangleMeshFilter->Vertices, TriangleVertices, TriangleMeshFilter->VertexCount * sizeof(shoora_vertex_info));
+    memcpy(TriangleMeshFilter->Indices, TriangleIndices, TriangleMeshFilter->IndexCount * sizeof(u32));
+    RunningVertexCount += TriangleMeshFilter->VertexCount;
+    RunningIndexCount += TriangleMeshFilter->IndexCount;
+
+    ASSERT(TotalVertexCount == RunningVertexCount);
+    ASSERT(TotalIndexCount == RunningIndexCount);
+
+    CreateVertexBuffers(Device, TotalVertices, TotalVertexCount, TotalIndices, TotalIndexCount,
+                        &this->vBuffer, &this->iBuffer);
+
+#ifdef _SHU_DEBUG
+    // NOTE: This is how we name vulkan objects. Easier to read validation errors if errors are there!
+    LogInfo("This is a debug build brother!\n");
+    SetObjectName(RenderDevice, (u64)this->vBuffer.Handle, VK_OBJECT_TYPE_BUFFER, "Primitives Vertex Buffer");
+    SetObjectName(RenderDevice, (u64)this->iBuffer.Handle, VK_OBJECT_TYPE_BUFFER, "Primitives Index Buffer");
+#elif defined(_SHU_RELEASE)
+    LogInfo("This is a RELEASE build brother!\n");
+#endif
 }
 
-shoora_mesh_filter *
-GetPrimitive2d(shoora_primitive_type Type)
+shoora_primitive *
+shoora_primitive_collection::GetPrimitive(shoora_primitive_type Type)
 {
-    shoora_mesh_filter *Result = nullptr;
+    shoora_primitive *Result = nullptr;
+
     switch (Type)
     {
         case shoora_primitive_type::CIRCLE:
         {
-            Result = &PrimitiveCollection.Circle.MeshFilter;
+            Result = &this->Circle;
+        } break;
+
+        case shoora_primitive_type::RECT_2D:
+        {
+            Result = &this->Rect2D;
+        } break;
+
+
+        case shoora_primitive_type::TRIANGLE:
+        {
+            Result = &this->Triangle;
+        } break;
+
+
+        case shoora_primitive_type::CUBE:
+        {
+            Result = &this->Cube;
         } break;
 
         SHU_INVALID_DEFAULT;
@@ -220,4 +323,35 @@ GetPrimitive2d(shoora_primitive_type Type)
 
     ASSERT(Result != nullptr);
     return Result;
+}
+
+VkBuffer *
+shoora_primitive_collection::GetVertexBufferHandlePtr()
+{
+    VkBuffer *Result = &this->vBuffer.Handle;
+    return Result;
+}
+
+VkBuffer
+shoora_primitive_collection::GetIndexBufferHandle()
+{
+    VkBuffer Result = this->iBuffer.Handle;
+    return Result;
+}
+
+
+void
+shoora_primitive_collection::Destroy()
+{
+    if(TotalVertexCount == 0 || TotalIndexCount == 0)
+    {
+        return;
+    }
+
+    TotalVertexCount = 0;
+    TotalIndexCount = 0;
+    free(Memory);
+    TotalVertices = nullptr;
+    TotalIndices = nullptr;
+    DestroyVertexBuffer(this->RenderDevice, &this->vBuffer, &this->iBuffer);
 }

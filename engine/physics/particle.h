@@ -14,15 +14,14 @@ struct shoora_particle
     Shu::vec3f Acceleration;
     Shu::vec3f Color;
 
-    shoora_mesh_filter *MeshFilter;
-    shoora_primitive_type PrimitiveType;
+    shoora_primitive *Primitive;
 
     f32 Mass;
     f32 InvMass;
     Shu::vec3f SumForces;
 
     void Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Size, f32 Mass,
-                    const shoora_primitive_type Type, shoora_mesh_filter *MeshFilter);
+                    const shoora_primitive_type Type, shoora_primitive *Primitive);
     void Integrate(f32 DeltaTime);
     void AddForce(const Shu::vec2f &Force);
     void ClearForces();

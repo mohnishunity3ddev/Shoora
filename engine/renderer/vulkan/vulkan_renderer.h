@@ -246,7 +246,6 @@ struct shoora_vulkan_context
     shoora_vulkan_swapchain Swapchain;
     VkRenderPass GraphicsRenderPass;
 
-    shoora_vulkan_vertex_buffers UnlitVertexBuffer;
     VkDescriptorSetLayout UnlitSetLayout;
     VkDescriptorSet UnlitSets[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
 

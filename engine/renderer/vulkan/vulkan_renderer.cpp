@@ -12,6 +12,8 @@
 
 #include <mesh/primitive/geometry_primitive.h>
 #include <physics/particle.h>
+#include <physics/force.h>
+#include <utils/utils.h>
 
 
 #ifdef WIN32
@@ -122,6 +124,8 @@ static light_shader_push_constant_data GlobalLightPushConstantData[4];
 static push_const_block GlobalPushConstBlock = {};
 static f32 GlobalImGuiDragFloatStep = 0.005f;
 static Shu::vec2u GlobalWindowSize = {};
+
+static shoora_primitive_collection GlobalPrimitives;
 
 void
 WindowResizedCallback(u32 Width, u32 Height)
@@ -290,6 +294,26 @@ struct unlit_shader_data
 };
 
 void
+DrawRect(VkCommandBuffer CmdBuffer, i32 X, i32 Y, u32 Width, u32 Height)
+{
+    VkDeviceSize offsets[1] = {0};
+    vkCmdBindVertexBuffers(CmdBuffer, 0, 1, GlobalPrimitives.GetVertexBufferHandlePtr(), offsets);
+    vkCmdBindIndexBuffer(CmdBuffer, GlobalPrimitives.GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
+
+    Shu::mat4f Model = GlobalMat4Identity;
+    Shu::Scale(Model, Shu::Vec3f((f32)Width*0.5f, (f32)Height*0.5f, 0.0f));
+    Shu::Translate(Model, Shu::Vec3f(X, Y, 0.0f));
+
+    shoora_primitive *Primitive = GlobalPrimitives.GetPrimitive(shoora_primitive_type::RECT_2D);
+    unlit_shader_data Value = {.Model = Model, .Color = Shu::Vec3f(1, 1, 1)};
+
+    vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+                       sizeof(unlit_shader_data), &Value);
+    vkCmdDrawIndexed(CmdBuffer, Primitive->MeshFilter.IndexCount, 1, Primitive->IndexOffset,
+                     Primitive->VertexOffset, 0);
+}
+
+void
 InitializeParticles()
 {
     ParticleCount = 2;
@@ -297,10 +321,11 @@ InitializeParticles()
 
     shoora_particle *Particle = &Particles[0];
     Particle->Initialize(Shu::Vec3f(0, 1, 0), Shu::vec2f::Zero(), 5.0f, 1.0f, shoora_primitive_type::CIRCLE,
-                         GetPrimitive2d(shoora_primitive_type::CIRCLE));
+                         GlobalPrimitives.GetPrimitive(shoora_primitive_type::CIRCLE));
+
     Particle = &Particles[1];
     Particle->Initialize(Shu::Vec3f(1, 0, 0), Shu::vec2f::Zero(), 15.0f, 3.0f, shoora_primitive_type::CIRCLE,
-                         GetPrimitive2d(shoora_primitive_type::CIRCLE));
+                         GlobalPrimitives.GetPrimitive(shoora_primitive_type::CIRCLE));
 }
 
 inline void
@@ -336,31 +361,39 @@ UpdateParticle(shoora_particle *Particle, f32 dt)
         ParticleForce.x += WindForce.x;
     }
     Particle->AddForce(ParticleForce);
+
+    if(Particle->Position.y < 0)
+    {
+        Shu::vec2f DragForce = force::GenerateDragForce(Particle, 0.04f);
+        Particle->AddForce(DragForce);
+    }
+
     Particle->Integrate(dt);
 
 
 
     Shu::vec2f Bounds = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y)*0.5f;
+    f32 DampFactor = -1.0f;
 
     if((Particle->Position.y - Particle->Size) < -Bounds.y)
     {
         Particle->Position.y = -Bounds.y + Particle->Size;
-        Particle->Velocity.y *= -0.8f;
+        Particle->Velocity.y *= DampFactor;
     }
     if((Particle->Position.y + Particle->Size) > Bounds.y)
     {
         Particle->Position.y = Bounds.y - Particle->Size;
-        Particle->Velocity.y *= -0.8f;
+        Particle->Velocity.y *= DampFactor;
     }
     if((Particle->Position.x - Particle->Size) < -Bounds.x)
     {
         Particle->Position.x = -Bounds.x + Particle->Size;
-        Particle->Velocity.x *= -0.8f;
+        Particle->Velocity.x *= DampFactor;
     }
     if((Particle->Position.x + Particle->Size) > Bounds.x)
     {
         Particle->Position.x = Bounds.x - Particle->Size;
-        Particle->Velocity.x *= -0.8f;
+        Particle->Velocity.x *= DampFactor;
     }
 }
 
@@ -368,8 +401,21 @@ void
 DrawParticles(VkCommandBuffer CmdBuffer, f32 DeltaTime)
 {
     VkDeviceSize offsets[1] = {0};
-    vkCmdBindVertexBuffers(CmdBuffer, 0, 1, &Context->UnlitVertexBuffer.VertexBuffer.Handle, offsets);
-    vkCmdBindIndexBuffer(CmdBuffer, Context->UnlitVertexBuffer.IndexBuffer.Handle, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(CmdBuffer, 0, 1, GlobalPrimitives.GetVertexBufferHandlePtr(), offsets);
+    vkCmdBindIndexBuffer(CmdBuffer, GlobalPrimitives.GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
+
+    Shu::mat4f Model = GlobalMat4Identity;
+    Shu::Scale(Model, Shu::Vec3f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y*0.5f, 1.0f));
+    Shu::Translate(Model, Shu::Vec3f(0.0f, -(f32)GlobalWindowSize.y*0.25f, 0.0f));
+
+    shoora_primitive *Primitive = GlobalPrimitives.GetPrimitive(shoora_primitive_type::RECT_2D);
+    Shu::vec3f Color = GetColor(0xff173863);
+    unlit_shader_data Value = {.Model = Model, .Color = Color};
+
+    vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+                       sizeof(unlit_shader_data), &Value);
+    vkCmdDrawIndexed(CmdBuffer, Primitive->MeshFilter.IndexCount, 1, Primitive->IndexOffset,
+                     Primitive->VertexOffset, 0);
 
     for (u32 ParticleIndex = 0; ParticleIndex < ParticleCount; ++ParticleIndex)
     {
@@ -380,12 +426,13 @@ DrawParticles(VkCommandBuffer CmdBuffer, f32 DeltaTime)
         Shu::Scale(Model, Shu::Vec3f(Particle->Size));
         Shu::Translate(Model, Particle->Position);
 
-
         unlit_shader_data Value = {.Model = Model, .Color = Particle->Color};
 
+        shoora_primitive *Primitive = Particle->Primitive;
         vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                            sizeof(unlit_shader_data), &Value);
-        vkCmdDrawIndexed(CmdBuffer, Particle->MeshFilter->IndexCount, 1, 0, 0, 1);
+        vkCmdDrawIndexed(CmdBuffer, Primitive->MeshFilter.IndexCount, 1, Primitive->IndexOffset,
+                         Primitive->VertexOffset, 0);
     }
 }
 
@@ -409,19 +456,6 @@ CreateUnlitPipeline(shoora_vulkan_context *Context)
     Sizes[0] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SHU_MAX_FRAMES_IN_FLIGHT);
     CreateDescriptorPool(&Context->Device, ARRAY_SIZE(Sizes), Sizes, 4, &Context->UnlitDescriptorPool);
 
-    shoora_mesh_filter *ParticleMesh = Particles[0].MeshFilter;
-
-    CreateVertexBuffers(RenderDevice, ParticleMesh->Vertices, ParticleMesh->VertexCount, ParticleMesh->Indices,
-                        ParticleMesh->IndexCount, &Context->UnlitVertexBuffer.VertexBuffer,
-                        &Context->UnlitVertexBuffer.IndexBuffer);
-#ifdef _SHU_DEBUG
-    // NOTE: This is how we name vulkan objects. Easier to read validation errors if errors are there!
-    LogInfo("This is a debug build brother!\n");
-    SetObjectName(RenderDevice, (u64)Context->UnlitVertexBuffer.VertexBuffer.Handle, VK_OBJECT_TYPE_BUFFER,
-                  "Unlit Vertex Buffer");
-#elif defined(_SHU_RELEASE)
-    LogInfo("This is a RELEASE build brother!\n");
-#endif
     CreateUniformBuffers(RenderDevice, Context->FragUnlitBuffers, ARRAY_SIZE(Context->FragUnlitBuffers),
                          sizeof(light_shader_vert_data));
 
@@ -463,8 +497,6 @@ void
 CleanupUnlitPipeline()
 {
     DestroyParticles();
-    DestroyBuffer(&Context->Device, &Context->UnlitVertexBuffer.VertexBuffer);
-    DestroyBuffer(&Context->Device, &Context->UnlitVertexBuffer.IndexBuffer);
     vkDestroyDescriptorPool(Context->Device.LogicalDevice, Context->UnlitDescriptorPool, nullptr);
 }
 
@@ -512,7 +544,6 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
 {
     GlobalWindowSize = {AppInfo->WindowWidth, AppInfo->WindowHeight};
     InitializeLightData();
-    InitializePrimitives();
 
     VK_CHECK(volkInitialize());
 
@@ -544,6 +575,8 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     CreateSwapchainFramebuffers(RenderDevice, Swapchain, VulkanContext->GraphicsRenderPass);
 
     SetupCamera(&VulkanContext->Camera, Shu::Vec3f(0, 0, -10.0f), Shu::Vec3f(0, 1, 0));
+
+    GlobalPrimitives = shoora_primitive_collection(&VulkanContext->Device, 40);
 
 #if RENDER_SPONZA
     // NOTE: This is for Sponza Scene Gemoetry. Loading all meshes, textures and everything else related to it!.
@@ -933,6 +966,7 @@ DestroyVulkanRenderer(shoora_vulkan_context *Context)
     CleanupGeometry(RenderDevice, &Context->Geometry);
 
     CleanupUnlitPipeline();
+    GlobalPrimitives.Destroy();
     DestroyUnlitPipelineResources();
     DestroySwapchainUniformResources(RenderDevice, &Context->Swapchain);
 

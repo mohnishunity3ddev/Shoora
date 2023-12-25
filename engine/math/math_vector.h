@@ -4,6 +4,8 @@
 
 namespace Shu
 {
+    template <typename T> struct vec3;
+
     template <typename T>
     struct vec2
     {
@@ -41,6 +43,7 @@ namespace Shu
     template <typename T> SHU_EXPORT vec2<T> Vec2();
     template <typename T> SHU_EXPORT vec2<T> Vec2(T A);
     template <typename T> SHU_EXPORT vec2<T> Vec2(T x, T y);
+    template <typename T> SHU_EXPORT vec2<T> Vec2(vec3<T> Vec3);
     template <typename T> SHU_EXPORT vec2<T> MakeVec2(const T *const Ptr);
     template <typename T> SHU_EXPORT T Dot(const vec2<T>& A, const vec2<T>& B);
     template <typename T> SHU_EXPORT vec2<T> operator+(const vec2<T>& A, const vec2<T>& B);
@@ -114,7 +117,7 @@ namespace Shu
     template <typename T> SHU_EXPORT T Magnitude(const vec3<T> &A);
 
     template <typename T> SHU_EXPORT vec3f Normalize(const vec3<T> &A);
-    
+
     // ----------------------------------------------------------------------------------------------------------------
 
     template <typename T>
@@ -198,6 +201,17 @@ namespace Shu
         Result.x = x;
         Result.y = y;
         return Result;
+    }
+
+    template <typename T>
+    vec2<T>
+    Vec2(vec3<T> Vec3)
+    {
+        vec2<T> Result;
+        Result.x = Vec3.x;
+        Result.y = Vec3.y;
+        return Result;
+
     }
 
     template <typename T>
