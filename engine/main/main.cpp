@@ -536,7 +536,7 @@ LogString(const char *String)
     OutputDebugStringA(String);
 }
 
-b32 MouseClicked = false;
+b32 MouseTracking = false;
 void
 Win32ProcessWindowsMessageQueue(HWND WindowHandle, platform_input_state *Input)
 {

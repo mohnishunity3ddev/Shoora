@@ -34,7 +34,7 @@ namespace Shu
 
     SHU_EXPORT quat Quat(f32 w, f32 vx, f32 vy, f32 vz);
     SHU_EXPORT quat Quat(f32 Real, vec3f Complex);
-    SHU_EXPORT quat QuatAngleAxis(f32 Angle, vec3f Axis);
+    SHU_EXPORT quat QuatAngleAxis(f32 AngleInDegrees, vec3f Axis);
     SHU_EXPORT quat operator-(const quat &A, const quat &B);
     SHU_EXPORT quat operator+(const quat &A, const quat &B);
     SHU_EXPORT quat operator*(const quat &A, const quat &B);

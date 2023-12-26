@@ -4,7 +4,20 @@
 namespace Shu
 {
     mat4f
-    GetRotationMatrix(mat4f &Mat, const quat &Q)
+    TRS(const Shu::vec3f &Pos, const Shu::vec3f &Scale,
+        const f32 RotationAngle, const Shu::vec3f &RotationAxis)
+    {
+        Shu::mat4f Model = Shu::Mat4f(1.0f);
+
+        Shu::Scale(Model, Scale);
+        Shu::Rotate(Model, Shu::QuatAngleAxis(RotationAngle, RotationAxis));
+        Shu::Translate(Model, Pos);
+
+        return Model;
+    }
+
+    mat4f
+    Rotate(mat4f &Mat, const quat &Q)
     {
         quat Quat = QuatNormalize(Q);
         f32 w = Q.real; // cos(theta / 2)

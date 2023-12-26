@@ -126,6 +126,8 @@ static f32 GlobalImGuiDragFloatStep = 0.005f;
 static Shu::vec2u GlobalWindowSize = {};
 
 static shoora_primitive_collection GlobalPrimitives;
+static b32 MouseTracking = false;
+static Shu::vec2f MouseInitialScreenPos = Shu::Vec2f(0);
 
 void
 WindowResizedCallback(u32 Width, u32 Height)
@@ -284,7 +286,7 @@ ImGuiNewFrame()
     ImGui::Render();
 }
 
-static shoora_particle Particles[8192*2];
+static shoora_particle Particles[8192];
 static u32 ParticleCount = 0;
 
 struct unlit_shader_data
@@ -294,33 +296,56 @@ struct unlit_shader_data
 };
 
 void
-DrawRect(VkCommandBuffer CmdBuffer, i32 X, i32 Y, u32 Width, u32 Height)
-{
-    VkDeviceSize offsets[1] = {0};
-    vkCmdBindVertexBuffers(CmdBuffer, 0, 1, GlobalPrimitives.GetVertexBufferHandlePtr(), offsets);
-    vkCmdBindIndexBuffer(CmdBuffer, GlobalPrimitives.GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
-
-    Shu::mat4f Model = GlobalMat4Identity;
-    Shu::Scale(Model, Shu::Vec3f((f32)Width*0.5f, (f32)Height*0.5f, 0.0f));
-    Shu::Translate(Model, Shu::Vec3f(X, Y, 0.0f));
-
-    shoora_primitive *Primitive = GlobalPrimitives.GetPrimitive(shoora_primitive_type::RECT_2D);
-    unlit_shader_data Value = {.Model = Model, .Color = Shu::Vec3f(1, 1, 1)};
-
-    vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
-                       sizeof(unlit_shader_data), &Value);
-    vkCmdDrawIndexed(CmdBuffer, Primitive->MeshFilter.IndexCount, 1, Primitive->IndexOffset,
-                     Primitive->VertexOffset, 0);
-}
-
-void
 InitializeParticle(const Shu::vec2f Pos)
 {
     shoora_particle *Particle = &Particles[ParticleCount++];
 
-    f32 Size = (f32)(rand() % 2);
+    // f32 Size = (f32)(rand() % 2);
+    f32 Size = 30;
     Particle->Initialize(Shu::Vec3f(0, 1, 0), Pos, Size, 1.0f,
                          GlobalPrimitives.GetPrimitive(shoora_primitive_type::CIRCLE));
+}
+
+Shu::vec2f
+MouseToScreenSpace(const Shu::vec2f &MousePos)
+{
+    f32 x = MousePos.x - (((f32)GlobalWindowSize.x) * 0.5f);
+    f32 y = (((f32)GlobalWindowSize.y) * 0.5f) - MousePos.y;
+
+    Shu::vec2f Result;
+    Result.x = x;
+    Result.y = y;
+
+    return Result;
+}
+
+Shu::vec2f
+ScreenToMouseSpace(const Shu::vec2f &ScreenPos)
+{
+    f32 x = (((f32)GlobalWindowSize.x) * 0.5f) + ScreenPos.x;
+    f32 y = ScreenPos.y + (((f32)GlobalWindowSize.y) * 0.5f);
+
+    Shu::vec2f Result;
+    Result.x = x;
+    Result.y = y;
+
+    return Result;
+}
+
+b32
+CheckIfParticleClicked(const shoora_particle *Particle, const Shu::vec2f &MousePos)
+{
+    Shu::vec2f l = MouseToScreenSpace(MousePos) - Shu::ToVec2(Particle->Position);
+
+    b32 Result = (l.SqMagnitude() < Particle->Size * Particle->Size);
+    return Result;
+}
+
+void
+AddImpulseToParticle(shoora_particle *Particle, const Shu::vec2f InImpulse)
+{
+    Shu::vec2f Impulse = InImpulse*5.0f;
+    Particle->Velocity += Shu::Vec3f(Impulse, 0.0f);
 }
 
 inline void
@@ -334,26 +359,27 @@ UpdateParticle(shoora_particle *Particle, f32 dt)
     }
 #endif
 
+#if 0
     Shu::vec2f GravityForce = Shu::Vec2f(0.0f, -9.8f*SHU_PIXELS_PER_METER*Particle->Mass);
     Particle->AddForce(GravityForce);
 
-    Shu::vec2f WindForce = Shu::Vec2f(1.0f, 1.0f)*(SHU_PIXELS_PER_METER*30);
+    Shu::vec2f PushForce = Shu::Vec2f(1.0f, 1.0f)*(SHU_PIXELS_PER_METER*30);
     Shu::vec2f ParticleForce = Shu::vec2f::Zero();
     if(Platform_GetKeyInputState(SU_UPARROW, KeyState::SHU_KEYSTATE_DOWN))
     {
-        ParticleForce.y += WindForce.y;
+        ParticleForce.y += PushForce.y;
     }
     if(Platform_GetKeyInputState(SU_DOWNARROW, KeyState::SHU_KEYSTATE_DOWN))
     {
-        ParticleForce.y -= WindForce.y;
+        ParticleForce.y -= PushForce.y;
     }
     if(Platform_GetKeyInputState(SU_LEFTARROW, KeyState::SHU_KEYSTATE_DOWN))
     {
-        ParticleForce.x -= WindForce.x;
+        ParticleForce.x -= PushForce.x;
     }
     if(Platform_GetKeyInputState(SU_RIGHTARROW, KeyState::SHU_KEYSTATE_DOWN))
     {
-        ParticleForce.x += WindForce.x;
+        ParticleForce.x += PushForce.x;
     }
     Particle->AddForce(ParticleForce);
 
@@ -364,8 +390,17 @@ UpdateParticle(shoora_particle *Particle, f32 dt)
     }
 
     Particle->Integrate(dt);
+#endif
 
+    if(Particle->Position.y < 0)
+    {
+        Shu::vec2f DragForce = force::GenerateDragForce(Particle, 0.03f);
+        Particle->AddForce(DragForce);
+    }
 
+    Shu::vec2f FrictionForce = force::GenerateFrictionForce(Particle, 1000.0f);
+    Particle->AddForce(FrictionForce);
+    Particle->Integrate(dt);
 
     Shu::vec2f Bounds = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y)*0.5f;
     f32 DampFactor = -1.0f;
@@ -393,16 +428,64 @@ UpdateParticle(shoora_particle *Particle, f32 dt)
 }
 
 void
+DrawLine(VkCommandBuffer CmdBuffer, const Shu::vec2f P0, const Shu::vec2f P1, u32 ColorU32)
+{
+    VkDeviceSize offsets[1] = {0};
+    vkCmdBindVertexBuffers(CmdBuffer, 0, 1, GlobalPrimitives.GetVertexBufferHandlePtr(), offsets);
+    vkCmdBindIndexBuffer(CmdBuffer, GlobalPrimitives.GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
+
+#if 0
+    Shu::vec2f p0 = MouseToScreenSpace(P0);
+    Shu::vec2f p1 = MouseToScreenSpace(P1);
+#endif
+    Shu::vec2f l = P1 - P0;
+
+    Shu::vec3f Pos = Shu::Vec3f((P0+P1)*0.5f, 1.0f);
+    Shu::vec3f Scale = Shu::Vec3f(l.Magnitude(), 3.0f, 1.0f);
+
+    shoora_primitive *Line = GlobalPrimitives.GetPrimitive(shoora_primitive_type::RECT_2D);
+    Shu::mat4f Model = Shu::TRS(Pos, Scale, l.GetSlopeAngleInDegrees(), Shu::Vec3f(0.0f, 0.0f, 1.0f));
+
+    unlit_shader_data Value = {.Model = Model, .Color = GetColor(ColorU32)};
+
+    vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+                       sizeof(unlit_shader_data), &Value);
+    vkCmdDrawIndexed(CmdBuffer, Line->MeshFilter.IndexCount, 1, Line->IndexOffset, Line->VertexOffset, 0);
+}
+
+
+void
+DrawRect(VkCommandBuffer CmdBuffer, i32 X, i32 Y, u32 Width, u32 Height)
+{
+    VkDeviceSize offsets[1] = {0};
+    vkCmdBindVertexBuffers(CmdBuffer, 0, 1, GlobalPrimitives.GetVertexBufferHandlePtr(), offsets);
+    vkCmdBindIndexBuffer(CmdBuffer, GlobalPrimitives.GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
+
+    Shu::mat4f Model = GlobalMat4Identity;
+    Shu::Scale(Model, Shu::Vec3f((f32)Width*0.5f, (f32)Height*0.5f, 0.0f));
+    Shu::Translate(Model, Shu::Vec3f(X, Y, 0.0f));
+
+    shoora_primitive *Primitive = GlobalPrimitives.GetPrimitive(shoora_primitive_type::RECT_2D);
+    unlit_shader_data Value = {.Model = Model, .Color = Shu::Vec3f(1, 1, 1)};
+
+    vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+                       sizeof(unlit_shader_data), &Value);
+    vkCmdDrawIndexed(CmdBuffer, Primitive->MeshFilter.IndexCount, 1, Primitive->IndexOffset,
+                     Primitive->VertexOffset, 0);
+}
+
+void
 DrawParticles(VkCommandBuffer CmdBuffer, f32 DeltaTime)
 {
     VkDeviceSize offsets[1] = {0};
     vkCmdBindVertexBuffers(CmdBuffer, 0, 1, GlobalPrimitives.GetVertexBufferHandlePtr(), offsets);
     vkCmdBindIndexBuffer(CmdBuffer, GlobalPrimitives.GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
 
+#if 1
     // NOTE: Draw Rectangle to represent dense liquid.
     Shu::mat4f Model = GlobalMat4Identity;
     Shu::Scale(Model, Shu::Vec3f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y*0.5f, 1.0f));
-    Shu::Translate(Model, Shu::Vec3f(0.0f, -(f32)GlobalWindowSize.y*0.25f, 0.0f));
+    Shu::Translate(Model, Shu::Vec3f(0.0f, -(f32)GlobalWindowSize.y*0.25f, -0.1f));
     shoora_primitive *Primitive = GlobalPrimitives.GetPrimitive(shoora_primitive_type::RECT_2D);
     Shu::vec3f Color = GetColor(0xff173863);
     unlit_shader_data Value = {.Model = Model, .Color = Color};
@@ -410,9 +493,11 @@ DrawParticles(VkCommandBuffer CmdBuffer, f32 DeltaTime)
                        sizeof(unlit_shader_data), &Value);
     vkCmdDrawIndexed(CmdBuffer, Primitive->MeshFilter.IndexCount, 1, Primitive->IndexOffset,
                      Primitive->VertexOffset, 0);
+#endif
 
-
-    for (u32 ParticleIndex = 0; ParticleIndex < ParticleCount; ++ParticleIndex)
+    for(u32 ParticleIndex = 0;
+        ParticleIndex < ParticleCount;
+        ++ParticleIndex)
     {
         shoora_particle *Particle = Particles + ParticleIndex;
         UpdateParticle(Particle, DeltaTime);
@@ -593,6 +678,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
 
     // Unlit Pipeline
     CreateUnlitPipeline(VulkanContext);
+    InitializeParticle(Shu::Vec2f(0.0f));
 
     CreateSynchronizationPrimitives(&VulkanContext->Device, &VulkanContext->SyncHandles);
     PrepareImGui(RenderDevice, &VulkanContext->ImContext, ScreenDim, VulkanContext->GraphicsRenderPass);
@@ -759,6 +845,9 @@ void
 DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 {
     // VK_CHECK(vkQueueWaitIdle(Context->Device.GraphicsQueue));
+    Shu::vec2f CurrentMousePos = Shu::Vec2f(FramePacket->MouseXPos, FramePacket->MouseYPos);
+    Shu::vec2f CurrentMouseScreenPos = MouseToScreenSpace(CurrentMousePos);
+
     ASSERT(Context != nullptr);
     ASSERT(FramePacket->DeltaTime > 0.0f);
     if(!Context->IsInitialized || Context->CurrentFrame >= SHU_MAX_FRAMES_IN_FLIGHT)
@@ -899,20 +988,33 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
                                 1, &Context->UnlitSets[ImageIndex], 0, nullptr);
         vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Handle);
 
-        if(Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, KeyState::SHU_KEYSTATE_DOWN))
+        if(!MouseTracking && Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, SHU_KEYSTATE_DOWN))
         {
-            Shu::vec2f MousePos = Shu::Vec2f(FramePacket->MouseXPos, FramePacket->MouseYPos);
-            MousePos.x -= (f32)GlobalWindowSize.x * 0.5f;
-            MousePos.y = (f32)GlobalWindowSize.y*0.5f - MousePos.y;
-            LogTrace("Mouse Clicked at : [%f, %f].\n", MousePos.x, MousePos.y);
-            InitializeParticle(MousePos);
+            if(CheckIfParticleClicked(&Particles[0], CurrentMousePos))
+            {
+                MouseTracking = true;
+                MouseInitialScreenPos = ToVec2(Particles[0].Position);
+            }
         }
+
+        if(MouseTracking)
+        {
+            DrawLine(DrawCmdBuffer, MouseInitialScreenPos, CurrentMouseScreenPos, 0xffff0000);
+        }
+
+        if(MouseTracking && Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, SHU_KEYSTATE_RELEASE))
+        {
+            Shu::vec2f Force = MouseInitialScreenPos - CurrentMouseScreenPos;
+            AddImpulseToParticle(&Particles[0], Force);
+            MouseTracking = false;
+        }
+
         DrawParticles(DrawCmdBuffer, GlobalDeltaTime);
 #endif
 
         ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
+    vkCmdEndRenderPass(DrawCmdBuffer);
 
-        vkCmdEndRenderPass(DrawCmdBuffer);
     VK_CHECK(vkEndCommandBuffer(DrawCmdBuffer));
 
     //? Submit DrawCommandBuffer

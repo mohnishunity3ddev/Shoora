@@ -25,7 +25,8 @@ namespace Shu
         inline T& operator[](size_t Index);
         inline T Dot(const vec2<T>& A);
         inline T SqMagnitude();
-        inline T Magnitude();
+        inline T Magnitude() const;
+        inline f32 GetSlopeAngleInDegrees();
         static vec2<T> Zero()
         {
             vec2<T> Result = {(T)0, (T)0};
@@ -326,9 +327,18 @@ namespace Shu
 
     template <typename T>
     T
-    vec2<T>::Magnitude()
+    vec2<T>::Magnitude() const
     {
         T Result = sqrtf(this->x*this->x + this->y*this->y);
+        return Result;
+    }
+
+    template <typename T>
+    f32
+    vec2<T>::GetSlopeAngleInDegrees()
+    {
+        f32 Result = atan2f(this->y, this->x);
+        Result *= RAD_TO_DEG;
         return Result;
     }
 

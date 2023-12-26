@@ -48,6 +48,11 @@ typedef double f64;
 #define ALIGN_16
 #endif
 
+#define SHU_PI 3.14159265359f
+#define SHU_PI_BY_2 1.57079632679f
+#define DEG_TO_RAD SHU_PI / 180.0f
+#define RAD_TO_DEG 180.0f / SHU_PI
+
 enum shoora_quality
 {
     Quality_Low,

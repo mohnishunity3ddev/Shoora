@@ -8,6 +8,7 @@
 enum shoora_primitive_type
 {
     NONE,
+    LINE,
     TRIANGLE,
     RECT_2D,
     CIRCLE,
@@ -35,6 +36,7 @@ struct shoora_primitive_collection
     void Destroy();
 
   private:
+    shoora_primitive Line;
     shoora_primitive Triangle;
     shoora_primitive Rect2D;
     shoora_primitive Circle;

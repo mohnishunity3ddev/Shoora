@@ -13,6 +13,12 @@ static u32 RunningVertexCount = 0;
 static u32 RunningIndexCount = 0;
 
 
+static shoora_vertex_info LineVertices[2] =
+{
+    {.Pos = Shu::Vec3f(-0.5f, -0.5f, 1.0f)},
+    {.Pos = Shu::Vec3f( 0.5f,  0.5f, 1.0f)},
+};
+
 static shoora_vertex_info TriangleVertices[] =
 {
     {.Pos = Shu::vec3f{ 0.0f,  0.5f, 1.0f}, .Color = Shu::vec3f{1, 0, 0}},
@@ -221,7 +227,7 @@ shoora_primitive_collection::shoora_primitive_collection(shoora_vulkan_device *D
 
     ASSERT(CircleResolution >= 1);
     TotalVertexCount = (CircleResolution + 1) + ARRAY_SIZE(CubeVertices) + ARRAY_SIZE(RectVertices) +
-                       ARRAY_SIZE(TriangleVertices);
+                       ARRAY_SIZE(TriangleVertices) + ARRAY_SIZE(LineVertices);
     TotalIndexCount = (CircleResolution * 3) + ARRAY_SIZE(CubeIndices) + ARRAY_SIZE(RectIndices) +
                       ARRAY_SIZE(TriangleIndices);
     Memory = malloc(TotalVertexCount*sizeof(shoora_vertex_info) + TotalIndexCount*sizeof(u32));
@@ -273,6 +279,18 @@ shoora_primitive_collection::shoora_primitive_collection(shoora_vulkan_device *D
     RunningVertexCount += TriangleMeshFilter->VertexCount;
     RunningIndexCount += TriangleMeshFilter->IndexCount;
 
+    shoora_primitive *LinePrimitive = &this->Line;
+    LinePrimitive->PrimitiveType = shoora_primitive_type::LINE;
+    LinePrimitive->VertexOffset = RunningVertexCount;
+    LinePrimitive->IndexOffset = -1;
+    shoora_mesh_filter *LineMeshFilter = &LinePrimitive->MeshFilter;
+    LineMeshFilter->Vertices = TotalVertices + RunningVertexCount;
+    LineMeshFilter->VertexCount = ARRAY_SIZE(LineVertices);
+    LineMeshFilter->Indices = nullptr;
+    LineMeshFilter->IndexCount = 0;
+    memcpy(LineMeshFilter->Vertices, LineVertices, LineMeshFilter->VertexCount * sizeof(shoora_vertex_info));
+    RunningVertexCount += LineMeshFilter->VertexCount;
+
     ASSERT(TotalVertexCount == RunningVertexCount);
     ASSERT(TotalIndexCount == RunningIndexCount);
 
@@ -306,16 +324,19 @@ shoora_primitive_collection::GetPrimitive(shoora_primitive_type Type)
             Result = &this->Rect2D;
         } break;
 
-
         case shoora_primitive_type::TRIANGLE:
         {
             Result = &this->Triangle;
         } break;
 
-
         case shoora_primitive_type::CUBE:
         {
             Result = &this->Cube;
+        } break;
+
+        case shoora_primitive_type::LINE:
+        {
+            Result = &this->Line;
         } break;
 
         SHU_INVALID_DEFAULT;
