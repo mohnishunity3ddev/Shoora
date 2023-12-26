@@ -45,7 +45,7 @@ Win32GetWindowRect(HWND WindowHandle)
 {
     RECT ClientRect;
     GetClientRect(WindowHandle, &ClientRect);
-    
+
     return ClientRect;
 }
 
@@ -234,116 +234,40 @@ Platform_GetKeyInputState(u8 KeyCode, KeyState State)
     {
         case SHU_KEYSTATE_PRESS:
         {
-            if(KeyCode == SU_LEFTMOUSEBUTTON &&
-               Win32InputKeyPressed(&GlobalInputState->LeftMouseButton))
-            {
-                Result = true;
-            }
-            else if(KeyCode == SU_RIGHTMOUSEBUTTON &&
-                    Win32InputKeyPressed(&GlobalInputState->RightMouseButton))
-            {
-                Result = true;
-            }
-            else if(KeyCode == SU_LEFTARROW &&
-                    Win32InputKeyPressed(&GlobalInputState->Keyboard_LeftArrow))
-            {
-                Result = true;
-            }
-            else if(KeyCode == SU_RIGHTARROW &&
-                    Win32InputKeyPressed(&GlobalInputState->Keyboard_RightArrow))
-            {
-                Result = true;
-            }
-            else if(KeyCode == SU_UPARROW &&
-                    Win32InputKeyPressed(&GlobalInputState->Keyboard_UpArrow))
-            {
-                Result = true;
-            }
-            else if(KeyCode == SU_DOWNARROW &&
-                    Win32InputKeyPressed(&GlobalInputState->Keyboard_DownArrow))
-            {
-                Result = true;
-            }
-            else if(KeyCode == 'F' &&
-                    Win32InputKeyPressed(&GlobalInputState->Keyboard_F))
-            {
-                Result = true;
-            }
-
+            if(KeyCode == SU_LEFTMOUSEBUTTON && Win32InputKeyPressed(&GlobalInputState->LeftMouseButton)) { Result = true; }
+            else if(KeyCode == SU_RIGHTMOUSEBUTTON && Win32InputKeyPressed(&GlobalInputState->RightMouseButton)) { Result = true; }
+            else if(KeyCode == SU_LEFTARROW && Win32InputKeyPressed(&GlobalInputState->Keyboard_LeftArrow)) { Result = true; }
+            else if(KeyCode == SU_RIGHTARROW && Win32InputKeyPressed(&GlobalInputState->Keyboard_RightArrow)) { Result = true; }
+            else if(KeyCode == SU_UPARROW && Win32InputKeyPressed(&GlobalInputState->Keyboard_UpArrow)) { Result = true; }
+            else if(KeyCode == SU_DOWNARROW && Win32InputKeyPressed(&GlobalInputState->Keyboard_DownArrow)) { Result = true; }
+            else if(KeyCode == 'F' && Win32InputKeyPressed(&GlobalInputState->Keyboard_F)) { Result = true; }
         } break;
 
         case SHU_KEYSTATE_DOWN:
         {
-            if(KeyCode == SU_RIGHTMOUSEBUTTON && GlobalInputState->RightMouseButton.IsCurrentlyDown)
-            {
-                Result = true;
-            }
-            else if(KeyCode == SU_LEFTMOUSEBUTTON && GlobalInputState->LeftMouseButton.IsCurrentlyDown)
-            {
-                Result = true;
-            }
-            else if(KeyCode == 'W' && GlobalInputState->Keyboard_W.IsCurrentlyDown)
-            {
-                Result = true;
-            }
-            else if(KeyCode == 'A' && GlobalInputState->Keyboard_A.IsCurrentlyDown)
-            {
-                Result = true;
-            }
-            else if(KeyCode == 'S' && GlobalInputState->Keyboard_S.IsCurrentlyDown)
-            {
-                Result = true;
-            }
-            else if(KeyCode == 'D' && GlobalInputState->Keyboard_D.IsCurrentlyDown)
-            {
-                Result = true;
-            }
-            else if(KeyCode == SU_LEFTARROW && GlobalInputState->Keyboard_LeftArrow.IsCurrentlyDown)
-            {
-                Result = true;
-            }
-            else if(KeyCode == SU_RIGHTARROW && GlobalInputState->Keyboard_RightArrow.IsCurrentlyDown)
-            {
-                Result = true;
-            }
-            else if(KeyCode == SU_UPARROW && GlobalInputState->Keyboard_UpArrow.IsCurrentlyDown)
-            {
-                Result = true;
-            }
-            else if(KeyCode == SU_DOWNARROW && GlobalInputState->Keyboard_DownArrow.IsCurrentlyDown)
-            {
-                Result = true;
-            }
-            else if(KeyCode == SU_LEFTSHIFT && GlobalInputState->Keyboard_LeftShift.IsCurrentlyDown)
-            {
-                Result = true;
-            }
+            if(KeyCode == SU_RIGHTMOUSEBUTTON && GlobalInputState->RightMouseButton.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == SU_LEFTMOUSEBUTTON && GlobalInputState->LeftMouseButton.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == 'W' && GlobalInputState->Keyboard_W.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == 'A' && GlobalInputState->Keyboard_A.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == 'S' && GlobalInputState->Keyboard_S.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == 'D' && GlobalInputState->Keyboard_D.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == SU_LEFTARROW && GlobalInputState->Keyboard_LeftArrow.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == SU_RIGHTARROW && GlobalInputState->Keyboard_RightArrow.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == SU_UPARROW && GlobalInputState->Keyboard_UpArrow.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == SU_DOWNARROW && GlobalInputState->Keyboard_DownArrow.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == SU_LEFTSHIFT && GlobalInputState->Keyboard_LeftShift.IsCurrentlyDown) { Result = true; }
         } break;
 
         case SHU_KEYSTATE_RELEASE:
         {
-            if (KeyCode == 'W' && GlobalInputState->Keyboard_W.IsReleased)
-            {
-                Result = true;
-            }
-            else if (KeyCode == 'A' && GlobalInputState->Keyboard_A.IsReleased)
-            {
-                Result = true;
-            }
-            else if (KeyCode == 'S' && GlobalInputState->Keyboard_S.IsReleased)
-            {
-                Result = true;
-            }
-            else if (KeyCode == 'D' && GlobalInputState->Keyboard_D.IsReleased)
-            {
-                Result = true;
-            }
-            else if (KeyCode == SU_LEFTSHIFT && GlobalInputState->Keyboard_LeftShift.IsReleased)
-            {
-                Result = true;
-            }
-        }
-        break;
+            if (KeyCode == 'W' && GlobalInputState->Keyboard_W.IsReleased) { Result = true; }
+            else if (KeyCode == 'A' && GlobalInputState->Keyboard_A.IsReleased) { Result = true; }
+            else if (KeyCode == 'S' && GlobalInputState->Keyboard_S.IsReleased) { Result = true; }
+            else if (KeyCode == 'D' && GlobalInputState->Keyboard_D.IsReleased) { Result = true; }
+            else if (KeyCode == SU_LEFTSHIFT && GlobalInputState->Keyboard_LeftShift.IsReleased) { Result = true; }
+            else if (KeyCode == SU_LEFTMOUSEBUTTON && GlobalInputState->LeftMouseButton.IsReleased) { Result = true; }
+            else if (KeyCode == SU_RIGHTMOUSEBUTTON && GlobalInputState->RightMouseButton.IsReleased) { Result = true; }
+        } break;
 
         default:
         {
@@ -612,6 +536,7 @@ LogString(const char *String)
     OutputDebugStringA(String);
 }
 
+b32 MouseClicked = false;
 void
 Win32ProcessWindowsMessageQueue(HWND WindowHandle, platform_input_state *Input)
 {
@@ -887,9 +812,10 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
             ++ButtonIndex)
         {
                 NewInputState->MouseButtons[ButtonIndex].IsCurrentlyDown = OldInputState->MouseButtons[ButtonIndex].IsCurrentlyDown;
+                NewInputState->MouseButtons[ButtonIndex].IsReleased = OldInputState->MouseButtons[ButtonIndex].IsReleased;
                 NewInputState->MouseButtons[ButtonIndex].ButtonTransitionsPerFrame = 0;
 
-                b32 IsButtonDown = GetKeyState(MouseButtonsKeyCodes[ButtonIndex]) & (1 << 15);
+                b32 IsButtonDown = (GetAsyncKeyState(MouseButtonsKeyCodes[ButtonIndex])&(1 << 15)) != 0;
                 Win32UpdateInputButtonState(&NewInputState->MouseButtons[ButtonIndex], IsButtonDown);
         }
 
