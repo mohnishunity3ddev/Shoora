@@ -20,3 +20,18 @@ force::GenerateDragForce(const shoora_particle *Particle, f32 DragCoefficient)
 
     return DragForce;
 }
+
+Shu::vec2f
+force::GenerateFrictionForce(const shoora_particle *Particle, f32 FrictionCoefficient)
+{
+    Shu::vec2f FrictionForce = Shu::Vec2f(0.0f);
+
+    Shu::vec3f VelocityNormalized = Shu::Normalize(Particle->Velocity);
+    Shu::vec2f FrictionDir = Shu::Vec2f(VelocityNormalized) * -1.0f;
+
+    f32 FrictionMagnitude = FrictionCoefficient;
+
+    FrictionForce = FrictionDir * FrictionMagnitude;
+
+    return FrictionForce;
+}

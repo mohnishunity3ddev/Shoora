@@ -284,8 +284,8 @@ ImGuiNewFrame()
     ImGui::Render();
 }
 
-static shoora_particle *Particles;
-static u32 ParticleCount;
+static shoora_particle Particles[8192*2];
+static u32 ParticleCount = 0;
 
 struct unlit_shader_data
 {
@@ -314,17 +314,12 @@ DrawRect(VkCommandBuffer CmdBuffer, i32 X, i32 Y, u32 Width, u32 Height)
 }
 
 void
-InitializeParticles()
+InitializeParticle(const Shu::vec2f Pos)
 {
-    ParticleCount = 2;
-    Particles = (shoora_particle *)malloc(ParticleCount * sizeof(shoora_particle));
+    shoora_particle *Particle = &Particles[ParticleCount++];
 
-    shoora_particle *Particle = &Particles[0];
-    Particle->Initialize(Shu::Vec3f(0, 1, 0), Shu::vec2f::Zero(), 5.0f, 1.0f, shoora_primitive_type::CIRCLE,
-                         GlobalPrimitives.GetPrimitive(shoora_primitive_type::CIRCLE));
-
-    Particle = &Particles[1];
-    Particle->Initialize(Shu::Vec3f(1, 0, 0), Shu::vec2f::Zero(), 15.0f, 3.0f, shoora_primitive_type::CIRCLE,
+    f32 Size = (f32)(rand() % 2);
+    Particle->Initialize(Shu::Vec3f(0, 1, 0), Pos, Size, 1.0f,
                          GlobalPrimitives.GetPrimitive(shoora_primitive_type::CIRCLE));
 }
 
@@ -364,7 +359,7 @@ UpdateParticle(shoora_particle *Particle, f32 dt)
 
     if(Particle->Position.y < 0)
     {
-        Shu::vec2f DragForce = force::GenerateDragForce(Particle, 0.04f);
+        Shu::vec2f DragForce = force::GenerateDragForce(Particle, 0.03f);
         Particle->AddForce(DragForce);
     }
 
@@ -404,18 +399,18 @@ DrawParticles(VkCommandBuffer CmdBuffer, f32 DeltaTime)
     vkCmdBindVertexBuffers(CmdBuffer, 0, 1, GlobalPrimitives.GetVertexBufferHandlePtr(), offsets);
     vkCmdBindIndexBuffer(CmdBuffer, GlobalPrimitives.GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
 
+    // NOTE: Draw Rectangle to represent dense liquid.
     Shu::mat4f Model = GlobalMat4Identity;
     Shu::Scale(Model, Shu::Vec3f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y*0.5f, 1.0f));
     Shu::Translate(Model, Shu::Vec3f(0.0f, -(f32)GlobalWindowSize.y*0.25f, 0.0f));
-
     shoora_primitive *Primitive = GlobalPrimitives.GetPrimitive(shoora_primitive_type::RECT_2D);
     Shu::vec3f Color = GetColor(0xff173863);
     unlit_shader_data Value = {.Model = Model, .Color = Color};
-
     vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                        sizeof(unlit_shader_data), &Value);
     vkCmdDrawIndexed(CmdBuffer, Primitive->MeshFilter.IndexCount, 1, Primitive->IndexOffset,
                      Primitive->VertexOffset, 0);
+
 
     for (u32 ParticleIndex = 0; ParticleIndex < ParticleCount; ++ParticleIndex)
     {
@@ -437,18 +432,8 @@ DrawParticles(VkCommandBuffer CmdBuffer, f32 DeltaTime)
 }
 
 void
-DestroyParticles()
-{
-    ParticleCount = 0;
-    free(Particles);
-    Particles = nullptr;
-}
-
-void
 CreateUnlitPipeline(shoora_vulkan_context *Context)
 {
-    InitializeParticles();
-
     shoora_vulkan_device *RenderDevice = &Context->Device;
     shoora_vulkan_swapchain *Swapchain = &Context->Swapchain;
 
@@ -496,7 +481,6 @@ CreateUnlitPipeline(shoora_vulkan_context *Context)
 void
 CleanupUnlitPipeline()
 {
-    DestroyParticles();
     vkDestroyDescriptorPool(Context->Device.LogicalDevice, Context->UnlitDescriptorPool, nullptr);
 }
 
@@ -915,7 +899,14 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
                                 1, &Context->UnlitSets[ImageIndex], 0, nullptr);
         vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Handle);
 
-        // RenderLightCubes(DrawCmdBuffer);
+        if(Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, KeyState::SHU_KEYSTATE_DOWN))
+        {
+            Shu::vec2f MousePos = Shu::Vec2f(FramePacket->MouseXPos, FramePacket->MouseYPos);
+            MousePos.x -= (f32)GlobalWindowSize.x * 0.5f;
+            MousePos.y = (f32)GlobalWindowSize.y*0.5f - MousePos.y;
+            LogTrace("Mouse Clicked at : [%f, %f].\n", MousePos.x, MousePos.y);
+            InitializeParticle(MousePos);
+        }
         DrawParticles(DrawCmdBuffer, GlobalDeltaTime);
 #endif
 

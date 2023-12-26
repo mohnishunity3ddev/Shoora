@@ -21,7 +21,7 @@ struct shoora_particle
     Shu::vec3f SumForces;
 
     void Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Size, f32 Mass,
-                    const shoora_primitive_type Type, shoora_primitive *Primitive);
+                    shoora_primitive *Primitive);
     void Integrate(f32 DeltaTime);
     void AddForce(const Shu::vec2f &Force);
     void ClearForces();
