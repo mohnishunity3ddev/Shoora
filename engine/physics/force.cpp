@@ -38,3 +38,19 @@ force::GenerateFrictionForce(const shoora_particle *Particle, f32 FrictionCoeffi
 
     return FrictionForce;
 }
+
+Shu::vec2f
+force::GenerateGravitationalForce(const shoora_particle *A, const shoora_particle *B, f32 G, f32 minDistance, f32 maxDistance)
+{
+    Shu::vec2f d = Shu::ToVec2(B->Position - A->Position);
+    f32 dSquared = d.SqMagnitude();
+
+    dSquared = ClampToRange(dSquared, minDistance, maxDistance);
+
+    Shu::vec2f AttractionDir = Shu::Normalize(d);
+    f32 AttractionMagnitude = G * (A->Mass * B->Mass) / dSquared;
+
+    Shu::vec2f AttractionForce = AttractionDir * AttractionMagnitude;
+
+    return AttractionForce;
+}

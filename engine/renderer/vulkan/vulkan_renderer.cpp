@@ -128,6 +128,7 @@ static Shu::vec2u GlobalWindowSize = {};
 static shoora_primitive_collection GlobalPrimitives;
 static b32 MouseTracking = false;
 static Shu::vec2f MouseInitialScreenPos = Shu::Vec2f(0);
+static shoora_particle *ParticleToMove = nullptr;
 
 void
 WindowResizedCallback(u32 Width, u32 Height)
@@ -296,13 +297,11 @@ struct unlit_shader_data
 };
 
 void
-InitializeParticle(const Shu::vec2f Pos)
+InitializeParticle(const Shu::vec2f Pos, u32 ColorU32, f32 Size, f32 Mass)
 {
     shoora_particle *Particle = &Particles[ParticleCount++];
 
-    // f32 Size = (f32)(rand() % 2);
-    f32 Size = 30;
-    Particle->Initialize(Shu::Vec3f(0, 1, 0), Pos, Size, 1.0f,
+    Particle->Initialize(GetColor(ColorU32), Pos, Size, Mass,
                          GlobalPrimitives.GetPrimitive(shoora_primitive_type::CIRCLE));
 }
 
@@ -349,8 +348,17 @@ AddImpulseToParticle(shoora_particle *Particle, const Shu::vec2f InImpulse)
 }
 
 inline void
-UpdateParticle(shoora_particle *Particle, f32 dt)
+AddGravitationalForce(shoora_particle *Particle, f32 dt)
 {
+
+}
+
+inline void
+UpdateParticle(u32 ParticleIndex, f32 dt)
+{
+    ASSERT(ParticleIndex < ParticleCount);
+    shoora_particle *Particle = Particles + ParticleIndex;
+
     // NOTE: If I am debugging, the frametime is going to be huge. So hence, clamping here.
 #if _SHU_DEBUG
     if(dt > 1.0f/29.0f)
@@ -392,14 +400,25 @@ UpdateParticle(shoora_particle *Particle, f32 dt)
     Particle->Integrate(dt);
 #endif
 
+#if 0 // Drag Force
     if(Particle->Position.y < 0)
     {
         Shu::vec2f DragForce = force::GenerateDragForce(Particle, 0.03f);
         Particle->AddForce(DragForce);
     }
+#endif
 
-    Shu::vec2f FrictionForce = force::GenerateFrictionForce(Particle, 1000.0f);
-    Particle->AddForce(FrictionForce);
+    if((ParticleIndex+1) < ParticleCount)
+    {
+        shoora_particle *NextParticle = Particles + (ParticleIndex+1);
+        Shu::vec2f GravitationalForce = force::GenerateGravitationalForce(Particle, NextParticle, 100.0f, 5.0f, 100.0f);
+        Particle->AddForce(GravitationalForce);
+        NextParticle->AddForce(GravitationalForce*-1.0f);
+    }
+
+    // Shu::vec2f FrictionForce = force::GenerateFrictionForce(Particle, 5000.0f);
+    // Particle->AddForce(FrictionForce);
+
     Particle->Integrate(dt);
 
     Shu::vec2f Bounds = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y)*0.5f;
@@ -481,7 +500,7 @@ DrawParticles(VkCommandBuffer CmdBuffer, f32 DeltaTime)
     vkCmdBindVertexBuffers(CmdBuffer, 0, 1, GlobalPrimitives.GetVertexBufferHandlePtr(), offsets);
     vkCmdBindIndexBuffer(CmdBuffer, GlobalPrimitives.GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
 
-#if 1
+#if 0
     // NOTE: Draw Rectangle to represent dense liquid.
     Shu::mat4f Model = GlobalMat4Identity;
     Shu::Scale(Model, Shu::Vec3f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y*0.5f, 1.0f));
@@ -500,7 +519,7 @@ DrawParticles(VkCommandBuffer CmdBuffer, f32 DeltaTime)
         ++ParticleIndex)
     {
         shoora_particle *Particle = Particles + ParticleIndex;
-        UpdateParticle(Particle, DeltaTime);
+        UpdateParticle(ParticleIndex, DeltaTime);
 
         Shu::mat4f Model = GlobalMat4Identity;
         Shu::Scale(Model, Shu::Vec3f(Particle->Size));
@@ -561,6 +580,9 @@ CreateUnlitPipeline(shoora_vulkan_context *Context)
                          &Context->UnlitPipeline.Layout);
     CreateGraphicsPipeline(Context, "shaders/spirv/unlit.vert.spv", "shaders/spirv/unlit.frag.spv",
                            &Context->UnlitPipeline);
+
+    InitializeParticle(Shu::Vec2f(0.0f), 0xffff0000, 30.0f, 10.0f);
+    InitializeParticle(Shu::Vec2f(-(f32)GlobalWindowSize.x*0.25, (f32)GlobalWindowSize.y*0.125f), 0xff00ff00, 60.0f, 2000.0f);
 }
 
 void
@@ -678,7 +700,6 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
 
     // Unlit Pipeline
     CreateUnlitPipeline(VulkanContext);
-    InitializeParticle(Shu::Vec2f(0.0f));
 
     CreateSynchronizationPrimitives(&VulkanContext->Device, &VulkanContext->SyncHandles);
     PrepareImGui(RenderDevice, &VulkanContext->ImContext, ScreenDim, VulkanContext->GraphicsRenderPass);
@@ -842,6 +863,43 @@ RenderLightCubes(VkCommandBuffer CmdBuffer)
 #endif
 
 void
+AddImpulseToParticles(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos,
+                      const Shu::vec2f &CurrentMouseScreenPos)
+{
+    for(u32 ParticleIndex = 0;
+        ParticleIndex < ParticleCount;
+        ++ParticleIndex)
+    {
+        shoora_particle *Particle = Particles + ParticleIndex;
+
+        if(!MouseTracking && Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, SHU_KEYSTATE_DOWN))
+        {
+            if(CheckIfParticleClicked(Particle, CurrentMousePos))
+            {
+                MouseTracking = true;
+                MouseInitialScreenPos = ToVec2(Particle->Position);
+                ParticleToMove = Particle;
+            }
+        }
+
+        if(MouseTracking)
+        {
+            DrawLine(CmdBuffer, MouseInitialScreenPos, CurrentMouseScreenPos, 0xffff0000);
+        }
+
+    }
+
+    if (MouseTracking && Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, SHU_KEYSTATE_RELEASE))
+    {
+        ASSERT(ParticleToMove != nullptr);
+        Shu::vec2f Force = MouseInitialScreenPos - CurrentMouseScreenPos;
+        AddImpulseToParticle(ParticleToMove, Force);
+        MouseTracking = false;
+        ParticleToMove = nullptr;
+    }
+}
+
+void
 DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 {
     // VK_CHECK(vkQueueWaitIdle(Context->Device.GraphicsQueue));
@@ -988,27 +1046,7 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
                                 1, &Context->UnlitSets[ImageIndex], 0, nullptr);
         vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Handle);
 
-        if(!MouseTracking && Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, SHU_KEYSTATE_DOWN))
-        {
-            if(CheckIfParticleClicked(&Particles[0], CurrentMousePos))
-            {
-                MouseTracking = true;
-                MouseInitialScreenPos = ToVec2(Particles[0].Position);
-            }
-        }
-
-        if(MouseTracking)
-        {
-            DrawLine(DrawCmdBuffer, MouseInitialScreenPos, CurrentMouseScreenPos, 0xffff0000);
-        }
-
-        if(MouseTracking && Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, SHU_KEYSTATE_RELEASE))
-        {
-            Shu::vec2f Force = MouseInitialScreenPos - CurrentMouseScreenPos;
-            AddImpulseToParticle(&Particles[0], Force);
-            MouseTracking = false;
-        }
-
+        AddImpulseToParticles(DrawCmdBuffer, CurrentMousePos, CurrentMouseScreenPos);
         DrawParticles(DrawCmdBuffer, GlobalDeltaTime);
 #endif
 
