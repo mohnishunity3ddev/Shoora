@@ -26,10 +26,24 @@
 #endif
 
 #define UNLIT_PIPELINE 1
-
 #include <memory.h>
 
 static shoora_vulkan_context *Context = nullptr;
+
+#define NUM_PARTICLES 10
+static shoora_primitive_collection GlobalPrimitives;
+static b32 MouseTracking = false;
+static Shu::vec2f MouseInitialScreenPos = Shu::Vec2f(0);
+static shoora_particle *ParticleToMove = nullptr;
+static Shu::vec2f AnchorPos;
+static shoora_particle Particles[8192];
+static u32 ParticleCount = 0;
+static f32 ParticleMass = 1.5f;
+static f32 PrevParticleMass = ParticleMass;
+static f32 ParticleRadius = 15.0f;
+static f32 PrevParticleRadius = ParticleRadius;
+static f32 SpringConstant = 210.0f;
+static f32 SpringRestLength = 30.0f;
 
 // NOTE: ALso make the same changes to the lighting shader.
 // TODO)): Automate this so that changing this automatically makes changes to the shader using shader variation.
@@ -125,13 +139,6 @@ static push_const_block GlobalPushConstBlock = {};
 static f32 GlobalImGuiDragFloatStep = 0.005f;
 static Shu::vec2u GlobalWindowSize = {};
 
-static shoora_primitive_collection GlobalPrimitives;
-static b32 MouseTracking = false;
-static Shu::vec2f MouseInitialScreenPos = Shu::Vec2f(0);
-static shoora_particle *ParticleToMove = nullptr;
-static f32 SpringConstant = 1500.0f;
-static f32 SpringRestLength = 200.0f;
-
 void
 WindowResizedCallback(u32 Width, u32 Height)
 {
@@ -200,6 +207,11 @@ ImGuiNewFrame()
             SHU_INVALID_DEFAULT;
         }
     }
+    ImGui::SliderFloat("Particles Mass", &ParticleMass, 0.1f, 10.0f);
+    ImGui::SliderFloat("Particles Radius", &ParticleRadius, 1.0f, 100.0f);
+    ImGui::SliderFloat("Spring Rest Length", &SpringRestLength, 1.0f, 30.0f);
+    ImGui::SliderFloat("Spring Constant", &SpringConstant, 1.0f, 3000.0f);
+
 
 #if CREATE_WIREFRAME_PIPELINE
     ImGui::Checkbox("Toggle Wireframe", (bool *)&GlobalRenderState.WireframeMode);
@@ -224,6 +236,7 @@ ImGuiNewFrame()
 #endif
     ImGui::End();
 
+#if 0
     ImVec2 SecondWindowPos = ImVec2(GlobalWindowSize.x - DesiredWidth, 400);
     ImVec2 SecondWindowSize = ImVec2(0, 0);
     ImGui::SetNextWindowPos(SecondWindowPos, ImGuiCond_Always);
@@ -270,6 +283,7 @@ ImGuiNewFrame()
         ImGui::SliderFloat("Intensity", &GlobalFragUniformData.SpotlightData.Intensity, 0.3f, 100.0f);
     }
     ImGui::End();
+#endif
 
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(400, 0), ImGuiCond_Always);
@@ -280,17 +294,12 @@ ImGuiNewFrame()
     ImGui::BeginDisabled();
     ImGui::Text("Camera: {%.2f, %.2f, %.2f}", Context->Camera.Pos.x, Context->Camera.Pos.y, Context->Camera.Pos.z);
     ImGui::EndDisabled();
-
 #if SHU_USE_GLM
     ImGui::TextUnformatted("Using GLM!");
 #endif
     ImGui::End();
-
     ImGui::Render();
 }
-
-static shoora_particle Particles[8192];
-static u32 ParticleCount = 0;
 
 struct unlit_shader_data
 {
@@ -352,33 +361,19 @@ AddImpulseToParticle(shoora_particle *Particle, const Shu::vec2f InImpulse)
 inline void
 UpdateParticles(f32 dt)
 {
+    shoora_particle *p0 = &Particles[0];
+    Shu::vec2f springForce = force::GenerateSpringForce(p0, AnchorPos, SpringRestLength, SpringConstant);
+    p0->AddForce(springForce);
+    for(i32 ParticleIndex = 1; ParticleIndex < NUM_PARTICLES; ++ParticleIndex)
+    {
+        shoora_particle *p0 = Particles + (ParticleIndex-1);
+        shoora_particle *p1 = Particles + ParticleIndex;
+        Shu::vec2f springForce = force::GenerateSpringForce(p0, p1, SpringRestLength, SpringConstant);
+        p0->AddForce(springForce);
+        p1->AddForce(springForce*(-1.0f));
+    }
 
-    shoora_particle *pA = Particles;
-    shoora_particle *pB = Particles + 1;
-    Shu::vec2f springForceAB = force::GenerateSpringForce(pA, pB, SpringRestLength, SpringConstant);
-    pA->AddForce(springForceAB);
-    pB->AddForce(springForceAB*(-1.0f));
-    shoora_particle *pC = Particles + 2;
-    Shu::vec2f springForceBC = force::GenerateSpringForce(pB, pC, SpringRestLength, SpringConstant);
-    pB->AddForce(springForceBC);
-    pC->AddForce(springForceBC*(-1.0f));
-    shoora_particle *pD = Particles + 3;
-    Shu::vec2f springForceCD = force::GenerateSpringForce(pC, pD, SpringRestLength, SpringConstant);
-    pC->AddForce(springForceCD);
-    pD->AddForce(springForceCD*(-1.0f));
-    Shu::vec2f springForceDA = force::GenerateSpringForce(pD, pA, SpringRestLength, SpringConstant);
-    pD->AddForce(springForceDA);
-    pA->AddForce(springForceDA*(-1.0f));
-    Shu::vec2f springForceAC = force::GenerateSpringForce(pA, pC, SpringRestLength, SpringConstant);
-    pA->AddForce(springForceAC);
-    pC->AddForce(springForceAC*(-1.0f));
-    Shu::vec2f springForceBD = force::GenerateSpringForce(pB, pD, SpringRestLength, SpringConstant);
-    pB->AddForce(springForceBD);
-    pD->AddForce(springForceBD*(-1.0f));
-
-    for(i32 ParticleIndex = 0;
-        ParticleIndex < ParticleCount;
-        ++ParticleIndex)
+    for (i32 ParticleIndex = 0; ParticleIndex < ParticleCount; ++ParticleIndex)
     {
         ASSERT(ParticleIndex < ParticleCount);
         shoora_particle *Particle = Particles + ParticleIndex;
@@ -420,8 +415,6 @@ UpdateParticles(f32 dt)
             Shu::vec2f DragForce = force::GenerateDragForce(Particle, 0.03f);
             Particle->AddForce(DragForce);
         }
-
-        Particle->Integrate(dt);
 #endif
 
 #if 1 // Drag Force
@@ -499,7 +492,7 @@ void
 DrawRect(VkCommandBuffer CmdBuffer, i32 X, i32 Y, u32 Width, u32 Height, u32 ColorU32)
 {
     Shu::mat4f Model = GlobalMat4Identity;
-    Shu::Scale(Model, Shu::Vec3f((f32)Width*0.5f, (f32)Height*0.5f, 0.0f));
+    Shu::Scale(Model, Shu::Vec3f((f32)Width*0.5f, (f32)Height*0.5f, 1.0f));
     Shu::Translate(Model, Shu::Vec3f(X, Y, 0.0f));
 
     shoora_primitive *Primitive = GlobalPrimitives.GetPrimitive(shoora_primitive_type::RECT_2D);
@@ -608,7 +601,7 @@ AddImpulseToParticles(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMouseP
     if (MouseTracking && Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, SHU_KEYSTATE_RELEASE))
     {
         ASSERT(ParticleToMove != nullptr);
-        Shu::vec2f Force = MouseInitialScreenPos - CurrentMouseScreenPos;
+        Shu::vec2f Force = (MouseInitialScreenPos - CurrentMouseScreenPos);
         AddImpulseToParticle(ParticleToMove, Force);
         MouseTracking = false;
         ParticleToMove = nullptr;
@@ -618,10 +611,12 @@ AddImpulseToParticles(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMouseP
 void
 InitScene()
 {
-    InitializeParticle(Shu::Vec2f(-50.0f, (f32)GlobalWindowSize.y*0.125f), 0xff00ff00, 30.0f, 5.0f);
-    InitializeParticle(Shu::Vec2f(50.0f, (f32)GlobalWindowSize.y*0.125f), 0xffff0000, 30.0f, 5.0f);
-    InitializeParticle(Shu::Vec2f(50.0f, (f32)GlobalWindowSize.y*0.125f - 100), 0xff0000ff, 30.0f, 5.0f);
-    InitializeParticle(Shu::Vec2f(-50.0f, (f32)GlobalWindowSize.y*0.125f - 100), 0xffffffff, 30.0f, 5.0f);
+    AnchorPos = Shu::Vec2f(0.0f, (GlobalWindowSize.y*0.5f) - 30);
+    for(i32 Index = 0; Index < NUM_PARTICLES; ++Index)
+    {
+        InitializeParticle(Shu::Vec2f(0.0f, AnchorPos.y - 10 * (Index + 1)), 0xff115599, ParticleRadius,
+                           ParticleMass);
+    }
 }
 
 void
@@ -636,17 +631,33 @@ DrawScene(VkCommandBuffer CmdBuffer, u32 SwapchainImageIndex, const Shu::vec2f C
     vkCmdBindVertexBuffers(CmdBuffer, 0, 1, GlobalPrimitives.GetVertexBufferHandlePtr(), offsets);
     vkCmdBindIndexBuffer(CmdBuffer, GlobalPrimitives.GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
 
-    shoora_particle *pA = Particles + 0;
-    shoora_particle *pB = Particles + 1;
-    DrawSpring(CmdBuffer, pA->Position.xy, pB->Position.xy, SpringRestLength, 10.0f, 60, 0xffffffff);
-    shoora_particle *pC = Particles + 2;
-    DrawSpring(CmdBuffer, pB->Position.xy, pC->Position.xy, SpringRestLength, 10.0f, 60, 0xffffffff);
-    shoora_particle *pD = Particles + 3;
-    DrawSpring(CmdBuffer, pC->Position.xy, pD->Position.xy, SpringRestLength, 10.0f, 60, 0xffffffff);
-    DrawSpring(CmdBuffer, pD->Position.xy, pA->Position.xy, SpringRestLength, 10.0f, 60, 0xffffffff);
+    // Anchor Position of the spring
+    AnchorPos = Shu::Vec2f(0.0f, (GlobalWindowSize.y*0.5f) - 30);
+    DrawRect(CmdBuffer, AnchorPos.x, AnchorPos.y, 300, 10, 0xffaa1122);
 
-    DrawSpring(CmdBuffer, pA->Position.xy, pC->Position.xy, SpringRestLength, 10.0f, 60, 0xffffffff);
-    DrawSpring(CmdBuffer, pB->Position.xy, pD->Position.xy, SpringRestLength, 10.0f, 60, 0xffffffff);
+    DrawSpring(CmdBuffer, AnchorPos, Shu::ToVec2(Particles[0].Position), SpringRestLength, 7.5f, 20, 0xffffffff);
+    for(i32 Index = 1; Index < NUM_PARTICLES; ++Index)
+    {
+        shoora_particle *prevParticle = Particles + (Index-1);
+        shoora_particle *currParticle = Particles + (Index);
+        DrawSpring(CmdBuffer, Shu::ToVec2(prevParticle->Position), Shu::ToVec2(currParticle->Position),
+                   SpringRestLength, 7.5f, 20, 0xffffffff);
+    }
+
+    if(PrevParticleMass != ParticleMass) {
+        for(i32 i = 0; i < NUM_PARTICLES; ++i) {
+            auto *p = Particles + i;
+            p->Mass = ParticleMass;
+        }
+        PrevParticleMass = ParticleMass;
+    }
+    if(PrevParticleRadius != ParticleRadius) {
+        for(i32 i = 0; i < NUM_PARTICLES; ++i) {
+            auto *p = Particles + i;
+            p->Size = ParticleRadius;
+        }
+        PrevParticleRadius = ParticleRadius;
+    }
 
     AddImpulseToParticles(CmdBuffer, CurrentMousePos, CurrentMouseScreenPos);
     UpdateParticles(DeltaTime);
