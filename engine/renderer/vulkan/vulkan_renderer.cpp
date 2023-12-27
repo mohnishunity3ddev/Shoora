@@ -129,9 +129,8 @@ static shoora_primitive_collection GlobalPrimitives;
 static b32 MouseTracking = false;
 static Shu::vec2f MouseInitialScreenPos = Shu::Vec2f(0);
 static shoora_particle *ParticleToMove = nullptr;
-static Shu::vec2f SpringAnchorPos0, SpringAnchorPos1, SpringAnchorPos;
-static f32 SpringConstant = 1.0f;
-static f32 SpringRestLength = 300.0f;
+static f32 SpringConstant = 1500.0f;
+static f32 SpringRestLength = 200.0f;
 
 void
 WindowResizedCallback(u32 Width, u32 Height)
@@ -351,115 +350,125 @@ AddImpulseToParticle(shoora_particle *Particle, const Shu::vec2f InImpulse)
 }
 
 inline void
-AddGravitationalForce(shoora_particle *Particle, f32 dt)
+UpdateParticles(f32 dt)
 {
 
-}
+    shoora_particle *pA = Particles;
+    shoora_particle *pB = Particles + 1;
+    Shu::vec2f springForceAB = force::GenerateSpringForce(pA, pB, SpringRestLength, SpringConstant);
+    pA->AddForce(springForceAB);
+    pB->AddForce(springForceAB*(-1.0f));
+    shoora_particle *pC = Particles + 2;
+    Shu::vec2f springForceBC = force::GenerateSpringForce(pB, pC, SpringRestLength, SpringConstant);
+    pB->AddForce(springForceBC);
+    pC->AddForce(springForceBC*(-1.0f));
+    shoora_particle *pD = Particles + 3;
+    Shu::vec2f springForceCD = force::GenerateSpringForce(pC, pD, SpringRestLength, SpringConstant);
+    pC->AddForce(springForceCD);
+    pD->AddForce(springForceCD*(-1.0f));
+    Shu::vec2f springForceDA = force::GenerateSpringForce(pD, pA, SpringRestLength, SpringConstant);
+    pD->AddForce(springForceDA);
+    pA->AddForce(springForceDA*(-1.0f));
+    Shu::vec2f springForceAC = force::GenerateSpringForce(pA, pC, SpringRestLength, SpringConstant);
+    pA->AddForce(springForceAC);
+    pC->AddForce(springForceAC*(-1.0f));
+    Shu::vec2f springForceBD = force::GenerateSpringForce(pB, pD, SpringRestLength, SpringConstant);
+    pB->AddForce(springForceBD);
+    pD->AddForce(springForceBD*(-1.0f));
 
-inline void
-UpdateParticle(u32 ParticleIndex, f32 dt)
-{
-    ASSERT(ParticleIndex < ParticleCount);
-    shoora_particle *Particle = Particles + ParticleIndex;
-
-    // NOTE: If I am debugging, the frametime is going to be huge. So hence, clamping here.
-#if _SHU_DEBUG
-    if(dt > 1.0f/29.0f)
+    for(i32 ParticleIndex = 0;
+        ParticleIndex < ParticleCount;
+        ++ParticleIndex)
     {
-        dt = 1.0f / 29.0f;
-    }
+        ASSERT(ParticleIndex < ParticleCount);
+        shoora_particle *Particle = Particles + ParticleIndex;
+
+        // NOTE: If I am debugging, the frametime is going to be huge. So hence, clamping here.
+#if _SHU_DEBUG
+        if(dt > 1.0f/29.0f)
+        {
+            dt = 1.0f / 29.0f;
+        }
 #endif
 
-#if 0
-    Shu::vec2f GravityForce = Shu::Vec2f(0.0f, -9.8f*SHU_PIXELS_PER_METER*Particle->Mass);
-    Particle->AddForce(GravityForce);
+#if 1
+        Shu::vec2f GravityForce = Shu::Vec2f(0.0f, -9.8f*SHU_PIXELS_PER_METER*Particle->Mass);
+        Particle->AddForce(GravityForce);
 
-    Shu::vec2f PushForce = Shu::Vec2f(1.0f, 1.0f)*(SHU_PIXELS_PER_METER*30);
-    Shu::vec2f ParticleForce = Shu::vec2f::Zero();
-    if(Platform_GetKeyInputState(SU_UPARROW, KeyState::SHU_KEYSTATE_DOWN))
-    {
-        ParticleForce.y += PushForce.y;
-    }
-    if(Platform_GetKeyInputState(SU_DOWNARROW, KeyState::SHU_KEYSTATE_DOWN))
-    {
-        ParticleForce.y -= PushForce.y;
-    }
-    if(Platform_GetKeyInputState(SU_LEFTARROW, KeyState::SHU_KEYSTATE_DOWN))
-    {
-        ParticleForce.x -= PushForce.x;
-    }
-    if(Platform_GetKeyInputState(SU_RIGHTARROW, KeyState::SHU_KEYSTATE_DOWN))
-    {
-        ParticleForce.x += PushForce.x;
-    }
-    Particle->AddForce(ParticleForce);
+        Shu::vec2f PushForce = Shu::Vec2f(1.0f, 1.0f)*(SHU_PIXELS_PER_METER*100);
+        Shu::vec2f ParticleForce = Shu::vec2f::Zero();
+        if(Platform_GetKeyInputState(SU_UPARROW, KeyState::SHU_KEYSTATE_DOWN))
+        {
+            ParticleForce.y += PushForce.y;
+        }
+        if(Platform_GetKeyInputState(SU_DOWNARROW, KeyState::SHU_KEYSTATE_DOWN))
+        {
+            ParticleForce.y -= PushForce.y;
+        }
+        if(Platform_GetKeyInputState(SU_LEFTARROW, KeyState::SHU_KEYSTATE_DOWN))
+        {
+            ParticleForce.x -= PushForce.x;
+        }
+        if(Platform_GetKeyInputState(SU_RIGHTARROW, KeyState::SHU_KEYSTATE_DOWN))
+        {
+            ParticleForce.x += PushForce.x;
+        }
+        Particle->AddForce(ParticleForce);
 
-    if(Particle->Position.y < 0)
-    {
-        Shu::vec2f DragForce = force::GenerateDragForce(Particle, 0.03f);
-        Particle->AddForce(DragForce);
-    }
+        if(Particle->Position.y < 0)
+        {
+            Shu::vec2f DragForce = force::GenerateDragForce(Particle, 0.03f);
+            Particle->AddForce(DragForce);
+        }
 
-    Particle->Integrate(dt);
+        Particle->Integrate(dt);
 #endif
 
 #if 1 // Drag Force
-    if(Particle->Position.y < 0)
-    {
         Shu::vec2f DragForce = force::GenerateDragForce(Particle, 0.03f);
         Particle->AddForce(DragForce);
-    }
 #endif
 
 #if 0 // Gravitation Force
-    if((ParticleIndex+1) < ParticleCount)
-    {
-        shoora_particle *NextParticle = Particles + (ParticleIndex+1);
-        Shu::vec2f GravitationalForce = force::GenerateGravitationalForce(Particle, NextParticle, 100.0f, 5.0f, 100.0f);
-        Particle->AddForce(GravitationalForce);
-        NextParticle->AddForce(GravitationalForce*-1.0f);
-    }
-#endif
-
-#if 1 // Weight Force
-    Shu::vec2f Weight = Shu::Vec2f(0.0f, -Particle->Mass*9.8f*SHU_PIXELS_PER_METER);
-    Particle->AddForce(Weight);
+        if((ParticleIndex+1) < ParticleCount)
+        {
+            shoora_particle *NextParticle = Particles + (ParticleIndex+1);
+            Shu::vec2f GravitationalForce = force::GenerateGravitationalForce(Particle, NextParticle, 100.0f, 5.0f, 100.0f);
+            Particle->AddForce(GravitationalForce);
+            NextParticle->AddForce(GravitationalForce*-1.0f);
+        }
 #endif
 
 #if 0 // Friction Force
-    Shu::vec2f FrictionForce = force::GenerateFrictionForce(Particle, 10.0f*SHU_PIXELS_PER_METER);
-    Particle->AddForce(FrictionForce);
+        Shu::vec2f FrictionForce = force::GenerateFrictionForce(Particle, 10.0f*SHU_PIXELS_PER_METER);
+        Particle->AddForce(FrictionForce);
 #endif
 
-#if 1 // Spring Force
-    Shu::vec2f SpringForce = force::GenerateSpringForce(Particle, SpringAnchorPos, SpringRestLength, SpringConstant*5.0f);
-    Particle->AddForce(SpringForce);
-#endif
+        Particle->Integrate(dt);
 
-    Particle->Integrate(dt);
+        Shu::vec2f Bounds = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y)*0.5f;
+        f32 DampFactor = -1.0f;
 
-    Shu::vec2f Bounds = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y)*0.5f;
-    f32 DampFactor = -1.0f;
-
-    if((Particle->Position.y - Particle->Size) < -Bounds.y)
-    {
-        Particle->Position.y = -Bounds.y + Particle->Size;
-        Particle->Velocity.y *= DampFactor;
-    }
-    if((Particle->Position.y + Particle->Size) > Bounds.y)
-    {
-        Particle->Position.y = Bounds.y - Particle->Size;
-        Particle->Velocity.y *= DampFactor;
-    }
-    if((Particle->Position.x - Particle->Size) < -Bounds.x)
-    {
-        Particle->Position.x = -Bounds.x + Particle->Size;
-        Particle->Velocity.x *= DampFactor;
-    }
-    if((Particle->Position.x + Particle->Size) > Bounds.x)
-    {
-        Particle->Position.x = Bounds.x - Particle->Size;
-        Particle->Velocity.x *= DampFactor;
+        if((Particle->Position.y - Particle->Size) < -Bounds.y)
+        {
+            Particle->Position.y = -Bounds.y + Particle->Size;
+            Particle->Velocity.y *= DampFactor;
+        }
+        if((Particle->Position.y + Particle->Size) > Bounds.y)
+        {
+            Particle->Position.y = Bounds.y - Particle->Size;
+            Particle->Velocity.y *= DampFactor;
+        }
+        if((Particle->Position.x - Particle->Size) < -Bounds.x)
+        {
+            Particle->Position.x = -Bounds.x + Particle->Size;
+            Particle->Velocity.x *= DampFactor;
+        }
+        if((Particle->Position.x + Particle->Size) > Bounds.x)
+        {
+            Particle->Position.x = Bounds.x - Particle->Size;
+            Particle->Velocity.x *= DampFactor;
+        }
     }
 }
 
@@ -530,18 +539,29 @@ DrawSpring(VkCommandBuffer CmdBuffer, const Shu::vec2f &startPos, const Shu::vec
 }
 
 void
+DrawViscousLiquid(VkCommandBuffer CmdBuffer)
+{
+    // NOTE: Draw Rectangle to represent dense liquid.
+    Shu::mat4f Model = GlobalMat4Identity;
+    Shu::Scale(Model, Shu::Vec3f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y * 0.5f, 1.0f));
+    Shu::Translate(Model, Shu::Vec3f(0.0f, -(f32)GlobalWindowSize.y * 0.25f, -0.1f));
+    shoora_primitive *Primitive = GlobalPrimitives.GetPrimitive(shoora_primitive_type::RECT_2D);
+    Shu::vec3f Color = GetColor(0xff173863);
+    unlit_shader_data Value = {.Model = Model, .Color = Color};
+    vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+                       sizeof(unlit_shader_data), &Value);
+    vkCmdDrawIndexed(CmdBuffer, Primitive->MeshFilter.IndexCount, 1, Primitive->IndexOffset,
+                     Primitive->VertexOffset, 0);
+}
+
+void
 DrawParticles(VkCommandBuffer CmdBuffer, f32 DeltaTime)
 {
-    VkDeviceSize offsets[1] = {0};
-    vkCmdBindVertexBuffers(CmdBuffer, 0, 1, GlobalPrimitives.GetVertexBufferHandlePtr(), offsets);
-    vkCmdBindIndexBuffer(CmdBuffer, GlobalPrimitives.GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
-
     for(u32 ParticleIndex = 0;
         ParticleIndex < ParticleCount;
         ++ParticleIndex)
     {
         shoora_particle *Particle = Particles + ParticleIndex;
-        UpdateParticle(ParticleIndex, DeltaTime);
 
         Shu::mat4f Model = GlobalMat4Identity;
         Shu::Scale(Model, Shu::Vec3f(Particle->Size));
@@ -598,36 +618,15 @@ AddImpulseToParticles(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMouseP
 void
 InitScene()
 {
-    InitializeParticle(Shu::Vec2f(0.0f, (f32)GlobalWindowSize.y*0.125f), 0xff00ff00, 30.0f, 5.0f);
-
-    auto temp = Shu::Vec2f(0.0f, (f32)GlobalWindowSize.y * 0.125f);
-    auto offset = Shu::Vec2f(50, 300);
-
-    SpringAnchorPos0 = Shu::Vec2f(temp.x - offset.x, temp.y + offset.y);
-    SpringAnchorPos1 = Shu::Vec2f(temp.x + offset.x, temp.y + offset.y);
-    SpringAnchorPos = (SpringAnchorPos0 + SpringAnchorPos1) * 0.5f;
-    SpringConstant = 10.0f;
-}
-
-void
-DrawViscousLiquid(VkCommandBuffer CmdBuffer)
-{
-    // NOTE: Draw Rectangle to represent dense liquid.
-    Shu::mat4f Model = GlobalMat4Identity;
-    Shu::Scale(Model, Shu::Vec3f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y * 0.5f, 1.0f));
-    Shu::Translate(Model, Shu::Vec3f(0.0f, -(f32)GlobalWindowSize.y * 0.25f, -0.1f));
-    shoora_primitive *Primitive = GlobalPrimitives.GetPrimitive(shoora_primitive_type::RECT_2D);
-    Shu::vec3f Color = GetColor(0xff173863);
-    unlit_shader_data Value = {.Model = Model, .Color = Color};
-    vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
-                       sizeof(unlit_shader_data), &Value);
-    vkCmdDrawIndexed(CmdBuffer, Primitive->MeshFilter.IndexCount, 1, Primitive->IndexOffset,
-                     Primitive->VertexOffset, 0);
+    InitializeParticle(Shu::Vec2f(-50.0f, (f32)GlobalWindowSize.y*0.125f), 0xff00ff00, 30.0f, 5.0f);
+    InitializeParticle(Shu::Vec2f(50.0f, (f32)GlobalWindowSize.y*0.125f), 0xffff0000, 30.0f, 5.0f);
+    InitializeParticle(Shu::Vec2f(50.0f, (f32)GlobalWindowSize.y*0.125f - 100), 0xff0000ff, 30.0f, 5.0f);
+    InitializeParticle(Shu::Vec2f(-50.0f, (f32)GlobalWindowSize.y*0.125f - 100), 0xffffffff, 30.0f, 5.0f);
 }
 
 void
 DrawScene(VkCommandBuffer CmdBuffer, u32 SwapchainImageIndex, const Shu::vec2f CurrentMousePos,
-          const Shu::vec2f CurrentMouseScreenPos)
+          const Shu::vec2f CurrentMouseScreenPos, f32 DeltaTime)
 {
     vkCmdBindDescriptorSets(CmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Layout, 0, 1,
                             &Context->UnlitSets[SwapchainImageIndex], 0, nullptr);
@@ -637,17 +636,20 @@ DrawScene(VkCommandBuffer CmdBuffer, u32 SwapchainImageIndex, const Shu::vec2f C
     vkCmdBindVertexBuffers(CmdBuffer, 0, 1, GlobalPrimitives.GetVertexBufferHandlePtr(), offsets);
     vkCmdBindIndexBuffer(CmdBuffer, GlobalPrimitives.GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
 
-    DrawViscousLiquid(CmdBuffer);
+    shoora_particle *pA = Particles + 0;
+    shoora_particle *pB = Particles + 1;
+    DrawSpring(CmdBuffer, pA->Position.xy, pB->Position.xy, SpringRestLength, 10.0f, 60, 0xffffffff);
+    shoora_particle *pC = Particles + 2;
+    DrawSpring(CmdBuffer, pB->Position.xy, pC->Position.xy, SpringRestLength, 10.0f, 60, 0xffffffff);
+    shoora_particle *pD = Particles + 3;
+    DrawSpring(CmdBuffer, pC->Position.xy, pD->Position.xy, SpringRestLength, 10.0f, 60, 0xffffffff);
+    DrawSpring(CmdBuffer, pD->Position.xy, pA->Position.xy, SpringRestLength, 10.0f, 60, 0xffffffff);
 
-    // The spring connecting the particle to the anchor.
-    Shu::vec2f temp = Shu::ToVec2(Particles[0].Position);
-    // DrawLine(CmdBuffer, SpringAnchorPos, temp, 0xffffffff, 5.0f);
-    DrawSpring(CmdBuffer, SpringAnchorPos, temp, SpringRestLength, 10.0f, 60, 0xffffffff);
-
-    // Draw the Spring's anchor position.
-    DrawLine(CmdBuffer, SpringAnchorPos0, SpringAnchorPos1, 0xff992211, 10.0f);
+    DrawSpring(CmdBuffer, pA->Position.xy, pC->Position.xy, SpringRestLength, 10.0f, 60, 0xffffffff);
+    DrawSpring(CmdBuffer, pB->Position.xy, pD->Position.xy, SpringRestLength, 10.0f, 60, 0xffffffff);
 
     AddImpulseToParticles(CmdBuffer, CurrentMousePos, CurrentMouseScreenPos);
+    UpdateParticles(DeltaTime);
     DrawParticles(CmdBuffer, GlobalDeltaTime);
 }
 
@@ -1109,7 +1111,7 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 #endif
 
 #if UNLIT_PIPELINE
-        DrawScene(DrawCmdBuffer, ImageIndex, CurrentMousePos, CurrentMouseScreenPos);
+        DrawScene(DrawCmdBuffer, ImageIndex, CurrentMousePos, CurrentMouseScreenPos, GlobalDeltaTime);
 #endif
 
         ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);

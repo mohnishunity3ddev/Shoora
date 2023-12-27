@@ -15,6 +15,8 @@ struct force
     // k: Spring constant.
     static Shu::vec2f GenerateSpringForce(const shoora_particle *p, const Shu::vec2f &Anchor, f32 RestLength,
                                           f32 k);
+    static Shu::vec2f GenerateSpringForce(const shoora_particle *pA, const shoora_particle *pB, f32 RestLength,
+                                          f32 k);
 };
 
 #define FORCE_H
