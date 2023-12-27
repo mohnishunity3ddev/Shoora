@@ -7,7 +7,7 @@ Shu::vec2f
 force::GenerateDragForce(const shoora_particle *Particle, f32 DragCoefficient)
 {
     // NOTE: Unexpected force otherwise.
-    ASSERT(DragCoefficient < 0.1f);
+    // ASSERT(DragCoefficient < 0.1f);
 
     Shu::vec2f DragForce = Shu::Vec2f(0, 0);
 

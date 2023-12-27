@@ -403,11 +403,12 @@ UpdateParticle(u32 ParticleIndex, f32 dt)
 #if 0 // Drag Force
     if(Particle->Position.y < 0)
     {
-        Shu::vec2f DragForce = force::GenerateDragForce(Particle, 0.03f);
+        Shu::vec2f DragForce = force::GenerateDragForce(Particle, 0.001f*Particle->Mass);
         Particle->AddForce(DragForce);
     }
 #endif
 
+#if 1
     if((ParticleIndex+1) < ParticleCount)
     {
         shoora_particle *NextParticle = Particles + (ParticleIndex+1);
@@ -415,9 +416,12 @@ UpdateParticle(u32 ParticleIndex, f32 dt)
         Particle->AddForce(GravitationalForce);
         NextParticle->AddForce(GravitationalForce*-1.0f);
     }
+#endif
 
-    // Shu::vec2f FrictionForce = force::GenerateFrictionForce(Particle, 5000.0f);
-    // Particle->AddForce(FrictionForce);
+#if 0
+    Shu::vec2f FrictionForce = force::GenerateFrictionForce(Particle, 5000.0f);
+    Particle->AddForce(FrictionForce);
+#endif
 
     Particle->Integrate(dt);
 
