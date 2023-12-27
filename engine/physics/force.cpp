@@ -54,3 +54,19 @@ force::GenerateGravitationalForce(const shoora_particle *A, const shoora_particl
 
     return AttractionForce;
 }
+
+Shu::vec2f
+force::GenerateSpringForce(const shoora_particle *p, const Shu::vec2f &Anchor, f32 RestLength, f32 k)
+{
+
+    Shu::vec2f pos = Shu::ToVec2(p->Position);
+    Shu::vec2f d = pos - Anchor;
+
+    f32 displacement = d.Magnitude() - RestLength;
+
+    Shu::vec2f SpringDirection = Shu::Normalize(d);
+    f32 SpringMagnitude = -k * displacement;
+
+    Shu::vec2f SpringForce = SpringDirection * SpringMagnitude;
+    return SpringForce;
+}
