@@ -1,11 +1,11 @@
-#if !defined(PARTICLE_H)
+#if !defined(BODY_H)
 
 #include "defines.h"
 #include <math/math.h>
 #include <mesh/primitive/geometry_primitive.h>
 #include <mesh/mesh_filter.h>
 
-struct shoora_particle
+struct shoora_body
 {
     Shu::vec3f Position;
     f32 Size;
@@ -27,5 +27,5 @@ struct shoora_particle
     void ClearForces();
 };
 
-#define PARTICLE_H
-#endif // PARTICLE_H
+#define BODY_H
+#endif // BODY_H

@@ -1,8 +1,8 @@
-#include "particle.h"
+#include "body.h"
 #include <float.h>
 
 void
-shoora_particle::Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Size, f32 Mass,
+shoora_body::Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Size, f32 Mass,
                             shoora_primitive *Primitive)
 {
     if(ABSOLUTE(Mass - FLT_EPSILON) <= 0.0f) Mass = 1.0f;
@@ -19,19 +19,19 @@ shoora_particle::Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, 
 }
 
 void
-shoora_particle::AddForce(const Shu::vec2f &Force)
+shoora_body::AddForce(const Shu::vec2f &Force)
 {
     this->SumForces += Shu::Vec3f(Force, 0.0f);
 }
 
 void
-shoora_particle::ClearForces()
+shoora_body::ClearForces()
 {
     this->SumForces = Shu::vec3f::Zero();
 }
 
 void
-shoora_particle::Integrate(f32 DeltaTime)
+shoora_body::Integrate(f32 DeltaTime)
 {
     this->Acceleration = this->SumForces * InvMass;
 

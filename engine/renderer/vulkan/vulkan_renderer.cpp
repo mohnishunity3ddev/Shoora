@@ -11,10 +11,9 @@
 #include "vulkan_work_submission.h"
 
 #include <mesh/primitive/geometry_primitive.h>
-#include <physics/particle.h>
+#include <physics/body.h>
 #include <physics/force.h>
 #include <utils/utils.h>
-
 
 #ifdef WIN32
 #include "platform/windows/win_platform.h"
@@ -30,18 +29,18 @@
 
 static shoora_vulkan_context *Context = nullptr;
 
-#define NUM_PARTICLES 10
+#define NUM_BODIES 10
 static shoora_primitive_collection GlobalPrimitives;
 static b32 MouseTracking = false;
 static Shu::vec2f MouseInitialScreenPos = Shu::Vec2f(0);
-static shoora_particle *ParticleToMove = nullptr;
+static shoora_body *BodyToMove = nullptr;
 static Shu::vec2f AnchorPos;
-static shoora_particle Particles[8192];
-static u32 ParticleCount = 0;
-static f32 ParticleMass = 1.5f;
-static f32 PrevParticleMass = ParticleMass;
-static f32 ParticleRadius = 15.0f;
-static f32 PrevParticleRadius = ParticleRadius;
+static shoora_body Bodies[8192];
+static u32 BodyCount = 0;
+static f32 BodyMass = 1.5f;
+static f32 PrevBodyMass = BodyMass;
+static f32 BodyRadius = 15.0f;
+static f32 PrevBodyRadius = BodyRadius;
 static f32 SpringConstant = 210.0f;
 static f32 SpringRestLength = 30.0f;
 
@@ -207,8 +206,8 @@ ImGuiNewFrame()
             SHU_INVALID_DEFAULT;
         }
     }
-    ImGui::SliderFloat("Particles Mass", &ParticleMass, 0.1f, 10.0f);
-    ImGui::SliderFloat("Particles Radius", &ParticleRadius, 1.0f, 100.0f);
+    ImGui::SliderFloat("Bodies Mass", &BodyMass, 0.1f, 10.0f);
+    ImGui::SliderFloat("Bodies Radius", &BodyRadius, 1.0f, 100.0f);
     ImGui::SliderFloat("Spring Rest Length", &SpringRestLength, 1.0f, 30.0f);
     ImGui::SliderFloat("Spring Constant", &SpringConstant, 1.0f, 3000.0f);
 
@@ -308,11 +307,11 @@ struct unlit_shader_data
 };
 
 void
-InitializeParticle(const Shu::vec2f Pos, u32 ColorU32, f32 Size, f32 Mass)
+InitializeBody(const Shu::vec2f Pos, u32 ColorU32, f32 Size, f32 Mass)
 {
-    shoora_particle *Particle = &Particles[ParticleCount++];
+    shoora_body *Body = &Bodies[BodyCount++];
 
-    Particle->Initialize(GetColor(ColorU32), Pos, Size, Mass,
+    Body->Initialize(GetColor(ColorU32), Pos, Size, Mass,
                          GlobalPrimitives.GetPrimitive(shoora_primitive_type::CIRCLE));
 }
 
@@ -343,40 +342,40 @@ ScreenToMouseSpace(const Shu::vec2f &ScreenPos)
 }
 
 b32
-CheckIfParticleClicked(const shoora_particle *Particle, const Shu::vec2f &MousePos)
+CheckIfBodyClicked(const shoora_body *Body, const Shu::vec2f &MousePos)
 {
-    Shu::vec2f l = MouseToScreenSpace(MousePos) - Shu::ToVec2(Particle->Position);
+    Shu::vec2f l = MouseToScreenSpace(MousePos) - Shu::ToVec2(Body->Position);
 
-    b32 Result = (l.SqMagnitude() < Particle->Size * Particle->Size);
+    b32 Result = (l.SqMagnitude() < Body->Size * Body->Size);
     return Result;
 }
 
 void
-AddImpulseToParticle(shoora_particle *Particle, const Shu::vec2f InImpulse)
+AddImpulseToBody(shoora_body *Body, const Shu::vec2f InImpulse)
 {
     Shu::vec2f Impulse = InImpulse*5.0f;
-    Particle->Velocity += Shu::Vec3f(Impulse, 0.0f);
+    Body->Velocity += Shu::Vec3f(Impulse, 0.0f);
 }
 
 inline void
-UpdateParticles(f32 dt)
+UpdateBodies(f32 dt)
 {
-    shoora_particle *p0 = &Particles[0];
+    shoora_body *p0 = &Bodies[0];
     Shu::vec2f springForce = force::GenerateSpringForce(p0, AnchorPos, SpringRestLength, SpringConstant);
     p0->AddForce(springForce);
-    for(i32 ParticleIndex = 1; ParticleIndex < NUM_PARTICLES; ++ParticleIndex)
+    for(i32 BodyIndex = 1; BodyIndex < NUM_BODIES; ++BodyIndex)
     {
-        shoora_particle *p0 = Particles + (ParticleIndex-1);
-        shoora_particle *p1 = Particles + ParticleIndex;
+        shoora_body *p0 = Bodies + (BodyIndex-1);
+        shoora_body *p1 = Bodies + BodyIndex;
         Shu::vec2f springForce = force::GenerateSpringForce(p0, p1, SpringRestLength, SpringConstant);
         p0->AddForce(springForce);
         p1->AddForce(springForce*(-1.0f));
     }
 
-    for (i32 ParticleIndex = 0; ParticleIndex < ParticleCount; ++ParticleIndex)
+    for (i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
     {
-        ASSERT(ParticleIndex < ParticleCount);
-        shoora_particle *Particle = Particles + ParticleIndex;
+        ASSERT(BodyIndex < BodyCount);
+        shoora_body *Body = Bodies + BodyIndex;
 
         // NOTE: If I am debugging, the frametime is going to be huge. So hence, clamping here.
 #if _SHU_DEBUG
@@ -387,80 +386,80 @@ UpdateParticles(f32 dt)
 #endif
 
 #if 1
-        Shu::vec2f GravityForce = Shu::Vec2f(0.0f, -9.8f*SHU_PIXELS_PER_METER*Particle->Mass);
-        Particle->AddForce(GravityForce);
+        Shu::vec2f GravityForce = Shu::Vec2f(0.0f, -9.8f*SHU_PIXELS_PER_METER*Body->Mass);
+        Body->AddForce(GravityForce);
 
         Shu::vec2f PushForce = Shu::Vec2f(1.0f, 1.0f)*(SHU_PIXELS_PER_METER*100);
-        Shu::vec2f ParticleForce = Shu::vec2f::Zero();
+        Shu::vec2f BodyForce = Shu::vec2f::Zero();
         if(Platform_GetKeyInputState(SU_UPARROW, KeyState::SHU_KEYSTATE_DOWN))
         {
-            ParticleForce.y += PushForce.y;
+            BodyForce.y += PushForce.y;
         }
         if(Platform_GetKeyInputState(SU_DOWNARROW, KeyState::SHU_KEYSTATE_DOWN))
         {
-            ParticleForce.y -= PushForce.y;
+            BodyForce.y -= PushForce.y;
         }
         if(Platform_GetKeyInputState(SU_LEFTARROW, KeyState::SHU_KEYSTATE_DOWN))
         {
-            ParticleForce.x -= PushForce.x;
+            BodyForce.x -= PushForce.x;
         }
         if(Platform_GetKeyInputState(SU_RIGHTARROW, KeyState::SHU_KEYSTATE_DOWN))
         {
-            ParticleForce.x += PushForce.x;
+            BodyForce.x += PushForce.x;
         }
-        Particle->AddForce(ParticleForce);
+        Body->AddForce(BodyForce);
 
-        if(Particle->Position.y < 0)
+        if(Body->Position.y < 0)
         {
-            Shu::vec2f DragForce = force::GenerateDragForce(Particle, 0.03f);
-            Particle->AddForce(DragForce);
+            Shu::vec2f DragForce = force::GenerateDragForce(Body, 0.03f);
+            Body->AddForce(DragForce);
         }
 #endif
 
 #if 1 // Drag Force
-        Shu::vec2f DragForce = force::GenerateDragForce(Particle, 0.03f);
-        Particle->AddForce(DragForce);
+        Shu::vec2f DragForce = force::GenerateDragForce(Body, 0.03f);
+        Body->AddForce(DragForce);
 #endif
 
 #if 0 // Gravitation Force
-        if((ParticleIndex+1) < ParticleCount)
+        if((BodyIndex+1) < BodyCount)
         {
-            shoora_particle *NextParticle = Particles + (ParticleIndex+1);
-            Shu::vec2f GravitationalForce = force::GenerateGravitationalForce(Particle, NextParticle, 100.0f, 5.0f, 100.0f);
-            Particle->AddForce(GravitationalForce);
-            NextParticle->AddForce(GravitationalForce*-1.0f);
+            shoora_Body *NextBody = Bodies + (BodyIndex+1);
+            Shu::vec2f GravitationalForce = force::GenerateGravitationalForce(Body, NextBody, 100.0f, 5.0f, 100.0f);
+            Body->AddForce(GravitationalForce);
+            NextBody->AddForce(GravitationalForce*-1.0f);
         }
 #endif
 
 #if 0 // Friction Force
-        Shu::vec2f FrictionForce = force::GenerateFrictionForce(Particle, 10.0f*SHU_PIXELS_PER_METER);
-        Particle->AddForce(FrictionForce);
+        Shu::vec2f FrictionForce = force::GenerateFrictionForce(Body, 10.0f*SHU_PIXELS_PER_METER);
+        Body->AddForce(FrictionForce);
 #endif
 
-        Particle->Integrate(dt);
+        Body->Integrate(dt);
 
         Shu::vec2f Bounds = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y)*0.5f;
         f32 DampFactor = -1.0f;
 
-        if((Particle->Position.y - Particle->Size) < -Bounds.y)
+        if((Body->Position.y - Body->Size) < -Bounds.y)
         {
-            Particle->Position.y = -Bounds.y + Particle->Size;
-            Particle->Velocity.y *= DampFactor;
+            Body->Position.y = -Bounds.y + Body->Size;
+            Body->Velocity.y *= DampFactor;
         }
-        if((Particle->Position.y + Particle->Size) > Bounds.y)
+        if((Body->Position.y + Body->Size) > Bounds.y)
         {
-            Particle->Position.y = Bounds.y - Particle->Size;
-            Particle->Velocity.y *= DampFactor;
+            Body->Position.y = Bounds.y - Body->Size;
+            Body->Velocity.y *= DampFactor;
         }
-        if((Particle->Position.x - Particle->Size) < -Bounds.x)
+        if((Body->Position.x - Body->Size) < -Bounds.x)
         {
-            Particle->Position.x = -Bounds.x + Particle->Size;
-            Particle->Velocity.x *= DampFactor;
+            Body->Position.x = -Bounds.x + Body->Size;
+            Body->Velocity.x *= DampFactor;
         }
-        if((Particle->Position.x + Particle->Size) > Bounds.x)
+        if((Body->Position.x + Body->Size) > Bounds.x)
         {
-            Particle->Position.x = Bounds.x - Particle->Size;
-            Particle->Velocity.x *= DampFactor;
+            Body->Position.x = Bounds.x - Body->Size;
+            Body->Velocity.x *= DampFactor;
         }
     }
 }
@@ -548,21 +547,21 @@ DrawViscousLiquid(VkCommandBuffer CmdBuffer)
 }
 
 void
-DrawParticles(VkCommandBuffer CmdBuffer, f32 DeltaTime)
+DrawBodies(VkCommandBuffer CmdBuffer, f32 DeltaTime)
 {
-    for(u32 ParticleIndex = 0;
-        ParticleIndex < ParticleCount;
-        ++ParticleIndex)
+    for(u32 BodyIndex = 0;
+        BodyIndex < BodyCount;
+        ++BodyIndex)
     {
-        shoora_particle *Particle = Particles + ParticleIndex;
+        shoora_body *Body = Bodies + BodyIndex;
 
         Shu::mat4f Model = GlobalMat4Identity;
-        Shu::Scale(Model, Shu::Vec3f(Particle->Size));
-        Shu::Translate(Model, Particle->Position);
+        Shu::Scale(Model, Shu::Vec3f(Body->Size));
+        Shu::Translate(Model, Body->Position);
 
-        unlit_shader_data Value = {.Model = Model, .Color = Particle->Color};
+        unlit_shader_data Value = {.Model = Model, .Color = Body->Color};
 
-        shoora_primitive *Primitive = Particle->Primitive;
+        shoora_primitive *Primitive = Body->Primitive;
         vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                            sizeof(unlit_shader_data), &Value);
         vkCmdDrawIndexed(CmdBuffer, Primitive->MeshFilter.IndexCount, 1, Primitive->IndexOffset,
@@ -573,22 +572,22 @@ DrawParticles(VkCommandBuffer CmdBuffer, f32 DeltaTime)
 
 
 void
-AddImpulseToParticles(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos,
+AddImpulseToBodies(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos,
                       const Shu::vec2f &CurrentMouseScreenPos)
 {
-    for(u32 ParticleIndex = 0;
-        ParticleIndex < ParticleCount;
-        ++ParticleIndex)
+    for(u32 BodyIndex = 0;
+        BodyIndex < BodyCount;
+        ++BodyIndex)
     {
-        shoora_particle *Particle = Particles + ParticleIndex;
+        shoora_body *Body = Bodies + BodyIndex;
 
         if(!MouseTracking && Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, SHU_KEYSTATE_DOWN))
         {
-            if(CheckIfParticleClicked(Particle, CurrentMousePos))
+            if(CheckIfBodyClicked(Body, CurrentMousePos))
             {
                 MouseTracking = true;
-                MouseInitialScreenPos = ToVec2(Particle->Position);
-                ParticleToMove = Particle;
+                MouseInitialScreenPos = ToVec2(Body->Position);
+                BodyToMove = Body;
             }
         }
 
@@ -600,11 +599,11 @@ AddImpulseToParticles(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMouseP
 
     if (MouseTracking && Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, SHU_KEYSTATE_RELEASE))
     {
-        ASSERT(ParticleToMove != nullptr);
+        ASSERT(BodyToMove != nullptr);
         Shu::vec2f Force = (MouseInitialScreenPos - CurrentMouseScreenPos);
-        AddImpulseToParticle(ParticleToMove, Force);
+        AddImpulseToBody(BodyToMove, Force);
         MouseTracking = false;
-        ParticleToMove = nullptr;
+        BodyToMove = nullptr;
     }
 }
 
@@ -612,10 +611,10 @@ void
 InitScene()
 {
     AnchorPos = Shu::Vec2f(0.0f, (GlobalWindowSize.y*0.5f) - 30);
-    for(i32 Index = 0; Index < NUM_PARTICLES; ++Index)
+    for(i32 Index = 0; Index < NUM_BODIES; ++Index)
     {
-        InitializeParticle(Shu::Vec2f(0.0f, AnchorPos.y - 10 * (Index + 1)), 0xff115599, ParticleRadius,
-                           ParticleMass);
+        InitializeBody(Shu::Vec2f(0.0f, AnchorPos.y - 10 * (Index + 1)), 0xff115599, BodyRadius,
+                           BodyMass);
     }
 }
 
@@ -635,33 +634,33 @@ DrawScene(VkCommandBuffer CmdBuffer, u32 SwapchainImageIndex, const Shu::vec2f C
     AnchorPos = Shu::Vec2f(0.0f, (GlobalWindowSize.y*0.5f) - 30);
     DrawRect(CmdBuffer, AnchorPos.x, AnchorPos.y, 300, 10, 0xffaa1122);
 
-    DrawSpring(CmdBuffer, AnchorPos, Shu::ToVec2(Particles[0].Position), SpringRestLength, 7.5f, 20, 0xffffffff);
-    for(i32 Index = 1; Index < NUM_PARTICLES; ++Index)
+    DrawSpring(CmdBuffer, AnchorPos, Shu::ToVec2(Bodies[0].Position), SpringRestLength, 7.5f, 20, 0xffffffff);
+    for(i32 Index = 1; Index < NUM_BODIES; ++Index)
     {
-        shoora_particle *prevParticle = Particles + (Index-1);
-        shoora_particle *currParticle = Particles + (Index);
-        DrawSpring(CmdBuffer, Shu::ToVec2(prevParticle->Position), Shu::ToVec2(currParticle->Position),
+        shoora_body *prevBody = Bodies + (Index-1);
+        shoora_body *currBody = Bodies + (Index);
+        DrawSpring(CmdBuffer, Shu::ToVec2(prevBody->Position), Shu::ToVec2(currBody->Position),
                    SpringRestLength, 7.5f, 20, 0xffffffff);
     }
 
-    if(PrevParticleMass != ParticleMass) {
-        for(i32 i = 0; i < NUM_PARTICLES; ++i) {
-            auto *p = Particles + i;
-            p->Mass = ParticleMass;
+    if(PrevBodyMass != BodyMass) {
+        for(i32 i = 0; i < NUM_BODIES; ++i) {
+            auto *p = Bodies + i;
+            p->Mass = BodyMass;
         }
-        PrevParticleMass = ParticleMass;
+        PrevBodyMass = BodyMass;
     }
-    if(PrevParticleRadius != ParticleRadius) {
-        for(i32 i = 0; i < NUM_PARTICLES; ++i) {
-            auto *p = Particles + i;
-            p->Size = ParticleRadius;
+    if(PrevBodyRadius != BodyRadius) {
+        for(i32 i = 0; i < NUM_BODIES; ++i) {
+            auto *p = Bodies + i;
+            p->Size = BodyRadius;
         }
-        PrevParticleRadius = ParticleRadius;
+        PrevBodyRadius = BodyRadius;
     }
 
-    AddImpulseToParticles(CmdBuffer, CurrentMousePos, CurrentMouseScreenPos);
-    UpdateParticles(DeltaTime);
-    DrawParticles(CmdBuffer, GlobalDeltaTime);
+    AddImpulseToBodies(CmdBuffer, CurrentMousePos, CurrentMouseScreenPos);
+    UpdateBodies(DeltaTime);
+    DrawBodies(CmdBuffer, GlobalDeltaTime);
 }
 
 void
