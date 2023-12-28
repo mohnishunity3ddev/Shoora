@@ -35,11 +35,10 @@ shoora_particle::Integrate(f32 DeltaTime)
 {
     this->Acceleration = this->SumForces * InvMass;
 
-    Shu::vec3f deltaV = this->Acceleration*DeltaTime;
-    this->Position += this->Velocity*DeltaTime + this->Acceleration * (DeltaTime*DeltaTime * 0.5f);
-    this->Velocity += deltaV;
+    this->Velocity += this->Acceleration * DeltaTime;
+    this->Position += this->Velocity * DeltaTime;
 
-    this->Velocity.z = this->Position.z = 0.0f;
+    this->Velocity.z = this->Position.z = this->Acceleration.z = 0.0f;
 
     ClearForces();
 }
