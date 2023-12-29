@@ -44,63 +44,86 @@ UpdateCameraVectors()
 void shoora_camera::
 HandleInput(const shoora_camera_input *CameraInput)
 {
-    f32 Yaw = this->Yaw - this->MouseSensitivity*CameraInput->MouseDeltaX;
-    if(Yaw >= 360.0f)
+    if(this->Type == PROJECTION_PERSPECTIVE)
     {
-        Yaw = 0.0f;
-    }
-    else if(Yaw <= 0.0f)
-    {
-        Yaw = 360.0f;
-    }
-    this->Yaw = Yaw;
-
-    f32 Pitch = this->Pitch - this->MouseSensitivity*CameraInput->MouseDeltaY;
-    if(Pitch >= 89.0f)
-    {
-        Pitch = 89.0f;
-    }
-    if(Pitch <= -89.0f)
-    {
-        Pitch = -89.0f;
-    }
-    this->Pitch = Pitch;
-    this->UpdateCameraVectors();
-
-    Shu::vec3f MoveDirection = Shu::Vec3f(0.0f);
-    b32 Move = false;
-    if(CameraInput->MoveForwards)
-    {
-        Move = true;
-        MoveDirection += this->Front;
-    }
-    if(CameraInput->MoveBackwards)
-    {
-        Move = true;
-        MoveDirection -= this->Front;
-    }
-    if(CameraInput->MoveLeft)
-    {
-        Move = true;
-        MoveDirection -= this->Right;
-    }
-    if(CameraInput->MoveRight)
-    {
-        Move = true;
-        MoveDirection += this->Right;
-    }
-
-    if(Move)
-    {
-        f32 MovementSpeed = this->MovementSpeed;
-        if(CameraInput->MoveFaster)
+        f32 Yaw = this->Yaw - this->MouseSensitivity*CameraInput->MouseDeltaX;
+        if(Yaw >= 360.0f)
         {
-            MovementSpeed *= 3.0f;
+            Yaw = 0.0f;
+        }
+        else if(Yaw <= 0.0f)
+        {
+            Yaw = 360.0f;
+        }
+        this->Yaw = Yaw;
+
+        f32 Pitch = this->Pitch - this->MouseSensitivity*CameraInput->MouseDeltaY;
+        if(Pitch >= 89.0f)
+        {
+            Pitch = 89.0f;
+        }
+        if(Pitch <= -89.0f)
+        {
+            Pitch = -89.0f;
+        }
+        this->Pitch = Pitch;
+        this->UpdateCameraVectors();
+
+        Shu::vec3f MoveDirection = Shu::Vec3f(0.0f);
+        b32 Move = false;
+        if(CameraInput->MoveForwards)
+        {
+            Move = true;
+            MoveDirection += this->Front;
+        }
+        if(CameraInput->MoveBackwards)
+        {
+            Move = true;
+            MoveDirection -= this->Front;
+        }
+        if(CameraInput->MoveLeft)
+        {
+            Move = true;
+            MoveDirection -= this->Right;
+        }
+        if(CameraInput->MoveRight)
+        {
+            Move = true;
+            MoveDirection += this->Right;
         }
 
-        MoveDirection = Shu::Normalize(MoveDirection);
-        if(MoveDirection.SqMagnitude() - FLT_EPSILON > 0.0f)
+        if(Move)
         {
+            f32 MovementSpeed = this->MovementSpeed;
+            if(CameraInput->MoveFaster)
+            {
+                MovementSpeed *= 3.0f;
+            }
+
+            MoveDirection = Shu::Normalize(MoveDirection);
+            if(MoveDirection.SqMagnitude() - FLT_EPSILON > 0.0f)
+            {
+                this->Pos += MoveDirection*MovementSpeed*CameraInput->DeltaTime;
+            }
+        }
+    }
+    else if(this->Type == PROJECTION_ORTHOGRAPHIC)
+    {
+        Shu::vec3f MoveDirection = Shu::Vec3f(0.0f);
+        if(CameraInput->MoveForwards) { MoveDirection.y = 1.0f; }
+        if(CameraInput->MoveBackwards) { MoveDirection.y = -1.0f; }
+        if(CameraInput->MoveLeft) { MoveDirection.x = -1.0f; }
+        if(CameraInput->MoveRight) { MoveDirection.x = 1.0f; }
+
+        b32 Move = ((MoveDirection.SqMagnitude() - FLT_EPSILON) > 0.0f);
+        if (Move)
+        {
+            f32 MovementSpeed = this->MovementSpeed*SHU_PIXELS_PER_METER;
+            if (CameraInput->MoveFaster)
+            {
+                MovementSpeed *= 3.0f;
+            }
+
             this->Pos += MoveDirection*MovementSpeed*CameraInput->DeltaTime;
         }
     }

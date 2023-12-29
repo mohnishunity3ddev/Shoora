@@ -313,8 +313,8 @@ InitializeBody(const Shu::vec2f Pos, u32 ColorU32, f32 Size, f32 Mass)
 Shu::vec2f
 MouseToScreenSpace(const Shu::vec2f &MousePos)
 {
-    f32 x = MousePos.x - (((f32)GlobalWindowSize.x) * 0.5f);
-    f32 y = (((f32)GlobalWindowSize.y) * 0.5f) - MousePos.y;
+    f32 x = MousePos.x;
+    f32 y = ((f32)GlobalWindowSize.y) - MousePos.y;
 
     Shu::vec2f Result;
     Result.x = x;
@@ -326,8 +326,8 @@ MouseToScreenSpace(const Shu::vec2f &MousePos)
 Shu::vec2f
 ScreenToMouseSpace(const Shu::vec2f &ScreenPos)
 {
-    f32 x = (((f32)GlobalWindowSize.x) * 0.5f) + ScreenPos.x;
-    f32 y = ScreenPos.y + (((f32)GlobalWindowSize.y) * 0.5f);
+    f32 x = ScreenPos.x;
+    f32 y = ScreenPos.y - (f32)GlobalWindowSize.y;
 
     Shu::vec2f Result;
     Result.x = x;
@@ -594,10 +594,6 @@ void
 InitScene()
 {
     InitializeBody(Shu::Vec2f(0.0f), 0xff115599, BodyRadius, BodyMass);
-    InitializeBody(Shu::Vec2f(GlobalWindowSize.x, 0), 0xff115599, BodyRadius, BodyMass);
-    InitializeBody(Shu::Vec2f(0, GlobalWindowSize.y), 0xff115599, BodyRadius, BodyMass);
-    InitializeBody(Shu::Vec2f(GlobalWindowSize.x, GlobalWindowSize.y), 0xff115599, BodyRadius, BodyMass);
-    InitializeBody(Shu::Vec2f(GlobalWindowSize.x/2, GlobalWindowSize.y/2), 0xff115599, BodyRadius, BodyMass);
 }
 
 void
@@ -612,7 +608,7 @@ DrawScene(VkCommandBuffer CmdBuffer, u32 SwapchainImageIndex, const Shu::vec2f C
     vkCmdBindVertexBuffers(CmdBuffer, 0, 1, GlobalPrimitives.GetVertexBufferHandlePtr(), offsets);
     vkCmdBindIndexBuffer(CmdBuffer, GlobalPrimitives.GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
 
-    // AddImpulseToBodies(CmdBuffer, CurrentMousePos, CurrentMouseScreenPos);
+    AddImpulseToBodies(CmdBuffer, CurrentMousePos, CurrentMouseScreenPos);
     // UpdateBodies(DeltaTime);
     DrawBodies(CmdBuffer, GlobalDeltaTime);
 }
