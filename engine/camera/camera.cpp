@@ -2,10 +2,18 @@
 #include <float.h>
 
 void
-SetupCamera(shoora_camera *Camera, Shu::vec3f Pos, Shu::vec3f GlobalUp)
+SetupCamera(shoora_camera *Camera, shoora_projection Type, f32 Near, f32 Far, f32 Aspect, f32 Height, f32 halfFOV,
+            Shu::vec3f Pos, Shu::vec3f GlobalUp)
 {
     Camera->Pos = Pos;
     Camera->GlobalUp = GlobalUp;
+
+    Camera->Type = Type;
+    Camera->Near = Near;
+    Camera->Far = Far;
+    Camera->Aspect = Aspect;
+    Camera->Height = Height;
+    Camera->halfFOV = halfFOV;
 
     Camera->Front = SHU_DEFAULT_FRONT;
     Camera->Right = SHU_DEFAULT_RIGHT;
@@ -101,8 +109,40 @@ HandleInput(const shoora_camera_input *CameraInput)
 Shu::mat4f shoora_camera::
 GetViewMatrix(Shu::mat4f &M)
 {
-    M = Shu::LookAt(this->Pos, this->Pos + this->Front, this->GlobalUp, M);
+    if(this->Type == PROJECTION_PERSPECTIVE)
+    {
+        M = Shu::LookAt(this->Pos, this->Pos + this->Front, this->GlobalUp, M);
+    }
+    else if(this->Type == PROJECTION_ORTHOGRAPHIC)
+    {
+        M = Shu::Translate(M, Shu::Vec3f(-this->Pos.x, -this->Pos.y, 0.0f));
+    }
     return M;
+}
+
+Shu::mat4f
+shoora_camera::GetProjectionMatrix()
+{
+    Shu::mat4f projection;
+
+    if(this->Type == PROJECTION_ORTHOGRAPHIC)
+    {
+        f32 Width = this->Aspect * this->Height;
+        projection = Shu::Orthographic(Width, this->Height, this->Near, this->Far);
+    }
+    else if (this->Type == PROJECTION_PERSPECTIVE)
+    {
+        projection = Shu::Perspective(this->halfFOV, this->Aspect, this->Near, this->Far);
+    }
+
+    return projection;
+}
+
+void
+shoora_camera::UpdateWindowSize(const Shu::vec2f &windowSize)
+{
+    this->Height = windowSize.y;
+    this->Aspect = windowSize.x / windowSize.y;
 }
 
 #if SHU_USE_GLM

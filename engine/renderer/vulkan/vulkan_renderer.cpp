@@ -34,15 +34,12 @@ static shoora_primitive_collection GlobalPrimitives;
 static b32 MouseTracking = false;
 static Shu::vec2f MouseInitialScreenPos = Shu::Vec2f(0);
 static shoora_body *BodyToMove = nullptr;
-static Shu::vec2f AnchorPos;
 static shoora_body Bodies[8192];
 static u32 BodyCount = 0;
 static f32 BodyMass = 1.5f;
 static f32 PrevBodyMass = BodyMass;
 static f32 BodyRadius = 15.0f;
 static f32 PrevBodyRadius = BodyRadius;
-static f32 SpringConstant = 210.0f;
-static f32 SpringRestLength = 30.0f;
 
 // NOTE: ALso make the same changes to the lighting shader.
 // TODO)): Automate this so that changing this automatically makes changes to the shader using shader variation.
@@ -208,8 +205,6 @@ ImGuiNewFrame()
     }
     ImGui::SliderFloat("Bodies Mass", &BodyMass, 0.1f, 10.0f);
     ImGui::SliderFloat("Bodies Radius", &BodyRadius, 1.0f, 100.0f);
-    ImGui::SliderFloat("Spring Rest Length", &SpringRestLength, 1.0f, 30.0f);
-    ImGui::SliderFloat("Spring Constant", &SpringConstant, 1.0f, 3000.0f);
 
 
 #if CREATE_WIREFRAME_PIPELINE
@@ -360,19 +355,7 @@ AddImpulseToBody(shoora_body *Body, const Shu::vec2f InImpulse)
 inline void
 UpdateBodies(f32 dt)
 {
-    shoora_body *p0 = &Bodies[0];
-    Shu::vec2f springForce = force::GenerateSpringForce(p0, AnchorPos, SpringRestLength, SpringConstant);
-    p0->AddForce(springForce);
-    for(i32 BodyIndex = 1; BodyIndex < NUM_BODIES; ++BodyIndex)
-    {
-        shoora_body *p0 = Bodies + (BodyIndex-1);
-        shoora_body *p1 = Bodies + BodyIndex;
-        Shu::vec2f springForce = force::GenerateSpringForce(p0, p1, SpringRestLength, SpringConstant);
-        p0->AddForce(springForce);
-        p1->AddForce(springForce*(-1.0f));
-    }
-
-    for (i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
+    for(i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
     {
         ASSERT(BodyIndex < BodyCount);
         shoora_body *Body = Bodies + BodyIndex;
@@ -503,6 +486,7 @@ DrawRect(VkCommandBuffer CmdBuffer, i32 X, i32 Y, u32 Width, u32 Height, u32 Col
                      Primitive->VertexOffset, 0);
 }
 
+#if 0
 void
 DrawSpring(VkCommandBuffer CmdBuffer, const Shu::vec2f &startPos, const Shu::vec2f &endPos, f32 restLength,
            f32 thickness, i32 nDivisions, u32 Color)
@@ -529,6 +513,7 @@ DrawSpring(VkCommandBuffer CmdBuffer, const Shu::vec2f &startPos, const Shu::vec
         sign *= -1;
     }
 }
+#endif
 
 void
 DrawViscousLiquid(VkCommandBuffer CmdBuffer)
@@ -569,8 +554,6 @@ DrawBodies(VkCommandBuffer CmdBuffer, f32 DeltaTime)
     }
 }
 
-
-
 void
 AddImpulseToBodies(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos,
                       const Shu::vec2f &CurrentMouseScreenPos)
@@ -610,12 +593,11 @@ AddImpulseToBodies(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos,
 void
 InitScene()
 {
-    AnchorPos = Shu::Vec2f(0.0f, (GlobalWindowSize.y*0.5f) - 30);
-    for(i32 Index = 0; Index < NUM_BODIES; ++Index)
-    {
-        InitializeBody(Shu::Vec2f(0.0f, AnchorPos.y - 10 * (Index + 1)), 0xff115599, BodyRadius,
-                           BodyMass);
-    }
+    InitializeBody(Shu::Vec2f(0.0f), 0xff115599, BodyRadius, BodyMass);
+    InitializeBody(Shu::Vec2f(GlobalWindowSize.x, 0), 0xff115599, BodyRadius, BodyMass);
+    InitializeBody(Shu::Vec2f(0, GlobalWindowSize.y), 0xff115599, BodyRadius, BodyMass);
+    InitializeBody(Shu::Vec2f(GlobalWindowSize.x, GlobalWindowSize.y), 0xff115599, BodyRadius, BodyMass);
+    InitializeBody(Shu::Vec2f(GlobalWindowSize.x/2, GlobalWindowSize.y/2), 0xff115599, BodyRadius, BodyMass);
 }
 
 void
@@ -630,36 +612,8 @@ DrawScene(VkCommandBuffer CmdBuffer, u32 SwapchainImageIndex, const Shu::vec2f C
     vkCmdBindVertexBuffers(CmdBuffer, 0, 1, GlobalPrimitives.GetVertexBufferHandlePtr(), offsets);
     vkCmdBindIndexBuffer(CmdBuffer, GlobalPrimitives.GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
 
-    // Anchor Position of the spring
-    AnchorPos = Shu::Vec2f(0.0f, (GlobalWindowSize.y*0.5f) - 30);
-    DrawRect(CmdBuffer, AnchorPos.x, AnchorPos.y, 300, 10, 0xffaa1122);
-
-    DrawSpring(CmdBuffer, AnchorPos, Shu::ToVec2(Bodies[0].Position), SpringRestLength, 7.5f, 20, 0xffffffff);
-    for(i32 Index = 1; Index < NUM_BODIES; ++Index)
-    {
-        shoora_body *prevBody = Bodies + (Index-1);
-        shoora_body *currBody = Bodies + (Index);
-        DrawSpring(CmdBuffer, Shu::ToVec2(prevBody->Position), Shu::ToVec2(currBody->Position),
-                   SpringRestLength, 7.5f, 20, 0xffffffff);
-    }
-
-    if(PrevBodyMass != BodyMass) {
-        for(i32 i = 0; i < NUM_BODIES; ++i) {
-            auto *p = Bodies + i;
-            p->Mass = BodyMass;
-        }
-        PrevBodyMass = BodyMass;
-    }
-    if(PrevBodyRadius != BodyRadius) {
-        for(i32 i = 0; i < NUM_BODIES; ++i) {
-            auto *p = Bodies + i;
-            p->Size = BodyRadius;
-        }
-        PrevBodyRadius = BodyRadius;
-    }
-
-    AddImpulseToBodies(CmdBuffer, CurrentMousePos, CurrentMouseScreenPos);
-    UpdateBodies(DeltaTime);
+    // AddImpulseToBodies(CmdBuffer, CurrentMousePos, CurrentMouseScreenPos);
+    // UpdateBodies(DeltaTime);
     DrawBodies(CmdBuffer, GlobalDeltaTime);
 }
 
@@ -792,7 +746,8 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     CreateRenderPass(RenderDevice, Swapchain, &VulkanContext->GraphicsRenderPass);
     CreateSwapchainFramebuffers(RenderDevice, Swapchain, VulkanContext->GraphicsRenderPass);
 
-    SetupCamera(&VulkanContext->Camera, Shu::Vec3f(0, 0, -10.0f), Shu::Vec3f(0, 1, 0));
+    SetupCamera(&VulkanContext->Camera, shoora_projection::PROJECTION_ORTHOGRAPHIC, 0.1f, 100.0f, 16.0f / 9.0f,
+                GlobalWindowSize.y, 45.0f, Shu::Vec3f(GlobalWindowSize.x/2, GlobalWindowSize.y/2, 0.0f));
 
     GlobalPrimitives = shoora_primitive_collection(&VulkanContext->Device, 40);
 
@@ -893,14 +848,10 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
     GlobalPushConstBlock.Model = Model;
 
     Shu::mat4f View = GlobalMat4Identity;
-    // View = Context->Camera.GetViewMatrix(View);
+    View = Context->Camera.GetViewMatrix(View);
     GlobalVertUniformData.View = View;
 
-    // TODO)) Remove this!!
-    // Shu::mat4f Projection = Shu::Perspective(45.0f, ((f32)GlobalWindowSize.x / (f32)GlobalWindowSize.y), 0.1f,
-    //                                          100.0f);
-
-    Shu::mat4f Projection = Shu::Orthographic((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y, 0.1f, 100.0f);
+    Shu::mat4f Projection = Context->Camera.GetProjectionMatrix();
     GlobalVertUniformData.Projection = Projection;
 #endif
     // memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &GlobalVertUniformData,
@@ -984,6 +935,8 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     // VK_CHECK(vkQueueWaitIdle(Context->Device.GraphicsQueue));
     Shu::vec2f CurrentMousePos = Shu::Vec2f(FramePacket->MouseXPos, FramePacket->MouseYPos);
     Shu::vec2f CurrentMouseScreenPos = MouseToScreenSpace(CurrentMousePos);
+
+    Context->Camera.UpdateWindowSize(Shu::Vec2f(GlobalWindowSize.x, GlobalWindowSize.y));
 
     ASSERT(Context != nullptr);
     ASSERT(FramePacket->DeltaTime > 0.0f);

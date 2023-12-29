@@ -20,6 +20,13 @@
 #define SHU_DEFAULT_RIGHT Shu::Vec3f(1, 0, 0)
 #define SHU_DEFAULT_UP Shu::Vec3f(0, 1, 0)
 
+enum shoora_projection
+{
+    PROJECTION_ORTHOGRAPHIC,
+    PROJECTION_PERSPECTIVE,
+    PROJECTION_MAX_COUNT
+};
+
 struct shoora_camera_input
 {
     f32 MouseDeltaX;
@@ -42,6 +49,12 @@ struct shoora_camera
     Shu::vec3f Up;
     Shu::vec3f GlobalUp;
 
+    f32 halfFOV;
+    shoora_projection Type;
+    f32 Near, Far;
+    f32 Aspect;
+    f32 Height;
+
     f32 Yaw;
     f32 Pitch;
     f32 MovementSpeed;
@@ -51,17 +64,18 @@ struct shoora_camera
     void UpdateCameraVectors();
 
     Shu::mat4f GetViewMatrix(Shu::mat4f &M);
+    Shu::mat4f GetProjectionMatrix();
+    void UpdateWindowSize(const Shu::vec2f &windowSize);
+
 #if SHU_USE_GLM
     glm::mat4 GetViewMatrix(glm::mat4 &M);
 #endif
     void HandleInput(const shoora_camera_input *CameraInput);
 };
 
-
-
-SHU_EXPORT void SetupCamera(shoora_camera *Camera, Shu::vec3f Pos = Shu::Vec3f(0.0f),
+SHU_EXPORT void SetupCamera(shoora_camera *Camera, shoora_projection Type, f32 Near, f32 Far, f32 Aspect,
+                            f32 Height, f32 halfFOV, Shu::vec3f Pos = Shu::Vec3f(0.0f),
                             Shu::vec3f GlobalUp = Shu::Vec3f(0.0f, 1.0f, 0.0f));
-
 
 #define CAMERA_H
 #endif // CAMERA_H
