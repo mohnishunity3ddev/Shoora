@@ -65,7 +65,9 @@ struct shoora_camera
 
     Shu::mat4f GetViewMatrix(Shu::mat4f &M);
     Shu::mat4f GetProjectionMatrix();
+    Shu::vec2f GetBounds();
     void UpdateWindowSize(const Shu::vec2f &windowSize);
+    Shu::rect2d GetRect();
 
 #if SHU_USE_GLM
     glm::mat4 GetViewMatrix(glm::mat4 &M);

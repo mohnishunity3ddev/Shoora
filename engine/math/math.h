@@ -5,6 +5,7 @@
 #include "math_trig.h"
 #include "math_matrix_transforms.h"
 #include "math_quaternion.h"
+#include "math_rect2d.h"
 
 #define MATH_H
 #endif

@@ -27,6 +27,27 @@ SetupCamera(shoora_camera *Camera, shoora_projection Type, f32 Near, f32 Far, f3
     Camera->UpdateCameraVectors();
 }
 
+Shu::vec2f
+shoora_camera::GetBounds()
+{
+    Shu::vec2f bounds = {this->Aspect*this->Height, this->Height};
+
+    return bounds;
+}
+
+Shu::rect2d
+shoora_camera::GetRect()
+{
+    Shu::rect2d Result;
+
+    Result.x = this->Pos.x;
+    Result.y = this->Pos.y;
+    Result.width = this->Aspect * this->Height;
+    Result.height = this->Height;
+
+    return Result;
+}
+
 void shoora_camera::
 UpdateCameraVectors()
 {

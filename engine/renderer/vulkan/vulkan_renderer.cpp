@@ -32,7 +32,7 @@ static shoora_vulkan_context *Context = nullptr;
 #define NUM_BODIES 10
 static shoora_primitive_collection GlobalPrimitives;
 static b32 MouseTracking = false;
-static Shu::vec2f MouseInitialScreenPos = Shu::Vec2f(0);
+static Shu::vec2f MouseInitialDownPos = Shu::Vec2f(0);
 static shoora_body *BodyToMove = nullptr;
 static shoora_body Bodies[8192];
 static u32 BodyCount = 0;
@@ -40,6 +40,8 @@ static f32 BodyMass = 1.5f;
 static f32 PrevBodyMass = BodyMass;
 static f32 BodyRadius = 15.0f;
 static f32 PrevBodyRadius = BodyRadius;
+
+static f32 TestCameraScale = 0.5f;
 
 // NOTE: ALso make the same changes to the lighting shader.
 // TODO)): Automate this so that changing this automatically makes changes to the shader using shader variation.
@@ -205,6 +207,7 @@ ImGuiNewFrame()
     }
     ImGui::SliderFloat("Bodies Mass", &BodyMass, 0.1f, 10.0f);
     ImGui::SliderFloat("Bodies Radius", &BodyRadius, 1.0f, 100.0f);
+    ImGui::SliderFloat("Test Scale", &TestCameraScale, 0.5f, 100.0f);
 
 
 #if CREATE_WIREFRAME_PIPELINE
@@ -311,23 +314,25 @@ InitializeBody(const Shu::vec2f Pos, u32 ColorU32, f32 Size, f32 Mass)
 }
 
 Shu::vec2f
-MouseToScreenSpace(const Shu::vec2f &MousePos)
+MouseToWorld(const Shu::vec2f &MousePos)
 {
-    f32 x = MousePos.x;
-    f32 y = ((f32)GlobalWindowSize.y) - MousePos.y;
+    // NOTE: This is the position where the y position is flipped since windows's mouse pos (0,0) starts from the
+    // top left and y increases in the downward direction.
+    Shu::vec2f worldPos = Shu::Vec2f(MousePos.x, ((f32)GlobalWindowSize.y) - MousePos.y);
 
-    Shu::vec2f Result;
-    Result.x = x;
-    Result.y = y;
+    worldPos += Context->Camera.Pos.xy;
+    worldPos -= (0.5f*Context->Camera.GetBounds());
 
-    return Result;
+    return worldPos;
 }
 
+// TODO)) : This function is not correct right now! Check this if you are using it.
+#if 0
 Shu::vec2f
-ScreenToMouseSpace(const Shu::vec2f &ScreenPos)
+WorldToMouse(const Shu::vec2f &WorldPos)
 {
-    f32 x = ScreenPos.x;
-    f32 y = ScreenPos.y - (f32)GlobalWindowSize.y;
+    f32 x = WorldPos.x;
+    f32 y = WorldPos.y - (f32)GlobalWindowSize.y;
 
     Shu::vec2f Result;
     Result.x = x;
@@ -335,12 +340,12 @@ ScreenToMouseSpace(const Shu::vec2f &ScreenPos)
 
     return Result;
 }
+#endif
 
 b32
 CheckIfBodyClicked(const shoora_body *Body, const Shu::vec2f &MousePos)
 {
-    Shu::vec2f l = MouseToScreenSpace(MousePos) - Shu::ToVec2(Body->Position);
-
+    Shu::vec2f l = MouseToWorld(MousePos) - Shu::ToVec2(Body->Position);
     b32 Result = (l.SqMagnitude() < Body->Size * Body->Size);
     return Result;
 }
@@ -369,8 +374,8 @@ UpdateBodies(f32 dt)
 #endif
 
 #if 1
-        Shu::vec2f GravityForce = Shu::Vec2f(0.0f, -9.8f*SHU_PIXELS_PER_METER*Body->Mass);
-        Body->AddForce(GravityForce);
+        Shu::vec2f gForce = Shu::Vec2f(0.0f, -9.8f*SHU_PIXELS_PER_METER*Body->Mass);
+        Body->AddForce(gForce);
 
         Shu::vec2f PushForce = Shu::Vec2f(1.0f, 1.0f)*(SHU_PIXELS_PER_METER*100);
         Shu::vec2f BodyForce = Shu::vec2f::Zero();
@@ -391,15 +396,9 @@ UpdateBodies(f32 dt)
             BodyForce.x += PushForce.x;
         }
         Body->AddForce(BodyForce);
-
-        if(Body->Position.y < 0)
-        {
-            Shu::vec2f DragForce = force::GenerateDragForce(Body, 0.03f);
-            Body->AddForce(DragForce);
-        }
 #endif
 
-#if 1 // Drag Force
+#if 0 // Drag Force
         Shu::vec2f DragForce = force::GenerateDragForce(Body, 0.03f);
         Body->AddForce(DragForce);
 #endif
@@ -421,27 +420,29 @@ UpdateBodies(f32 dt)
 
         Body->Integrate(dt);
 
-        Shu::vec2f Bounds = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y)*0.5f;
+        Shu::rect2d Rect = Context->Camera.GetRect();
+        Shu::vec2f boundX = Shu::Vec2f(Rect.x - Rect.width/2, Rect.x + Rect.width/2);
+        Shu::vec2f boundY = Shu::Vec2f(Rect.y - Rect.height/2, Rect.y + Rect.height/2);
         f32 DampFactor = -1.0f;
 
-        if((Body->Position.y - Body->Size) < -Bounds.y)
+        if((Body->Position.y - Body->Size) < boundY.x)
         {
-            Body->Position.y = -Bounds.y + Body->Size;
+            Body->Position.y = boundY.x + Body->Size;
             Body->Velocity.y *= DampFactor;
         }
-        if((Body->Position.y + Body->Size) > Bounds.y)
+        if((Body->Position.y + Body->Size) > boundY.y)
         {
-            Body->Position.y = Bounds.y - Body->Size;
+            Body->Position.y = boundY.y - Body->Size;
             Body->Velocity.y *= DampFactor;
         }
-        if((Body->Position.x - Body->Size) < -Bounds.x)
+        if((Body->Position.x - Body->Size) < boundX.x)
         {
-            Body->Position.x = -Bounds.x + Body->Size;
+            Body->Position.x = boundX.x + Body->Size;
             Body->Velocity.x *= DampFactor;
         }
-        if((Body->Position.x + Body->Size) > Bounds.x)
+        if((Body->Position.x + Body->Size) > boundX.y)
         {
-            Body->Position.x = Bounds.x - Body->Size;
+            Body->Position.x = boundX.y - Body->Size;
             Body->Velocity.x *= DampFactor;
         }
     }
@@ -556,7 +557,7 @@ DrawBodies(VkCommandBuffer CmdBuffer, f32 DeltaTime)
 
 void
 AddImpulseToBodies(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos,
-                      const Shu::vec2f &CurrentMouseScreenPos)
+                      const Shu::vec2f &CurrentMouseWorldPos)
 {
     for(u32 BodyIndex = 0;
         BodyIndex < BodyCount;
@@ -569,21 +570,21 @@ AddImpulseToBodies(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos,
             if(CheckIfBodyClicked(Body, CurrentMousePos))
             {
                 MouseTracking = true;
-                MouseInitialScreenPos = ToVec2(Body->Position);
+                MouseInitialDownPos = ToVec2(Body->Position);
                 BodyToMove = Body;
             }
         }
 
         if(MouseTracking)
         {
-            DrawLine(CmdBuffer, MouseInitialScreenPos, CurrentMouseScreenPos, 0xffff0000, 3.0f);
+            DrawLine(CmdBuffer, MouseInitialDownPos, CurrentMouseWorldPos, 0xffff0000, 3.0f);
         }
     }
 
     if (MouseTracking && Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, SHU_KEYSTATE_RELEASE))
     {
         ASSERT(BodyToMove != nullptr);
-        Shu::vec2f Force = (MouseInitialScreenPos - CurrentMouseScreenPos);
+        Shu::vec2f Force = (MouseInitialDownPos - CurrentMouseWorldPos);
         AddImpulseToBody(BodyToMove, Force);
         MouseTracking = false;
         BodyToMove = nullptr;
@@ -593,12 +594,15 @@ AddImpulseToBodies(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos,
 void
 InitScene()
 {
-    InitializeBody(Shu::Vec2f(0.0f), 0xff115599, BodyRadius, BodyMass);
+    InitializeBody(Shu::Vec2f(0.0f), 0xffff00ff, BodyRadius, BodyMass);
+    InitializeBody(Shu::Vec2f(100.0f, 0.0f), 0xffff0000, BodyRadius, BodyMass);
+    InitializeBody(Shu::Vec2f(0.0f, 100.0f), 0xff00ff00, BodyRadius, BodyMass);
+    InitializeBody(Shu::Vec2f(100.0f, 100.0f), 0xffffff00, BodyRadius, BodyMass);
 }
 
 void
 DrawScene(VkCommandBuffer CmdBuffer, u32 SwapchainImageIndex, const Shu::vec2f CurrentMousePos,
-          const Shu::vec2f CurrentMouseScreenPos, f32 DeltaTime)
+          const Shu::vec2f CurrentMouseWorldPos, f32 DeltaTime)
 {
     vkCmdBindDescriptorSets(CmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Layout, 0, 1,
                             &Context->UnlitSets[SwapchainImageIndex], 0, nullptr);
@@ -608,8 +612,8 @@ DrawScene(VkCommandBuffer CmdBuffer, u32 SwapchainImageIndex, const Shu::vec2f C
     vkCmdBindVertexBuffers(CmdBuffer, 0, 1, GlobalPrimitives.GetVertexBufferHandlePtr(), offsets);
     vkCmdBindIndexBuffer(CmdBuffer, GlobalPrimitives.GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
 
-    AddImpulseToBodies(CmdBuffer, CurrentMousePos, CurrentMouseScreenPos);
-    // UpdateBodies(DeltaTime);
+    AddImpulseToBodies(CmdBuffer, CurrentMousePos, CurrentMouseWorldPos);
+    UpdateBodies(DeltaTime);
     DrawBodies(CmdBuffer, GlobalDeltaTime);
 }
 
@@ -743,7 +747,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     CreateSwapchainFramebuffers(RenderDevice, Swapchain, VulkanContext->GraphicsRenderPass);
 
     SetupCamera(&VulkanContext->Camera, shoora_projection::PROJECTION_ORTHOGRAPHIC, 0.1f, 100.0f, 16.0f / 9.0f,
-                GlobalWindowSize.y, 45.0f, Shu::Vec3f(GlobalWindowSize.x/2, GlobalWindowSize.y/2, 0.0f));
+                GlobalWindowSize.y, 45.0f /*,  Shu::Vec3f(GlobalWindowSize.x/2, GlobalWindowSize.y/2, 0.0f) */);
 
     GlobalPrimitives = shoora_primitive_collection(&VulkanContext->Device, 40);
 
@@ -928,9 +932,14 @@ RenderLightCubes(VkCommandBuffer CmdBuffer)
 void
 DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 {
+    if(Platform_GetKeyInputState(VirtualKeyCodes::SU_LEFTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
+    {
+        int x = 0;
+    }
+
     // VK_CHECK(vkQueueWaitIdle(Context->Device.GraphicsQueue));
     Shu::vec2f CurrentMousePos = Shu::Vec2f(FramePacket->MouseXPos, FramePacket->MouseYPos);
-    Shu::vec2f CurrentMouseScreenPos = MouseToScreenSpace(CurrentMousePos);
+    Shu::vec2f CurrentMouseWorldPos = MouseToWorld(CurrentMousePos);
 
     Context->Camera.UpdateWindowSize(Shu::Vec2f(GlobalWindowSize.x, GlobalWindowSize.y));
 
@@ -1070,7 +1079,7 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 #endif
 
 #if UNLIT_PIPELINE
-        DrawScene(DrawCmdBuffer, ImageIndex, CurrentMousePos, CurrentMouseScreenPos, GlobalDeltaTime);
+        DrawScene(DrawCmdBuffer, ImageIndex, CurrentMousePos, CurrentMouseWorldPos, GlobalDeltaTime);
 #endif
 
         ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
