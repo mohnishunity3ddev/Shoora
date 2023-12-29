@@ -50,6 +50,7 @@ namespace Shu
     template <typename T> SHU_EXPORT vec2<T> operator+(const vec2<T>& A, const vec2<T>& B);
     template <typename T> SHU_EXPORT vec2<T> operator-(const vec2<T>& A, const vec2<T>& B);
     template <typename T> SHU_EXPORT vec2<T> operator*(const vec2<T>& A, T B);
+    template <typename T> SHU_EXPORT vec2<T> operator*(T A, const vec2<T> &B);
     template <typename T> SHU_EXPORT vec2<T> operator/(const vec2<T>& A, const vec2<T>& B);
     template <typename T> SHU_EXPORT vec2<T> operator/(const vec2<T>& A, T B);
     template <typename T> SHU_EXPORT T SqMagnitude(const vec2<T> &A);
@@ -112,6 +113,7 @@ namespace Shu
     template <typename T> SHU_EXPORT vec3<T> operator-(const vec3<T>& A, const vec3<T>& B);
     template <typename T> SHU_EXPORT vec3<T> operator-(const vec3<T>& A);
     template <typename T> SHU_EXPORT vec3<T> operator*(const vec3<T>& A, T B);
+    template <typename T> SHU_EXPORT vec3<T> operator*(T A, const vec3<T> &B);
     template <typename T> SHU_EXPORT vec3<T> operator/(const vec3<T>& A, const vec3<T>& B);
     template <typename T> SHU_EXPORT vec3<T> operator/(const vec3<T>& A, T B);
     template <typename T> SHU_EXPORT T SqMagnitude(const vec3<T> &A);
@@ -236,6 +238,14 @@ namespace Shu
     operator*(const vec2<T>& A, T B)
     {
         vec2<T> Result = {B * A.x, B * A.y};
+        return Result;
+    }
+
+    template <typename T>
+    vec2<T>
+    operator*(T A, const vec2<T> &B)
+    {
+        vec2<T> Result = {A * B.x, A * B.y};
         return Result;
     }
 
@@ -530,6 +540,19 @@ namespace Shu
         Result.x = B * A.x;
         Result.y = B * A.y;
         Result.z = B * A.z;
+
+        return Result;
+    }
+
+    template <typename T>
+    vec3<T>
+    operator*(T A, const vec3<T> &B)
+    {
+        vec3<T> Result;
+
+        Result.x = A * B.x;
+        Result.y = A * B.y;
+        Result.z = A * B.z;
 
         return Result;
     }
