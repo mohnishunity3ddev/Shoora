@@ -3,6 +3,13 @@
 #include <memory.h>
 #include <renderer/vulkan/vulkan_vertex_definitions.h>
 #include <renderer/vulkan/vulkan_debug.h>
+#include <utils/utils.h>
+
+struct shoora_primitive_shader_data
+{
+    Shu::mat4f Model;
+    Shu::vec3f Color = {1, 1, 1};
+};
 
 static void *Memory;
 static shoora_vertex_info *TotalVertices;
@@ -11,7 +18,7 @@ static u32 *TotalIndices;
 static u32 TotalIndexCount = 0;
 static u32 RunningVertexCount = 0;
 static u32 RunningIndexCount = 0;
-
+static shoora_primitive_collection Collection{};
 
 static shoora_vertex_info LineVertices[2] =
 {
@@ -221,9 +228,10 @@ GenerateCircleMesh(shoora_primitive *Primitive, u32 Resolution)
     RunningVertexCount += MeshFilter->VertexCount;
 }
 
-shoora_primitive_collection::shoora_primitive_collection(shoora_vulkan_device *Device, u32 CircleResolution)
+void shoora_primitive_collection::
+Initialize(shoora_vulkan_device *Device, u32 CircleResolution)
 {
-    this->RenderDevice = Device;
+    Collection.RenderDevice = Device;
 
     ASSERT(CircleResolution >= 1);
     TotalVertexCount = (CircleResolution + 1) + ARRAY_SIZE(CubeVertices) + ARRAY_SIZE(RectVertices) +
@@ -234,10 +242,10 @@ shoora_primitive_collection::shoora_primitive_collection(shoora_vulkan_device *D
     TotalVertices = (shoora_vertex_info *)Memory;
     TotalIndices = (u32 *)(TotalVertices + TotalVertexCount);
 
-    this->Circle.PrimitiveType = shoora_primitive_type::CIRCLE;
-    GenerateCircleMesh(&this->Circle, CircleResolution);
+    Collection.Circle.PrimitiveType = shoora_primitive_type::CIRCLE;
+    GenerateCircleMesh(&Collection.Circle, CircleResolution);
 
-    shoora_primitive *CubePrimitive = &this->Cube;
+    shoora_primitive *CubePrimitive = &Collection.Cube;
     CubePrimitive->PrimitiveType = shoora_primitive_type::CUBE;
     CubePrimitive->VertexOffset = RunningVertexCount;
     CubePrimitive->IndexOffset = RunningIndexCount;
@@ -251,7 +259,7 @@ shoora_primitive_collection::shoora_primitive_collection(shoora_vulkan_device *D
     RunningVertexCount += CubeMeshFilter->VertexCount;
     RunningIndexCount += CubeMeshFilter->IndexCount;
 
-    shoora_primitive *RectPrimitive = &this->Rect2D;
+    shoora_primitive *RectPrimitive = &Collection.Rect2D;
     RectPrimitive->PrimitiveType = shoora_primitive_type::RECT_2D;
     RectPrimitive->VertexOffset = RunningVertexCount;
     RectPrimitive->IndexOffset = RunningIndexCount;
@@ -265,7 +273,7 @@ shoora_primitive_collection::shoora_primitive_collection(shoora_vulkan_device *D
     RunningVertexCount += RectMeshFilter->VertexCount;
     RunningIndexCount += RectMeshFilter->IndexCount;
 
-    shoora_primitive *TrianglePrimitive = &this->Triangle;
+    shoora_primitive *TrianglePrimitive = &Collection.Triangle;
     TrianglePrimitive->PrimitiveType = shoora_primitive_type::TRIANGLE;
     TrianglePrimitive->VertexOffset = RunningVertexCount;
     TrianglePrimitive->IndexOffset = RunningIndexCount;
@@ -279,7 +287,7 @@ shoora_primitive_collection::shoora_primitive_collection(shoora_vulkan_device *D
     RunningVertexCount += TriangleMeshFilter->VertexCount;
     RunningIndexCount += TriangleMeshFilter->IndexCount;
 
-    shoora_primitive *LinePrimitive = &this->Line;
+    shoora_primitive *LinePrimitive = &Collection.Line;
     LinePrimitive->PrimitiveType = shoora_primitive_type::LINE;
     LinePrimitive->VertexOffset = RunningVertexCount;
     LinePrimitive->IndexOffset = -1;
@@ -295,13 +303,13 @@ shoora_primitive_collection::shoora_primitive_collection(shoora_vulkan_device *D
     ASSERT(TotalIndexCount == RunningIndexCount);
 
     CreateVertexBuffers(Device, TotalVertices, TotalVertexCount, TotalIndices, TotalIndexCount,
-                        &this->vBuffer, &this->iBuffer);
+                        &Collection.vBuffer, &Collection.iBuffer);
 
 #ifdef _SHU_DEBUG
     // NOTE: This is how we name vulkan objects. Easier to read validation errors if errors are there!
     LogInfo("This is a debug build brother!\n");
-    SetObjectName(RenderDevice, (u64)this->vBuffer.Handle, VK_OBJECT_TYPE_BUFFER, "Primitives Vertex Buffer");
-    SetObjectName(RenderDevice, (u64)this->iBuffer.Handle, VK_OBJECT_TYPE_BUFFER, "Primitives Index Buffer");
+    SetObjectName(Device, (u64)Collection.vBuffer.Handle, VK_OBJECT_TYPE_BUFFER, "Primitives Vertex Buffer");
+    SetObjectName(Device, (u64)Collection.iBuffer.Handle, VK_OBJECT_TYPE_BUFFER, "Primitives Index Buffer");
 #elif defined(_SHU_RELEASE)
     LogInfo("This is a RELEASE build brother!\n");
 #endif
@@ -316,27 +324,27 @@ shoora_primitive_collection::GetPrimitive(shoora_primitive_type Type)
     {
         case shoora_primitive_type::CIRCLE:
         {
-            Result = &this->Circle;
+            Result = &Collection.Circle;
         } break;
 
         case shoora_primitive_type::RECT_2D:
         {
-            Result = &this->Rect2D;
+            Result = &Collection.Rect2D;
         } break;
 
         case shoora_primitive_type::TRIANGLE:
         {
-            Result = &this->Triangle;
+            Result = &Collection.Triangle;
         } break;
 
         case shoora_primitive_type::CUBE:
         {
-            Result = &this->Cube;
+            Result = &Collection.Cube;
         } break;
 
         case shoora_primitive_type::LINE:
         {
-            Result = &this->Line;
+            Result = &Collection.Line;
         } break;
 
         SHU_INVALID_DEFAULT;
@@ -349,17 +357,81 @@ shoora_primitive_collection::GetPrimitive(shoora_primitive_type Type)
 VkBuffer *
 shoora_primitive_collection::GetVertexBufferHandlePtr()
 {
-    VkBuffer *Result = &this->vBuffer.Handle;
+    VkBuffer *Result = &Collection.vBuffer.Handle;
     return Result;
 }
 
 VkBuffer
 shoora_primitive_collection::GetIndexBufferHandle()
 {
-    VkBuffer Result = this->iBuffer.Handle;
+    VkBuffer Result = Collection.iBuffer.Handle;
     return Result;
 }
 
+void
+DrawLine(VkCommandBuffer CmdBuffer, const VkPipelineLayout &pipelineLayout, const Shu::vec2f P0,
+         const Shu::vec2f P1, u32 ColorU32, f32 Thickness)
+{
+#if 0
+    Shu::vec2f p0 = MouseToScreenSpace(P0);
+    Shu::vec2f p1 = MouseToScreenSpace(P1);
+#endif
+    Shu::vec2f l = P1 - P0;
+
+    Shu::vec3f Pos = Shu::Vec3f((P0 + P1) * 0.5f, 1.0f);
+    Shu::vec3f Scale = Shu::Vec3f(l.Magnitude(), Thickness, 1.0f);
+
+    shoora_primitive *Line = shoora_primitive_collection::GetPrimitive(shoora_primitive_type::RECT_2D);
+    Shu::mat4f Model = Shu::TRS(Pos, Scale, l.GetSlopeAngleInDegrees(), Shu::Vec3f(0.0f, 0.0f, 1.0f));
+
+    shoora_primitive_shader_data Value = {.Model = Model, .Color = GetColor(ColorU32)};
+
+    vkCmdPushConstants(CmdBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(shoora_primitive_shader_data), &Value);
+    vkCmdDrawIndexed(CmdBuffer, Line->MeshFilter.IndexCount, 1, Line->IndexOffset, Line->VertexOffset, 0);
+}
+
+void
+DrawRect(VkCommandBuffer CmdBuffer, const VkPipelineLayout &pipelineLayout, i32 X, i32 Y, u32 Width, u32 Height,
+         u32 ColorU32)
+{
+    Shu::mat4f Model = Shu::Mat4f(1.0f);
+    Shu::Scale(Model, Shu::Vec3f((f32)Width * 0.5f, (f32)Height * 0.5f, 1.0f));
+    Shu::Translate(Model, Shu::Vec3f(X, Y, 0.0f));
+
+    shoora_primitive *Primitive = shoora_primitive_collection::GetPrimitive(shoora_primitive_type::RECT_2D);
+    shoora_primitive_shader_data Value = {.Model = Model, .Color = GetColor(ColorU32)};
+
+    vkCmdPushConstants(CmdBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(shoora_primitive_shader_data), &Value);
+    vkCmdDrawIndexed(CmdBuffer, Primitive->MeshFilter.IndexCount, 1, Primitive->IndexOffset,
+                     Primitive->VertexOffset, 0);
+}
+
+void
+DrawSpring(VkCommandBuffer CmdBuffer, const VkPipelineLayout &pipelineLayout, const Shu::vec2f &startPos,
+           const Shu::vec2f &endPos, f32 restLength, f32 thickness, i32 nDivisions, u32 Color)
+{
+    ASSERT(nDivisions > 0);
+
+    Shu::vec2f l = (endPos - startPos);
+    f32 length = l.Magnitude();
+    Shu::vec2f unitVector = Shu::Normalize(l);
+    Shu::vec2f perp = Shu::Normalize(Shu::Vec2f(-unitVector.y, unitVector.x));
+    i32 sign = -1;
+
+    f32 offset = length / (f32)nDivisions;
+    Shu::vec2f p0 = startPos;
+
+    for (i32 DivIndex = 0; DivIndex < nDivisions; ++DivIndex)
+    {
+        Shu::vec2f t = startPos + unitVector * (offset * (DivIndex + 1.0f));
+        Shu::vec2f p1 = t + perp * (thickness * 0.5f * sign);
+
+        DrawLine(CmdBuffer, pipelineLayout, p0, p1, Color, 3.0f);
+
+        p0 = p1;
+        sign *= -1;
+    }
+}
 
 void
 shoora_primitive_collection::Destroy()
@@ -374,5 +446,11 @@ shoora_primitive_collection::Destroy()
     free(Memory);
     TotalVertices = nullptr;
     TotalIndices = nullptr;
-    DestroyVertexBuffer(this->RenderDevice, &this->vBuffer, &this->iBuffer);
+    DestroyVertexBuffer(Collection.RenderDevice, &Collection.vBuffer, &Collection.iBuffer);
+}
+
+void
+shoora_primitive::Draw(const VkCommandBuffer &cmdBuffer)
+{
+    vkCmdDrawIndexed(cmdBuffer, this->MeshFilter.IndexCount, 1, this->IndexOffset, this->VertexOffset, 0);
 }

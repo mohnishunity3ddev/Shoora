@@ -30,7 +30,6 @@
 static shoora_vulkan_context *Context = nullptr;
 
 #define NUM_BODIES 10
-static shoora_primitive_collection GlobalPrimitives;
 static b32 MouseTracking = false;
 static Shu::vec2f MouseInitialDownPos = Shu::Vec2f(0);
 static shoora_body *BodyToMove = nullptr;
@@ -38,9 +37,11 @@ static shoora_body Bodies[8192];
 static u32 BodyCount = 0;
 static f32 BodyMass = 1.5f;
 static f32 PrevBodyMass = BodyMass;
-static f32 BodyRadius = 15.0f;
+static f32 BodyRadius = 100.0f;
 static f32 PrevBodyRadius = BodyRadius;
 
+static b32 isDebug = false;
+static b32 WireframeMode = false;
 static f32 TestCameraScale = 0.5f;
 
 // NOTE: ALso make the same changes to the lighting shader.
@@ -208,6 +209,7 @@ ImGuiNewFrame()
     ImGui::SliderFloat("Bodies Mass", &BodyMass, 0.1f, 10.0f);
     ImGui::SliderFloat("Bodies Radius", &BodyRadius, 1.0f, 100.0f);
     ImGui::SliderFloat("Test Scale", &TestCameraScale, 0.5f, 100.0f);
+    ImGui::Checkbox("Toggle Wireframe", (bool *)&WireframeMode);
 
 
 #if CREATE_WIREFRAME_PIPELINE
@@ -305,12 +307,10 @@ struct unlit_shader_data
 };
 
 void
-InitializeBody(const Shu::vec2f Pos, u32 ColorU32, f32 Size, f32 Mass)
+InitializeBody(const Shu::vec2f Pos, u32 ColorU32, f32 Size, f32 Mass, shoora_primitive_type Type)
 {
     shoora_body *Body = &Bodies[BodyCount++];
-
-    Body->Initialize(GetColor(ColorU32), Pos, Size, Mass,
-                         GlobalPrimitives.GetPrimitive(shoora_primitive_type::CIRCLE));
+    Body->Initialize(GetColor(ColorU32), Pos, Size, Mass, shoora_primitive_collection::GetPrimitive(Type));
 }
 
 Shu::vec2f
@@ -448,110 +448,84 @@ UpdateBodies(f32 dt)
     }
 }
 
-void
-DrawLine(VkCommandBuffer CmdBuffer, const Shu::vec2f P0, const Shu::vec2f P1, u32 ColorU32, f32 Thickness)
+static f32 angle = 0.0f;
+static f32 updateAngle(f32 deltaTime)
 {
-#if 0
-    Shu::vec2f p0 = MouseToScreenSpace(P0);
-    Shu::vec2f p1 = MouseToScreenSpace(P1);
-#endif
-    Shu::vec2f l = P1 - P0;
-
-    Shu::vec3f Pos = Shu::Vec3f((P0+P1)*0.5f, 1.0f);
-    Shu::vec3f Scale = Shu::Vec3f(l.Magnitude(), Thickness, 1.0f);
-
-    shoora_primitive *Line = GlobalPrimitives.GetPrimitive(shoora_primitive_type::RECT_2D);
-    Shu::mat4f Model = Shu::TRS(Pos, Scale, l.GetSlopeAngleInDegrees(), Shu::Vec3f(0.0f, 0.0f, 1.0f));
-
-    unlit_shader_data Value = {.Model = Model, .Color = GetColor(ColorU32)};
-
-    vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
-                       sizeof(unlit_shader_data), &Value);
-    vkCmdDrawIndexed(CmdBuffer, Line->MeshFilter.IndexCount, 1, Line->IndexOffset, Line->VertexOffset, 0);
-}
-
-
-void
-DrawRect(VkCommandBuffer CmdBuffer, i32 X, i32 Y, u32 Width, u32 Height, u32 ColorU32)
-{
-    Shu::mat4f Model = GlobalMat4Identity;
-    Shu::Scale(Model, Shu::Vec3f((f32)Width*0.5f, (f32)Height*0.5f, 1.0f));
-    Shu::Translate(Model, Shu::Vec3f(X, Y, 0.0f));
-
-    shoora_primitive *Primitive = GlobalPrimitives.GetPrimitive(shoora_primitive_type::RECT_2D);
-    unlit_shader_data Value = {.Model = Model, .Color = GetColor(ColorU32)};
-
-    vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
-                       sizeof(unlit_shader_data), &Value);
-    vkCmdDrawIndexed(CmdBuffer, Primitive->MeshFilter.IndexCount, 1, Primitive->IndexOffset,
-                     Primitive->VertexOffset, 0);
-}
-
-#if 0
-void
-DrawSpring(VkCommandBuffer CmdBuffer, const Shu::vec2f &startPos, const Shu::vec2f &endPos, f32 restLength,
-           f32 thickness, i32 nDivisions, u32 Color)
-{
-    ASSERT(nDivisions > 0);
-
-    Shu::vec2f l = (endPos - startPos);
-    f32 length = l.Magnitude();
-    Shu::vec2f unitVector = Shu::Normalize(l);
-    Shu::vec2f perp = Shu::Normalize(Shu::Vec2f(-unitVector.y, unitVector.x));
-    i32 sign = -1;
-
-    f32 offset = length / (f32)nDivisions;
-    Shu::vec2f p0 = startPos;
-
-    for(i32 DivIndex = 0; DivIndex < nDivisions; ++DivIndex)
+    angle += deltaTime * 100.0f;
+    if(angle >= 360.0f)
     {
-        Shu::vec2f t = startPos + unitVector*(offset*(DivIndex + 1.0f));
-        Shu::vec2f p1 = t + perp * (thickness * 0.5f * sign);
+        angle = 0.0f;
+    }
+    return angle;
+}
 
-        DrawLine(CmdBuffer, p0, p1, Color, 3.0f);
+void
+DrawBodyWireframe(const VkCommandBuffer cmdBuffer, shoora_body *body, const Shu::mat4f &model, f32 thickness)
+{
+    shoora_mesh_filter *mesh = &body->Primitive->MeshFilter;
+    if (body->Primitive->PrimitiveType == shoora_primitive_type::CIRCLE)
+    {
+        for (i32 i = 1; i < mesh->VertexCount; ++i)
+        {
+            Shu::vec3f pos0 = mesh->Vertices[i - 1].Pos;
+            Shu::vec3f pos1 = mesh->Vertices[i].Pos;
 
-        p0 = p1;
-        sign *= -1;
+            Shu::vec2f p0 = (model * pos0).xy;
+            Shu::vec2f p1 = (model * pos1).xy;
+            DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, 2.5f);
+        }
+
+        Shu::vec2f p0 = (model * mesh->Vertices[mesh->VertexCount - 1].Pos).xy;
+        Shu::vec2f p1 = (model * mesh->Vertices[1].Pos).xy;
+        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, thickness);
+    }
+    else if(body->Primitive->PrimitiveType == shoora_primitive_type::RECT_2D)
+    {
+        ASSERT(mesh->VertexCount == 4);
+
+        Shu::vec2f p0 = (model * mesh->Vertices[2].Pos).xy;
+        Shu::vec2f p1 = (model * mesh->Vertices[1].Pos).xy;
+        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, thickness);
+        p0 = (model * mesh->Vertices[1].Pos).xy;
+        p1 = (model * mesh->Vertices[0].Pos).xy;
+        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, thickness);
+        p0 = (model * mesh->Vertices[0].Pos).xy;
+        p1 = (model * mesh->Vertices[3].Pos).xy;
+        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, thickness);
+        p0 = (model * mesh->Vertices[3].Pos).xy;
+        p1 = (model * mesh->Vertices[2].Pos).xy;
+        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, thickness);
     }
 }
-#endif
 
 void
-DrawViscousLiquid(VkCommandBuffer CmdBuffer)
+DrawBodies(VkCommandBuffer CmdBuffer, f32 DeltaTime, b32 Wireframe)
 {
-    // NOTE: Draw Rectangle to represent dense liquid.
-    Shu::mat4f Model = GlobalMat4Identity;
-    Shu::Scale(Model, Shu::Vec3f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y * 0.5f, 1.0f));
-    Shu::Translate(Model, Shu::Vec3f(0.0f, -(f32)GlobalWindowSize.y * 0.25f, -0.1f));
-    shoora_primitive *Primitive = GlobalPrimitives.GetPrimitive(shoora_primitive_type::RECT_2D);
-    Shu::vec3f Color = GetColor(0xff173863);
-    unlit_shader_data Value = {.Model = Model, .Color = Color};
-    vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
-                       sizeof(unlit_shader_data), &Value);
-    vkCmdDrawIndexed(CmdBuffer, Primitive->MeshFilter.IndexCount, 1, Primitive->IndexOffset,
-                     Primitive->VertexOffset, 0);
-}
+    if(Wireframe && !isDebug)
+    {
+        LogWarnUnformatted("Wireframe mode is only available in debug builds. Turning off Wireframe mode!\n");
+        Wireframe = false;
+    }
 
-void
-DrawBodies(VkCommandBuffer CmdBuffer, f32 DeltaTime)
-{
     for(u32 BodyIndex = 0;
         BodyIndex < BodyCount;
         ++BodyIndex)
     {
         shoora_body *Body = Bodies + BodyIndex;
 
-        Shu::mat4f Model = GlobalMat4Identity;
-        Shu::Scale(Model, Shu::Vec3f(Body->Size));
-        Shu::Translate(Model, Body->Position);
-
+        Shu::mat4f Model = Shu::TRS(Body->Position, Shu::Vec3f(Body->Size), updateAngle(DeltaTime), Shu::Vec3f(0, 0, 1));
         unlit_shader_data Value = {.Model = Model, .Color = Body->Color};
 
-        shoora_primitive *Primitive = Body->Primitive;
-        vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
-                           sizeof(unlit_shader_data), &Value);
-        vkCmdDrawIndexed(CmdBuffer, Primitive->MeshFilter.IndexCount, 1, Primitive->IndexOffset,
-                         Primitive->VertexOffset, 0);
+        if(!Wireframe)
+        {
+            vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+                               sizeof(unlit_shader_data), &Value);
+            Body->Primitive->Draw(CmdBuffer);
+        }
+        else
+        {
+            DrawBodyWireframe(CmdBuffer, Body, Model, 2.5f);
+        }
     }
 }
 
@@ -577,7 +551,8 @@ AddImpulseToBodies(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos,
 
         if(MouseTracking)
         {
-            DrawLine(CmdBuffer, MouseInitialDownPos, CurrentMouseWorldPos, 0xffff0000, 3.0f);
+            DrawLine(CmdBuffer, Context->UnlitPipeline.Layout, MouseInitialDownPos, CurrentMouseWorldPos,
+                     0xffff0000, 3.0f);
         }
     }
 
@@ -594,10 +569,8 @@ AddImpulseToBodies(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos,
 void
 InitScene()
 {
-    InitializeBody(Shu::Vec2f(0.0f), 0xffff00ff, BodyRadius, BodyMass);
-    InitializeBody(Shu::Vec2f(100.0f, 0.0f), 0xffff0000, BodyRadius, BodyMass);
-    InitializeBody(Shu::Vec2f(0.0f, 100.0f), 0xff00ff00, BodyRadius, BodyMass);
-    InitializeBody(Shu::Vec2f(100.0f, 100.0f), 0xffffff00, BodyRadius, BodyMass);
+    InitializeBody(Shu::Vec2f(0.0f), 0xffff00ff, BodyRadius, BodyMass, shoora_primitive_type::CIRCLE);
+    InitializeBody(Shu::Vec2f(300.0f, 0.0f), 0xffff00ff, BodyRadius, BodyMass, shoora_primitive_type::RECT_2D);
 }
 
 void
@@ -609,12 +582,12 @@ DrawScene(VkCommandBuffer CmdBuffer, u32 SwapchainImageIndex, const Shu::vec2f C
     vkCmdBindPipeline(CmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Handle);
 
     VkDeviceSize offsets[1] = {0};
-    vkCmdBindVertexBuffers(CmdBuffer, 0, 1, GlobalPrimitives.GetVertexBufferHandlePtr(), offsets);
-    vkCmdBindIndexBuffer(CmdBuffer, GlobalPrimitives.GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(CmdBuffer, 0, 1, shoora_primitive_collection::GetVertexBufferHandlePtr(), offsets);
+    vkCmdBindIndexBuffer(CmdBuffer, shoora_primitive_collection::GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
 
     AddImpulseToBodies(CmdBuffer, CurrentMousePos, CurrentMouseWorldPos);
-    UpdateBodies(DeltaTime);
-    DrawBodies(CmdBuffer, GlobalDeltaTime);
+    // UpdateBodies(DeltaTime);
+    DrawBodies(CmdBuffer, GlobalDeltaTime, WireframeMode);
 }
 
 void
@@ -714,6 +687,10 @@ InitializeLightData()
 void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
 {
+#if _SHU_DEBUG
+    isDebug = true;
+#endif
+
     GlobalWindowSize = {AppInfo->WindowWidth, AppInfo->WindowHeight};
     InitializeLightData();
 
@@ -749,7 +726,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     SetupCamera(&VulkanContext->Camera, shoora_projection::PROJECTION_ORTHOGRAPHIC, 0.1f, 100.0f, 16.0f / 9.0f,
                 GlobalWindowSize.y, 45.0f /*,  Shu::Vec3f(GlobalWindowSize.x/2, GlobalWindowSize.y/2, 0.0f) */);
 
-    GlobalPrimitives = shoora_primitive_collection(&VulkanContext->Device, 40);
+    shoora_primitive_collection::Initialize(RenderDevice, 40);
 
 #if RENDER_SPONZA
     // NOTE: This is for Sponza Scene Gemoetry. Loading all meshes, textures and everything else related to it!.
@@ -1129,7 +1106,7 @@ DestroyVulkanRenderer(shoora_vulkan_context *Context)
     CleanupGeometry(RenderDevice, &Context->Geometry);
 
     CleanupUnlitPipeline();
-    GlobalPrimitives.Destroy();
+    shoora_primitive_collection::Destroy();
     DestroyUnlitPipelineResources();
     DestroySwapchainUniformResources(RenderDevice, &Context->Swapchain);
 
