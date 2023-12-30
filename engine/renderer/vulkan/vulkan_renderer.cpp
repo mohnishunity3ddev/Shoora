@@ -186,22 +186,10 @@ ImGuiNewFrame()
         ImGui::RadioButton("240", &GlobalSelectedFPSOption, 3);
         switch(GlobalSelectedFPSOption)
         {
-            case FpsOptions_30:
-            {
-                Platform_SetFPS(30);
-            } break;
-            case FpsOptions_60:
-            {
-                Platform_SetFPS(60);
-            } break;
-            case FpsOptions_120:
-            {
-                Platform_SetFPS(120);
-            } break;
-            case FpsOptions_240:
-            {
-                Platform_SetFPS(240);
-            } break;
+            case FpsOptions_30: { Platform_SetFPS(30); } break;
+            case FpsOptions_60: { Platform_SetFPS(60); } break;
+            case FpsOptions_120: { Platform_SetFPS(120); } break;
+            case FpsOptions_240: { Platform_SetFPS(240); } break;
 
             SHU_INVALID_DEFAULT;
         }
@@ -373,10 +361,7 @@ UpdateBodies(f32 dt)
 
         // NOTE: If I am debugging, the frametime is going to be huge. So hence, clamping here.
 #if _SHU_DEBUG
-        if(dt > 1.0f/29.0f)
-        {
-            dt = 1.0f / 29.0f;
-        }
+        if(dt > 1.0f/29.0f) { dt = 1.0f / 29.0f; }
 #endif
 
 #if 1
@@ -385,22 +370,10 @@ UpdateBodies(f32 dt)
 
         Shu::vec2f PushForce = Shu::Vec2f(1.0f, 1.0f)*(SHU_PIXELS_PER_METER*100);
         Shu::vec2f BodyForce = Shu::vec2f::Zero();
-        if(Platform_GetKeyInputState(SU_UPARROW, KeyState::SHU_KEYSTATE_DOWN))
-        {
-            BodyForce.y += PushForce.y;
-        }
-        if(Platform_GetKeyInputState(SU_DOWNARROW, KeyState::SHU_KEYSTATE_DOWN))
-        {
-            BodyForce.y -= PushForce.y;
-        }
-        if(Platform_GetKeyInputState(SU_LEFTARROW, KeyState::SHU_KEYSTATE_DOWN))
-        {
-            BodyForce.x -= PushForce.x;
-        }
-        if(Platform_GetKeyInputState(SU_RIGHTARROW, KeyState::SHU_KEYSTATE_DOWN))
-        {
-            BodyForce.x += PushForce.x;
-        }
+        if(Platform_GetKeyInputState(SU_UPARROW, KeyState::SHU_KEYSTATE_DOWN)) { BodyForce.y += PushForce.y; }
+        if(Platform_GetKeyInputState(SU_DOWNARROW, KeyState::SHU_KEYSTATE_DOWN)) { BodyForce.y -= PushForce.y; }
+        if(Platform_GetKeyInputState(SU_LEFTARROW, KeyState::SHU_KEYSTATE_DOWN)) { BodyForce.x -= PushForce.x; }
+        if(Platform_GetKeyInputState(SU_RIGHTARROW, KeyState::SHU_KEYSTATE_DOWN)) { BodyForce.x += PushForce.x; }
         Body->AddForce(BodyForce);
 #endif
 
@@ -423,7 +396,6 @@ UpdateBodies(f32 dt)
         Shu::vec2f FrictionForce = force::GenerateFrictionForce(Body, 10.0f*SHU_PIXELS_PER_METER);
         Body->AddForce(FrictionForce);
 #endif
-
         Body->IntegrateLinear(dt);
 
         Shu::rect2d Rect = Context->Camera.GetRect();
