@@ -307,10 +307,24 @@ struct unlit_shader_data
 };
 
 void
-InitializeBody(const Shu::vec2f Pos, u32 ColorU32, f32 Size, f32 Mass, shoora_primitive_type Type)
+InitializeCircle(const Shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 Mass)
 {
     shoora_body *Body = &Bodies[BodyCount++];
-    Body->Initialize(GetColor(ColorU32), Pos, Size, Mass, shoora_primitive_collection::GetPrimitive(Type));
+    Body->Initialize(GetColor(ColorU32), Pos, Mass, new shoora_shape_circle(Radius));
+}
+
+void
+InitializeBox(const Shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Height, f32 Mass)
+{
+    shoora_body *Body = &Bodies[BodyCount++];
+    Body->Initialize(GetColor(ColorU32), Pos, Mass, new shoora_shape_box(Width, Height));
+}
+
+void
+InitializeTriangle(const Shu::vec2f Pos, u32 ColorU32, f32 Base, f32 Height, f32 Mass)
+{
+    shoora_body *Body = &Bodies[BodyCount++];
+    Body->Initialize(GetColor(ColorU32), Pos, Mass, new shoora_shape_triangle(Base, Height));
 }
 
 Shu::vec2f
@@ -341,14 +355,6 @@ WorldToMouse(const Shu::vec2f &WorldPos)
     return Result;
 }
 #endif
-
-b32
-CheckIfBodyClicked(const shoora_body *Body, const Shu::vec2f &MousePos)
-{
-    Shu::vec2f l = MouseToWorld(MousePos) - Shu::ToVec2(Body->Position);
-    b32 Result = (l.SqMagnitude() < Body->Size * Body->Size);
-    return Result;
-}
 
 void
 AddImpulseToBody(shoora_body *Body, const Shu::vec2f InImpulse)
@@ -418,33 +424,11 @@ UpdateBodies(f32 dt)
         Body->AddForce(FrictionForce);
 #endif
 
-        Body->Integrate(dt);
+        Body->IntegrateLinear(dt);
 
         Shu::rect2d Rect = Context->Camera.GetRect();
-        Shu::vec2f boundX = Shu::Vec2f(Rect.x - Rect.width/2, Rect.x + Rect.width/2);
-        Shu::vec2f boundY = Shu::Vec2f(Rect.y - Rect.height/2, Rect.y + Rect.height/2);
         f32 DampFactor = -1.0f;
-
-        if((Body->Position.y - Body->Size) < boundY.x)
-        {
-            Body->Position.y = boundY.x + Body->Size;
-            Body->Velocity.y *= DampFactor;
-        }
-        if((Body->Position.y + Body->Size) > boundY.y)
-        {
-            Body->Position.y = boundY.y - Body->Size;
-            Body->Velocity.y *= DampFactor;
-        }
-        if((Body->Position.x - Body->Size) < boundX.x)
-        {
-            Body->Position.x = boundX.x + Body->Size;
-            Body->Velocity.x *= DampFactor;
-        }
-        if((Body->Position.x + Body->Size) > boundX.y)
-        {
-            Body->Position.x = boundX.y - Body->Size;
-            Body->Velocity.x *= DampFactor;
-        }
+        Body->KeepInView(Rect, DampFactor);
     }
 }
 
@@ -462,8 +446,9 @@ static f32 updateAngle(f32 deltaTime)
 void
 DrawBodyWireframe(const VkCommandBuffer cmdBuffer, shoora_body *body, const Shu::mat4f &model, f32 thickness)
 {
-    shoora_mesh_filter *mesh = &body->Primitive->MeshFilter;
-    if (body->Primitive->PrimitiveType == shoora_primitive_type::CIRCLE)
+    shoora_mesh_filter *mesh = &body->Shape->Primitive->MeshFilter;
+    shoora_primitive_type Type = body->Shape->Primitive->PrimitiveType;
+    if (Type == shoora_primitive_type::CIRCLE)
     {
         for (i32 i = 1; i < mesh->VertexCount; ++i)
         {
@@ -479,7 +464,7 @@ DrawBodyWireframe(const VkCommandBuffer cmdBuffer, shoora_body *body, const Shu:
         Shu::vec2f p1 = (model * mesh->Vertices[1].Pos).xy;
         DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, thickness);
     }
-    else if(body->Primitive->PrimitiveType == shoora_primitive_type::RECT_2D)
+    else if(Type == shoora_primitive_type::RECT_2D)
     {
         ASSERT(mesh->VertexCount == 4);
 
@@ -496,7 +481,7 @@ DrawBodyWireframe(const VkCommandBuffer cmdBuffer, shoora_body *body, const Shu:
         p1 = (model * mesh->Vertices[2].Pos).xy;
         DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, thickness);
     }
-    else if (body->Primitive->PrimitiveType == shoora_primitive_type::TRIANGLE)
+    else if (Type == shoora_primitive_type::TRIANGLE)
     {
         ASSERT(mesh->VertexCount == 3);
 
@@ -527,14 +512,14 @@ DrawBodies(VkCommandBuffer CmdBuffer, f32 DeltaTime, b32 Wireframe)
     {
         shoora_body *Body = Bodies + BodyIndex;
 
-        Shu::mat4f Model = Shu::TRS(Body->Position, Shu::Vec3f(Body->Size), 0.0f, Shu::Vec3f(0, 0, 1));
+        Shu::mat4f Model = Shu::TRS(Body->Position, Body->Scale, 0.0f, Shu::Vec3f(0, 0, 1));
         unlit_shader_data Value = {.Model = Model, .Color = Body->Color};
 
         if(!Wireframe)
         {
             vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                                sizeof(unlit_shader_data), &Value);
-            Body->Primitive->Draw(CmdBuffer);
+            Body->Shape->Draw(CmdBuffer);
         }
         else
         {
@@ -555,7 +540,7 @@ AddImpulseToBodies(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos,
 
         if(!MouseTracking && Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, SHU_KEYSTATE_DOWN))
         {
-            if(CheckIfBodyClicked(Body, CurrentMousePos))
+            if(Body->CheckIfClicked(MouseToWorld(CurrentMousePos)))
             {
                 MouseTracking = true;
                 MouseInitialDownPos = ToVec2(Body->Position);
@@ -583,9 +568,9 @@ AddImpulseToBodies(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos,
 void
 InitScene()
 {
-    InitializeBody(Shu::Vec2f(0.0f), 0xff00ffff, BodyRadius, BodyMass, shoora_primitive_type::CIRCLE);
-    InitializeBody(Shu::Vec2f(300.0f, 0.0f), 0xff00ffff, BodyRadius, BodyMass, shoora_primitive_type::RECT_2D);
-    InitializeBody(Shu::Vec2f(300.0f, 300.0f), 0xff00ffff, BodyRadius, BodyMass, shoora_primitive_type::TRIANGLE);
+    InitializeCircle(Shu::Vec2f(0.0f), 0xff00ffff, BodyRadius, BodyMass);
+    InitializeBox(Shu::Vec2f(300.0f, 0.0f), 0xff00ffff, BodyRadius, BodyRadius, BodyMass);
+    InitializeTriangle(Shu::Vec2f(300.0f, 300.0f), 0xff00ffff, BodyRadius, BodyRadius, BodyMass);
 }
 
 void
