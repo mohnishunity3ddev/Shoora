@@ -496,6 +496,20 @@ DrawBodyWireframe(const VkCommandBuffer cmdBuffer, shoora_body *body, const Shu:
         p1 = (model * mesh->Vertices[2].Pos).xy;
         DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, thickness);
     }
+    else if (body->Primitive->PrimitiveType == shoora_primitive_type::TRIANGLE)
+    {
+        ASSERT(mesh->VertexCount == 3);
+
+        Shu::vec2f p0 = (model * mesh->Vertices[1].Pos).xy;
+        Shu::vec2f p1 = (model * mesh->Vertices[0].Pos).xy;
+        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, thickness);
+        p0 = (model * mesh->Vertices[2].Pos).xy;
+        p1 = (model * mesh->Vertices[1].Pos).xy;
+        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, thickness);
+        p0 = (model * mesh->Vertices[0].Pos).xy;
+        p1 = (model * mesh->Vertices[2].Pos).xy;
+        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, thickness);
+    }
 }
 
 void
@@ -513,7 +527,7 @@ DrawBodies(VkCommandBuffer CmdBuffer, f32 DeltaTime, b32 Wireframe)
     {
         shoora_body *Body = Bodies + BodyIndex;
 
-        Shu::mat4f Model = Shu::TRS(Body->Position, Shu::Vec3f(Body->Size), updateAngle(DeltaTime), Shu::Vec3f(0, 0, 1));
+        Shu::mat4f Model = Shu::TRS(Body->Position, Shu::Vec3f(Body->Size), 0.0f, Shu::Vec3f(0, 0, 1));
         unlit_shader_data Value = {.Model = Model, .Color = Body->Color};
 
         if(!Wireframe)
@@ -569,8 +583,9 @@ AddImpulseToBodies(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos,
 void
 InitScene()
 {
-    InitializeBody(Shu::Vec2f(0.0f), 0xffff00ff, BodyRadius, BodyMass, shoora_primitive_type::CIRCLE);
-    InitializeBody(Shu::Vec2f(300.0f, 0.0f), 0xffff00ff, BodyRadius, BodyMass, shoora_primitive_type::RECT_2D);
+    InitializeBody(Shu::Vec2f(0.0f), 0xff00ffff, BodyRadius, BodyMass, shoora_primitive_type::CIRCLE);
+    InitializeBody(Shu::Vec2f(300.0f, 0.0f), 0xff00ffff, BodyRadius, BodyMass, shoora_primitive_type::RECT_2D);
+    InitializeBody(Shu::Vec2f(300.0f, 300.0f), 0xff00ffff, BodyRadius, BodyMass, shoora_primitive_type::TRIANGLE);
 }
 
 void
@@ -586,7 +601,7 @@ DrawScene(VkCommandBuffer CmdBuffer, u32 SwapchainImageIndex, const Shu::vec2f C
     vkCmdBindIndexBuffer(CmdBuffer, shoora_primitive_collection::GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
 
     AddImpulseToBodies(CmdBuffer, CurrentMousePos, CurrentMouseWorldPos);
-    // UpdateBodies(DeltaTime);
+    UpdateBodies(DeltaTime);
     DrawBodies(CmdBuffer, GlobalDeltaTime, WireframeMode);
 }
 
