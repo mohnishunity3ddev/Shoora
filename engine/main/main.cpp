@@ -492,6 +492,11 @@ LogTrace(const char *Format, ...)
 }
 
 void
+LogUnformatted(const char *Message)
+{
+    OutputDebugStringA(Message);
+}
+void
 LogInfoUnformatted(const char *Message)
 {
     OutputToConsole(LogType_Info, Message);

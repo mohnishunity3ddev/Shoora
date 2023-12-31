@@ -6,38 +6,46 @@
 #include <mesh/mesh_filter.h>
 #include <physics/shape.h>
 
+#include <memory>
+
 struct shoora_body
 {
+    // linear motion
     Shu::vec3f Position;
-    Shu::vec3f Scale;
-
-    Shu::vec3f Color;
-
-    shoora_shape *Shape;
-
     Shu::vec3f Velocity;
     Shu::vec3f Acceleration;
-    f32 Mass;
-    f32 InvMass;
-    Shu::vec3f SumForces;
 
     // Angular motion
     f32 Rotation;
     f32 AngularVelocity;
     f32 AngularAcceleration;
-    f32 InvI;
-    Shu::vec3f SumTorques;
+
+    Shu::vec3f SumForces;
+    f32 SumTorques;
+
+    f32 Mass;
+    f32 InvMass;
+    f32 I; // Moment of inertia.
+    f32 InvI; // Inverse of moment of inertia.
+
+    Shu::vec3f Scale;
+    Shu::vec3f Color;
+
+    std::unique_ptr<shoora_shape> Shape;
 
     b32 CheckIfClicked(const Shu::vec2f &ClickedWorldPos);
     void KeepInView(const Shu::rect2d &ViewBounds, f32 DampFactor);
 
-    void Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Mass, shoora_shape *Shape);
-    void IntegrateLinear(f32 DeltaTime);
-    void AddForce(const Shu::vec2f &Force);
-    void ClearForces();
+    void Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Mass, std::unique_ptr<shoora_shape> Shape);
 
+    void AddForce(const Shu::vec2f &Force);
+    void AddTorque(f32 Torque);
+
+    void ClearForces();
+    void ClearTorque();
+    
+    void IntegrateLinear(f32 DeltaTime);
     void IntegrateAngular(f32 DeltaTime);
-    void ClearTorques();
 };
 
 #define BODY_H

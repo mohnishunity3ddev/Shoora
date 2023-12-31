@@ -80,6 +80,7 @@ SHU_EXPORT void LogError(const char *Format, ...);
 SHU_EXPORT void LogFatal(const char *Format, ...);
 SHU_EXPORT void LogTrace(const char *Format, ...);
 
+SHU_EXPORT void LogUnformatted(const char *Message);
 SHU_EXPORT void LogInfoUnformatted(const char *Message);
 SHU_EXPORT void LogDebugUnformatted(const char *Message);
 SHU_EXPORT void LogWarnUnformatted(const char *Message);

@@ -37,7 +37,7 @@ static shoora_body Bodies[8192];
 static u32 BodyCount = 0;
 static f32 BodyMass = 1.5f;
 static f32 PrevBodyMass = BodyMass;
-static f32 BodyRadius = 100.0f;
+static f32 BodyRadius = 50.0f;
 static f32 PrevBodyRadius = BodyRadius;
 
 static b32 isDebug = false;
@@ -166,8 +166,6 @@ ImGuiNewFrame()
 {
     ImGui::NewFrame();
 
-    // ImGui::ShowDemoWindow();
-
     f32 DesiredWidth = 400;
     ImGui::SetNextWindowPos(ImVec2(GlobalWindowSize.x - DesiredWidth, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(DesiredWidth, FLT_MAX));
@@ -295,24 +293,24 @@ struct unlit_shader_data
 };
 
 void
-InitializeCircle(const Shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 Mass)
+AddCircle(const Shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 Mass)
 {
     shoora_body *Body = &Bodies[BodyCount++];
-    Body->Initialize(GetColor(ColorU32), Pos, Mass, new shoora_shape_circle(Radius));
+    Body->Initialize(GetColor(ColorU32), Pos, Mass, std::make_unique<shoora_shape_circle>(Radius));
 }
 
 void
-InitializeBox(const Shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Height, f32 Mass)
+AddBox(const Shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Height, f32 Mass)
 {
     shoora_body *Body = &Bodies[BodyCount++];
-    Body->Initialize(GetColor(ColorU32), Pos, Mass, new shoora_shape_box(Width, Height));
+    Body->Initialize(GetColor(ColorU32), Pos, Mass, std::make_unique<shoora_shape_box>(Width, Height));
 }
 
 void
-InitializeTriangle(const Shu::vec2f Pos, u32 ColorU32, f32 Base, f32 Height, f32 Mass)
+AddTriangle(const Shu::vec2f Pos, u32 ColorU32, f32 Base, f32 Height, f32 Mass)
 {
     shoora_body *Body = &Bodies[BodyCount++];
-    Body->Initialize(GetColor(ColorU32), Pos, Mass, new shoora_shape_triangle(Base, Height));
+    Body->Initialize(GetColor(ColorU32), Pos, Mass, std::make_unique<shoora_shape_triangle>(Base, Height));
 }
 
 Shu::vec2f
@@ -377,7 +375,7 @@ UpdateBodies(f32 dt)
         Body->AddForce(BodyForce);
 #endif
 
-#if 0 // Drag Force
+#if 1 // Drag Force
         Shu::vec2f DragForce = force::GenerateDragForce(Body, 0.03f);
         Body->AddForce(DragForce);
 #endif
@@ -398,21 +396,13 @@ UpdateBodies(f32 dt)
 #endif
         Body->IntegrateLinear(dt);
 
+        Body->AddTorque(200.0f);
+        Body->IntegrateAngular(dt);
+
         Shu::rect2d Rect = Context->Camera.GetRect();
         f32 DampFactor = -1.0f;
         Body->KeepInView(Rect, DampFactor);
     }
-}
-
-static f32 angle = 0.0f;
-static f32 updateAngle(f32 deltaTime)
-{
-    angle += deltaTime * 100.0f;
-    if(angle >= 360.0f)
-    {
-        angle = 0.0f;
-    }
-    return angle;
 }
 
 void
@@ -484,7 +474,7 @@ DrawBodies(VkCommandBuffer CmdBuffer, f32 DeltaTime, b32 Wireframe)
     {
         shoora_body *Body = Bodies + BodyIndex;
 
-        Shu::mat4f Model = Shu::TRS(Body->Position, Body->Scale, 0.0f, Shu::Vec3f(0, 0, 1));
+        Shu::mat4f Model = Shu::TRS(Body->Position, Body->Scale, Body->Rotation*RAD_TO_DEG, Shu::Vec3f(0, 0, 1));
         unlit_shader_data Value = {.Model = Model, .Color = Body->Color};
 
         if(!Wireframe)
@@ -540,9 +530,8 @@ AddImpulseToBodies(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos,
 void
 InitScene()
 {
-    InitializeCircle(Shu::Vec2f(0.0f), 0xff00ffff, BodyRadius, BodyMass);
-    InitializeBox(Shu::Vec2f(300.0f, 0.0f), 0xff00ffff, BodyRadius, BodyRadius, BodyMass);
-    InitializeTriangle(Shu::Vec2f(300.0f, 300.0f), 0xff00ffff, BodyRadius, BodyRadius, BodyMass);
+    AddCircle(Shu::Vec2f(100.0f, 100.0f), 0xff00ffff, 100, 2);
+    AddCircle(Shu::Vec2f(200.0f, 200.0f), 0xff00ffff, 50, 1);
 }
 
 void

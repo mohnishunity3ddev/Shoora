@@ -5,12 +5,12 @@ namespace Shu
 {
     mat4f
     TRS(const Shu::vec3f &Pos, const Shu::vec3f &Scale,
-        const f32 RotationAngle, const Shu::vec3f &RotationAxis)
+        const f32 RotationAngleDegrees, const Shu::vec3f &RotationAxis)
     {
         Shu::mat4f Model = Shu::Mat4f(1.0f);
 
         Shu::Scale(Model, Scale);
-        Shu::Rotate(Model, Shu::QuatAngleAxis(RotationAngle, RotationAxis));
+        Shu::Rotate(Model, Shu::QuatAngleAxis(RotationAngleDegrees, RotationAxis));
         Shu::Translate(Model, Pos);
 
         return Model;

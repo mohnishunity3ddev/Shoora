@@ -2,18 +2,28 @@
 #include <float.h>
 
 void
-shoora_body::Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Mass, shoora_shape *Shape)
+shoora_body::Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Mass,
+                        std::unique_ptr<shoora_shape> Shape)
 {
     if(ABSOLUTE(Mass - FLT_EPSILON) <= 0.0f) Mass = 1.0f;
 
     this->Color = Color;
     this->Position = Shu::Vec3f(InitPos, 0.0f);
-    this->Mass = Mass;
-    this->InvMass = 1.0f / Mass;
-    this->Shape = Shape;
-    this->Scale = Shape->GetDim();
 
-    this->Velocity = this->SumForces = this->Acceleration = Shu::vec3f::Zero();
+    this->Rotation = 0.0f;
+    this->AngularVelocity = 0.0f;
+    this->AngularAcceleration = 0.0f;
+
+    this->Mass = Mass;
+    this->InvMass = (Mass > 0.0f) ? (1.0f/Mass) : 0.0f;
+    this->I = (Mass * Shape->GetMomentOfInertia());
+    this->InvI = (this->I > 0.0f) ? (1.0f/this->I) : 0.0f;
+
+    this->Shape = std::move(Shape);
+    this->Scale = (this->Shape)->GetDim();
+
+    this->SumForces = this->Velocity = this->Acceleration = Shu::vec3f::Zero();
+    this->SumTorques = 0.0f;
 }
 
 b32
@@ -31,22 +41,25 @@ shoora_body::CheckIfClicked(const Shu::vec2f &ClickedWorldPos)
 }
 
 void
-shoora_body::IntegrateAngular(f32 dt)
-{
-    this->AngularVelocity += this->AngularAcceleration * dt;
-    this->Rotation += this->AngularVelocity * dt;
-}
-
-void
 shoora_body::AddForce(const Shu::vec2f &Force)
 {
     this->SumForces += Shu::Vec3f(Force, 0.0f);
+}
+void
+shoora_body::AddTorque(f32 Torque)
+{
+    this->SumTorques += Torque;
 }
 
 void
 shoora_body::ClearForces()
 {
     this->SumForces = Shu::vec3f::Zero();
+}
+void
+shoora_body::ClearTorque()
+{
+    this->SumTorques = 0.0f;
 }
 
 void
@@ -62,6 +75,17 @@ shoora_body::IntegrateLinear(f32 DeltaTime)
     this->Position.z = 0.0f;
 
     ClearForces();
+}
+void
+shoora_body::IntegrateAngular(f32 dt)
+{
+    // alpha = Tau / Moment of Inertia
+    this->AngularAcceleration = this->SumTorques * InvI;
+
+    this->AngularVelocity += this->AngularAcceleration * dt;
+    this->Rotation += this->AngularVelocity * dt;
+
+    ClearTorque();
 }
 
 void
