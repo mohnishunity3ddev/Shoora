@@ -32,7 +32,7 @@ struct shoora_shape_circle : shoora_shape
         LogUnformatted("shoora_shape_circle destructor called!\n");
     }
 
-    u32 Radius;
+    f32 Radius;
     virtual f32 GetMomentOfInertia() const override;
     virtual Shu::vec3f GetDim() const override;
 };

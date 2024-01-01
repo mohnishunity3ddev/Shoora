@@ -56,6 +56,8 @@ void DrawRect(VkCommandBuffer CmdBuffer, const VkPipelineLayout &pipelineLayout,
               u32 Height, u32 ColorU32);
 void DrawSpring(VkCommandBuffer CmdBuffer, const VkPipelineLayout &pipelineLayout, const Shu::vec2f &startPos,
                 const Shu::vec2f &endPos, f32 restLength, f32 thickness, i32 nDivisions, u32 Color);
+void DrawCircle(VkCommandBuffer CmdBuffer, const VkPipelineLayout pipelineLayout, Shu::vec2f pos, f32 radius,
+                u32 ColorU32);
 
 #define GEOMETRY_PRIMITIVE_H
 #endif // GEOMETRY_PRIMITIVE_H

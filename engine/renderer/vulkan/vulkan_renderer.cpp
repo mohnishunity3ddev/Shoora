@@ -13,6 +13,7 @@
 #include <mesh/primitive/geometry_primitive.h>
 #include <physics/body.h>
 #include <physics/force.h>
+#include <physics/collision.h>
 #include <utils/utils.h>
 
 #ifdef WIN32
@@ -350,7 +351,7 @@ AddImpulseToBody(shoora_body *Body, const Shu::vec2f InImpulse)
 }
 
 inline void
-UpdateBodies(f32 dt)
+UpdateBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLayout, f32 dt)
 {
     for(i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
     {
@@ -362,7 +363,7 @@ UpdateBodies(f32 dt)
         if(dt > 1.0f/29.0f) { dt = 1.0f / 29.0f; }
 #endif
 
-#if 1
+#if 0 // Push Force through Keys
         Shu::vec2f gForce = Shu::Vec2f(0.0f, -9.8f*SHU_PIXELS_PER_METER*Body->Mass);
         Body->AddForce(gForce);
 
@@ -375,9 +376,14 @@ UpdateBodies(f32 dt)
         Body->AddForce(BodyForce);
 #endif
 
-#if 1 // Drag Force
+#if 0 // Drag Force
         Shu::vec2f DragForce = force::GenerateDragForce(Body, 0.03f);
         Body->AddForce(DragForce);
+#endif
+
+#if 0 // Wind Force
+        Shu::vec2f Wind = Shu::Vec2f(20.0f * SHU_PIXELS_PER_METER, 0.0f);
+        Body->AddForce(Wind);
 #endif
 
 #if 0 // Gravitation Force
@@ -394,10 +400,35 @@ UpdateBodies(f32 dt)
         Shu::vec2f FrictionForce = force::GenerateFrictionForce(Body, 10.0f*SHU_PIXELS_PER_METER);
         Body->AddForce(FrictionForce);
 #endif
+
         Body->IntegrateLinear(dt);
 
-        Body->AddTorque(200.0f);
-        Body->IntegrateAngular(dt);
+        for (i32 i = 0; i < BodyCount; ++i)
+        {
+            Bodies[i].IsColliding = false;
+        }
+
+        // NOTE: Check for collision with the rest of the rigidbodies present in the scene.
+        for(i32 i = 0; i < (BodyCount-1); ++i)
+        {
+            shoora_body *A = Bodies + i;
+            for(i32 j = (i+1); j < BodyCount; ++j)
+            {
+                shoora_body *B = Bodies + j;
+                contact Contact;
+                if(collision2d::IsColliding(A, B, Contact))
+                {
+                    DrawCircle(CmdBuffer, PipelineLayout, Contact.Start.xy, 3, 0xffff00ff);
+                    DrawCircle(CmdBuffer, PipelineLayout, Contact.End.xy, 3, 0xffff00ff);
+
+                    Shu::vec2f ContactNormalLineEnd = Shu::Vec2f(Contact.Start.x + Contact.Normal.x*15.0f,
+                                                                 Contact.Start.y + Contact.Normal.y*15.0f);
+                    DrawLine(CmdBuffer, PipelineLayout, Contact.Start.xy, ContactNormalLineEnd, 0xffff00ff, 2);
+                    A->IsColliding = true;
+                    B->IsColliding = true;
+                }
+            }
+        }
 
         Shu::rect2d Rect = Context->Camera.GetRect();
         f32 DampFactor = -1.0f;
@@ -406,7 +437,8 @@ UpdateBodies(f32 dt)
 }
 
 void
-DrawBodyWireframe(const VkCommandBuffer cmdBuffer, shoora_body *body, const Shu::mat4f &model, f32 thickness)
+DrawBodyWireframe(const VkCommandBuffer cmdBuffer, shoora_body *body, const Shu::mat4f &model, f32 thickness,
+                  u32 color)
 {
     shoora_mesh_filter *mesh = &body->Shape->Primitive->MeshFilter;
     shoora_primitive_type Type = body->Shape->Primitive->PrimitiveType;
@@ -419,12 +451,12 @@ DrawBodyWireframe(const VkCommandBuffer cmdBuffer, shoora_body *body, const Shu:
 
             Shu::vec2f p0 = (model * pos0).xy;
             Shu::vec2f p1 = (model * pos1).xy;
-            DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, 2.5f);
+            DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, 2.5f);
         }
 
         Shu::vec2f p0 = (model * mesh->Vertices[mesh->VertexCount - 1].Pos).xy;
         Shu::vec2f p1 = (model * mesh->Vertices[1].Pos).xy;
-        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, thickness);
+        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
     }
     else if(Type == shoora_primitive_type::RECT_2D)
     {
@@ -432,16 +464,16 @@ DrawBodyWireframe(const VkCommandBuffer cmdBuffer, shoora_body *body, const Shu:
 
         Shu::vec2f p0 = (model * mesh->Vertices[2].Pos).xy;
         Shu::vec2f p1 = (model * mesh->Vertices[1].Pos).xy;
-        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, thickness);
+        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
         p0 = (model * mesh->Vertices[1].Pos).xy;
         p1 = (model * mesh->Vertices[0].Pos).xy;
-        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, thickness);
+        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
         p0 = (model * mesh->Vertices[0].Pos).xy;
         p1 = (model * mesh->Vertices[3].Pos).xy;
-        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, thickness);
+        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
         p0 = (model * mesh->Vertices[3].Pos).xy;
         p1 = (model * mesh->Vertices[2].Pos).xy;
-        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, thickness);
+        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
     }
     else if (Type == shoora_primitive_type::TRIANGLE)
     {
@@ -449,18 +481,18 @@ DrawBodyWireframe(const VkCommandBuffer cmdBuffer, shoora_body *body, const Shu:
 
         Shu::vec2f p0 = (model * mesh->Vertices[1].Pos).xy;
         Shu::vec2f p1 = (model * mesh->Vertices[0].Pos).xy;
-        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, thickness);
+        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
         p0 = (model * mesh->Vertices[2].Pos).xy;
         p1 = (model * mesh->Vertices[1].Pos).xy;
-        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, thickness);
+        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
         p0 = (model * mesh->Vertices[0].Pos).xy;
         p1 = (model * mesh->Vertices[2].Pos).xy;
-        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, 0xffff0000, thickness);
+        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
     }
 }
 
 void
-DrawBodies(VkCommandBuffer CmdBuffer, f32 DeltaTime, b32 Wireframe)
+DrawBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLayout, f32 DeltaTime, b32 Wireframe)
 {
     if(Wireframe && !isDebug)
     {
@@ -474,8 +506,11 @@ DrawBodies(VkCommandBuffer CmdBuffer, f32 DeltaTime, b32 Wireframe)
     {
         shoora_body *Body = Bodies + BodyIndex;
 
+        u32 ColorU32 = Body->IsColliding ? 0xffff0000 : 0xffffffff;
+        Shu::vec3f Color = GetColor(ColorU32);
+
         Shu::mat4f Model = Shu::TRS(Body->Position, Body->Scale, Body->Rotation*RAD_TO_DEG, Shu::Vec3f(0, 0, 1));
-        unlit_shader_data Value = {.Model = Model, .Color = Body->Color};
+        unlit_shader_data Value = {.Model = Model, .Color = Color};
 
         if(!Wireframe)
         {
@@ -485,14 +520,14 @@ DrawBodies(VkCommandBuffer CmdBuffer, f32 DeltaTime, b32 Wireframe)
         }
         else
         {
-            DrawBodyWireframe(CmdBuffer, Body, Model, 2.5f);
+            DrawBodyWireframe(CmdBuffer, Body, Model, 2.5f, ColorU32);
         }
     }
 }
 
 void
-AddImpulseToBodies(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos,
-                      const Shu::vec2f &CurrentMouseWorldPos)
+UpdateBodiesOnInput(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos,
+                    const Shu::vec2f &CurrentMouseWorldPos)
 {
     for(u32 BodyIndex = 0;
         BodyIndex < BodyCount;
@@ -500,28 +535,39 @@ AddImpulseToBodies(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos,
     {
         shoora_body *Body = Bodies + BodyIndex;
 
-        if(!MouseTracking && Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, SHU_KEYSTATE_DOWN))
+        if(Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, SHU_KEYSTATE_DOWN))
         {
-            if(Body->CheckIfClicked(MouseToWorld(CurrentMousePos)))
+            if(!MouseTracking)
             {
-                MouseTracking = true;
-                MouseInitialDownPos = ToVec2(Body->Position);
-                BodyToMove = Body;
+                if(Body->CheckIfClicked(MouseToWorld(CurrentMousePos)))
+                {
+                    MouseTracking = true;
+                    MouseInitialDownPos = Shu::ToVec2(Body->Position);
+                    BodyToMove = Body;
+                }
+            }
+            else if(BodyToMove != nullptr)
+            {
+                BodyToMove->Position = Shu::Vec3f(CurrentMouseWorldPos, BodyToMove->Position.z);
             }
         }
 
+#if 0
         if(MouseTracking)
         {
             DrawLine(CmdBuffer, Context->UnlitPipeline.Layout, MouseInitialDownPos, CurrentMouseWorldPos,
                      0xffff0000, 3.0f);
         }
+#endif
     }
 
     if (MouseTracking && Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, SHU_KEYSTATE_RELEASE))
     {
         ASSERT(BodyToMove != nullptr);
+#if 0
         Shu::vec2f Force = (MouseInitialDownPos - CurrentMouseWorldPos);
         AddImpulseToBody(BodyToMove, Force);
+#endif
         MouseTracking = false;
         BodyToMove = nullptr;
     }
@@ -531,12 +577,12 @@ void
 InitScene()
 {
     AddCircle(Shu::Vec2f(100.0f, 100.0f), 0xff00ffff, 100, 2);
-    AddCircle(Shu::Vec2f(200.0f, 200.0f), 0xff00ffff, 50, 1);
+    AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1);
 }
 
 void
-DrawScene(VkCommandBuffer CmdBuffer, u32 SwapchainImageIndex, const Shu::vec2f CurrentMousePos,
-          const Shu::vec2f CurrentMouseWorldPos, f32 DeltaTime)
+DrawScene(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLayout, u32 SwapchainImageIndex,
+          const Shu::vec2f CurrentMousePos, const Shu::vec2f CurrentMouseWorldPos, f32 DeltaTime)
 {
     vkCmdBindDescriptorSets(CmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Layout, 0, 1,
                             &Context->UnlitSets[SwapchainImageIndex], 0, nullptr);
@@ -546,9 +592,9 @@ DrawScene(VkCommandBuffer CmdBuffer, u32 SwapchainImageIndex, const Shu::vec2f C
     vkCmdBindVertexBuffers(CmdBuffer, 0, 1, shoora_primitive_collection::GetVertexBufferHandlePtr(), offsets);
     vkCmdBindIndexBuffer(CmdBuffer, shoora_primitive_collection::GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
 
-    AddImpulseToBodies(CmdBuffer, CurrentMousePos, CurrentMouseWorldPos);
-    UpdateBodies(DeltaTime);
-    DrawBodies(CmdBuffer, GlobalDeltaTime, WireframeMode);
+    UpdateBodiesOnInput(CmdBuffer, CurrentMousePos, CurrentMouseWorldPos);
+    UpdateBodies(CmdBuffer, PipelineLayout, DeltaTime);
+    DrawBodies(CmdBuffer, PipelineLayout, GlobalDeltaTime, WireframeMode);
 }
 
 void
@@ -1017,7 +1063,8 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 #endif
 
 #if UNLIT_PIPELINE
-        DrawScene(DrawCmdBuffer, ImageIndex, CurrentMousePos, CurrentMouseWorldPos, GlobalDeltaTime);
+        DrawScene(DrawCmdBuffer, Context->UnlitPipeline.Layout, ImageIndex, CurrentMousePos, CurrentMouseWorldPos,
+                  GlobalDeltaTime);
 #endif
 
         ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);

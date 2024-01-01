@@ -407,6 +407,23 @@ DrawRect(VkCommandBuffer CmdBuffer, const VkPipelineLayout &pipelineLayout, i32 
 }
 
 void
+DrawCircle(VkCommandBuffer CmdBuffer, const VkPipelineLayout pipelineLayout, Shu::vec2f pos, f32 radius,
+           u32 ColorU32)
+{
+    Shu::mat4f Model = Shu::Mat4f(1.0f);
+    Shu::Scale(Model, Shu::Vec3f(radius, radius, 1.0f));
+    Shu::Translate(Model, Shu::Vec3f(pos, 0.0f));
+
+    shoora_primitive *Primitive = shoora_primitive_collection::GetPrimitive(shoora_primitive_type::CIRCLE);
+    shoora_primitive_shader_data Value = {.Model = Model, .Color = GetColor(ColorU32)};
+
+    vkCmdPushConstants(CmdBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+                       sizeof(shoora_primitive_shader_data), &Value);
+    vkCmdDrawIndexed(CmdBuffer, Primitive->MeshFilter.IndexCount, 1, Primitive->IndexOffset,
+                     Primitive->VertexOffset, 0);
+}
+
+void
 DrawSpring(VkCommandBuffer CmdBuffer, const VkPipelineLayout &pipelineLayout, const Shu::vec2f &startPos,
            const Shu::vec2f &endPos, f32 restLength, f32 thickness, i32 nDivisions, u32 Color)
 {

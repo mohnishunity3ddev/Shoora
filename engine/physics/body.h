@@ -10,6 +10,8 @@
 
 struct shoora_body
 {
+    b32 IsColliding = false;
+
     // linear motion
     Shu::vec3f Position;
     Shu::vec3f Velocity;
@@ -43,7 +45,7 @@ struct shoora_body
 
     void ClearForces();
     void ClearTorque();
-    
+
     void IntegrateLinear(f32 DeltaTime);
     void IntegrateAngular(f32 DeltaTime);
 };

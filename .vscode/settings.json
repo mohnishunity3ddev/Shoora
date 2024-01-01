@@ -1,8 +1,12 @@
 {
-    "editor.fontFamily": "'Maple Mono NF', 'comic mono', 'comic code demo regular', 'CaskaydiaCove NF Mono', 'IosevkaTerm Nerd Font Mono', 'JetBrainsMono Nerd Font Mono'",
+    "editor.fontFamily": "'comic code ligatures regular', 'maple mono nf', 'firacode nerd font mono', 'operator mono medium', 'monolisa nerd font mono', 'IosevkaTerm Nerd Font Mono', 'CaskaydiaCove NF Mono', 'JetBrainsMono Nerd Font Mono'",
     "editor.fontSize": 14,
+    // "editor.lineHeight": 25,
+    // "editor.letterSpacing": 0.5,
     "editor.fontLigatures": true,
     "editor.fontWeight": "normal",
+    "editor.renderWhitespace": "selection",
+
     // "editor.letterSpacing": 1,
 
     "terminal.integrated.profiles.windows": {
@@ -18,6 +22,10 @@
         }
     },
     "terminal.integrated.defaultProfile.windows": "Default Profile",
+    "terminal.integrated.fontFamily": "'comic code ligatures regular', 'JetBrainsMono Nerd Font Mono', 'firacode nerd font mono',  'caskaydiacove nf mono'",
+    "terminal.integrated.fontSize": 14,
+    "terminal.integrated.fontWeight":"bold",
+    "debug.console.fontFamily": "'comic code ligatures regular'",
 
     "files.associations": {
         "chrono": "cpp",
@@ -46,6 +54,7 @@
         "cstdlib": "cpp",
         "cstring": "cpp",
         "ctime": "cpp",
+
         "cwchar": "cpp",
         "deque": "cpp",
         "exception": "cpp",
@@ -110,24 +119,24 @@
     "files.trimTrailingWhitespace": true,
     "editor.renderLineHighlight": "all",
     "workbench.colorCustomizations": {
-        "activityBar.activeBackground": "#1a1a25",
-        "activityBar.background": "#1a1a25",
+        "activityBar.activeBackground": "#4d4d4d",
+        "activityBar.background": "#4d4d4d",
         "activityBar.foreground": "#e7e7e7",
         "activityBar.inactiveForeground": "#e7e7e799",
-        "activityBarBadge.background": "#704f4f",
+        "activityBarBadge.background": "#308f30",
         "activityBarBadge.foreground": "#e7e7e7",
         "commandCenter.border": "#e7e7e799",
-        "sash.hoverBorder": "#1a1a25",
-        "statusBar.background": "#050507",
+        "sash.hoverBorder": "#4d4d4d",
+        "statusBar.background": "#343434",
         "statusBar.foreground": "#e7e7e7",
-        "statusBarItem.hoverBackground": "#1a1a25",
-        "statusBarItem.remoteBackground": "#050507",
+        "statusBarItem.hoverBackground": "#4d4d4d",
+        "statusBarItem.remoteBackground": "#343434",
         "statusBarItem.remoteForeground": "#e7e7e7",
-        "titleBar.activeBackground": "#050507",
+        "titleBar.activeBackground": "#343434",
         "titleBar.activeForeground": "#e7e7e7",
-        "titleBar.inactiveBackground": "#05050799",
+        "titleBar.inactiveBackground": "#34343499",
         "titleBar.inactiveForeground": "#e7e7e799",
         "editor.lineHighlightBorder": "#D0FEEC00"
     },
-    "peacock.color": "#050507",
+    "peacock.color": "#343434",
 }
