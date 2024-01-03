@@ -49,6 +49,7 @@ namespace Shu
     template <typename T> SHU_EXPORT T Dot(const vec2<T>& A, const vec2<T>& B);
     template <typename T> SHU_EXPORT vec2<T> operator+(const vec2<T>& A, const vec2<T>& B);
     template <typename T> SHU_EXPORT vec2<T> operator-(const vec2<T>& A, const vec2<T>& B);
+    template <typename T> SHU_EXPORT vec2<T> operator-(const vec2<T>& A);
     template <typename T> SHU_EXPORT vec2<T> operator*(const vec2<T>& A, T B);
     template <typename T> SHU_EXPORT vec2<T> operator*(T A, const vec2<T> &B);
     template <typename T> SHU_EXPORT vec2<T> operator/(const vec2<T>& A, const vec2<T>& B);
@@ -230,6 +231,14 @@ namespace Shu
     operator-(const vec2<T>& A, const vec2<T>& B)
     {
         vec2<T> Result = {A.x - B.x, A.y - B.y};
+        return Result;
+    }
+
+    template <typename T>
+    vec2<T>
+    operator-(const vec2<T> &A)
+    {
+        vec2<T> Result = {-A.x, -A.y};
         return Result;
     }
 

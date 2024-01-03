@@ -294,24 +294,26 @@ struct unlit_shader_data
 };
 
 void
-AddCircle(const Shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 Mass)
+AddCircle(const Shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 Mass, f32 Restitution)
 {
     shoora_body *Body = &Bodies[BodyCount++];
-    Body->Initialize(GetColor(ColorU32), Pos, Mass, std::make_unique<shoora_shape_circle>(Radius));
+    Body->Initialize(GetColor(ColorU32), Pos, Mass, Restitution, std::make_unique<shoora_shape_circle>(Radius));
 }
 
 void
-AddBox(const Shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Height, f32 Mass)
+AddBox(const Shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Height, f32 Mass, f32 Restitution)
 {
     shoora_body *Body = &Bodies[BodyCount++];
-    Body->Initialize(GetColor(ColorU32), Pos, Mass, std::make_unique<shoora_shape_box>(Width, Height));
+    Body->Initialize(GetColor(ColorU32), Pos, Mass, Restitution,
+                     std::make_unique<shoora_shape_box>(Width, Height));
 }
 
 void
-AddTriangle(const Shu::vec2f Pos, u32 ColorU32, f32 Base, f32 Height, f32 Mass)
+AddTriangle(const Shu::vec2f Pos, u32 ColorU32, f32 Base, f32 Height, f32 Mass, f32 Restitution)
 {
     shoora_body *Body = &Bodies[BodyCount++];
-    Body->Initialize(GetColor(ColorU32), Pos, Mass, std::make_unique<shoora_shape_triangle>(Base, Height));
+    Body->Initialize(GetColor(ColorU32), Pos, Mass, Restitution,
+                     std::make_unique<shoora_shape_triangle>(Base, Height));
 }
 
 Shu::vec2f
@@ -363,10 +365,12 @@ UpdateBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineL
         if(dt > 1.0f/29.0f) { dt = 1.0f / 29.0f; }
 #endif
 
-#if 0 // Push Force through Keys
-        Shu::vec2f gForce = Shu::Vec2f(0.0f, -9.8f*SHU_PIXELS_PER_METER*Body->Mass);
-        Body->AddForce(gForce);
+#if 1 // Weight Force
+        Shu::vec2f WeightForce = Shu::Vec2f(0.0f, -9.8f*SHU_PIXELS_PER_METER*Body->Mass);
+        Body->AddForce(WeightForce);
+#endif
 
+#if 0 // Push Force through Keys
         Shu::vec2f PushForce = Shu::Vec2f(1.0f, 1.0f)*(SHU_PIXELS_PER_METER*100);
         Shu::vec2f BodyForce = Shu::vec2f::Zero();
         if(Platform_GetKeyInputState(SU_UPARROW, KeyState::SHU_KEYSTATE_DOWN)) { BodyForce.y += PushForce.y; }
@@ -418,12 +422,15 @@ UpdateBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineL
                 contact Contact;
                 if(collision2d::IsColliding(A, B, Contact))
                 {
-                    DrawCircle(CmdBuffer, PipelineLayout, Contact.Start.xy, 3, 0xffff00ff);
-                    DrawCircle(CmdBuffer, PipelineLayout, Contact.End.xy, 3, 0xffff00ff);
-
+                    // NOTE: Visualizing the Collision Contact Info.
+                    DrawCircle(CmdBuffer, PipelineLayout, Contact.Start.xy, 3, 0xff00ffff);
+                    DrawCircle(CmdBuffer, PipelineLayout, Contact.End.xy, 3, 0xffff0000);
                     Shu::vec2f ContactNormalLineEnd = Shu::Vec2f(Contact.Start.x + Contact.Normal.x*15.0f,
                                                                  Contact.Start.y + Contact.Normal.y*15.0f);
                     DrawLine(CmdBuffer, PipelineLayout, Contact.Start.xy, ContactNormalLineEnd, 0xffff00ff, 2);
+
+                    Contact.ResolveCollision();
+
                     A->IsColliding = true;
                     B->IsColliding = true;
                 }
@@ -576,8 +583,12 @@ UpdateBodiesOnInput(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos
 void
 InitScene()
 {
-    AddCircle(Shu::Vec2f(100.0f, 100.0f), 0xff00ffff, 100, 2);
-    AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1);
+    AddCircle(Shu::Vec2f(100.0f, 100.0f), 0xff00ffff, 200, 0, 1.0f);
+    AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
+    AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
+    AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
+    AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
+    AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
 }
 
 void

@@ -1,6 +1,6 @@
 {
-    "editor.fontFamily": "'comic code ligatures regular', 'maple mono nf', 'firacode nerd font mono', 'operator mono medium', 'monolisa nerd font mono', 'IosevkaTerm Nerd Font Mono', 'CaskaydiaCove NF Mono', 'JetBrainsMono Nerd Font Mono'",
-    "editor.fontSize": 14,
+    "editor.fontFamily": "'comic code ligatures regular', 'maple mono nf', 'firacode nerd font mono', 'operator mono medium', 'monolisa nerd font mono', 'IosevkaTerm Nerd Font Mono', 'CaskaydiaCove NF Mono', 'JetBrainsMono nerd font mono'",
+    "editor.fontSize": 13,
     // "editor.lineHeight": 25,
     // "editor.letterSpacing": 0.5,
     "editor.fontLigatures": true,
@@ -24,7 +24,7 @@
     "terminal.integrated.defaultProfile.windows": "Default Profile",
     "terminal.integrated.fontFamily": "'comic code ligatures regular', 'JetBrainsMono Nerd Font Mono', 'firacode nerd font mono',  'caskaydiacove nf mono'",
     "terminal.integrated.fontSize": 14,
-    "terminal.integrated.fontWeight":"bold",
+    "terminal.integrated.fontWeight":"normal",
     "debug.console.fontFamily": "'comic code ligatures regular'",
 
     "files.associations": {

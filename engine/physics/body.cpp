@@ -2,10 +2,11 @@
 #include <float.h>
 
 void
-shoora_body::Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Mass,
+shoora_body::Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Mass, f32 Restitution,
                         std::unique_ptr<shoora_shape> Shape)
 {
-    if(ABSOLUTE(Mass - FLT_EPSILON) <= 0.0f) Mass = 1.0f;
+    ASSERT(Mass >= 0.0f);
+    ASSERT(Restitution > 0.0f && Restitution <= 1.0f);
 
     this->Color = Color;
     this->Position = Shu::Vec3f(InitPos, 0.0f);
@@ -14,10 +15,14 @@ shoora_body::Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 
     this->AngularVelocity = 0.0f;
     this->AngularAcceleration = 0.0f;
 
+    this->CoeffRestitution = 1.0f;
+
     this->Mass = Mass;
-    this->InvMass = (Mass > 0.0f) ? (1.0f/Mass) : 0.0f;
+    // Epsilon is an infinitesimally small value.
+    this->InvMass = (this->Mass < FLT_EPSILON) ? 0.0f : (1.0f/this->Mass);
     this->I = (Mass * Shape->GetMomentOfInertia());
-    this->InvI = (this->I > 0.0f) ? (1.0f/this->I) : 0.0f;
+    ASSERT(this->I >= 0.0f);
+    this->InvI = (this->I < FLT_EPSILON) ? 0.0f : (1.0f/this->I);
 
     this->Shape = std::move(Shape);
     this->Scale = (this->Shape)->GetDim();
@@ -38,6 +43,24 @@ shoora_body::CheckIfClicked(const Shu::vec2f &ClickedWorldPos)
     }
 
     return Result;
+}
+
+b32
+shoora_body::IsStatic() const
+{
+    b32 Result = (ABSOLUTE(this->InvMass - 0.0f) < FLT_EPSILON);
+    return Result;
+}
+
+// NOTE: Impulse denotes a change in velocity for the body.
+void
+shoora_body::ApplyImpulse(const Shu::vec2f &Impulse)
+{
+    if(this->IsStatic()) {
+        return;
+    }
+
+    this->Velocity += Shu::Vec3f(Impulse * this->InvMass, 0.0f);
 }
 
 void
@@ -65,6 +88,10 @@ shoora_body::ClearTorque()
 void
 shoora_body::IntegrateLinear(f32 DeltaTime)
 {
+    if(this->IsStatic()) {
+        return;
+    }
+
     this->Acceleration = this->SumForces * InvMass;
     this->Acceleration.z = 0.0f;
 
@@ -79,6 +106,10 @@ shoora_body::IntegrateLinear(f32 DeltaTime)
 void
 shoora_body::IntegrateAngular(f32 dt)
 {
+    if(this->IsStatic()) {
+        return;
+    }
+
     // alpha = Tau / Moment of Inertia
     this->AngularAcceleration = this->SumTorques * InvI;
 

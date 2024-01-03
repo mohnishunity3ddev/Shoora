@@ -21,6 +21,7 @@ struct shoora_body
     f32 Rotation;
     f32 AngularVelocity;
     f32 AngularAcceleration;
+    f32 CoeffRestitution;
 
     Shu::vec3f SumForces;
     f32 SumTorques;
@@ -38,8 +39,13 @@ struct shoora_body
     b32 CheckIfClicked(const Shu::vec2f &ClickedWorldPos);
     void KeepInView(const Shu::rect2d &ViewBounds, f32 DampFactor);
 
-    void Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Mass, std::unique_ptr<shoora_shape> Shape);
+    void Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Mass, f32 Restitution,
+                    std::unique_ptr<shoora_shape> Shape);
 
+    // NOTE: returns true if the body is static. Meaning it has infinite mass.
+    b32 IsStatic() const;
+
+    void ApplyImpulse(const Shu::vec2f &Impulse);
     void AddForce(const Shu::vec2f &Force);
     void AddTorque(f32 Torque);
 

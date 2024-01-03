@@ -5,6 +5,7 @@ collision2d::IsColliding(shoora_body *A, shoora_body *B, contact &Contact)
 {
     b32 Result = false;
 
+
     b32 isBodyACircle = (A->Shape->Type == shoora_primitive_type::CIRCLE);
     b32 isBodyBCircle = (B->Shape->Type == shoora_primitive_type::CIRCLE);
     if(isBodyACircle && isBodyBCircle)

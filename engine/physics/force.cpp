@@ -81,6 +81,6 @@ force::GenerateSpringForce(const shoora_body *pA, const shoora_body *pB, f32 Res
     f32 SpringMagnitude = -k * displacement;
 
     Shu::vec2f SpringForce = SpringDirection * SpringMagnitude;
-
+    
     return SpringForce;
 }
