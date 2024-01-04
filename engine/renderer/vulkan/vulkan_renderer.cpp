@@ -510,39 +510,37 @@ DrawBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLay
     auto bottom = Shu::Vec2f(camRect.x, camRect.y - (camRect.height / 2));
     DrawLine(CmdBuffer, PipelineLayout, top, bottom, 0xff313131, 1.0f);
 
-    shoora_vertex_info *BoxVertices = shoora_primitive_collection::GetPrimitive(RECT_2D)->MeshFilter.Vertices;
-    shoora_mesh_filter *CircleMeshFilter = &shoora_primitive_collection::GetPrimitive(CIRCLE)->MeshFilter;
-    shoora_body *bodyA = Bodies;
-    auto modelA = Shu::TRS(bodyA->Position, bodyA->Scale, bodyA->RotationRadians*RAD_TO_DEG, Shu::Vec3f(0, 0, 1));
-    std::vector<Shu::vec3f> verticesA;
-    verticesA.reserve(4);
-    verticesA.emplace_back((modelA * BoxVertices[0].Pos).xyz);
-    verticesA.emplace_back((modelA * BoxVertices[1].Pos).xyz);
-    verticesA.emplace_back((modelA * BoxVertices[2].Pos).xyz);
-    verticesA.emplace_back((modelA * BoxVertices[3].Pos).xyz);
-    shoora_body *bodyB = Bodies + 1;
-    auto modelB = Shu::TRS(bodyB->Position, bodyB->Scale, bodyB->RotationRadians*RAD_TO_DEG, Shu::Vec3f(0, 0, 1));
-    std::vector<Shu::vec3f> verticesB;
-    verticesB.reserve(CircleMeshFilter->VertexCount);
-    for (i32 i = 0; i < CircleMeshFilter->VertexCount; ++i) {
-        verticesB.emplace_back((modelB * CircleMeshFilter->Vertices[i].Pos).xyz);
-    }
-    std::vector<Shu::vec3f> minkowksiVertices;
-    u32 colors[4] = {0xffff0000, 0xff00ff00, 0xff0000ff, 0xffffff00};
-    for (i32 i = 0; i < CircleMeshFilter->VertexCount; ++i)
+
+    std::vector<Shu::vec3f> vertices[2];
+    for (i32 i = 0; i < 2; ++i)
     {
-        auto vb = verticesB[i];
-        for (i32 j = 0; j < 4; ++j)
+        shoora_body *body = Bodies + i;
+        auto *meshFilter = &shoora_primitive_collection::GetPrimitive(body->Shape->Type)->MeshFilter;
+        vertices[i].reserve(meshFilter->VertexCount);
+        auto model = Shu::TRS(body->Position, body->Scale, body->RotationRadians * RAD_TO_DEG, Shu::Vec3f(0, 0, 1));
+        for (i32 j = 0; j < meshFilter->VertexCount; ++j)
+        {
+            vertices[i].emplace_back((model * meshFilter->Vertices[j].Pos).xyz);
+        }
+    }
+
+    std::vector<Shu::vec3f> minkowksiVertices;
+    minkowksiVertices.reserve(vertices[0].size() * vertices[1].size());
+    u32 colors[4] = {0xffff0000, 0xff00ff00, 0xff0000ff, 0xffffff00};
+    for (i32 i = 0; i < vertices[1].size(); ++i)
+    {
+        auto vb = vertices[1][i];
+        for (i32 j = 0; j < vertices[0].size(); ++j)
         {
             auto o = Shu::Vec3f(0.0f);
-            auto line = verticesA[j] + vb;
+            auto line = vertices[0][j] - vb;
             line = Shu::Normalize(line) * (line.Magnitude());
             auto va = o + line;
 
             DrawLine(CmdBuffer, PipelineLayout, o.xy, va.xy, colors[i], 1.4f);
-            DrawLine(CmdBuffer, PipelineLayout, vb.xy, verticesA[j].xy, colors[i], .4f);
+            DrawLine(CmdBuffer, PipelineLayout, vb.xy, vertices[0][j].xy, colors[i], .4f);
             DrawCircle(CmdBuffer, PipelineLayout, va.xy, 5.0f, 0xffff0000);
-            minkowksiVertices.push_back(va);
+            minkowksiVertices.emplace_back(va);
         }
     }
 
@@ -639,7 +637,8 @@ InitScene()
     AddBox(Shu::Vec2f(100, 100), 0xffffffff, 100, 200, 1.0f, 1.0f);
     Bodies[0].RotationRadians = 45.0f*DEG_TO_RAD;
 
-    AddCircle(Shu::Vec2f(300, 100), 0xffffffff, 100, 1.0f, 1.0f);
+    AddBox(Shu::Vec2f(300, 100), 0xffffffff, 100, 50, 1.0f, 1.0f);
+    Bodies[1].RotationRadians = -30.0f*DEG_TO_RAD;
 }
 
 void
@@ -653,7 +652,7 @@ DrawScene(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLayo
     VkDeviceSize offsets[1] = {0};
     vkCmdBindVertexBuffers(CmdBuffer, 0, 1, shoora_primitive_collection::GetVertexBufferHandlePtr(), offsets);
     vkCmdBindIndexBuffer(CmdBuffer, shoora_primitive_collection::GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
-    
+
     UpdateBodiesOnInput(CmdBuffer, CurrentMousePos, CurrentMouseWorldPos);
     UpdateBodies(CmdBuffer, PipelineLayout, DeltaTime);
     DrawBodies(CmdBuffer, PipelineLayout, GlobalDeltaTime, WireframeMode);
