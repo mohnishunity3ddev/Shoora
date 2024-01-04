@@ -511,29 +511,31 @@ DrawBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLay
     DrawLine(CmdBuffer, PipelineLayout, top, bottom, 0xff313131, 1.0f);
 
     shoora_vertex_info *BoxVertices = shoora_primitive_collection::GetPrimitive(RECT_2D)->MeshFilter.Vertices;
+    shoora_mesh_filter *CircleMeshFilter = &shoora_primitive_collection::GetPrimitive(CIRCLE)->MeshFilter;
     shoora_body *bodyA = Bodies;
     auto modelA = Shu::TRS(bodyA->Position, bodyA->Scale, bodyA->RotationRadians*RAD_TO_DEG, Shu::Vec3f(0, 0, 1));
     std::vector<Shu::vec3f> verticesA;
-    verticesA.push_back((modelA * BoxVertices[0].Pos).xyz);
-    verticesA.push_back((modelA * BoxVertices[1].Pos).xyz);
-    verticesA.push_back((modelA * BoxVertices[2].Pos).xyz);
-    verticesA.push_back((modelA * BoxVertices[3].Pos).xyz);
+    verticesA.reserve(4);
+    verticesA.emplace_back((modelA * BoxVertices[0].Pos).xyz);
+    verticesA.emplace_back((modelA * BoxVertices[1].Pos).xyz);
+    verticesA.emplace_back((modelA * BoxVertices[2].Pos).xyz);
+    verticesA.emplace_back((modelA * BoxVertices[3].Pos).xyz);
     shoora_body *bodyB = Bodies + 1;
     auto modelB = Shu::TRS(bodyB->Position, bodyB->Scale, bodyB->RotationRadians*RAD_TO_DEG, Shu::Vec3f(0, 0, 1));
     std::vector<Shu::vec3f> verticesB;
-    verticesB.push_back((modelB * BoxVertices[0].Pos).xyz);
-    verticesB.push_back((modelB * BoxVertices[1].Pos).xyz);
-    verticesB.push_back((modelB * BoxVertices[2].Pos).xyz);
-    verticesB.push_back((modelB * BoxVertices[3].Pos).xyz);
+    verticesB.reserve(CircleMeshFilter->VertexCount);
+    for (i32 i = 0; i < CircleMeshFilter->VertexCount; ++i) {
+        verticesB.emplace_back((modelB * CircleMeshFilter->Vertices[i].Pos).xyz);
+    }
     std::vector<Shu::vec3f> minkowksiVertices;
     u32 colors[4] = {0xffff0000, 0xff00ff00, 0xff0000ff, 0xffffff00};
-    for (i32 i = 0; i < 4; ++i)
+    for (i32 i = 0; i < CircleMeshFilter->VertexCount; ++i)
     {
         auto vb = verticesB[i];
         for (i32 j = 0; j < 4; ++j)
         {
             auto o = Shu::Vec3f(0.0f);
-            auto line = verticesA[j] - vb;
+            auto line = verticesA[j] + vb;
             line = Shu::Normalize(line) * (line.Magnitude());
             auto va = o + line;
 
@@ -636,8 +638,8 @@ InitScene()
 
     AddBox(Shu::Vec2f(100, 100), 0xffffffff, 100, 200, 1.0f, 1.0f);
     Bodies[0].RotationRadians = 45.0f*DEG_TO_RAD;
-    AddBox(Shu::Vec2f(300, 100), 0xffffffff, 100, 100, 1.0f, 1.0f);
-    Bodies[1].RotationRadians = -30.0f*DEG_TO_RAD;
+
+    AddCircle(Shu::Vec2f(300, 100), 0xffffffff, 100, 1.0f, 1.0f);
 }
 
 void
@@ -651,7 +653,7 @@ DrawScene(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLayo
     VkDeviceSize offsets[1] = {0};
     vkCmdBindVertexBuffers(CmdBuffer, 0, 1, shoora_primitive_collection::GetVertexBufferHandlePtr(), offsets);
     vkCmdBindIndexBuffer(CmdBuffer, shoora_primitive_collection::GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
-
+    
     UpdateBodiesOnInput(CmdBuffer, CurrentMousePos, CurrentMouseWorldPos);
     UpdateBodies(CmdBuffer, PipelineLayout, DeltaTime);
     DrawBodies(CmdBuffer, PipelineLayout, GlobalDeltaTime, WireframeMode);
