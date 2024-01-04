@@ -11,7 +11,7 @@ shoora_body::Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 
     this->Color = Color;
     this->Position = Shu::Vec3f(InitPos, 0.0f);
 
-    this->Rotation = 0.0f;
+    this->RotationRadians = 0.0f;
     this->AngularVelocity = 0.0f;
     this->AngularAcceleration = 0.0f;
 
@@ -40,6 +40,15 @@ shoora_body::CheckIfClicked(const Shu::vec2f &ClickedWorldPos)
         Shu::vec2f l = ClickedWorldPos - Shu::ToVec2(this->Position);
         u32 Radius = this->Shape->GetDim().x;
         Result = (l.SqMagnitude() < (Radius*Radius));
+    }
+    else if(this->Shape->Type == RECT_2D)
+    {
+        Shu::rect2d rect = Shu::rect2d(Position.x, Position.y, this->Shape->GetDim().x, this->Shape->GetDim().y);
+        if (ClickedWorldPos.x >= (rect.x - rect.width / 2) && ClickedWorldPos.x <= rect.x + rect.width / 2 &&
+            ClickedWorldPos.y >= rect.y - rect.height / 2 && ClickedWorldPos.y <= rect.y + rect.height / 2)
+        {
+            Result = true;
+        }
     }
 
     return Result;
@@ -114,7 +123,7 @@ shoora_body::IntegrateAngular(f32 dt)
     this->AngularAcceleration = this->SumTorques * InvI;
 
     this->AngularVelocity += this->AngularAcceleration * dt;
-    this->Rotation += this->AngularVelocity * dt;
+    this->RotationRadians += this->AngularVelocity * dt;
 
     ClearTorque();
 }

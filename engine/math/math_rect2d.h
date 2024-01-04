@@ -21,6 +21,8 @@ namespace Shu
                 vec4f rect;
             };
         };
+        rect2d() {}
+        rect2d(f32 x, f32 y, f32 w, f32 h) : x(x), y(y), width(w), height(h) {}
     };
 }
 

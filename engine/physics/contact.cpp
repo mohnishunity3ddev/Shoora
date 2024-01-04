@@ -20,8 +20,8 @@ contact::ResolvePenetration()
 
     // NOTE: Here, we move the two bodies along the contact normal so that they move away from each other so that
     // penetration depth between them is zero, and they are not colliding anymore.
-    A->Position -= this->Normal * dA;
-    B->Position += this->Normal * dB;
+    A->Position -= this->Normal*dA;
+    B->Position += this->Normal*dB;
 }
 
 // NOTE: The aim is to calculate the Impulse vector acting on the two colliding bodies in this contact
@@ -32,8 +32,8 @@ contact::ResolvePenetration()
 // Hence, -J.N = Mb*V'b - Mb*Vb; V'b = Vb - (J.N/Mb) <-- (2)
 // Relative velocity of a w.r.t. b is Va - Vb pre-collision -> VRela = Va - Vb
 // Relative velocity post-collision of a w.r.t. b will be V'a - V'b -> V'Rela = V'a - V'b
-// For elastic collisions => V'Rela = -VRela, for normal scenarios
-// => V'Rela = -E*VRela <---(3)
+// For elastic collisions => V'Rela = -VRela,
+// for normal scenarios => V'Rela = -E*VRela <---(3)
 // where E is the coefficient of restitution, which is already present in the body structs.
 // Subtracting (2) from (1), we get:
 // V'Rela = VRela + (J.N)(1/Ma + 1/Mb)

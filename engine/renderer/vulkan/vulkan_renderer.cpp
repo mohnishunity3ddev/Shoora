@@ -1,5 +1,5 @@
-#include "loaders/image/png_loader.h"
 #include "loaders/meshes/mesh_loader.h"
+#include "loaders/image/png_loader.h"
 #include "vulkan_buffer.h"
 #include "vulkan_descriptor_sets.h"
 #include "vulkan_geometry.h"
@@ -27,6 +27,7 @@
 
 #define UNLIT_PIPELINE 1
 #include <memory.h>
+#include <vector>
 
 static shoora_vulkan_context *Context = nullptr;
 
@@ -42,7 +43,7 @@ static f32 BodyRadius = 50.0f;
 static f32 PrevBodyRadius = BodyRadius;
 
 static b32 isDebug = false;
-static b32 WireframeMode = false;
+static b32 WireframeMode = true;
 static f32 TestCameraScale = 0.5f;
 
 // NOTE: ALso make the same changes to the lighting shader.
@@ -365,7 +366,7 @@ UpdateBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineL
         if(dt > 1.0f/29.0f) { dt = 1.0f / 29.0f; }
 #endif
 
-#if 1 // Weight Force
+#if 0 // Weight Force
         Shu::vec2f WeightForce = Shu::Vec2f(0.0f, -9.8f*SHU_PIXELS_PER_METER*Body->Mass);
         Body->AddForce(WeightForce);
 #endif
@@ -501,7 +502,50 @@ DrawBodyWireframe(const VkCommandBuffer cmdBuffer, shoora_body *body, const Shu:
 void
 DrawBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLayout, f32 DeltaTime, b32 Wireframe)
 {
-    if(Wireframe && !isDebug)
+    auto camRect = Context->Camera.GetRect();
+    auto left = Shu::Vec2f(camRect.x - (camRect.width / 2), camRect.y);
+    auto right = Shu::Vec2f(camRect.x + (camRect.width / 2), camRect.y);
+    DrawLine(CmdBuffer, PipelineLayout, left, right, 0xff313131, 1.0f);
+    auto top = Shu::Vec2f(camRect.x, camRect.y + (camRect.height / 2));
+    auto bottom = Shu::Vec2f(camRect.x, camRect.y - (camRect.height / 2));
+    DrawLine(CmdBuffer, PipelineLayout, top, bottom, 0xff313131, 1.0f);
+
+    shoora_vertex_info *BoxVertices = shoora_primitive_collection::GetPrimitive(RECT_2D)->MeshFilter.Vertices;
+    shoora_body *bodyA = Bodies;
+    auto modelA = Shu::TRS(bodyA->Position, bodyA->Scale, bodyA->RotationRadians*RAD_TO_DEG, Shu::Vec3f(0, 0, 1));
+    std::vector<Shu::vec3f> verticesA;
+    verticesA.push_back((modelA * BoxVertices[0].Pos).xyz);
+    verticesA.push_back((modelA * BoxVertices[1].Pos).xyz);
+    verticesA.push_back((modelA * BoxVertices[2].Pos).xyz);
+    verticesA.push_back((modelA * BoxVertices[3].Pos).xyz);
+    shoora_body *bodyB = Bodies + 1;
+    auto modelB = Shu::TRS(bodyB->Position, bodyB->Scale, bodyB->RotationRadians*RAD_TO_DEG, Shu::Vec3f(0, 0, 1));
+    std::vector<Shu::vec3f> verticesB;
+    verticesB.push_back((modelB * BoxVertices[0].Pos).xyz);
+    verticesB.push_back((modelB * BoxVertices[1].Pos).xyz);
+    verticesB.push_back((modelB * BoxVertices[2].Pos).xyz);
+    verticesB.push_back((modelB * BoxVertices[3].Pos).xyz);
+    std::vector<Shu::vec3f> minkowksiVertices;
+    u32 colors[4] = {0xffff0000, 0xff00ff00, 0xff0000ff, 0xffffff00};
+    for (i32 i = 0; i < 4; ++i)
+    {
+        auto vb = verticesB[i];
+        for (i32 j = 0; j < 4; ++j)
+        {
+            auto o = Shu::Vec3f(0.0f);
+            auto line = verticesA[j] - vb;
+            line = Shu::Normalize(line) * (line.Magnitude());
+            auto va = o + line;
+
+            DrawLine(CmdBuffer, PipelineLayout, o.xy, va.xy, colors[i], 1.4f);
+            DrawLine(CmdBuffer, PipelineLayout, vb.xy, verticesA[j].xy, colors[i], .4f);
+            DrawCircle(CmdBuffer, PipelineLayout, va.xy, 5.0f, 0xffff0000);
+            minkowksiVertices.push_back(va);
+        }
+    }
+
+
+    if (Wireframe && !isDebug)
     {
         LogWarnUnformatted("Wireframe mode is only available in debug builds. Turning off Wireframe mode!\n");
         Wireframe = false;
@@ -516,7 +560,7 @@ DrawBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLay
         u32 ColorU32 = Body->IsColliding ? 0xffff0000 : 0xffffffff;
         Shu::vec3f Color = GetColor(ColorU32);
 
-        Shu::mat4f Model = Shu::TRS(Body->Position, Body->Scale, Body->Rotation*RAD_TO_DEG, Shu::Vec3f(0, 0, 1));
+        Shu::mat4f Model = Shu::TRS(Body->Position, Body->Scale, Body->RotationRadians*RAD_TO_DEG, Shu::Vec3f(0, 0, 1));
         unlit_shader_data Value = {.Model = Model, .Color = Color};
 
         if(!Wireframe)
@@ -583,12 +627,17 @@ UpdateBodiesOnInput(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos
 void
 InitScene()
 {
-    AddCircle(Shu::Vec2f(100.0f, 100.0f), 0xff00ffff, 200, 0, 1.0f);
-    AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
-    AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
-    AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
-    AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
-    AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
+    // AddCircle(Shu::Vec2f(100.0f, 100.0f), 0xff00ffff, 200, 0, 1.0f);
+    // AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
+    // AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
+    // AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
+    // AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
+    // AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
+
+    AddBox(Shu::Vec2f(100, 100), 0xffffffff, 100, 200, 1.0f, 1.0f);
+    Bodies[0].RotationRadians = 45.0f*DEG_TO_RAD;
+    AddBox(Shu::Vec2f(300, 100), 0xffffffff, 100, 100, 1.0f, 1.0f);
+    Bodies[1].RotationRadians = -30.0f*DEG_TO_RAD;
 }
 
 void

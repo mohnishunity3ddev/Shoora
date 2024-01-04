@@ -18,7 +18,7 @@ struct shoora_body
     Shu::vec3f Acceleration;
 
     // Angular motion
-    f32 Rotation;
+    f32 RotationRadians;
     f32 AngularVelocity;
     f32 AngularAcceleration;
     f32 CoeffRestitution;
