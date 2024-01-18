@@ -4,7 +4,7 @@
     // "editor.lineHeight": 25,
     // "editor.letterSpacing": 0.5,
     "editor.fontLigatures": true,
-    "editor.fontWeight": "normal",
+    "editor.fontWeight": "bold",
     "editor.renderWhitespace": "selection",
 
     // "editor.letterSpacing": 1,
@@ -22,7 +22,7 @@
         }
     },
     "terminal.integrated.defaultProfile.windows": "Default Profile",
-    "terminal.integrated.fontFamily": "'comic code ligatures regular', 'JetBrainsMono Nerd Font Mono', 'firacode nerd font mono',  'caskaydiacove nf mono'",
+    "terminal.integrated.fontFamily": "'maple mono nf', 'JetBrainsMono Nerd Font Mono', 'firacode nerd font mono',  'caskaydiacove nf mono'",
     "terminal.integrated.fontSize": 14,
     "terminal.integrated.fontWeight":"normal",
     "debug.console.fontFamily": "'comic code ligatures regular'",
