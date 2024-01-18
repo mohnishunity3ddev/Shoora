@@ -1,6 +1,7 @@
 #if !defined(UTILS_H)
 
-#include "defines.h"
+#include <defines.h>
+#include "sort/sort.h"
 #include <math/math.h>
 
 u32 GetMaxValueIndex(u32 *NumsArray, u32 NumsCount);

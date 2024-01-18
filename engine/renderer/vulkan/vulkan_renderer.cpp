@@ -11,6 +11,7 @@
 #include "vulkan_work_submission.h"
 
 #include <mesh/primitive/geometry_primitive.h>
+#include <mesh/mesh_utils.h>
 #include <physics/body.h>
 #include <physics/force.h>
 #include <physics/collision.h>
@@ -537,13 +538,19 @@ DrawBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLay
             line = Shu::Normalize(line) * (line.Magnitude());
             auto va = o + line;
 
-            DrawLine(CmdBuffer, PipelineLayout, o.xy, va.xy, colors[i], 1.4f);
+            DrawLine(CmdBuffer, PipelineLayout, o.xy, va.xy, colors[i], .4f);
             DrawLine(CmdBuffer, PipelineLayout, vb.xy, vertices[0][j].xy, colors[i], .4f);
             DrawCircle(CmdBuffer, PipelineLayout, va.xy, 5.0f, 0xffff0000);
             minkowksiVertices.emplace_back(va);
         }
     }
 
+    convex_hull_2d Hull{minkowksiVertices.data(), (i32)minkowksiVertices.size()};
+    auto *HullVertices = Hull.GetVertices();
+    for (int i = 1; i < Hull.GetVertexCount(); ++i) {
+        DrawLine(CmdBuffer, PipelineLayout, HullVertices[i - 1], HullVertices[i], 0xffffffff, 2.0f);
+    }
+    DrawLine(CmdBuffer, PipelineLayout, HullVertices[Hull.GetVertexCount() - 1], HullVertices[0], 0xffffffff, 2.0f);
 
     if (Wireframe && !isDebug)
     {
@@ -627,15 +634,15 @@ UpdateBodiesOnInput(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos
 void
 InitScene()
 {
-    // AddCircle(Shu::Vec2f(100.0f, 100.0f), 0xff00ffff, 200, 0, 1.0f);
+    AddCircle(Shu::Vec2f(100.0f, 100.0f), 0xff00ffff, 200, 0, 1.0f);
     // AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
     // AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
     // AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
     // AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
     // AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
 
-    AddBox(Shu::Vec2f(100, 100), 0xffffffff, 100, 200, 1.0f, 1.0f);
-    Bodies[0].RotationRadians = 45.0f*DEG_TO_RAD;
+    // AddBox(Shu::Vec2f(100, 100), 0xffffffff, 150, 300, 1.0f, 1.0f);
+    // Bodies[0].RotationRadians = 45.0f*DEG_TO_RAD;
 
     AddBox(Shu::Vec2f(300, 100), 0xffffffff, 100, 50, 1.0f, 1.0f);
     Bodies[1].RotationRadians = -30.0f*DEG_TO_RAD;

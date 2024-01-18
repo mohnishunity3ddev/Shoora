@@ -55,6 +55,11 @@ namespace Shu
         return Result;
     }
 
+    inline f32 TanInverse(f32 y, f32 x) {
+        f32 Result = atan2f(y, x);
+        return Result;
+    }
+
     inline f32
     Tan(f32 Degrees)
     {

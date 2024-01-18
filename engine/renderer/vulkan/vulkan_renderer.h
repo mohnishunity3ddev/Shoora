@@ -227,7 +227,7 @@ struct shoora_vulkan_geometry
     shoora_model Model;
     shoora_vulkan_vertex_buffers VertBuffers;
     shoora_vulkan_image_sampler *ImageBuffers;
-
+    
     VkDescriptorPool DescriptorPool;
 
     shader_data ShaderData;

@@ -39,6 +39,7 @@ typedef double f64;
 #define SHU_VK_ENABLE_MSAA 1
 #define SHU_PIXELS_PER_METER 100.0f
 #define FPS_CAPPING_ENABLED 1
+#define SHU_INT_MIN (i32)1 << 31
 
 #ifdef _MSC_VER
 #define SHU_ALIGN_16 __declspec(align(16))
@@ -328,6 +329,58 @@ AlignAs(u64 Number, u32 AlignAs)
     Result = (Number + AlignmentMask) & (~AlignmentMask);
     return Result;
 }
+
+template<typename T>
+struct interval {
+    T low;
+    T high;
+
+    b32 operator == (const interval<T> &other) {
+        b32 result = low == other.low && high == other.high;
+        return result;
+    }
+    b32 operator != (const interval<T> &other) {
+        b32 result = low != other.low || high != other.high;
+        return result;
+    }
+};
+
+template <typename T>
+inline b32
+DefaultLessComparator(const T &a, const T &b)
+{
+    b32 Result = a < b;
+    return Result;
+}
+template <typename T>
+inline b32
+DefaultLessEqualComparator(const T &a, const T &b)
+{
+    b32 Result = a <= b;
+    return Result;
+}
+template <typename T>
+inline b32
+DefaultGreaterComparator(const T &a, const T &b)
+{
+    b32 Result = a > b;
+    return Result;
+}
+template <typename T>
+inline b32
+DefaultGreaterEqualComparator(const T &a, const T &b)
+{
+    b32 Result = a >= b;
+    return Result;
+}
+
+#define SWAP(a, b)                                                                                                \
+    {                                                                                                             \
+        auto temp = (a);                                                                                          \
+        (a) = (b);                                                                                                \
+        (b) = temp;                                                                                               \
+    }
+
 #define ALIGN4(Number) AlignAs(Number, 4)
 #define ALIGN8(Number) AlignAs(Number, 8)
 #define ALIGN16(Number) AlignAs(Number, 16)

@@ -16,7 +16,7 @@ shoora_body::Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 
     this->AngularAcceleration = 0.0f;
 
     this->CoeffRestitution = 1.0f;
-
+    
     this->Mass = Mass;
     // Epsilon is an infinitesimally small value.
     this->InvMass = (this->Mass < FLT_EPSILON) ? 0.0f : (1.0f/this->Mass);
