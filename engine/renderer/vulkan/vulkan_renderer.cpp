@@ -36,7 +36,7 @@ static shoora_vulkan_context *Context = nullptr;
 static b32 MouseTracking = false;
 static Shu::vec2f MouseInitialDownPos = Shu::Vec2f(0);
 static shoora_body *BodyToMove = nullptr;
-static shoora_body Bodies[8192];
+static shoora_body Bodies[256];
 static u32 BodyCount = 0;
 static f32 BodyMass = 1.5f;
 static f32 PrevBodyMass = BodyMass;
@@ -195,11 +195,11 @@ ImGuiNewFrame()
             SHU_INVALID_DEFAULT;
         }
     }
+
     ImGui::SliderFloat("Bodies Mass", &BodyMass, 0.1f, 10.0f);
     ImGui::SliderFloat("Bodies Radius", &BodyRadius, 1.0f, 100.0f);
     ImGui::SliderFloat("Test Scale", &TestCameraScale, 0.5f, 100.0f);
     ImGui::Checkbox("Toggle Wireframe", (bool *)&WireframeMode);
-
 
 #if CREATE_WIREFRAME_PIPELINE
     ImGui::Checkbox("Toggle Wireframe", (bool *)&GlobalRenderState.WireframeMode);
@@ -298,6 +298,7 @@ struct unlit_shader_data
 void
 AddCircle(const Shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 Mass, f32 Restitution)
 {
+    ASSERT(BodyCount < ARRAY_SIZE(Bodies));
     shoora_body *Body = &Bodies[BodyCount++];
     Body->Initialize(GetColor(ColorU32), Pos, Mass, Restitution, std::make_unique<shoora_shape_circle>(Radius));
 }
@@ -305,6 +306,7 @@ AddCircle(const Shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 Mass, f32 Restitut
 void
 AddBox(const Shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Height, f32 Mass, f32 Restitution)
 {
+    ASSERT(BodyCount < ARRAY_SIZE(Bodies));
     shoora_body *Body = &Bodies[BodyCount++];
     Body->Initialize(GetColor(ColorU32), Pos, Mass, Restitution,
                      std::make_unique<shoora_shape_box>(Width, Height));
@@ -313,6 +315,7 @@ AddBox(const Shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Height, f32 Mass, f32 
 void
 AddTriangle(const Shu::vec2f Pos, u32 ColorU32, f32 Base, f32 Height, f32 Mass, f32 Restitution)
 {
+    ASSERT(BodyCount < ARRAY_SIZE(Bodies));
     shoora_body *Body = &Bodies[BodyCount++];
     Body->Initialize(GetColor(ColorU32), Pos, Mass, Restitution,
                      std::make_unique<shoora_shape_triangle>(Base, Height));
@@ -355,7 +358,7 @@ AddImpulseToBody(shoora_body *Body, const Shu::vec2f InImpulse)
 }
 
 inline void
-UpdateBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLayout, f32 dt)
+UpdateBodyPhysics(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLayout, f32 dt)
 {
     for(i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
     {
@@ -408,6 +411,7 @@ UpdateBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineL
 #endif
 
         Body->IntegrateLinear(dt);
+        Body->IntegrateAngular(dt);
 
         for (i32 i = 0; i < BodyCount; ++i)
         {
@@ -425,14 +429,14 @@ UpdateBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineL
                 if(collision2d::IsColliding(A, B, Contact))
                 {
                     // NOTE: Visualizing the Collision Contact Info.
+#if 0 // TODO)): 
                     DrawCircle(CmdBuffer, PipelineLayout, Contact.Start.xy, 3, 0xff00ffff);
                     DrawCircle(CmdBuffer, PipelineLayout, Contact.End.xy, 3, 0xffff0000);
                     Shu::vec2f ContactNormalLineEnd = Shu::Vec2f(Contact.Start.x + Contact.Normal.x*15.0f,
                                                                  Contact.Start.y + Contact.Normal.y*15.0f);
                     DrawLine(CmdBuffer, PipelineLayout, Contact.Start.xy, ContactNormalLineEnd, 0xffff00ff, 2);
-
                     Contact.ResolveCollision();
-
+#endif
                     A->IsColliding = true;
                     B->IsColliding = true;
                 }
@@ -442,6 +446,8 @@ UpdateBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineL
         Shu::rect2d Rect = Context->Camera.GetRect();
         f32 DampFactor = -1.0f;
         Body->KeepInView(Rect, DampFactor);
+
+        Body->UpdateWorldVertices();
     }
 }
 
@@ -510,47 +516,6 @@ DrawBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLay
     auto top = Shu::Vec2f(camRect.x, camRect.y + (camRect.height / 2));
     auto bottom = Shu::Vec2f(camRect.x, camRect.y - (camRect.height / 2));
     DrawLine(CmdBuffer, PipelineLayout, top, bottom, 0xff313131, 1.0f);
-
-
-    std::vector<Shu::vec3f> vertices[2];
-    for (i32 i = 0; i < 2; ++i)
-    {
-        shoora_body *body = Bodies + i;
-        auto *meshFilter = &shoora_primitive_collection::GetPrimitive(body->Shape->Type)->MeshFilter;
-        vertices[i].reserve(meshFilter->VertexCount);
-        auto model = Shu::TRS(body->Position, body->Scale, body->RotationRadians * RAD_TO_DEG, Shu::Vec3f(0, 0, 1));
-        for (i32 j = 0; j < meshFilter->VertexCount; ++j)
-        {
-            vertices[i].emplace_back((model * meshFilter->Vertices[j].Pos).xyz);
-        }
-    }
-
-    std::vector<Shu::vec3f> minkowksiVertices;
-    minkowksiVertices.reserve(vertices[0].size() * vertices[1].size());
-    u32 colors[4] = {0xffff0000, 0xff00ff00, 0xff0000ff, 0xffffff00};
-    for (i32 i = 0; i < vertices[1].size(); ++i)
-    {
-        auto vb = vertices[1][i];
-        for (i32 j = 0; j < vertices[0].size(); ++j)
-        {
-            auto o = Shu::Vec3f(0.0f);
-            auto line = vertices[0][j] - vb;
-            line = Shu::Normalize(line) * (line.Magnitude());
-            auto va = o + line;
-
-            DrawLine(CmdBuffer, PipelineLayout, o.xy, va.xy, colors[i], .4f);
-            DrawLine(CmdBuffer, PipelineLayout, vb.xy, vertices[0][j].xy, colors[i], .4f);
-            DrawCircle(CmdBuffer, PipelineLayout, va.xy, 5.0f, 0xffff0000);
-            minkowksiVertices.emplace_back(va);
-        }
-    }
-
-    convex_hull_2d Hull{minkowksiVertices.data(), (i32)minkowksiVertices.size()};
-    auto *HullVertices = Hull.GetVertices();
-    for (int i = 1; i < Hull.GetVertexCount(); ++i) {
-        DrawLine(CmdBuffer, PipelineLayout, HullVertices[i - 1], HullVertices[i], 0xffffffff, 2.0f);
-    }
-    DrawLine(CmdBuffer, PipelineLayout, HullVertices[Hull.GetVertexCount() - 1], HullVertices[0], 0xffffffff, 2.0f);
 
     if (Wireframe && !isDebug)
     {
@@ -634,18 +599,14 @@ UpdateBodiesOnInput(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos
 void
 InitScene()
 {
-    AddCircle(Shu::Vec2f(100.0f, 100.0f), 0xff00ffff, 200, 0, 1.0f);
-    // AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
-    // AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
-    // AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
-    // AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
-    // AddCircle(Shu::Vec2f(500.0f, 100.0f), 0xff00ffff, 50, 1, 0.8f);
-
-    // AddBox(Shu::Vec2f(100, 100), 0xffffffff, 150, 300, 1.0f, 1.0f);
-    // Bodies[0].RotationRadians = 45.0f*DEG_TO_RAD;
+    // AddCircle(Shu::Vec2f(100.0f, 100.0f), 0xff00ffff, 200, 0, 1.0f);
+    AddBox(Shu::Vec2f(100, 100), 0xffffffff, 150, 300, 1.0f, 1.0f);
+    Bodies[0].RotationRadians = 45.0f*DEG_TO_RAD;
+    Bodies[0].AngularVelocity = 0.9f;
 
     AddBox(Shu::Vec2f(300, 100), 0xffffffff, 100, 50, 1.0f, 1.0f);
     Bodies[1].RotationRadians = -30.0f*DEG_TO_RAD;
+    Bodies[1].AngularVelocity = 0.4f;
 }
 
 void
@@ -661,7 +622,7 @@ DrawScene(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLayo
     vkCmdBindIndexBuffer(CmdBuffer, shoora_primitive_collection::GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
 
     UpdateBodiesOnInput(CmdBuffer, CurrentMousePos, CurrentMouseWorldPos);
-    UpdateBodies(CmdBuffer, PipelineLayout, DeltaTime);
+    UpdateBodyPhysics(CmdBuffer, PipelineLayout, DeltaTime);
     DrawBodies(CmdBuffer, PipelineLayout, GlobalDeltaTime, WireframeMode);
 }
 
@@ -877,22 +838,6 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
     {
         Angle = 0.0f;
     }
-
-#if SHU_USE_GLM
-    glm::mat4 Model = glm::mat4(1.0f);
-    Model = glm::scale(Model, glm::vec3(1.0f, 1.0f, 1.0f));
-    // Model = glm::rotate(Model, Angle*AngleSpeed/50.0f, glm::vec3(0.0, 0.0f, 1.0f));
-    Model = glm::translate(Model, glm::vec3(0.0f, 0.0f, 0.0f));
-    UniformData.Model = Model;
-
-    glm::mat4 View = glm::mat4(1.0f);
-    View = Context->Camera.GetViewMatrix(View);
-    UniformData.View = View;
-
-    glm::mat4 Projection = glm::mat4(1.0f);
-    Projection = glm::perspective(45.0f, 1920.0f / 1080.0f, 0.1f, 100.0f);
-    UniformData.Projection = Projection;
-#else
     Shu::mat4f Model = GlobalMat4Identity;
     Shu::Scale(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f));
     Shu::RotateGimbalLock(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f), Angle*AngleSpeed);
@@ -905,26 +850,16 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
 
     Shu::mat4f Projection = Context->Camera.GetProjectionMatrix();
     GlobalVertUniformData.Projection = Projection;
-#endif
-    // memcpy(Context->Swapchain.UniformBuffers[ImageIndex].pMapped, &GlobalVertUniformData,
-    //        sizeof(vert_uniform_data));
 
     GlobalLightShaderData.View = View;
     GlobalLightShaderData.Projection = Projection;
     memcpy(Context->FragUnlitBuffers[ImageIndex].pMapped, &GlobalLightShaderData, sizeof(light_shader_vert_data));
 
-    // Light Position is set directly in ImGui
-    // GlobalFragUniformData.PointLightData.Color = ;
     GlobalFragUniformData.ObjectColor = GlobalRenderState.MeshColorUniform;
     GlobalFragUniformData.CamPos = Context->Camera.Pos;
 
     GlobalFragUniformData.SpotlightData.Direction = Shu::Normalize(Context->Camera.Front);
     GlobalFragUniformData.SpotlightData.Pos = Context->Camera.Pos;
-
-    // memcpy(Context->Swapchain.FragUniformBuffers[ImageIndex].pMapped, &GlobalFragUniformData,
-    //        sizeof(lighting_shader_uniform_data));
-
-    // UpdateGeometryUniformBuffers(&Context->Geometry, &Context->Camera, GlobalVertUniformData.Projection);
 }
 
 void
@@ -1041,11 +976,11 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 
     shoora_vulkan_fence_handle *pCurrentFrameFence = GetCurrentFrameFencePtr(&Context->SyncHandles,
                                                                              Context->CurrentFrame);
-    shoora_vulkan_semaphore_handle *pCurrentFrameImageAvlSemaphore =
-        GetImageAvailableSemaphorePtr(&Context->SyncHandles, Context->CurrentFrame);
+    auto *pCurrentFrameImageAvlSemaphore = GetImageAvailableSemaphorePtr(&Context->SyncHandles,
+                                                                         Context->CurrentFrame);
 
-    shoora_vulkan_semaphore_handle *pCurrentFramePresentCompleteSemaphore =
-        GetRenderFinishedSemaphorePtr(&Context->SyncHandles, Context->CurrentFrame);
+    auto *pCurrentFramePresentCompleteSemaphore = GetRenderFinishedSemaphorePtr(&Context->SyncHandles,
+                                                                                Context->CurrentFrame);
 
     VK_CHECK(vkWaitForFences(Context->Device.LogicalDevice, 1, &pCurrentFrameFence->Handle, VK_TRUE,
                              SHU_DEFAULT_FENCE_TIMEOUT));

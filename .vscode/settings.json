@@ -1,10 +1,10 @@
 {
-    "editor.fontFamily": "'comic code ligatures regular', 'maple mono nf', 'firacode nerd font mono', 'operator mono medium', 'monolisa nerd font mono', 'IosevkaTerm Nerd Font Mono', 'CaskaydiaCove NF Mono', 'JetBrainsMono nerd font mono'",
-    "editor.fontSize": 13,
+    "editor.fontFamily": "'maple mono nf', 'caskaydiacove nf mono', 'pragmatapro mono liga', 'comic code ligatures regular', 'iosevkaterm nerd font mono', 'JetBrainsMono nerd font mono'",
+    "editor.fontSize": 16,
     // "editor.lineHeight": 25,
     // "editor.letterSpacing": 0.5,
     "editor.fontLigatures": true,
-    "editor.fontWeight": "bold",
+    "editor.fontWeight": "normal",
     "editor.renderWhitespace": "selection",
 
     // "editor.letterSpacing": 1,

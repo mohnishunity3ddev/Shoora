@@ -9,6 +9,7 @@ enum shoora_primitive_type
 {
     NONE,
     LINE,
+    POLYGON,
     TRIANGLE,
     RECT_2D,
     CIRCLE,

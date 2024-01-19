@@ -36,14 +36,22 @@ struct shoora_body
 
     std::unique_ptr<shoora_shape> Shape;
 
+    ~shoora_body()
+    {
+        LogUnformatted("shoora_body desctructor called!\n");
+    }
+
     b32 CheckIfClicked(const Shu::vec2f &ClickedWorldPos);
     void KeepInView(const Shu::rect2d &ViewBounds, f32 DampFactor);
 
     void Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Mass, f32 Restitution,
                     std::unique_ptr<shoora_shape> Shape);
 
+
     // NOTE: returns true if the body is static. Meaning it has infinite mass.
     b32 IsStatic() const;
+
+    void UpdateWorldVertices();
 
     void ApplyImpulse(const Shu::vec2f &Impulse);
     void AddForce(const Shu::vec2f &Force);

@@ -16,7 +16,7 @@ shoora_body::Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 
     this->AngularAcceleration = 0.0f;
 
     this->CoeffRestitution = 1.0f;
-    
+
     this->Mass = Mass;
     // Epsilon is an infinitesimally small value.
     this->InvMass = (this->Mass < FLT_EPSILON) ? 0.0f : (1.0f/this->Mass);
@@ -59,6 +59,18 @@ shoora_body::IsStatic() const
 {
     b32 Result = (ABSOLUTE(this->InvMass - 0.0f) < FLT_EPSILON);
     return Result;
+}
+
+void
+shoora_body::UpdateWorldVertices()
+{
+    if (Shape->Type == POLYGON || Shape->Type == RECT_2D)
+    {
+        shoora_shape_polygon *polygon = (shoora_shape_polygon *)this->Shape.get();
+        auto ModelMatrix = Shu::TRS(this->Position, this->Scale, this->RotationRadians * RAD_TO_DEG,
+                                    Shu::Vec3f(0, 0, 1));
+        polygon->UpdateWorldVertices(ModelMatrix);
+    }
 }
 
 // NOTE: Impulse denotes a change in velocity for the body.
@@ -112,6 +124,7 @@ shoora_body::IntegrateLinear(f32 DeltaTime)
 
     ClearForces();
 }
+
 void
 shoora_body::IntegrateAngular(f32 dt)
 {

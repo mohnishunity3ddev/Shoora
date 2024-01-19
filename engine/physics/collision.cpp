@@ -1,20 +1,26 @@
 #include "collision.h"
+#include <mesh/primitive/geometry_primitive.h>
 
 b32
 collision2d::IsColliding(shoora_body *A, shoora_body *B, contact &Contact)
 {
     b32 Result = false;
 
-
-    b32 isBodyACircle = (A->Shape->Type == shoora_primitive_type::CIRCLE);
-    b32 isBodyBCircle = (B->Shape->Type == shoora_primitive_type::CIRCLE);
+    b32 isBodyACircle = (A->Shape->GetType() == shoora_primitive_type::CIRCLE);
+    b32 isBodyBCircle = (B->Shape->GetType() == shoora_primitive_type::CIRCLE);
     if(isBodyACircle && isBodyBCircle)
     {
         Result = IsCollidingCircleCircle(A, B, Contact);
     }
     else
     {
-        // TODO)): To implement other types of colliders
+        b32 isBodyAPolygon = (A->Shape->GetType() == POLYGON || A->Shape->GetType() == RECT_2D);
+        b32 isBodyBPolygon = (B->Shape->GetType() == POLYGON || B->Shape->GetType() == RECT_2D);
+
+        if(isBodyAPolygon && isBodyBPolygon)
+        {
+            Result = IsCollidingPolygonPolygon(A, B, Contact);
+        }
     }
 
     return Result;
@@ -45,4 +51,15 @@ collision2d::IsCollidingCircleCircle(shoora_body *A, shoora_body *B, contact &Co
     }
 
     return IsColliding;
+}
+
+b32
+collision2d::IsCollidingPolygonPolygon(shoora_body *A, shoora_body *B, contact &Contact)
+{
+    auto *polyA = (shoora_shape_polygon *)A->Shape.get();
+    auto *polyB = (shoora_shape_polygon *)B->Shape.get();
+
+    if(polyA->FindMinSeparation(polyB) >= 0.0f) { return false; }
+    if(polyB->FindMinSeparation(polyA) >= 0.0f) { return false; }
+    return true;
 }
