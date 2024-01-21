@@ -4,6 +4,17 @@
 #include "sort/sort.h"
 #include <math/math.h>
 
+struct colorU32
+{
+    static const u32 Red = 0xffff0000;
+    static const u32 Green = 0xff00ff00;
+    static const u32 Blue = 0xff0000ff;
+    static const u32 Cyan = 0xff00ffff;
+    static const u32 Magenta = 0xffff00ff;
+    static const u32 Yellow = 0xffffff00;
+    static const u32 White = 0xffffffff;
+};
+
 u32 GetMaxValueIndex(u32 *NumsArray, u32 NumsCount);
 u32 LogBase2(u32 Num);
 

@@ -67,7 +67,7 @@ struct shoora_platform_frame_packet
     // b32 IsLeftMouseDown;
     f32 MouseXPos;
     f32 MouseYPos;
-
+    
     f32 DeltaTime;
     u32 Fps;
 };

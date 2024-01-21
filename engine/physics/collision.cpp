@@ -56,10 +56,39 @@ collision2d::IsCollidingCircleCircle(shoora_body *A, shoora_body *B, contact &Co
 b32
 collision2d::IsCollidingPolygonPolygon(shoora_body *A, shoora_body *B, contact &Contact)
 {
-    auto *polyA = (shoora_shape_polygon *)A->Shape.get();
-    auto *polyB = (shoora_shape_polygon *)B->Shape.get();
+    auto *PolyA = (shoora_shape_polygon *)A->Shape.get();
+    auto *PolyB = (shoora_shape_polygon *)B->Shape.get();
 
-    if(polyA->FindMinSeparation(polyB) >= 0.0f) { return false; }
-    if(polyB->FindMinSeparation(polyA) >= 0.0f) { return false; }
+    Shu::vec2f AxisA, PointA;
+    Shu::vec2f AxisB, PointB;
+    f32 abSeparation = PolyA->FindMinSeparation(PolyB, AxisA, PointB);
+    if(abSeparation >= 0.0f)
+    {
+        return false;
+    }
+    f32 baSeparation = PolyB->FindMinSeparation(PolyA, AxisB, PointA);
+    if(baSeparation >= 0.0f)
+    {
+        return false;
+    }
+
+    Contact.A = A;
+    Contact.B = B;
+
+    if (abSeparation > baSeparation)
+    {
+        Contact.Normal = Shu::Vec3f(AxisA.Normal(), 0.0f);
+        Contact.Depth = -abSeparation;
+        Contact.Start = Shu::Vec3f(PointB, 0.0f);
+        Contact.End = Contact.Start + Contact.Normal*Contact.Depth;
+    }
+    else
+    {
+        Contact.Normal = Shu::Vec3f(-AxisB.Normal(), 0.0f);
+        Contact.Depth = -baSeparation;
+        Contact.End = Shu::Vec3f(PointA, 0.0f);
+        Contact.Start = Contact.End - Contact.Normal*Contact.Depth;
+    }
+
     return true;
 }

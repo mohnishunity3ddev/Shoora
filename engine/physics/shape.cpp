@@ -86,27 +86,40 @@ shoora_shape_polygon::GetType() const
 // 4-> And we take the maximum of all these "minimums" when other normals are also tested for all vertices of b.
 // IMPORTANT: NOTE: if the separation is negative, then there was collision otherwise no collision.
 f32
-shoora_shape_polygon::FindMinSeparation(shoora_shape_polygon *other)
+shoora_shape_polygon::FindMinSeparation(shoora_shape_polygon *Other, Shu::vec2f &SeparationAxis, Shu::vec2f &Point)
 {
     auto VertexCountA = this->Primitive->MeshFilter.VertexCount;
-    auto VertexCountB = other->Primitive->MeshFilter.VertexCount;
+    auto VertexCountB = Other->Primitive->MeshFilter.VertexCount;
 
-    f32 BestSeparation = -__FLT_MAX__;
+    f32 BestSeparation = SHU_FLOAT_MIN;
     for (i32 i = 0; i < VertexCountA; ++i)
     {
         auto vA = this->WorldVertices[i].xy;
-        auto Normal = this->GetEdgeAt(i).xy.Normal();
+        auto EdgeA = this->GetEdgeAt(i).xy;
+        auto Normal = EdgeA.Normal();
 
-        f32 MinSeparation = __FLT_MAX__;
+        f32 MinSeparation = SHU_FLOAT_MAX;
+        Shu::vec2f MinVertex;
         for (i32 j = 0; j < VertexCountB; ++j)
         {
-            auto vB = other->WorldVertices[j].xy;
-            f32 CurrentBVertexSeparation = (vB - vA).Dot(Normal);
+            auto vB = Other->WorldVertices[j].xy;
+            f32 Projection = (vB - vA).Dot(Normal);
 
-            MinSeparation = MIN(CurrentBVertexSeparation, MinSeparation);
+            // NOTE: Tracking the highest distance a vertex on body B is from a particular edge in body A for this
+            // iteration of the loop.
+            if (MinSeparation > Projection)
+            {
+                MinSeparation = Projection;
+                MinVertex = vB;
+            }
         }
 
-        BestSeparation = MAX(BestSeparation, MinSeparation);
+        // NOTE: Tracking the max(lowest distance a point on body B is "Behind" an edge in body A)
+        if(BestSeparation < MinSeparation) {
+            BestSeparation = MinSeparation;
+            SeparationAxis = EdgeA;
+            Point = MinVertex;
+        }
     }
 
     return BestSeparation;

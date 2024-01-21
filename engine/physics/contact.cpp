@@ -18,33 +18,19 @@ contact::ResolvePenetration()
     f32 dA = (this->Depth * A->InvMass) / (A->InvMass + B->InvMass);
     f32 dB = (this->Depth * B->InvMass) / (A->InvMass + B->InvMass);
 
+    if(this->Depth > 50) {
+        int x = 0;
+    }
+
+    // LogWarn("Position Before resolving is: [%.2f, %.2f]\n", B->Position.x, B->Position.y);
     // NOTE: Here, we move the two bodies along the contact normal so that they move away from each other so that
     // penetration depth between them is zero, and they are not colliding anymore.
     A->Position -= this->Normal*dA;
     B->Position += this->Normal*dB;
+    // LogDebug("Position After resolving is: [%.2f, %.2f]\n", B->Position.x, B->Position.y);
 }
 
-// NOTE: The aim is to calculate the Impulse vector acting on the two colliding bodies in this contact
-// Impulse(J) acting on both bodies will be along the collision contact normal vector.
-// Change in momentum in body A is dP(a) = Ma*V'a - Ma*Va. dP(a) is also Impulse acting along the collision normal.
-// Hence,  J.N = Ma*V'a - Ma*Va; V'a = Va + (J.N/Ma) <-- (1)
-// For body B, the impulse will be acting in the opposite direction as that of body A.
-// Hence, -J.N = Mb*V'b - Mb*Vb; V'b = Vb - (J.N/Mb) <-- (2)
-// Relative velocity of a w.r.t. b is Va - Vb pre-collision -> VRela = Va - Vb
-// Relative velocity post-collision of a w.r.t. b will be V'a - V'b -> V'Rela = V'a - V'b
-// For elastic collisions => V'Rela = -VRela,
-// for normal scenarios => V'Rela = -E*VRela <---(3)
-// where E is the coefficient of restitution, which is already present in the body structs.
-// Subtracting (2) from (1), we get:
-// V'Rela = VRela + (J.N)(1/Ma + 1/Mb)
-// We want to find the relative velocity along the collision normal, so doing a dot product on both sides:
-// V'Rela.N = VRela.N + J.N(1/Ma + 1/Mb)N
-// Substituting (3) here, we get:
-// -E*VRela.N = VRela.N + (J.N)(1/Ma + 1/Mb)N
-// (- 1 - E)*VRela.N / (1/Ma + 1/Mb)*(N.N) = J
-// N.N = 1 since N is unit vector, we get:
-// J = (1 - E)*VRela.N / (1/Ma + 1/Mb)
-// NOTE: This is the Impulse Method for resolving collisions
+
 void
 contact::ResolveCollision()
 {
@@ -53,16 +39,51 @@ contact::ResolveCollision()
     }
 
     // Separate out the bodies so that there is no penetration
-    this->ResolvePenetration();
+     this->ResolvePenetration();
 
     f32 E = MIN(A->CoeffRestitution, B->CoeffRestitution);
+    f32 F = MIN(A->FrictionCoeff, B->FrictionCoeff);
 
-    Shu::vec3f RelA = this->A->Velocity - this->B->Velocity;
-    f32 RelADotN = Shu::Dot(RelA, this->Normal);
+    // calculate the relative velocity of contact point A wrt the contact point of body B
+    // v = linearV + (AngularV X ra) -> ra is the distance vector from center of body to the collision contact point.
+    Shu::vec2f Ra = End.xy - A->Position.xy;
+    Shu::vec2f Rb = Start.xy - B->Position.xy;
 
-    f32 ImpulseMagnitude = (-(1.0f + E) * RelADotN) / (A->InvMass + B->InvMass );
-    Shu::vec3f Impulse = this->Normal * ImpulseMagnitude;
+    Shu::vec2f LinearVa = A->Velocity.xy;
+    // The Omega Vector(W) points in the Z Direction, which is the axis of rotation in the 2D case.
+    // [0]   [Ra.x]   [0.0 - W*Ra.y]
+    // [0] X [Ra.y] = [W*Ra.x - 0*0]
+    // [W]   [0]      [0*Ra.y - 0*Ra.x]
+    Shu::vec2f AngularVa = Shu::Vec2f(-A->AngularVelocity * Ra.y, A->AngularVelocity * Ra.x); // <-- NOTE: this is W.Cross(R)
+    Shu::vec2f Va = LinearVa + AngularVa;
 
-    A->ApplyImpulse(Impulse.xy);
-    B->ApplyImpulse(-Impulse.xy);
+    Shu::vec2f LinearVb = B->Velocity.xy;
+    Shu::vec2f AngularVb = Shu::Vec2f(-B->AngularVelocity * Rb.y, B->AngularVelocity * Rb.x);
+    Shu::vec2f Vb = LinearVb + AngularVb;
+
+    Shu::vec2f RelV = Va - Vb;
+
+    Shu::vec2f N = this->Normal.xy;
+    f32 RelVDotNormal = RelV.Dot(N);
+    // IMPORTANT: NOTE: See physics/concepts/concepts.md
+    // f32 Denominator = A->InvMass + B->InvMass +
+    f32 ImpulseNDenom = A->InvMass + B->InvMass +
+                        Ra.Cross(N)*Ra.Cross(N) * A->InvI +
+                        Rb.Cross(N)*Rb.Cross(N) * B->InvI;
+    f32 ImpulseN = (-(1.0f + E) * RelVDotNormal) / ImpulseNDenom;
+    // Impulse acts along the normal of the collision.
+    Shu::vec2f ImpulseAlongNormal = N * ImpulseN;
+
+    Shu::vec2f Tangent = N.Normal();
+    f32 RelVDotTangent = RelV.Dot(Tangent);
+    f32 ImpulseTDenom = A->InvMass + B->InvMass +
+                        Ra.Cross(Tangent)*Ra.Cross(Tangent) * A->InvI +
+                        Rb.Cross(Tangent)*Rb.Cross(Tangent) * B->InvI;
+    f32 ImpulseT = (F * -(1.0f + E) * RelVDotTangent) / ImpulseTDenom;
+    Shu::vec2f ImpulseAlongTangent = Tangent * ImpulseT;
+
+    Shu::vec2f Impulse = ImpulseAlongNormal + ImpulseAlongTangent;
+
+    A->ApplyImpulse(Impulse, Ra);
+    B->ApplyImpulse(-Impulse, Rb);
 }

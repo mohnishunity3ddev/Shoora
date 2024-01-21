@@ -35,7 +35,7 @@ struct shoora_shape_polygon : shoora_shape
     virtual Shu::vec3f GetDim() const override;
     virtual shoora_primitive_type GetType() const override;
 
-    f32 FindMinSeparation(shoora_shape_polygon *other);
+    f32 FindMinSeparation(shoora_shape_polygon *Other, Shu::vec2f &SeparationAxis, Shu::vec2f &Point);
 
     Shu::vec3f GetEdgeAt(i32 index);
     void UpdateWorldVertices(Shu::mat4f &ModelMatrix);
@@ -46,7 +46,7 @@ struct shoora_shape_circle : shoora_shape
     // shoora_shape_circle() = delete;
     shoora_shape_circle(u32 Radius);
     virtual ~shoora_shape_circle();
-    
+
     f32 Radius;
     virtual f32 GetMomentOfInertia() const override;
     virtual Shu::vec3f GetDim() const override;

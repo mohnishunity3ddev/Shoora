@@ -26,6 +26,7 @@ struct shoora_body
     Shu::vec3f SumForces;
     f32 SumTorques;
 
+    f32 FrictionCoeff;
     f32 Mass;
     f32 InvMass;
     f32 I; // Moment of inertia.
@@ -54,6 +55,8 @@ struct shoora_body
     void UpdateWorldVertices();
 
     void ApplyImpulse(const Shu::vec2f &Impulse);
+    void ApplyImpulse(const Shu::vec2f &Impulse, const Shu::vec2f &R);
+
     void AddForce(const Shu::vec2f &Force);
     void AddTorque(f32 Torque);
 

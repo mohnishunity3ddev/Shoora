@@ -15,7 +15,9 @@ shoora_body::Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 
     this->AngularVelocity = 0.0f;
     this->AngularAcceleration = 0.0f;
 
-    this->CoeffRestitution = 1.0f;
+    this->FrictionCoeff = 0.7f;
+
+    this->CoeffRestitution = Restitution;
 
     this->Mass = Mass;
     // Epsilon is an infinitesimally small value.
@@ -82,6 +84,17 @@ shoora_body::ApplyImpulse(const Shu::vec2f &Impulse)
     }
 
     this->Velocity += Shu::Vec3f(Impulse * this->InvMass, 0.0f);
+}
+
+void
+shoora_body::ApplyImpulse(const Shu::vec2f &Impulse, const Shu::vec2f &R)
+{
+    if(this->IsStatic()) {
+        return;
+    }
+
+    this->Velocity += Shu::Vec3f(Impulse * this->InvMass, 0.0f);
+    this->AngularVelocity += R.Cross(Impulse) * InvI;
 }
 
 void

@@ -201,6 +201,9 @@ ImGuiNewFrame()
     ImGui::SliderFloat("Test Scale", &TestCameraScale, 0.5f, 100.0f);
     ImGui::Checkbox("Toggle Wireframe", (bool *)&WireframeMode);
 
+    ImGui::Spacing();
+    ImGui::Text("B Position {%.2f, %.2f, %.2f}", Bodies[1].Position.x, Bodies[1].Position.y, Bodies[1].Position.z);
+
 #if CREATE_WIREFRAME_PIPELINE
     ImGui::Checkbox("Toggle Wireframe", (bool *)&GlobalRenderState.WireframeMode);
     ImGui::SliderFloat("Wireframe Line Width", &GlobalRenderState.WireLineWidth, 1.0f, 10.0f);
@@ -370,7 +373,7 @@ UpdateBodyPhysics(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &Pipe
         if(dt > 1.0f/29.0f) { dt = 1.0f / 29.0f; }
 #endif
 
-#if 0 // Weight Force
+#if 1 // Weight Force
         Shu::vec2f WeightForce = Shu::Vec2f(0.0f, -9.8f*SHU_PIXELS_PER_METER*Body->Mass);
         Body->AddForce(WeightForce);
 #endif
@@ -416,6 +419,7 @@ UpdateBodyPhysics(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &Pipe
         for (i32 i = 0; i < BodyCount; ++i)
         {
             Bodies[i].IsColliding = false;
+            Bodies[i].UpdateWorldVertices();
         }
 
         // NOTE: Check for collision with the rest of the rigidbodies present in the scene.
@@ -429,25 +433,24 @@ UpdateBodyPhysics(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &Pipe
                 if(collision2d::IsColliding(A, B, Contact))
                 {
                     // NOTE: Visualizing the Collision Contact Info.
-#if 0 // TODO)): 
-                    DrawCircle(CmdBuffer, PipelineLayout, Contact.Start.xy, 3, 0xff00ffff);
-                    DrawCircle(CmdBuffer, PipelineLayout, Contact.End.xy, 3, 0xffff0000);
-                    Shu::vec2f ContactNormalLineEnd = Shu::Vec2f(Contact.Start.x + Contact.Normal.x*15.0f,
-                                                                 Contact.Start.y + Contact.Normal.y*15.0f);
-                    DrawLine(CmdBuffer, PipelineLayout, Contact.Start.xy, ContactNormalLineEnd, 0xffff00ff, 2);
+                    DrawCircle(CmdBuffer, PipelineLayout, Contact.Start.xy, 3, colorU32::Cyan);
+                    DrawCircle(CmdBuffer, PipelineLayout, Contact.End.xy, 3, colorU32::Green);
+                    Shu::vec2f ContactNormalLineEnd = Shu::Vec2f(Contact.Start.x + Contact.Normal.x*30.0f,
+                                                                 Contact.Start.y + Contact.Normal.y*30.0f);
+                    DrawLine(CmdBuffer, PipelineLayout, Contact.Start.xy, ContactNormalLineEnd, colorU32::Yellow, 2);
                     Contact.ResolveCollision();
-#endif
+
                     A->IsColliding = true;
                     B->IsColliding = true;
                 }
             }
         }
 
+#if 0
         Shu::rect2d Rect = Context->Camera.GetRect();
         f32 DampFactor = -1.0f;
         Body->KeepInView(Rect, DampFactor);
-
-        Body->UpdateWorldVertices();
+#endif
     }
 }
 
@@ -599,14 +602,28 @@ UpdateBodiesOnInput(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos
 void
 InitScene()
 {
-    // AddCircle(Shu::Vec2f(100.0f, 100.0f), 0xff00ffff, 200, 0, 1.0f);
-    AddBox(Shu::Vec2f(100, 100), 0xffffffff, 150, 300, 1.0f, 1.0f);
-    Bodies[0].RotationRadians = 45.0f*DEG_TO_RAD;
-    Bodies[0].AngularVelocity = 0.9f;
+    // Bottom Wall (Static Rigidbody)
+    Shu::vec2f Window = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
-    AddBox(Shu::Vec2f(300, 100), 0xffffffff, 100, 50, 1.0f, 1.0f);
-    Bodies[1].RotationRadians = -30.0f*DEG_TO_RAD;
-    Bodies[1].AngularVelocity = 0.4f;
+    AddBox(Shu::Vec2f(0, (-Window.y*0.5f)), 0xffffffff, Window.x, 50, 0.0f, 0.1f);
+    AddBox(Shu::Vec2f(Window.x*0.5f, 0), 0xffffffff, 50, Window.y, 0.0f, 0.1f);
+    AddBox(Shu::Vec2f(-Window.x*0.5f, 0), 0xffffffff, 50, Window.y, 0.0f, 0.1f);
+
+    // Middle Square (Static regidbody)
+    AddBox(Shu::Vec2f(0, 0), 0xffffffff, 200, 200, 0.0f, 0.1f);
+    Bodies[3].RotationRadians = 5.0f*DEG_TO_RAD;
+    // AddCircle(Shu::Vec2f(600, 500), 0xffffffff, 200, 0.0f, 0.5f);
+
+    // AddBox(Shu::Vec2f(10, (Window.y*0.5) - 10.0f), 0xffffffff, 75, 100, 1.0f, 0.2f);
+    // AddBox(Shu::Vec2f(100, (Window.y*0.5) - 10.0f), 0xffffffff, 75, 100, 1.0f, 0.2f);
+    // AddBox(Shu::Vec2f(200, (Window.y*0.5) - 10.0f), 0xffffffff, 75, 100, 1.0f, 0.2f);
+    // AddBox(Shu::Vec2f(300, (Window.y*0.5) - 10.0f), 0xffffffff, 75, 100, 1.0f, 0.2f);
+    // AddBox(Shu::Vec2f(0, 0), 0xffffffff, 300, 300, 0.0f, 0.7f);
+
+    // AddBox(Shu::Vec2f(50, (Window.y*0.5) - 10.0f), 0xffffffff, 100, 100, 2.0f, 0.7f);
+    // AddBox(Shu::Vec2f(90, (Window.y*0.5) - 10.0f), 0xffffffff, 100, 100, 1.0f, 0.7f);
+    // AddBox(Shu::Vec2f(110, (Window.y*0.5) - 10.0f), 0xffffffff, 100, 100, 1.0f, 0.7f);
+
 }
 
 void
@@ -620,6 +637,7 @@ DrawScene(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLayo
     VkDeviceSize offsets[1] = {0};
     vkCmdBindVertexBuffers(CmdBuffer, 0, 1, shoora_primitive_collection::GetVertexBufferHandlePtr(), offsets);
     vkCmdBindIndexBuffer(CmdBuffer, shoora_primitive_collection::GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
+
 
     UpdateBodiesOnInput(CmdBuffer, CurrentMousePos, CurrentMouseWorldPos);
     UpdateBodyPhysics(CmdBuffer, PipelineLayout, DeltaTime);
@@ -948,6 +966,11 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     }
 
     b32 LMBDown = Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, KeyState::SHU_KEYSTATE_DOWN);
+    if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
+    {
+        // AddCircle(CurrentMouseWorldPos, colorU32::White, 50, 1.0, 0.7f);
+        AddBox(CurrentMouseWorldPos, colorU32::White, 50, 50, 1.0, 0.7f);
+    }
 
     if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
     {

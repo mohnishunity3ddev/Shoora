@@ -25,6 +25,7 @@ namespace Shu
         inline vec2<T> Normal();
         inline T& operator[](size_t Index);
         inline T Dot(const vec2<T>& A);
+        inline T Cross(const vec2<T>& A) const;
         inline T SqMagnitude();
         inline T Magnitude() const;
         inline f32 GetSlopeAngleInDegrees();
@@ -404,11 +405,20 @@ namespace Shu
         return Result;
     }
 
+
     template <typename T>
     T
     vec2<T>::Dot(const vec2<T>& A)
     {
-        T Result = A.x * this->x + A.y * this->y;
+        T Result = A.x*this->x + A.y*this->y;
+        return Result;
+    }
+
+    template <typename T>
+    T
+    vec2<T>::Cross(const vec2<T>& Other) const
+    {
+        T Result = this->x * Other.y - this->y * Other.x;
         return Result;
     }
 

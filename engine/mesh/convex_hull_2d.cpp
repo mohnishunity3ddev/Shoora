@@ -13,7 +13,7 @@ AngleComparator(const Shu::vec2f &a, const Shu::vec2f &b)
 
 convex_hull_2d::convex_hull_2d(Shu::vec3f *VertexPositions, i32 VertexCount)
 {
-    f32 min = __FLT_MAX__;
+    f32 min = SHU_FLOAT_MAX;
 
     // IMPORTANT: NOTE:
     // Getting that one vertex which has the lowest y value. Getting the point which is at the bottom.
@@ -53,7 +53,7 @@ convex_hull_2d::convex_hull_2d(Shu::vec3f *VertexPositions, i32 VertexCount)
     // IMPORTANT: NOTE:
     // Graham's Algorithm/Scan to get the Convex Hull of the provided vertices. This will return a shape than
     // encloses all the points.
-    stack<Shu::vec2f> Stack{VertexCount, Shu::Vec2f(-__FLT_MAX__, -__FLT_MAX__)};
+    stack<Shu::vec2f> Stack{VertexCount, Shu::Vec2f(SHU_FLOAT_MIN, SHU_FLOAT_MIN)};
     Stack.push(SortedPoints[0]);
     Stack.push(SortedPoints[1]);
     Stack.push(SortedPoints[2]);
