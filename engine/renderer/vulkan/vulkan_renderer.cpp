@@ -202,7 +202,7 @@ ImGuiNewFrame()
     ImGui::Checkbox("Toggle Wireframe", (bool *)&WireframeMode);
 
     ImGui::Spacing();
-    ImGui::Text("B Position {%.2f, %.2f, %.2f}", Bodies[1].Position.x, Bodies[1].Position.y, Bodies[1].Position.z);
+    ImGui::Text("Body Cout: %d", BodyCount);
 
 #if CREATE_WIREFRAME_PIPELINE
     ImGui::Checkbox("Toggle Wireframe", (bool *)&GlobalRenderState.WireframeMode);
@@ -415,35 +415,9 @@ UpdateBodyPhysics(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &Pipe
 
         Body->IntegrateLinear(dt);
         Body->IntegrateAngular(dt);
-
         for (i32 i = 0; i < BodyCount; ++i)
         {
             Bodies[i].IsColliding = false;
-            Bodies[i].UpdateWorldVertices();
-        }
-
-        // NOTE: Check for collision with the rest of the rigidbodies present in the scene.
-        for(i32 i = 0; i < (BodyCount-1); ++i)
-        {
-            shoora_body *A = Bodies + i;
-            for(i32 j = (i+1); j < BodyCount; ++j)
-            {
-                shoora_body *B = Bodies + j;
-                contact Contact;
-                if(collision2d::IsColliding(A, B, Contact))
-                {
-                    // NOTE: Visualizing the Collision Contact Info.
-                    DrawCircle(CmdBuffer, PipelineLayout, Contact.Start.xy, 3, colorU32::Cyan);
-                    DrawCircle(CmdBuffer, PipelineLayout, Contact.End.xy, 3, colorU32::Green);
-                    Shu::vec2f ContactNormalLineEnd = Shu::Vec2f(Contact.Start.x + Contact.Normal.x*30.0f,
-                                                                 Contact.Start.y + Contact.Normal.y*30.0f);
-                    DrawLine(CmdBuffer, PipelineLayout, Contact.Start.xy, ContactNormalLineEnd, colorU32::Yellow, 2);
-                    Contact.ResolveCollision();
-
-                    A->IsColliding = true;
-                    B->IsColliding = true;
-                }
-            }
         }
 
 #if 0
@@ -451,6 +425,35 @@ UpdateBodyPhysics(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &Pipe
         f32 DampFactor = -1.0f;
         Body->KeepInView(Rect, DampFactor);
 #endif
+    }
+
+    for (i32 i = 0; i < BodyCount; ++i)
+    {
+        Bodies[i].UpdateWorldVertices();
+    }
+
+    // NOTE: Check for collision with the rest of the rigidbodies present in the scene.
+    for (i32 i = 0; i < (BodyCount - 1); ++i)
+    {
+        shoora_body *A = Bodies + i;
+        for (i32 j = (i + 1); j < BodyCount; ++j)
+        {
+            shoora_body *B = Bodies + j;
+            contact Contact;
+            if (collision2d::IsColliding(A, B, Contact))
+            {
+                // NOTE: Visualizing the Collision Contact Info.
+                // DrawCircle(CmdBuffer, PipelineLayout, Contact.Start.xy, 3, colorU32::Cyan);
+                // DrawCircle(CmdBuffer, PipelineLayout, Contact.End.xy, 3, colorU32::Green);
+                // Shu::vec2f ContactNormalLineEnd = Shu::Vec2f(Contact.Start.x + Contact.Normal.x * 30.0f,
+                //                                              Contact.Start.y + Contact.Normal.y * 30.0f);
+                // DrawLine(CmdBuffer, PipelineLayout, Contact.Start.xy, ContactNormalLineEnd, colorU32::Yellow, 2);
+                Contact.ResolveCollision();
+
+                A->IsColliding = true;
+                B->IsColliding = true;
+            }
+        }
     }
 }
 
@@ -611,7 +614,7 @@ InitScene()
 
     // Middle Square (Static regidbody)
     AddBox(Shu::Vec2f(0, 0), 0xffffffff, 200, 200, 0.0f, 0.1f);
-    Bodies[3].RotationRadians = 5.0f*DEG_TO_RAD;
+    Bodies[3].RotationRadians = 35.0f*DEG_TO_RAD;
     // AddCircle(Shu::Vec2f(600, 500), 0xffffffff, 200, 0.0f, 0.5f);
 
     // AddBox(Shu::Vec2f(10, (Window.y*0.5) - 10.0f), 0xffffffff, 75, 100, 1.0f, 0.2f);
