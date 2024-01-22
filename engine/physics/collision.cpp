@@ -160,14 +160,7 @@ collision2d::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle,
         auto EdgeNormal = ClosestEdge.Normal();
 
         auto CurrCenter = Shu::Normalize(CircleCenter - MinVertex.xy);
-        auto CurrCenterPerpEdge = Shu::Dot(CurrCenter, EdgeNormal) * CurrCenter;
-        auto CurrCenterParrEdge = CurrCenter - CurrCenterPerpEdge;
-        auto CurrDot = Shu::Dot(CurrCenterParrEdge, ClosestEdge);
-
-        auto NextCenter = Shu::Normalize(CircleCenter - MinNextVertex.xy);
-        auto NextCenterPerpEdge = Shu::Dot(NextCenter, EdgeNormal) * NextCenter;
-        auto NextCenterParrEdge = NextCenter - NextCenterPerpEdge;
-        auto NextDot = Shu::Dot(NextCenterParrEdge, ClosestEdge);
+        auto CurrDot = Shu::Dot(CurrCenter, ClosestEdge);
 
         if(CurrDot < 0.0f)
         {
@@ -177,54 +170,60 @@ collision2d::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle,
             {
                 IsCollidingResult = true;
                 Contact.Depth = Radius - CenterToVertDistance;
-                Contact.Start = Shu::Vec3f(MinVertex.xy, 0.0f);
-                Contact.Normal = Shu::Vec3f(Shu::Normalize(MinVertex.xy - CircleCenter), 0.0f);
-                Contact.End = Contact.Start + Contact.Normal*Contact.Depth;
-            }
-        }
-        else if(NextDot > 0.0f)
-        {
-            // IMPORTANT: NOTE: To the RIGHT of MinNextVertex
-            f32 CenterToNextVertDistance = (CircleCenter - MinNextVertex.xy).Magnitude();
-            if(CenterToNextVertDistance < (Radius))
-            {
-                IsCollidingResult = true;
-                Contact.Depth = Radius - CenterToNextVertDistance;
-                Contact.Start = Shu::Vec3f(MinNextVertex.xy, 0.0f);
-                Contact.Normal = Shu::Vec3f(Shu::Normalize(MinNextVertex.xy - CircleCenter), 0.0f);
-                Contact.End = Contact.Start + Contact.Normal*Contact.Depth;
+                Contact.End = Shu::Vec3f(MinVertex.xy, 0.0f);
+                Contact.Normal = Shu::Vec3f(Shu::Normalize(CircleCenter - MinVertex.xy), 0.0f);
+                Contact.Start = Contact.End - Contact.Normal*Contact.Depth;
             }
         }
         else
         {
-            // IMPORTANT: NOTE: In the Middle region between MinVertex and MinNextVertex!
-            auto DistanceFromClosestEdge = Shu::Dot((CircleCenter - MinVertex.xy), EdgeNormal);
-            if(DistanceFromClosestEdge < Radius)
+            auto NextCenter = Shu::Normalize(CircleCenter - MinNextVertex.xy);
+            auto NextDot = Shu::Dot(NextCenter, -ClosestEdge);
+
+            if(NextDot < 0.0f)
             {
-                IsCollidingResult = true;
-                Contact.Depth = Radius - DistanceFromClosestEdge;
-                Contact.Normal = Shu::Vec3f(-EdgeNormal, 0.0f);
-                auto end = CircleCenter + Contact.Normal.xy * Radius;
-                Contact.End = Shu::Vec3f(end, 0.0f);
-                Contact.Start = Shu::Vec3f(end - Contact.Normal.xy * Contact.Depth, 0.0f);
+                // IMPORTANT: NOTE: To the RIGHT of MinNextVertex
+                f32 CenterToNextVertDistance = (CircleCenter - MinNextVertex.xy).Magnitude();
+                if(CenterToNextVertDistance < (Radius))
+                {
+                    IsCollidingResult = true;
+                    Contact.Depth = Radius - CenterToNextVertDistance;
+                    Contact.End = Shu::Vec3f(MinNextVertex.xy, 0.0f);
+                    Contact.Normal = Shu::Vec3f(Shu::Normalize(CircleCenter - MinNextVertex.xy), 0.0f);
+                    Contact.Start = Contact.End - Contact.Normal*Contact.Depth;
+                }
+            }
+            else
+            {
+                // IMPORTANT: NOTE: In the Middle region between MinVertex and MinNextVertex!
+                auto DistanceFromClosestEdge = Shu::Dot((CircleCenter - MinVertex.xy), EdgeNormal);
+                if(DistanceFromClosestEdge < Radius)
+                {
+                    IsCollidingResult = true;
+                    Contact.Depth = Radius - DistanceFromClosestEdge;
+                    Contact.Normal = Shu::Vec3f(EdgeNormal, 0.0f);
+                    auto start = CircleCenter - Contact.Normal.xy * Radius;
+                    Contact.Start = Shu::Vec3f(start, 0.0f);
+                    Contact.End = Shu::Vec3f(start + Contact.Normal.xy*Contact.Depth, 0.0f);
+                }
             }
         }
     }
     else
     {
         // IMPORTANT: NOTE: Circle is inside the polygon
-        Contact.Normal = Shu::Vec3f(-ClosestEdge.Normal(), 0.0f);
-        Contact.Start = Shu::Vec3f(CircleCenter + Contact.Normal.xy*MaxProjection, 0.0f);
-        Contact.End = Shu::Vec3f(CircleCenter + Contact.Normal.xy*Radius, 0.0f);
         Contact.Depth = Radius + ABSOLUTE(MaxProjection);
+        Contact.Normal = Shu::Vec3f(ClosestEdge.Normal(), 0.0f);
+        Contact.Start = Shu::Vec3f(CircleCenter - Contact.Normal.xy*Radius, 0.0f);
+        Contact.End = Shu::Vec3f(CircleCenter - Contact.Normal.xy*(MaxProjection), 0.0f);
         IsCollidingResult = true;
     }
 
     if(IsCollidingResult)
     {
         // ASSERT(Contact.Depth > 0.0f);
-        Contact.A = Circle;
-        Contact.B = Polygon;
+        Contact.A = Polygon;
+        Contact.B = Circle;
     }
 
     return IsCollidingResult;
