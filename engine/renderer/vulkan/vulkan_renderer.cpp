@@ -363,7 +363,9 @@ AddImpulseToBody(shoora_body *Body, const Shu::vec2f InImpulse)
 inline void
 UpdateBodyPhysics(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLayout, f32 dt)
 {
-    for(i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
+    for(i32 BodyIndex = 0;
+        BodyIndex < BodyCount;
+        ++BodyIndex)
     {
         ASSERT(BodyIndex < BodyCount);
         shoora_body *Body = Bodies + BodyIndex;
@@ -427,27 +429,27 @@ UpdateBodyPhysics(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &Pipe
 #endif
     }
 
-    for (i32 i = 0; i < BodyCount; ++i)
+    for(i32 i = 0; i < BodyCount; ++i)
     {
         Bodies[i].UpdateWorldVertices();
     }
 
     // NOTE: Check for collision with the rest of the rigidbodies present in the scene.
-    for (i32 i = 0; i < (BodyCount - 1); ++i)
+    for(i32 i = 0; i < (BodyCount - 1); ++i)
     {
         shoora_body *A = Bodies + i;
         for (i32 j = (i + 1); j < BodyCount; ++j)
         {
             shoora_body *B = Bodies + j;
             contact Contact;
-            if (collision2d::IsColliding(A, B, Contact))
+            if(collision2d::IsColliding(A, B, Contact))
             {
                 // NOTE: Visualizing the Collision Contact Info.
-                // DrawCircle(CmdBuffer, PipelineLayout, Contact.Start.xy, 3, colorU32::Cyan);
-                // DrawCircle(CmdBuffer, PipelineLayout, Contact.End.xy, 3, colorU32::Green);
-                // Shu::vec2f ContactNormalLineEnd = Shu::Vec2f(Contact.Start.x + Contact.Normal.x * 30.0f,
-                //                                              Contact.Start.y + Contact.Normal.y * 30.0f);
-                // DrawLine(CmdBuffer, PipelineLayout, Contact.Start.xy, ContactNormalLineEnd, colorU32::Yellow, 2);
+                DrawCircle(CmdBuffer, PipelineLayout, Contact.Start.xy, 3, colorU32::Cyan);
+                DrawCircle(CmdBuffer, PipelineLayout, Contact.End.xy, 3, colorU32::Green);
+                Shu::vec2f ContactNormalLineEnd = Shu::Vec2f(Contact.Start.x + Contact.Normal.x * 30.0f,
+                                                             Contact.Start.y + Contact.Normal.y * 30.0f);
+                DrawLine(CmdBuffer, PipelineLayout, Contact.Start.xy, ContactNormalLineEnd, colorU32::Yellow, 2);
                 Contact.ResolveCollision();
 
                 A->IsColliding = true;
@@ -608,14 +610,14 @@ InitScene()
     // Bottom Wall (Static Rigidbody)
     Shu::vec2f Window = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
-    AddBox(Shu::Vec2f(0, (-Window.y*0.5f)), 0xffffffff, Window.x, 50, 0.0f, 0.1f);
-    AddBox(Shu::Vec2f(Window.x*0.5f, 0), 0xffffffff, 50, Window.y, 0.0f, 0.1f);
-    AddBox(Shu::Vec2f(-Window.x*0.5f, 0), 0xffffffff, 50, Window.y, 0.0f, 0.1f);
+    // AddBox(Shu::Vec2f(0, (-Window.y*0.5f)), 0xffffffff, Window.x, 50, 0.0f, 0.1f);
+    // AddBox(Shu::Vec2f(Window.x*0.5f, 0), 0xffffffff, 50, Window.y, 0.0f, 0.1f);
+    // AddBox(Shu::Vec2f(-Window.x*0.5f, 0), 0xffffffff, 50, Window.y, 0.0f, 0.1f);
 
     // Middle Square (Static regidbody)
-    AddBox(Shu::Vec2f(0, 0), 0xffffffff, 200, 200, 0.0f, 0.1f);
-    Bodies[3].RotationRadians = 35.0f*DEG_TO_RAD;
-    // AddCircle(Shu::Vec2f(600, 500), 0xffffffff, 200, 0.0f, 0.5f);
+    AddBox(Shu::Vec2f(0, 0), 0xffffffff, 300, 300, 0.0f, 1.0f);
+    Bodies[0].RotationRadians = 35.0f*DEG_TO_RAD;
+    AddCircle(Shu::Vec2f(300, 0), 0xffffffff, 150, 0.0f, 0.5f);
 
     // AddBox(Shu::Vec2f(10, (Window.y*0.5) - 10.0f), 0xffffffff, 75, 100, 1.0f, 0.2f);
     // AddBox(Shu::Vec2f(100, (Window.y*0.5) - 10.0f), 0xffffffff, 75, 100, 1.0f, 0.2f);
@@ -971,7 +973,10 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     b32 LMBDown = Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, KeyState::SHU_KEYSTATE_DOWN);
     if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
     {
-        // AddCircle(CurrentMouseWorldPos, colorU32::White, 50, 1.0, 0.7f);
+        AddCircle(CurrentMouseWorldPos, colorU32::White, 25, 1.0, 0.7f);
+    }
+    if(Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
+    {
         AddBox(CurrentMouseWorldPos, colorU32::White, 50, 50, 1.0, 0.7f);
     }
 

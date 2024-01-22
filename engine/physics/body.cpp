@@ -150,7 +150,7 @@ shoora_body::IntegrateAngular(f32 dt)
 
     this->AngularVelocity += this->AngularAcceleration * dt;
     this->RotationRadians += this->AngularVelocity * dt;
-
+    
     ClearTorque();
 }
 

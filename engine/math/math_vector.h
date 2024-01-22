@@ -401,7 +401,7 @@ namespace Shu
     T
     Dot(const vec2<T>& A, const vec2<T>& B)
     {
-        T Result = A.x*B.x + A.y*B.y + A.z*B.z;
+        T Result = A.x*B.x + A.y*B.y;
         return Result;
     }
 
