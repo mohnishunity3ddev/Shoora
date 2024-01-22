@@ -65,17 +65,5 @@ struct shoora_shape_box : shoora_shape_polygon
     virtual shoora_primitive_type GetType() const override;
 };
 
-struct shoora_shape_triangle : shoora_shape
-{
-    shoora_shape_triangle() = delete;
-    shoora_shape_triangle(u32 Base, u32 Height);
-    virtual ~shoora_shape_triangle();
-
-    u32 Base, Height;
-    virtual f32 GetMomentOfInertia() const override;
-    virtual Shu::vec3f GetDim() const override;
-    virtual shoora_primitive_type GetType() const override;
-};
-
 #define SHAPE_H
 #endif // SHAPE_H

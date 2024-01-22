@@ -66,7 +66,7 @@ shoora_body::IsStatic() const
 void
 shoora_body::UpdateWorldVertices()
 {
-    if (Shape->Type == POLYGON || Shape->Type == RECT_2D)
+    if (Shape->Type == POLYGON_2D || Shape->Type == RECT_2D)
     {
         shoora_shape_polygon *polygon = (shoora_shape_polygon *)this->Shape.get();
         auto ModelMatrix = Shu::TRS(this->Position, this->Scale, this->RotationRadians * RAD_TO_DEG,
@@ -150,7 +150,7 @@ shoora_body::IntegrateAngular(f32 dt)
 
     this->AngularVelocity += this->AngularAcceleration * dt;
     this->RotationRadians += this->AngularVelocity * dt;
-    
+
     ClearTorque();
 }
 
@@ -166,7 +166,6 @@ shoora_body::KeepInView(const Shu::rect2d &ViewBounds, f32 DampFactor)
         case shoora_primitive_type::CIRCLE: { }
         break;
         case shoora_primitive_type::RECT_2D:
-        case shoora_primitive_type::TRIANGLE: { Dim *= 0.5f; }
         break;
 
         SHU_INVALID_DEFAULT

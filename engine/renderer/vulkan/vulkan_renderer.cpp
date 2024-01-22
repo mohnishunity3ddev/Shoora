@@ -46,6 +46,7 @@ static f32 PrevBodyRadius = BodyRadius;
 static b32 isDebug = false;
 static b32 WireframeMode = true;
 static f32 TestCameraScale = 0.5f;
+static b32 GlobalShowContacts = false;
 
 // NOTE: ALso make the same changes to the lighting shader.
 // TODO)): Automate this so that changing this automatically makes changes to the shader using shader variation.
@@ -315,15 +316,6 @@ AddBox(const Shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Height, f32 Mass, f32 
                      std::make_unique<shoora_shape_box>(Width, Height));
 }
 
-void
-AddTriangle(const Shu::vec2f Pos, u32 ColorU32, f32 Base, f32 Height, f32 Mass, f32 Restitution)
-{
-    ASSERT(BodyCount < ARRAY_SIZE(Bodies));
-    shoora_body *Body = &Bodies[BodyCount++];
-    Body->Initialize(GetColor(ColorU32), Pos, Mass, Restitution,
-                     std::make_unique<shoora_shape_triangle>(Base, Height));
-}
-
 Shu::vec2f
 MouseToWorld(const Shu::vec2f &MousePos)
 {
@@ -445,15 +437,19 @@ UpdateBodyPhysics(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &Pipe
             if(collision2d::IsColliding(A, B, Contact))
             {
                 // NOTE: Visualizing the Collision Contact Info.
-                DrawCircle(CmdBuffer, PipelineLayout, Contact.Start.xy, 3, colorU32::Cyan);
-                DrawCircle(CmdBuffer, PipelineLayout, Contact.End.xy, 3, colorU32::Green);
-                Shu::vec2f ContactNormalLineEnd = Shu::Vec2f(Contact.Start.x + Contact.Normal.x * 30.0f,
-                                                             Contact.Start.y + Contact.Normal.y * 30.0f);
-                DrawLine(CmdBuffer, PipelineLayout, Contact.Start.xy, ContactNormalLineEnd, colorU32::Yellow, 2);
-                Contact.ResolveCollision();
+                if(GlobalShowContacts)
+                {
+                    DrawCircle(CmdBuffer, PipelineLayout, Contact.Start.xy, 3, colorU32::Cyan);
+                    DrawCircle(CmdBuffer, PipelineLayout, Contact.End.xy, 3, colorU32::Green);
+                    Shu::vec2f ContactNormalLineEnd = Shu::Vec2f(Contact.Start.x + Contact.Normal.x * 30.0f,
+                                                                Contact.Start.y + Contact.Normal.y * 30.0f);
+                    DrawLine(CmdBuffer, PipelineLayout, Contact.Start.xy, ContactNormalLineEnd, colorU32::Yellow, 2);
 
-                A->IsColliding = true;
-                B->IsColliding = true;
+                    A->IsColliding = true;
+                    B->IsColliding = true;
+                }
+
+                Contact.ResolveCollision();
             }
         }
     }
@@ -498,20 +494,6 @@ DrawBodyWireframe(const VkCommandBuffer cmdBuffer, shoora_body *body, const Shu:
         p1 = (model * mesh->Vertices[2].Pos).xy;
         DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
     }
-    else if (Type == shoora_primitive_type::TRIANGLE)
-    {
-        ASSERT(mesh->VertexCount == 3);
-
-        Shu::vec2f p0 = (model * mesh->Vertices[1].Pos).xy;
-        Shu::vec2f p1 = (model * mesh->Vertices[0].Pos).xy;
-        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
-        p0 = (model * mesh->Vertices[2].Pos).xy;
-        p1 = (model * mesh->Vertices[1].Pos).xy;
-        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
-        p0 = (model * mesh->Vertices[0].Pos).xy;
-        p1 = (model * mesh->Vertices[2].Pos).xy;
-        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
-    }
 }
 
 void
@@ -537,7 +519,7 @@ DrawBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLay
     {
         shoora_body *Body = Bodies + BodyIndex;
 
-        u32 ColorU32 = Body->IsColliding ? 0xffff0000 : 0xffffffff;
+        u32 ColorU32 = Body->IsColliding ? colorU32::Red : colorU32::Green;
         Shu::vec3f Color = GetColor(ColorU32);
 
         Shu::mat4f Model = Shu::TRS(Body->Position, Body->Scale, Body->RotationRadians*RAD_TO_DEG, Shu::Vec3f(0, 0, 1));
@@ -610,14 +592,14 @@ InitScene()
     // Bottom Wall (Static Rigidbody)
     Shu::vec2f Window = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
-    // AddBox(Shu::Vec2f(0, (-Window.y*0.5f)), 0xffffffff, Window.x, 50, 0.0f, 0.1f);
-    // AddBox(Shu::Vec2f(Window.x*0.5f, 0), 0xffffffff, 50, Window.y, 0.0f, 0.1f);
-    // AddBox(Shu::Vec2f(-Window.x*0.5f, 0), 0xffffffff, 50, Window.y, 0.0f, 0.1f);
+    AddBox(Shu::Vec2f(0, (-Window.y*0.5f)), 0xffffffff, Window.x, 50, 0.0f, 0.1f);
+    AddBox(Shu::Vec2f(Window.x*0.5f, 0), 0xffffffff, 50, Window.y, 0.0f, 0.1f);
+    AddBox(Shu::Vec2f(-Window.x*0.5f, 0), 0xffffffff, 50, Window.y, 0.0f, 0.1f);
 
     // Middle Square (Static regidbody)
-    AddBox(Shu::Vec2f(0, 0), 0xffffffff, 300, 300, 0.0f, 1.0f);
-    Bodies[0].RotationRadians = 35.0f*DEG_TO_RAD;
-    AddCircle(Shu::Vec2f(300, 0), 0xffffffff, 150, 0.0f, 0.5f);
+    AddBox(Shu::Vec2f(-150, 0), 0xffffffff, 300, 300, 0.0f, 1.0f);
+    Bodies[3].RotationRadians = 35.0f*DEG_TO_RAD;
+    AddCircle(Shu::Vec2f(300, 0), 0xffffffff, 75, 0.0f, 0.5f);
 
     // AddBox(Shu::Vec2f(10, (Window.y*0.5) - 10.0f), 0xffffffff, 75, 100, 1.0f, 0.2f);
     // AddBox(Shu::Vec2f(100, (Window.y*0.5) - 10.0f), 0xffffffff, 75, 100, 1.0f, 0.2f);
@@ -642,7 +624,6 @@ DrawScene(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLayo
     VkDeviceSize offsets[1] = {0};
     vkCmdBindVertexBuffers(CmdBuffer, 0, 1, shoora_primitive_collection::GetVertexBufferHandlePtr(), offsets);
     vkCmdBindIndexBuffer(CmdBuffer, shoora_primitive_collection::GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
-
 
     UpdateBodiesOnInput(CmdBuffer, CurrentMousePos, CurrentMouseWorldPos);
     UpdateBodyPhysics(CmdBuffer, PipelineLayout, DeltaTime);
@@ -978,6 +959,10 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     if(Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
     {
         AddBox(CurrentMouseWorldPos, colorU32::White, 50, 50, 1.0, 0.7f);
+    }
+    if(Platform_GetKeyInputState(SU_SPACE, KeyState::SHU_KEYSTATE_PRESS))
+    {
+        GlobalShowContacts = !GlobalShowContacts;
     }
 
     if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))

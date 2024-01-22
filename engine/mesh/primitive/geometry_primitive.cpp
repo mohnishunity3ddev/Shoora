@@ -26,6 +26,7 @@ static shoora_vertex_info LineVertices[2] =
     {.Pos = Shu::Vec3f( 0.5f,  0.5f, 1.0f)},
 };
 
+#if 0
 static shoora_vertex_info TriangleVertices[] =
 {
     {.Pos = Shu::vec3f{ 0.0f,  0.5f, 1.0f}, .Color = Shu::vec3f{1, 0, 0}},
@@ -33,6 +34,7 @@ static shoora_vertex_info TriangleVertices[] =
     {.Pos = Shu::vec3f{-0.5f, -0.5f, 1.0f}, .Color = Shu::vec3f{0, 0, 1}}
 };
 static u32 TriangleIndices[] = {0, 1, 2};
+#endif
 
 static shoora_vertex_info RectVertices[] =
 {
@@ -235,9 +237,9 @@ Initialize(shoora_vulkan_device *Device, u32 CircleResolution)
 
     ASSERT(CircleResolution >= 1);
     TotalVertexCount = (CircleResolution + 1) + ARRAY_SIZE(CubeVertices) + ARRAY_SIZE(RectVertices) +
-                       ARRAY_SIZE(TriangleVertices) + ARRAY_SIZE(LineVertices);
-    TotalIndexCount = (CircleResolution * 3) + ARRAY_SIZE(CubeIndices) + ARRAY_SIZE(RectIndices) +
-                      ARRAY_SIZE(TriangleIndices);
+                       /* ARRAY_SIZE(TriangleVertices) +*/ ARRAY_SIZE(LineVertices);
+    TotalIndexCount = (CircleResolution * 3) + ARRAY_SIZE(CubeIndices) + ARRAY_SIZE(RectIndices) /*+
+                      ARRAY_SIZE(TriangleIndices)*/;
     Memory = malloc(TotalVertexCount*sizeof(shoora_vertex_info) + TotalIndexCount*sizeof(u32));
     TotalVertices = (shoora_vertex_info *)Memory;
     TotalIndices = (u32 *)(TotalVertices + TotalVertexCount);
@@ -272,20 +274,6 @@ Initialize(shoora_vulkan_device *Device, u32 CircleResolution)
     memcpy(RectMeshFilter->Indices, RectIndices, RectMeshFilter->IndexCount * sizeof(u32));
     RunningVertexCount += RectMeshFilter->VertexCount;
     RunningIndexCount += RectMeshFilter->IndexCount;
-
-    shoora_primitive *TrianglePrimitive = &Collection.Triangle;
-    TrianglePrimitive->PrimitiveType = shoora_primitive_type::TRIANGLE;
-    TrianglePrimitive->VertexOffset = RunningVertexCount;
-    TrianglePrimitive->IndexOffset = RunningIndexCount;
-    shoora_mesh_filter *TriangleMeshFilter = &TrianglePrimitive->MeshFilter;
-    TriangleMeshFilter->Vertices = TotalVertices + RunningVertexCount;
-    TriangleMeshFilter->VertexCount = ARRAY_SIZE(TriangleVertices);
-    TriangleMeshFilter->Indices = TotalIndices + RunningIndexCount;
-    TriangleMeshFilter->IndexCount = ARRAY_SIZE(TriangleIndices);
-    memcpy(TriangleMeshFilter->Vertices, TriangleVertices, TriangleMeshFilter->VertexCount * sizeof(shoora_vertex_info));
-    memcpy(TriangleMeshFilter->Indices, TriangleIndices, TriangleMeshFilter->IndexCount * sizeof(u32));
-    RunningVertexCount += TriangleMeshFilter->VertexCount;
-    RunningIndexCount += TriangleMeshFilter->IndexCount;
 
     shoora_primitive *LinePrimitive = &Collection.Line;
     LinePrimitive->PrimitiveType = shoora_primitive_type::LINE;
@@ -330,11 +318,6 @@ shoora_primitive_collection::GetPrimitive(shoora_primitive_type Type)
         case shoora_primitive_type::RECT_2D:
         {
             Result = &Collection.Rect2D;
-        } break;
-
-        case shoora_primitive_type::TRIANGLE:
-        {
-            Result = &Collection.Triangle;
         } break;
 
         case shoora_primitive_type::CUBE:

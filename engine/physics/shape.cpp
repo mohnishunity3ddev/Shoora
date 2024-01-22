@@ -67,7 +67,7 @@ shoora_shape_polygon::GetEdgeAt(i32 Index)
 shoora_primitive_type
 shoora_shape_polygon::GetType() const
 {
-    return shoora_primitive_type::POLYGON;
+    return shoora_primitive_type::POLYGON_2D;
 }
 
 // IMPORTANT: NOTE: We are using the Separate Axis Theorem to find any one axis which acts as a plane that divides
@@ -187,38 +187,4 @@ shoora_primitive_type
 shoora_shape_box::GetType() const
 {
     return shoora_primitive_type::RECT_2D;
-}
-
-// NOTE: Triangle
-shoora_shape_triangle::shoora_shape_triangle(u32 Base, u32 Height) : shoora_shape(shoora_primitive_type::TRIANGLE)
-{
-    this->Base = Base;
-    this->Height = Height;
-}
-
-shoora_shape_triangle::~shoora_shape_triangle()
-{
-    LogUnformatted("shoora_shape_triangle destructor called!\n");
-}
-
-f32
-shoora_shape_triangle::GetMomentOfInertia() const
-{
-    f32 b = this->Base;
-    f32 h = this->Height;
-    f32 Result = (b * (h * h * h)) / 36.0f;
-    return Result;
-}
-
-Shu::vec3f
-shoora_shape_triangle::GetDim() const
-{
-    Shu::vec3f Result = Shu::Vec3f(this->Base, this->Height, 1.0f);
-    return Result;
-}
-
-shoora_primitive_type
-shoora_shape_triangle::GetType() const
-{
-    return shoora_primitive_type::TRIANGLE;
 }

@@ -9,8 +9,7 @@ enum shoora_primitive_type
 {
     NONE,
     LINE,
-    POLYGON,
-    TRIANGLE,
+    POLYGON_2D,
     RECT_2D,
     CIRCLE,
     CUBE,
@@ -39,7 +38,6 @@ struct shoora_primitive_collection
 
   private:
     shoora_primitive Line;
-    shoora_primitive Triangle;
     shoora_primitive Rect2D;
     shoora_primitive Circle;
     shoora_primitive Cube;
