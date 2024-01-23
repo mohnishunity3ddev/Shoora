@@ -1,15 +1,30 @@
-#include "vulkan_draw.h"
+#include "vulkan_graphics.h"
 #include <mesh/primitive/geometry_primitive.h>
 #include <utils/utils.h>
 
-struct data{
+static VkCommandBuffer GlobalCommandBuffer;
+static VkPipelineLayout GlobalPipelineLayout;
+
+struct data
+{
     Shu::mat4f Model;
     Shu::vec3f Color = {1, 1, 1};
 };
 
 void
-shoora_draw::DrawLine(VkCommandBuffer CmdBuffer, const VkPipelineLayout &pipelineLayout, const Shu::vec2f P0,
-                      const Shu::vec2f P1, u32 ColorU32, f32 Thickness)
+shoora_graphics::UpdateCmdBuffer(const VkCommandBuffer &CmdBuffer)
+{
+    GlobalCommandBuffer = CmdBuffer;
+}
+
+void
+shoora_graphics::UpdatePipelineLayout(const VkPipelineLayout &PipelineLayout)
+{
+    GlobalPipelineLayout = PipelineLayout;
+}
+
+void
+shoora_graphics::DrawLine(const Shu::vec2f P0, const Shu::vec2f P1, u32 ColorU32, f32 Thickness)
 {
 #if 0
     Shu::vec2f p0 = MouseToScreenSpace(P0);
@@ -25,14 +40,13 @@ shoora_draw::DrawLine(VkCommandBuffer CmdBuffer, const VkPipelineLayout &pipelin
 
     data Value = {.Model = Model, .Color = GetColor(ColorU32)};
 
-    vkCmdPushConstants(CmdBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+    vkCmdPushConstants(GlobalCommandBuffer, GlobalPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                        sizeof(data), &Value);
-    vkCmdDrawIndexed(CmdBuffer, Line->MeshFilter.IndexCount, 1, Line->IndexOffset, Line->VertexOffset, 0);
+    vkCmdDrawIndexed(GlobalCommandBuffer, Line->MeshFilter.IndexCount, 1, Line->IndexOffset, Line->VertexOffset, 0);
 }
 
 void
-shoora_draw::DrawRect(VkCommandBuffer CmdBuffer, const VkPipelineLayout &pipelineLayout, i32 X, i32 Y, u32 Width,
-                      u32 Height, u32 ColorU32)
+shoora_graphics::DrawRect(i32 X, i32 Y, u32 Width, u32 Height, u32 ColorU32)
 {
     Shu::mat4f Model = Shu::Mat4f(1.0f);
     Shu::Scale(Model, Shu::Vec3f((f32)Width * 0.5f, (f32)Height * 0.5f, 1.0f));
@@ -41,15 +55,14 @@ shoora_draw::DrawRect(VkCommandBuffer CmdBuffer, const VkPipelineLayout &pipelin
     shoora_primitive *Primitive = shoora_primitive_collection::GetPrimitive(shoora_primitive_type::RECT_2D);
     data Value = {.Model = Model, .Color = GetColor(ColorU32)};
 
-    vkCmdPushConstants(CmdBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+    vkCmdPushConstants(GlobalCommandBuffer, GlobalPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                        sizeof(data), &Value);
-    vkCmdDrawIndexed(CmdBuffer, Primitive->MeshFilter.IndexCount, 1, Primitive->IndexOffset,
+    vkCmdDrawIndexed(GlobalCommandBuffer, Primitive->MeshFilter.IndexCount, 1, Primitive->IndexOffset,
                      Primitive->VertexOffset, 0);
 }
 
 void
-shoora_draw::DrawCircle(VkCommandBuffer CmdBuffer, const VkPipelineLayout pipelineLayout, Shu::vec2f pos,
-                        f32 radius, u32 ColorU32)
+shoora_graphics::DrawCircle(Shu::vec2f pos, f32 radius, u32 ColorU32)
 {
     Shu::mat4f Model = Shu::Mat4f(1.0f);
     Shu::Scale(Model, Shu::Vec3f(radius, radius, 1.0f));
@@ -58,15 +71,14 @@ shoora_draw::DrawCircle(VkCommandBuffer CmdBuffer, const VkPipelineLayout pipeli
     shoora_primitive *Primitive = shoora_primitive_collection::GetPrimitive(shoora_primitive_type::CIRCLE);
     data Value = {.Model = Model, .Color = GetColor(ColorU32)};
 
-    vkCmdPushConstants(CmdBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+    vkCmdPushConstants(GlobalCommandBuffer, GlobalPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                        sizeof(data), &Value);
-    vkCmdDrawIndexed(CmdBuffer, Primitive->MeshFilter.IndexCount, 1, Primitive->IndexOffset,
+    vkCmdDrawIndexed(GlobalCommandBuffer, Primitive->MeshFilter.IndexCount, 1, Primitive->IndexOffset,
                      Primitive->VertexOffset, 0);
 }
 
 void
-shoora_draw::DrawSpring(VkCommandBuffer CmdBuffer, const VkPipelineLayout &pipelineLayout,
-                        const Shu::vec2f &startPos, const Shu::vec2f &endPos, f32 restLength, f32 thickness,
+shoora_graphics::DrawSpring(const Shu::vec2f &startPos, const Shu::vec2f &endPos, f32 restLength, f32 thickness,
                         i32 nDivisions, u32 Color)
 {
     ASSERT(nDivisions > 0);
@@ -85,7 +97,7 @@ shoora_draw::DrawSpring(VkCommandBuffer CmdBuffer, const VkPipelineLayout &pipel
         Shu::vec2f t = startPos + unitVector * (offset * (DivIndex + 1.0f));
         Shu::vec2f p1 = t + perp * (thickness * 0.5f * sign);
 
-        DrawLine(CmdBuffer, pipelineLayout, p0, p1, Color, 3.0f);
+        DrawLine(p0, p1, Color, 3.0f);
 
         p0 = p1;
         sign *= -1;
@@ -93,7 +105,7 @@ shoora_draw::DrawSpring(VkCommandBuffer CmdBuffer, const VkPipelineLayout &pipel
 }
 
 void
-shoora_draw::Draw(const VkCommandBuffer &CmdBuffer, u32 IndexCount, u32 IndexOffset, i32 VertexOffset)
+shoora_graphics::Draw(u32 IndexCount, u32 IndexOffset, i32 VertexOffset)
 {
-    vkCmdDrawIndexed(CmdBuffer, IndexCount, 1, IndexOffset, VertexOffset, 0);
+    vkCmdDrawIndexed(GlobalCommandBuffer, IndexCount, 1, IndexOffset, VertexOffset, 0);
 }

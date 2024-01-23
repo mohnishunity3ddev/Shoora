@@ -1,5 +1,5 @@
 #include "body.h"
-#include <renderer/vulkan/vulkan_draw.h>
+#include <renderer/vulkan/graphics/vulkan_graphics.h>
 
 void
 shoora_body::Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Mass, f32 Restitution,
@@ -193,5 +193,60 @@ shoora_body::KeepInView(const Shu::rect2d &ViewBounds, f32 DampFactor)
     {
         this->Position.x = boundX.y - Dim.x;
         this->Velocity.x *= DampFactor;
+    }
+}
+
+void
+shoora_body::DrawWireframe(const Shu::mat4f &model, f32 thickness, u32 color)
+{
+    shoora_mesh_filter *mesh = &this->Shape->Primitive->MeshFilter;
+    shoora_primitive_type Type = this->Shape->Primitive->PrimitiveType;
+
+    if (Type == shoora_primitive_type::CIRCLE)
+    {
+        for (i32 i = 1; i < mesh->VertexCount; ++i)
+        {
+            Shu::vec3f pos0 = mesh->Vertices[i - 1].Pos;
+            Shu::vec3f pos1 = mesh->Vertices[i].Pos;
+
+            Shu::vec2f p0 = (model * pos0).xy;
+            Shu::vec2f p1 = (model * pos1).xy;
+            shoora_graphics::DrawLine(p0, p1, color, 2.5f);
+        }
+
+        Shu::vec2f p0 = (model * mesh->Vertices[mesh->VertexCount - 1].Pos).xy;
+        Shu::vec2f p1 = (model * mesh->Vertices[1].Pos).xy;
+        shoora_graphics::DrawLine(p0, p1, color, thickness);
+    }
+    else if (Type == shoora_primitive_type::RECT_2D)
+    {
+        ASSERT(mesh->VertexCount == 4);
+
+        Shu::vec2f p0 = (model * mesh->Vertices[2].Pos).xy;
+        Shu::vec2f p1 = (model * mesh->Vertices[1].Pos).xy;
+        shoora_graphics::DrawLine(p0, p1, color, thickness);
+        p0 = (model * mesh->Vertices[1].Pos).xy;
+        p1 = (model * mesh->Vertices[0].Pos).xy;
+        shoora_graphics::DrawLine(p0, p1, color, thickness);
+        p0 = (model * mesh->Vertices[0].Pos).xy;
+        p1 = (model * mesh->Vertices[3].Pos).xy;
+        shoora_graphics::DrawLine(p0, p1, color, thickness);
+        p0 = (model * mesh->Vertices[3].Pos).xy;
+        p1 = (model * mesh->Vertices[2].Pos).xy;
+        shoora_graphics::DrawLine(p0, p1, color, thickness);
+    }
+}
+
+void
+shoora_body::Draw()
+{
+    if (this->Shape->isPrimitive)
+    {
+        shoora_primitive_info Info = this->Shape->Primitive->GetInfo();
+        shoora_graphics::Draw(Info.IndexCount, Info.IndexOffset, Info.VertexOffset);
+    }
+    else
+    {
+        ASSERT(!"TO-DO");
     }
 }

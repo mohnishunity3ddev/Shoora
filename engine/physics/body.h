@@ -54,6 +54,9 @@ struct shoora_body
 
     void UpdateWorldVertices();
 
+    void Draw();
+    void DrawWireframe(const Shu::mat4f &model, f32 thickness, u32 color);
+
     void ApplyImpulse(const Shu::vec2f &Impulse);
     void ApplyImpulse(const Shu::vec2f &Impulse, const Shu::vec2f &R);
 
