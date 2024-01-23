@@ -243,7 +243,7 @@ Initialize(shoora_vulkan_device *Device, u32 CircleResolution)
     Memory = malloc(TotalVertexCount*sizeof(shoora_vertex_info) + TotalIndexCount*sizeof(u32));
     TotalVertices = (shoora_vertex_info *)Memory;
     TotalIndices = (u32 *)(TotalVertices + TotalVertexCount);
-
+    
     Collection.Circle.PrimitiveType = shoora_primitive_type::CIRCLE;
     GenerateCircleMesh(&Collection.Circle, CircleResolution);
 

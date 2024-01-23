@@ -10,6 +10,7 @@
 #include "vulkan_render_pass.h"
 #include "vulkan_work_submission.h"
 #include "graphics/vulkan_graphics.h"
+#include "scene/vulkan_scene.h"
 
 #include <mesh/primitive/geometry_primitive.h>
 #include <mesh/mesh_utils.h>
@@ -33,16 +34,9 @@
 
 static shoora_vulkan_context *Context = nullptr;
 
-#define NUM_BODIES 10
 static b32 MouseTracking = false;
 static Shu::vec2f MouseInitialDownPos = Shu::Vec2f(0);
 static shoora_body *BodyToMove = nullptr;
-static shoora_body Bodies[256];
-static u32 BodyCount = 0;
-static f32 BodyMass = 1.5f;
-static f32 PrevBodyMass = BodyMass;
-static f32 BodyRadius = 50.0f;
-static f32 PrevBodyRadius = BodyRadius;
 
 static b32 isDebug = false;
 static b32 WireframeMode = true;
@@ -143,6 +137,8 @@ static push_const_block GlobalPushConstBlock = {};
 static f32 GlobalImGuiDragFloatStep = 0.005f;
 static Shu::vec2u GlobalWindowSize = {};
 
+static shoora_scene *Scene;
+
 void
 WindowResizedCallback(u32 Width, u32 Height)
 {
@@ -198,13 +194,11 @@ ImGuiNewFrame()
         }
     }
 
-    ImGui::SliderFloat("Bodies Mass", &BodyMass, 0.1f, 10.0f);
-    ImGui::SliderFloat("Bodies Radius", &BodyRadius, 1.0f, 100.0f);
     ImGui::SliderFloat("Test Scale", &TestCameraScale, 0.5f, 100.0f);
     ImGui::Checkbox("Toggle Wireframe", (bool *)&WireframeMode);
 
     ImGui::Spacing();
-    ImGui::Text("Body Cout: %d", BodyCount);
+    ImGui::Text("Body Count: %d", Scene->GetBodyCount());
 
 #if CREATE_WIREFRAME_PIPELINE
     ImGui::Checkbox("Toggle Wireframe", (bool *)&GlobalRenderState.WireframeMode);
@@ -300,33 +294,6 @@ struct unlit_shader_data
     Shu::vec3f Color = {1, 1, 1};
 };
 
-void
-AddCircle(const Shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 Mass, f32 Restitution)
-{
-    ASSERT(BodyCount < ARRAY_SIZE(Bodies));
-    shoora_body *Body = &Bodies[BodyCount++];
-    Body->Initialize(GetColor(ColorU32), Pos, Mass, Restitution, std::make_unique<shoora_shape_circle>(Radius));
-}
-
-void
-AddBox(const Shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Height, f32 Mass, f32 Restitution)
-{
-    ASSERT(BodyCount < ARRAY_SIZE(Bodies));
-    shoora_body *Body = &Bodies[BodyCount++];
-    Body->Initialize(GetColor(ColorU32), Pos, Mass, Restitution,
-                     std::make_unique<shoora_shape_box>(Width, Height));
-}
-
-void
-AddPolygon(const Shu::vec2f Pos, u32 ColorU32, f32 Mass, f32 Restitution)
-{
-    ASSERT(BodyCount < ARRAY_SIZE(Bodies));
-    shoora_body *Body = &Bodies[BodyCount++];
-
-    auto poly = std::make_unique<shoora_shape_polygon>(nullptr, 1);
-    Body->Initialize(GetColor(ColorU32), Pos, Mass, Restitution, std::move(poly));
-}
-
 Shu::vec2f
 MouseToWorld(const Shu::vec2f &MousePos)
 {
@@ -359,6 +326,10 @@ WorldToMouse(const Shu::vec2f &WorldPos)
 inline void
 UpdateBodyPhysics(f32 dt)
 {
+    i32 BodyCount = Scene->GetBodyCount();
+    auto *Bodies = Scene->GetBodies();
+    ASSERT(Bodies != nullptr);
+
     for(i32 BodyIndex = 0;
         BodyIndex < BodyCount;
         ++BodyIndex)
@@ -430,7 +401,7 @@ UpdateBodyPhysics(f32 dt)
         Bodies[i].UpdateWorldVertices();
     }
 
-    // NOTE: Check for collision with the rest of the rigidbodies present in the scene.
+    // NOTE: Check for collision with the rest of the rigidbodies present in the Scene->
     for(i32 i = 0; i < (BodyCount - 1); ++i)
     {
         shoora_body *A = Bodies + i;
@@ -476,6 +447,9 @@ DrawBodies(const VkCommandBuffer &CmdBuffer, f32 DeltaTime, b32 Wireframe)
         Wireframe = false;
     }
 
+    shoora_body *Bodies = Scene->GetBodies();
+    i32 BodyCount = Scene->GetBodyCount();
+
     for(u32 BodyIndex = 0;
         BodyIndex < BodyCount;
         ++BodyIndex)
@@ -505,6 +479,9 @@ DrawBodies(const VkCommandBuffer &CmdBuffer, f32 DeltaTime, b32 Wireframe)
 void
 UpdateBodiesOnInput(const Shu::vec2f &CurrentMousePos, const Shu::vec2f &CurrentMouseWorldPos)
 {
+    shoora_body *Bodies = Scene->GetBodies();
+    i32 BodyCount = Scene->GetBodyCount();
+
     for(u32 BodyIndex = 0;
         BodyIndex < BodyCount;
         ++BodyIndex)
@@ -555,14 +532,13 @@ InitScene()
     // Bottom Wall (Static Rigidbody)
     Shu::vec2f Window = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
-    AddBox(Shu::Vec2f(0, (-Window.y*0.5f)), 0xffffffff, Window.x, 50, 0.0f, 0.1f);
-    AddBox(Shu::Vec2f(Window.x*0.5f, 0), 0xffffffff, 50, Window.y, 0.0f, 0.1f);
-    AddBox(Shu::Vec2f(-Window.x*0.5f, 0), 0xffffffff, 50, Window.y, 0.0f, 0.1f);
+    Scene->AddBox(Shu::Vec2f(0, (-Window.y*0.5f)), 0xffffffff, Window.x, 50, 0.0f, 0.1f);
+    Scene->AddBox(Shu::Vec2f(Window.x * 0.5f, 0), 0xffffffff, 50, Window.y, 0.0f, 0.1f);
+    Scene->AddBox(Shu::Vec2f(-Window.x * 0.5f, 0), 0xffffffff, 50, Window.y, 0.0f, 0.1f);
 
     // Middle Square (Static regidbody)
-    AddBox(Shu::Vec2f(-150, 0), 0xffffffff, 300, 300, 0.0f, 1.0f);
-    Bodies[3].RotationRadians = 35.0f*DEG_TO_RAD;
-    AddCircle(Shu::Vec2f(300, 0), 0xffffffff, 75, 0.0f, 0.5f);
+    Scene->AddBox(Shu::Vec2f(-150, 0), 0xffffffff, 300, 300, 0.0f, 1.0f, 35.0f*DEG_TO_RAD);
+    Scene->AddCircle(Shu::Vec2f(300, 0), 0xffffffff, 75, 0.0f, 0.5f);
 
     // AddBox(Shu::Vec2f(10, (Window.y*0.5) - 10.0f), 0xffffffff, 75, 100, 1.0f, 0.2f);
     // AddBox(Shu::Vec2f(100, (Window.y*0.5) - 10.0f), 0xffffffff, 75, 100, 1.0f, 0.2f);
@@ -638,8 +614,6 @@ CreateUnlitPipeline(shoora_vulkan_context *Context)
                          &Context->UnlitPipeline.Layout);
     CreateGraphicsPipeline(Context, "shaders/spirv/unlit.vert.spv", "shaders/spirv/unlit.frag.spv",
                            &Context->UnlitPipeline);
-
-    InitScene();
 }
 
 void
@@ -779,7 +753,11 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     GlobalUiUpdateTimer = 0.0f;
 
     Context = VulkanContext;
+
     shoora_graphics::UpdatePipelineLayout(Context->UnlitPipeline.Layout);
+
+    Scene = new shoora_scene();
+    InitScene();
 }
 
 void
@@ -918,11 +896,11 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     b32 LMBDown = Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, KeyState::SHU_KEYSTATE_DOWN);
     if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
     {
-        AddCircle(CurrentMouseWorldPos, colorU32::White, 25, 1.0, 0.7f);
+        Scene->AddCircle(CurrentMouseWorldPos, colorU32::White, 25, 1.0, 0.7f);
     }
     if(Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
     {
-        AddBox(CurrentMouseWorldPos, colorU32::White, 50, 50, 1.0, 0.7f);
+        Scene->AddBox(CurrentMouseWorldPos, colorU32::White, 50, 50, 1.0, 0.7f);
     }
     if(Platform_GetKeyInputState(SU_SPACE, KeyState::SHU_KEYSTATE_PRESS))
     {
@@ -1094,7 +1072,7 @@ DestroyVulkanRenderer(shoora_vulkan_context *Context)
 {
     VK_CHECK(vkDeviceWaitIdle(Context->Device.LogicalDevice));
     shoora_vulkan_device *RenderDevice = &Context->Device;
-
+    delete Scene;
     ImGuiCleanup(RenderDevice, &Context->ImContext);
     CleanupGeometry(RenderDevice, &Context->Geometry);
 

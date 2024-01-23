@@ -1,9 +1,8 @@
 #include "body.h"
 #include <renderer/vulkan/graphics/vulkan_graphics.h>
 
-void
-shoora_body::Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Mass, f32 Restitution,
-                        std::unique_ptr<shoora_shape> Shape)
+shoora_body::shoora_body(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Mass, f32 Restitution,
+                         std::unique_ptr<shoora_shape> Shape, f32 InitialRotation)
 {
     ASSERT(Mass >= 0.0f);
     ASSERT(Restitution > 0.0f && Restitution <= 1.0f);
@@ -11,7 +10,7 @@ shoora_body::Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 
     this->Color = Color;
     this->Position = Shu::Vec3f(InitPos, 0.0f);
 
-    this->RotationRadians = 0.0f;
+    this->RotationRadians = InitialRotation;
     this->AngularVelocity = 0.0f;
     this->AngularAcceleration = 0.0f;
 
