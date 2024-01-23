@@ -9,6 +9,7 @@
 #include "vulkan_pipeline.h"
 #include "vulkan_render_pass.h"
 #include "vulkan_work_submission.h"
+#include "vulkan_draw.h"
 
 #include <mesh/primitive/geometry_primitive.h>
 #include <mesh/mesh_utils.h>
@@ -316,6 +317,16 @@ AddBox(const Shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Height, f32 Mass, f32 
                      std::make_unique<shoora_shape_box>(Width, Height));
 }
 
+void
+AddPolygon(const Shu::vec2f Pos, u32 ColorU32, f32 Mass, f32 Restitution)
+{
+    ASSERT(BodyCount < ARRAY_SIZE(Bodies));
+    shoora_body *Body = &Bodies[BodyCount++];
+
+    auto poly = std::make_unique<shoora_shape_polygon>(nullptr, 1);
+    Body->Initialize(GetColor(ColorU32), Pos, Mass, Restitution, std::move(poly));
+}
+
 Shu::vec2f
 MouseToWorld(const Shu::vec2f &MousePos)
 {
@@ -439,11 +450,11 @@ UpdateBodyPhysics(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &Pipe
                 // NOTE: Visualizing the Collision Contact Info.
                 if(GlobalShowContacts)
                 {
-                    DrawCircle(CmdBuffer, PipelineLayout, Contact.Start.xy, 3, colorU32::Cyan);
-                    DrawCircle(CmdBuffer, PipelineLayout, Contact.End.xy, 3, colorU32::Green);
-                    Shu::vec2f ContactNormalLineEnd = Shu::Vec2f(Contact.Start.x + Contact.Normal.x * 30.0f,
-                                                                Contact.Start.y + Contact.Normal.y * 30.0f);
-                    DrawLine(CmdBuffer, PipelineLayout, Contact.Start.xy, ContactNormalLineEnd, colorU32::Yellow, 2);
+                    shoora_draw::DrawCircle(CmdBuffer, PipelineLayout, Contact.Start.xy, 3, colorU32::Cyan);
+                    shoora_draw::DrawCircle(CmdBuffer, PipelineLayout, Contact.End.xy, 3, colorU32::Green);
+                    Shu::vec2f ContactNormalLineEnd = Shu::Vec2f(Contact.Start.x + Contact.Normal.x*30.0f,
+                                                                 Contact.Start.y + Contact.Normal.y*30.0f);
+                    shoora_draw::DrawLine(CmdBuffer, PipelineLayout, Contact.Start.xy, ContactNormalLineEnd, colorU32::Yellow, 2);
 
                     A->IsColliding = true;
                     B->IsColliding = true;
@@ -470,12 +481,12 @@ DrawBodyWireframe(const VkCommandBuffer cmdBuffer, shoora_body *body, const Shu:
 
             Shu::vec2f p0 = (model * pos0).xy;
             Shu::vec2f p1 = (model * pos1).xy;
-            DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, 2.5f);
+            shoora_draw::DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, 2.5f);
         }
 
         Shu::vec2f p0 = (model * mesh->Vertices[mesh->VertexCount - 1].Pos).xy;
         Shu::vec2f p1 = (model * mesh->Vertices[1].Pos).xy;
-        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
+        shoora_draw::DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
     }
     else if(Type == shoora_primitive_type::RECT_2D)
     {
@@ -483,16 +494,16 @@ DrawBodyWireframe(const VkCommandBuffer cmdBuffer, shoora_body *body, const Shu:
 
         Shu::vec2f p0 = (model * mesh->Vertices[2].Pos).xy;
         Shu::vec2f p1 = (model * mesh->Vertices[1].Pos).xy;
-        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
+        shoora_draw::DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
         p0 = (model * mesh->Vertices[1].Pos).xy;
         p1 = (model * mesh->Vertices[0].Pos).xy;
-        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
+        shoora_draw::DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
         p0 = (model * mesh->Vertices[0].Pos).xy;
         p1 = (model * mesh->Vertices[3].Pos).xy;
-        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
+        shoora_draw::DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
         p0 = (model * mesh->Vertices[3].Pos).xy;
         p1 = (model * mesh->Vertices[2].Pos).xy;
-        DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
+        shoora_draw::DrawLine(cmdBuffer, Context->UnlitPipeline.Layout, p0, p1, color, thickness);
     }
 }
 
@@ -502,10 +513,10 @@ DrawBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLay
     auto camRect = Context->Camera.GetRect();
     auto left = Shu::Vec2f(camRect.x - (camRect.width / 2), camRect.y);
     auto right = Shu::Vec2f(camRect.x + (camRect.width / 2), camRect.y);
-    DrawLine(CmdBuffer, PipelineLayout, left, right, 0xff313131, 1.0f);
+    shoora_draw::DrawLine(CmdBuffer, PipelineLayout, left, right, 0xff313131, 1.0f);
     auto top = Shu::Vec2f(camRect.x, camRect.y + (camRect.height / 2));
     auto bottom = Shu::Vec2f(camRect.x, camRect.y - (camRect.height / 2));
-    DrawLine(CmdBuffer, PipelineLayout, top, bottom, 0xff313131, 1.0f);
+    shoora_draw::DrawLine(CmdBuffer, PipelineLayout, top, bottom, 0xff313131, 1.0f);
 
     if (Wireframe && !isDebug)
     {
@@ -518,6 +529,7 @@ DrawBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLay
         ++BodyIndex)
     {
         shoora_body *Body = Bodies + BodyIndex;
+        auto *BodyShape = Body->Shape.get();
 
         u32 ColorU32 = Body->IsColliding ? colorU32::Red : colorU32::Green;
         Shu::vec3f Color = GetColor(ColorU32);
@@ -529,7 +541,11 @@ DrawBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLay
         {
             vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                                sizeof(unlit_shader_data), &Value);
-            Body->Shape->Draw(CmdBuffer);
+            if(BodyShape->isPrimitive)
+            {
+                shoora_primitive_info Info = BodyShape->Primitive->GetInfo();
+                shoora_draw::Draw(CmdBuffer, Info.IndexCount, Info.IndexOffset, Info.VertexOffset);
+            }
         }
         else
         {

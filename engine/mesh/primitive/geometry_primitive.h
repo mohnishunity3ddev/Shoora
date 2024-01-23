@@ -17,13 +17,20 @@ enum shoora_primitive_type
     MAX_COUNT
 };
 
+struct shoora_primitive_info
+{
+    u32 IndexCount;
+    i32 IndexOffset;
+    i32 VertexOffset;
+};
+
 struct shoora_primitive
 {
     shoora_mesh_filter MeshFilter;
     u32 VertexOffset, IndexOffset;
     shoora_primitive_type PrimitiveType;
 
-    void Draw(const VkCommandBuffer &cmdBuffer);
+    shoora_primitive_info GetInfo();
 };
 
 struct shoora_primitive_collection
@@ -48,15 +55,6 @@ struct shoora_primitive_collection
 
     shoora_vulkan_device *RenderDevice;
 };
-
-void DrawLine(VkCommandBuffer CmdBuffer, const VkPipelineLayout &pipelineLayout, const Shu::vec2f P0,
-              const Shu::vec2f P1, u32 ColorU32, f32 Thickness);
-void DrawRect(VkCommandBuffer CmdBuffer, const VkPipelineLayout &pipelineLayout, i32 X, i32 Y, u32 Width,
-              u32 Height, u32 ColorU32);
-void DrawSpring(VkCommandBuffer CmdBuffer, const VkPipelineLayout &pipelineLayout, const Shu::vec2f &startPos,
-                const Shu::vec2f &endPos, f32 restLength, f32 thickness, i32 nDivisions, u32 Color);
-void DrawCircle(VkCommandBuffer CmdBuffer, const VkPipelineLayout pipelineLayout, Shu::vec2f pos, f32 radius,
-                u32 ColorU32);
 
 #define GEOMETRY_PRIMITIVE_H
 #endif // GEOMETRY_PRIMITIVE_H

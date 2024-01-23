@@ -32,7 +32,7 @@ QuicksortIterative(T *Items, i32 Size, b32 (*Cmp)(const T &, const T &) = Defaul
     i32 high = Size;
 
     if(high <= low) return;
-
+    
     interval<i32> Range{low, high};
     interval<i32> InvalidInterval{-1, -1};
     stack<interval<i32>> Stack{Size, InvalidInterval};

@@ -1,5 +1,5 @@
 #include "body.h"
-#include <float.h>
+#include <renderer/vulkan/vulkan_draw.h>
 
 void
 shoora_body::Initialize(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Mass, f32 Restitution,
@@ -71,7 +71,10 @@ shoora_body::UpdateWorldVertices()
         shoora_shape_polygon *polygon = (shoora_shape_polygon *)this->Shape.get();
         auto ModelMatrix = Shu::TRS(this->Position, this->Scale, this->RotationRadians * RAD_TO_DEG,
                                     Shu::Vec3f(0, 0, 1));
-        polygon->UpdateWorldVertices(ModelMatrix);
+        if(polygon->isPrimitive)
+        {
+            polygon->UpdateWorldVertices(ModelMatrix);
+        }
     }
 }
 

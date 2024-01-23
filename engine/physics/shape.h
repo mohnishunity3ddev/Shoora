@@ -10,24 +10,31 @@ typedef f32 getInertiaFunc();
 struct shoora_shape
 {
     shoora_primitive *Primitive;
+
     shoora_primitive_type Type;
+    b32 isPrimitive;
 
     // shoora_shape() = default;
-    shoora_shape(shoora_primitive_type Type);
+    shoora_shape(shoora_primitive_type Type, b32 isPrimitive = true);
 
     virtual ~shoora_shape() = default;
     virtual f32 GetMomentOfInertia() const = 0;
     virtual Shu::vec3f GetDim() const = 0;
     virtual shoora_primitive_type GetType() const = 0;
 
-    void Draw(const VkCommandBuffer &cmdBuffer);
+    shoora_mesh_filter *GetMeshFilter();
 };
 
 struct shoora_shape_polygon : shoora_shape
 {
     Shu::vec3f *WorldVertices;
+    Shu::vec3f *LocalVertices;
     u32 VertexCount;
 
+    // NOTE: This constructor is for use for any random polygon shape.
+    shoora_shape_polygon(Shu::vec3f *LocalVertices, i32 VertexCount);
+
+    // NOTE: this constructor is for use by rects
     shoora_shape_polygon(shoora_primitive_type Type);
     virtual ~shoora_shape_polygon();
 

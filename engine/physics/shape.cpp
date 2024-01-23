@@ -1,31 +1,55 @@
 #include "shape.h"
 
 // NOTE: Shape stuff
-shoora_shape::shoora_shape(shoora_primitive_type Type)
+shoora_shape::shoora_shape(shoora_primitive_type Type, b32 isPrimitive)
 {
     this->Type = Type;
-    this->Primitive = shoora_primitive_collection::GetPrimitive(Type);
+    this->isPrimitive = isPrimitive;
+    if(isPrimitive)
+    {
+        this->Primitive = shoora_primitive_collection::GetPrimitive(Type);
+    }
 }
 
-void
-shoora_shape::Draw(const VkCommandBuffer &cmdBuffer)
+shoora_mesh_filter *
+shoora_shape::GetMeshFilter()
 {
-    this->Primitive->Draw(cmdBuffer);
+    shoora_mesh_filter *Result = nullptr;
+    if(this->isPrimitive)
+    {
+        Result = &this->Primitive->MeshFilter;
+    }
+
+    return Result;
 }
 
 // NOTE: Polygon stuff
-shoora_shape_polygon::shoora_shape_polygon(shoora_primitive_type Type) : shoora_shape(Type)
+shoora_shape_polygon::shoora_shape_polygon(shoora_primitive_type Type)
+    : shoora_shape(Type)
 {
     this->VertexCount = this->Primitive->MeshFilter.VertexCount;
     this->WorldVertices = new Shu::vec3f[this->VertexCount];
 }
 
+shoora_shape_polygon::shoora_shape_polygon(Shu::vec3f *LocalVertices, i32 VertexCount)
+    : shoora_shape(shoora_primitive_type::POLYGON_2D, false)
+{
+    ASSERT(VertexCount != 0);
+    this->VertexCount = VertexCount;
+    this->WorldVertices = new Shu::vec3f[this->VertexCount];
+    this->LocalVertices = new Shu::vec3f[this->VertexCount];
+}
+
 shoora_shape_polygon::~shoora_shape_polygon()
 {
-    if (this->WorldVertices != nullptr)
-    {
-        delete[] this->WorldVertices;
-        this->WorldVertices = nullptr;
+    ASSERT(this->WorldVertices != nullptr);
+    delete[] this->WorldVertices;
+    this->WorldVertices = nullptr;
+
+    if(!isPrimitive) {
+        ASSERT(this->LocalVertices != nullptr);
+        delete[] this->LocalVertices;
+        this->LocalVertices = nullptr;
     }
 }
 
@@ -45,11 +69,13 @@ shoora_shape_polygon::GetDim() const
 void
 shoora_shape_polygon::UpdateWorldVertices(Shu::mat4f &ModelMatrix)
 {
-    const auto *LocalVertices = this->Primitive->MeshFilter.Vertices;
-
-    for (u32 i = 0; i < this->VertexCount; ++i)
+    if(this->isPrimitive)
     {
-        this->WorldVertices[i] = (ModelMatrix * LocalVertices[i].Pos).xyz;
+        const auto *LocalVertices = this->Primitive->MeshFilter.Vertices;
+        for (u32 i = 0; i < this->VertexCount; ++i)
+        {
+            this->WorldVertices[i] = (ModelMatrix * LocalVertices[i].Pos).xyz;
+        }
     }
 }
 
@@ -88,8 +114,14 @@ shoora_shape_polygon::GetType() const
 f32
 shoora_shape_polygon::FindMinSeparation(shoora_shape_polygon *Other, Shu::vec2f &SeparationAxis, Shu::vec2f &Point)
 {
-    auto VertexCountA = this->Primitive->MeshFilter.VertexCount;
-    auto VertexCountB = Other->Primitive->MeshFilter.VertexCount;
+    auto *MeshFilterA = this->GetMeshFilter();
+    ASSERT(MeshFilterA != nullptr);
+
+    auto *MeshFilterB = Other->GetMeshFilter();
+    ASSERT(MeshFilterB != nullptr);
+
+    auto VertexCountA = MeshFilterA->VertexCount;
+    auto VertexCountB = MeshFilterB->VertexCount;
 
     f32 BestSeparation = SHU_FLOAT_MIN;
     for (i32 i = 0; i < VertexCountA; ++i)
