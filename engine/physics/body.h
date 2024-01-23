@@ -42,47 +42,8 @@ struct shoora_body
     shoora_body &operator=(const shoora_body &other) = delete;
     shoora_body(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Mass, f32 Restitution,
                 std::unique_ptr<shoora_shape> Shape, f32 InitialRotation = 0.0f);
-    shoora_body(shoora_body &&other) noexcept
-        : IsColliding(other.IsColliding), Position(std::move(other.Position)), Velocity(std::move(other.Velocity)),
-          Acceleration(std::move(other.Acceleration)), RotationRadians(other.RotationRadians),
-          AngularVelocity(other.AngularVelocity), AngularAcceleration(other.AngularAcceleration),
-          CoeffRestitution(other.CoeffRestitution), SumForces(std::move(other.SumForces)),
-          SumTorques(other.SumTorques), FrictionCoeff(other.FrictionCoeff), Mass(other.Mass),
-          InvMass(other.InvMass), I(other.I), InvI(other.InvI), Scale(std::move(other.Scale)),
-          Color(std::move(other.Color)), Shape(std::move(other.Shape))
-    {
-        // Ensure the moved-from object is in a valid state
-        other.IsColliding = false;
-        other.Shape = nullptr; // Assuming ownership transfer is desired
-    }
-    shoora_body &operator=(shoora_body &&other) noexcept
-    {
-        if (this != &other)
-        {
-            IsColliding = other.IsColliding;
-            Position = std::move(other.Position);
-            Velocity = std::move(other.Velocity);
-            Acceleration = std::move(other.Acceleration);
-            RotationRadians = other.RotationRadians;
-            AngularVelocity = other.AngularVelocity;
-            AngularAcceleration = other.AngularAcceleration;
-            CoeffRestitution = other.CoeffRestitution;
-            SumForces = std::move(other.SumForces);
-            SumTorques = other.SumTorques;
-            FrictionCoeff = other.FrictionCoeff;
-            Mass = other.Mass;
-            InvMass = other.InvMass;
-            I = other.I;
-            InvI = other.InvI;
-            Scale = std::move(other.Scale);
-            Color = std::move(other.Color);
-            Shape = std::move(other.Shape);
-
-            other.IsColliding = false;
-            other.Shape = nullptr;
-        }
-        return *this;
-    }
+    shoora_body(shoora_body &&other) noexcept;
+    shoora_body &operator=(shoora_body &&other) noexcept;
 
     ~shoora_body()
     {

@@ -32,6 +32,49 @@ shoora_body::shoora_body(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32
     this->SumTorques = 0.0f;
 }
 
+shoora_body::shoora_body(shoora_body &&other) noexcept
+    : IsColliding(other.IsColliding), Position(std::move(other.Position)), Velocity(std::move(other.Velocity)),
+      Acceleration(std::move(other.Acceleration)), RotationRadians(other.RotationRadians),
+      AngularVelocity(other.AngularVelocity), AngularAcceleration(other.AngularAcceleration),
+      CoeffRestitution(other.CoeffRestitution), SumForces(std::move(other.SumForces)),
+      SumTorques(other.SumTorques), FrictionCoeff(other.FrictionCoeff), Mass(other.Mass), InvMass(other.InvMass),
+      I(other.I), InvI(other.InvI), Scale(std::move(other.Scale)), Color(std::move(other.Color)),
+      Shape(std::move(other.Shape))
+{
+    other.IsColliding = false;
+    other.Shape = nullptr;
+}
+
+shoora_body &
+shoora_body::operator=(shoora_body &&other) noexcept
+{
+    if (this != &other)
+    {
+        IsColliding = other.IsColliding;
+        Position = std::move(other.Position);
+        Velocity = std::move(other.Velocity);
+        Acceleration = std::move(other.Acceleration);
+        RotationRadians = other.RotationRadians;
+        AngularVelocity = other.AngularVelocity;
+        AngularAcceleration = other.AngularAcceleration;
+        CoeffRestitution = other.CoeffRestitution;
+        SumForces = std::move(other.SumForces);
+        SumTorques = other.SumTorques;
+        FrictionCoeff = other.FrictionCoeff;
+        Mass = other.Mass;
+        InvMass = other.InvMass;
+        I = other.I;
+        InvI = other.InvI;
+        Scale = std::move(other.Scale);
+        Color = std::move(other.Color);
+        Shape = std::move(other.Shape);
+
+        other.IsColliding = false;
+        other.Shape = nullptr;
+    }
+    return *this;
+}
+
 b32
 shoora_body::CheckIfClicked(const Shu::vec2f &ClickedWorldPos)
 {
