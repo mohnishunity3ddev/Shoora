@@ -28,7 +28,6 @@ struct shoora_shape
 struct shoora_shape_polygon : shoora_shape
 {
     Shu::vec3f *WorldVertices;
-    Shu::vec3f *LocalVertices;
     u32 VertexCount;
 
     // NOTE: This constructor is for use for any random polygon shape.

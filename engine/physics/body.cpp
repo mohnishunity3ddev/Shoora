@@ -221,18 +221,25 @@ shoora_body::DrawWireframe(const Shu::mat4f &model, f32 thickness, u32 color)
     else if (Type == shoora_primitive_type::RECT_2D)
     {
         ASSERT(mesh->VertexCount == 4);
+        auto *Poly = (shoora_shape_polygon *)this->Shape.get();
+        auto *WorldVertices = Poly->WorldVertices;
 
-        Shu::vec2f p0 = (model * mesh->Vertices[2].Pos).xy;
-        Shu::vec2f p1 = (model * mesh->Vertices[1].Pos).xy;
+        // NOTE: No need to do this for the polygon case, since we are already doing this for polygon in their
+        // physics loop.
+        // Shu::vec2f p0 = (model * mesh->Vertices[2].Pos).xy;
+        // Shu::vec2f p1 = (model * mesh->Vertices[1].Pos).xy;
+
+        Shu::vec2f p0 = WorldVertices[2].xy;
+        Shu::vec2f p1 = WorldVertices[1].xy;
         shoora_graphics::DrawLine(p0, p1, color, thickness);
-        p0 = (model * mesh->Vertices[1].Pos).xy;
-        p1 = (model * mesh->Vertices[0].Pos).xy;
+        p0 = WorldVertices[1].xy;
+        p1 = WorldVertices[0].xy;
         shoora_graphics::DrawLine(p0, p1, color, thickness);
-        p0 = (model * mesh->Vertices[0].Pos).xy;
-        p1 = (model * mesh->Vertices[3].Pos).xy;
+        p0 = WorldVertices[0].xy;
+        p1 = WorldVertices[3].xy;
         shoora_graphics::DrawLine(p0, p1, color, thickness);
-        p0 = (model * mesh->Vertices[3].Pos).xy;
-        p1 = (model * mesh->Vertices[2].Pos).xy;
+        p0 = WorldVertices[3].xy;
+        p1 = WorldVertices[2].xy;
         shoora_graphics::DrawLine(p0, p1, color, thickness);
     }
 }

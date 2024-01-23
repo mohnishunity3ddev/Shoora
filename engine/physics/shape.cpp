@@ -37,7 +37,6 @@ shoora_shape_polygon::shoora_shape_polygon(Shu::vec3f *LocalVertices, i32 Vertex
     ASSERT(VertexCount != 0);
     this->VertexCount = VertexCount;
     this->WorldVertices = new Shu::vec3f[this->VertexCount];
-    this->LocalVertices = new Shu::vec3f[this->VertexCount];
 }
 
 shoora_shape_polygon::~shoora_shape_polygon()
@@ -45,12 +44,6 @@ shoora_shape_polygon::~shoora_shape_polygon()
     ASSERT(this->WorldVertices != nullptr);
     delete[] this->WorldVertices;
     this->WorldVertices = nullptr;
-
-    if(!isPrimitive) {
-        ASSERT(this->LocalVertices != nullptr);
-        delete[] this->LocalVertices;
-        this->LocalVertices = nullptr;
-    }
 }
 
 f32

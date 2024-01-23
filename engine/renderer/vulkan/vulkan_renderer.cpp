@@ -356,15 +356,8 @@ WorldToMouse(const Shu::vec2f &WorldPos)
 }
 #endif
 
-void
-AddImpulseToBody(shoora_body *Body, const Shu::vec2f InImpulse)
-{
-    Shu::vec2f Impulse = InImpulse*5.0f;
-    Body->Velocity += Shu::Vec3f(Impulse, 0.0f);
-}
-
 inline void
-UpdateBodyPhysics(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLayout, f32 dt)
+UpdateBodyPhysics(f32 dt)
 {
     for(i32 BodyIndex = 0;
         BodyIndex < BodyCount;
@@ -467,7 +460,7 @@ UpdateBodyPhysics(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &Pipe
 }
 
 void
-DrawBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLayout, f32 DeltaTime, b32 Wireframe)
+DrawBodies(const VkCommandBuffer &CmdBuffer, f32 DeltaTime, b32 Wireframe)
 {
     auto camRect = Context->Camera.GetRect();
     auto left = Shu::Vec2f(camRect.x - (camRect.width / 2), camRect.y);
@@ -510,8 +503,7 @@ DrawBodies(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLay
 }
 
 void
-UpdateBodiesOnInput(VkCommandBuffer CmdBuffer, const Shu::vec2f &CurrentMousePos,
-                    const Shu::vec2f &CurrentMouseWorldPos)
+UpdateBodiesOnInput(const Shu::vec2f &CurrentMousePos, const Shu::vec2f &CurrentMouseWorldPos)
 {
     for(u32 BodyIndex = 0;
         BodyIndex < BodyCount;
@@ -596,9 +588,9 @@ DrawScene(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLayo
     vkCmdBindVertexBuffers(CmdBuffer, 0, 1, shoora_primitive_collection::GetVertexBufferHandlePtr(), offsets);
     vkCmdBindIndexBuffer(CmdBuffer, shoora_primitive_collection::GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
 
-    UpdateBodiesOnInput(CmdBuffer, CurrentMousePos, CurrentMouseWorldPos);
-    UpdateBodyPhysics(CmdBuffer, PipelineLayout, DeltaTime);
-    DrawBodies(CmdBuffer, PipelineLayout, GlobalDeltaTime, WireframeMode);
+    UpdateBodiesOnInput(CurrentMousePos, CurrentMouseWorldPos);
+    UpdateBodyPhysics(DeltaTime);
+    DrawBodies(CmdBuffer, GlobalDeltaTime, WireframeMode);
 }
 
 void
