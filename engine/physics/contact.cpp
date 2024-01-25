@@ -39,7 +39,7 @@ contact::ResolveCollision()
     }
 
     // Separate out the bodies so that there is no penetration
-     this->ResolvePenetration();
+    this->ResolvePenetration();
 
     f32 E = MIN(A->CoeffRestitution, B->CoeffRestitution);
     f32 F = MIN(A->FrictionCoeff, B->FrictionCoeff);

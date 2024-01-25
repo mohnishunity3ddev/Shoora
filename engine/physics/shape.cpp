@@ -1,41 +1,41 @@
 #include "shape.h"
 
 // NOTE: Shape stuff
-shoora_shape::shoora_shape(shoora_primitive_type Type, b32 isPrimitive)
+shoora_shape::shoora_shape(shoora_mesh_type Type)
 {
     this->Type = Type;
-    this->isPrimitive = isPrimitive;
-    if(isPrimitive)
-    {
-        this->Primitive = shoora_primitive_collection::GetPrimitive(Type);
-    }
+    this->isPrimitive = true;
+    this->MeshFilter = shoora_mesh_database::GetMeshFilter(Type);
+}
+
+shoora_shape::shoora_shape(shoora_mesh_type Type, shoora_mesh_filter *MeshFilter)
+{
+    this->Type = Type;
+    this->isPrimitive = false;
+    this->MeshFilter = MeshFilter;
 }
 
 shoora_mesh_filter *
 shoora_shape::GetMeshFilter()
 {
-    shoora_mesh_filter *Result = nullptr;
-    if(this->isPrimitive)
-    {
-        Result = &this->Primitive->MeshFilter;
-    }
-
+    shoora_mesh_filter *Result = this->MeshFilter;
     return Result;
 }
 
 // NOTE: Polygon stuff
-shoora_shape_polygon::shoora_shape_polygon(shoora_primitive_type Type)
+shoora_shape_polygon::shoora_shape_polygon(shoora_mesh_type Type)
     : shoora_shape(Type)
 {
-    this->VertexCount = this->Primitive->MeshFilter.VertexCount;
+    this->VertexCount = MeshFilter->VertexCount;
     this->WorldVertices = new Shu::vec3f[this->VertexCount];
 }
 
-shoora_shape_polygon::shoora_shape_polygon(Shu::vec3f *LocalVertices, i32 VertexCount)
-    : shoora_shape(shoora_primitive_type::POLYGON_2D, false)
+shoora_shape_polygon::shoora_shape_polygon(i32 MeshId, f32 Scale)
+    : shoora_shape(shoora_mesh_type::POLYGON_2D, shoora_mesh_database::GetCustomMeshFilter(MeshId))
 {
     ASSERT(VertexCount != 0);
-    this->VertexCount = VertexCount;
+    this->Scale = Scale;
+    this->VertexCount = MeshFilter->VertexCount;
     this->WorldVertices = new Shu::vec3f[this->VertexCount];
 }
 
@@ -49,26 +49,24 @@ shoora_shape_polygon::~shoora_shape_polygon()
 f32
 shoora_shape_polygon::GetMomentOfInertia() const
 {
-    return 0.0f;
+    // TODO: Come up with logic to calculate moment of inertia for random polygons.
+    return 5000.0f;
 }
 
 Shu::vec3f
 shoora_shape_polygon::GetDim() const
 {
-    auto Result = Shu::Vec3f(0.0f);
+    auto Result = Shu::Vec3f(Scale, Scale, 1.0f);
     return Result;
 }
 
 void
 shoora_shape_polygon::UpdateWorldVertices(Shu::mat4f &ModelMatrix)
 {
-    if(this->isPrimitive)
+    const auto *LocalVertices = MeshFilter->Vertices;
+    for (u32 i = 0; i < this->VertexCount; ++i)
     {
-        const auto *LocalVertices = this->Primitive->MeshFilter.Vertices;
-        for (u32 i = 0; i < this->VertexCount; ++i)
-        {
-            this->WorldVertices[i] = (ModelMatrix * LocalVertices[i].Pos).xyz;
-        }
+        this->WorldVertices[i] = (ModelMatrix * LocalVertices[i].Pos).xyz;
     }
 }
 
@@ -83,10 +81,10 @@ shoora_shape_polygon::GetEdgeAt(i32 Index)
     return Result;
 }
 
-shoora_primitive_type
+shoora_mesh_type
 shoora_shape_polygon::GetType() const
 {
-    return shoora_primitive_type::POLYGON_2D;
+    return shoora_mesh_type::POLYGON_2D;
 }
 
 // IMPORTANT: NOTE: We are using the Separate Axis Theorem to find any one axis which acts as a plane that divides
@@ -151,7 +149,7 @@ shoora_shape_polygon::FindMinSeparation(shoora_shape_polygon *Other, Shu::vec2f 
 }
 
 // NOTE: Circle
-shoora_shape_circle::shoora_shape_circle(u32 Radius) : shoora_shape(shoora_primitive_type::CIRCLE)
+shoora_shape_circle::shoora_shape_circle(u32 Radius) : shoora_shape(shoora_mesh_type::CIRCLE)
 {
     this->Radius = Radius;
 }
@@ -175,15 +173,15 @@ shoora_shape_circle::GetDim() const
     return Result;
 }
 
-shoora_primitive_type
+shoora_mesh_type
 shoora_shape_circle::GetType() const
 {
-    return shoora_primitive_type::CIRCLE;
+    return shoora_mesh_type::CIRCLE;
 }
 
 
 // NOTE: Box Stuff
-shoora_shape_box::shoora_shape_box(u32 Width, u32 Height) : shoora_shape_polygon(shoora_primitive_type::RECT_2D)
+shoora_shape_box::shoora_shape_box(u32 Width, u32 Height) : shoora_shape_polygon(shoora_mesh_type::RECT_2D)
 {
     this->Width = Width;
     this->Height = Height;
@@ -208,8 +206,8 @@ shoora_shape_box::GetDim() const
     return Result;
 }
 
-shoora_primitive_type
+shoora_mesh_type
 shoora_shape_box::GetType() const
 {
-    return shoora_primitive_type::RECT_2D;
+    return shoora_mesh_type::RECT_2D;
 }

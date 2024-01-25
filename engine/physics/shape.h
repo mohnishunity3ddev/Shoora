@@ -1,7 +1,7 @@
 #if !defined(SHAPE_H)
 
 #include <defines.h>
-#include <mesh/primitive/geometry_primitive.h>
+#include <mesh/database/mesh_database.h>
 #include <math/math.h>
 
 #define MOMENT_OF_INTERTIA_FUNC(name) f32 name()
@@ -9,18 +9,19 @@ typedef f32 getInertiaFunc();
 
 struct shoora_shape
 {
-    shoora_primitive *Primitive;
+    shoora_mesh_filter *MeshFilter;
 
-    shoora_primitive_type Type;
+    shoora_mesh_type Type;
     b32 isPrimitive;
 
     // shoora_shape() = default;
-    shoora_shape(shoora_primitive_type Type, b32 isPrimitive = true);
+    shoora_shape(shoora_mesh_type Type);
+    shoora_shape(shoora_mesh_type Type, shoora_mesh_filter *MeshFilter);
 
     virtual ~shoora_shape() = default;
     virtual f32 GetMomentOfInertia() const = 0;
     virtual Shu::vec3f GetDim() const = 0;
-    virtual shoora_primitive_type GetType() const = 0;
+    virtual shoora_mesh_type GetType() const = 0;
 
     shoora_mesh_filter *GetMeshFilter();
 };
@@ -28,18 +29,21 @@ struct shoora_shape
 struct shoora_shape_polygon : shoora_shape
 {
     Shu::vec3f *WorldVertices;
+
     u32 VertexCount;
+    i32 MeshId = -1;
+    f32 Scale;
 
     // NOTE: This constructor is for use for any random polygon shape.
-    shoora_shape_polygon(Shu::vec3f *LocalVertices, i32 VertexCount);
+    shoora_shape_polygon(i32 MeshId, f32 Scale = 1.0f);
 
     // NOTE: this constructor is for use by rects
-    shoora_shape_polygon(shoora_primitive_type Type);
+    shoora_shape_polygon(shoora_mesh_type Type);
     virtual ~shoora_shape_polygon();
 
     virtual f32 GetMomentOfInertia() const override;
     virtual Shu::vec3f GetDim() const override;
-    virtual shoora_primitive_type GetType() const override;
+    virtual shoora_mesh_type GetType() const override;
 
     f32 FindMinSeparation(shoora_shape_polygon *Other, Shu::vec2f &SeparationAxis, Shu::vec2f &Point);
 
@@ -56,7 +60,7 @@ struct shoora_shape_circle : shoora_shape
     f32 Radius;
     virtual f32 GetMomentOfInertia() const override;
     virtual Shu::vec3f GetDim() const override;
-    virtual shoora_primitive_type GetType() const override;
+    virtual shoora_mesh_type GetType() const override;
 };
 
 struct shoora_shape_box : shoora_shape_polygon
@@ -68,7 +72,7 @@ struct shoora_shape_box : shoora_shape_polygon
     u32 Width, Height;
     virtual f32 GetMomentOfInertia() const override;
     virtual Shu::vec3f GetDim() const override;
-    virtual shoora_primitive_type GetType() const override;
+    virtual shoora_mesh_type GetType() const override;
 };
 
 #define SHAPE_H

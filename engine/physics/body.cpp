@@ -79,7 +79,7 @@ b32
 shoora_body::CheckIfClicked(const Shu::vec2f &ClickedWorldPos)
 {
     b32 Result = false;
-    if (this->Shape->Type == shoora_primitive_type::CIRCLE)
+    if (this->Shape->Type == shoora_mesh_type::CIRCLE)
     {
         Shu::vec2f l = ClickedWorldPos - Shu::ToVec2(this->Position);
         u32 Radius = this->Shape->GetDim().x;
@@ -113,10 +113,7 @@ shoora_body::UpdateWorldVertices()
         shoora_shape_polygon *polygon = (shoora_shape_polygon *)this->Shape.get();
         auto ModelMatrix = Shu::TRS(this->Position, this->Scale, this->RotationRadians * RAD_TO_DEG,
                                     Shu::Vec3f(0, 0, 1));
-        if(polygon->isPrimitive)
-        {
-            polygon->UpdateWorldVertices(ModelMatrix);
-        }
+        polygon->UpdateWorldVertices(ModelMatrix);
     }
 }
 
@@ -208,9 +205,9 @@ shoora_body::KeepInView(const Shu::rect2d &ViewBounds, f32 DampFactor)
     Shu::vec2f Dim = this->Shape->GetDim().xy;
     switch(this->Shape->Type)
     {
-        case shoora_primitive_type::CIRCLE: { }
+        case shoora_mesh_type::CIRCLE: { }
         break;
-        case shoora_primitive_type::RECT_2D:
+        case shoora_mesh_type::RECT_2D:
         break;
 
         SHU_INVALID_DEFAULT
@@ -241,10 +238,10 @@ shoora_body::KeepInView(const Shu::rect2d &ViewBounds, f32 DampFactor)
 void
 shoora_body::DrawWireframe(const Shu::mat4f &model, f32 thickness, u32 color)
 {
-    shoora_mesh_filter *mesh = &this->Shape->Primitive->MeshFilter;
-    shoora_primitive_type Type = this->Shape->Primitive->PrimitiveType;
+    shoora_mesh_filter *mesh = this->Shape->MeshFilter;
+    shoora_mesh_type Type = this->Shape->Type;
 
-    if (Type == shoora_primitive_type::CIRCLE)
+    if (Type == shoora_mesh_type::CIRCLE)
     {
         for (i32 i = 1; i < mesh->VertexCount; ++i)
         {
@@ -260,42 +257,38 @@ shoora_body::DrawWireframe(const Shu::mat4f &model, f32 thickness, u32 color)
         Shu::vec2f p1 = (model * mesh->Vertices[1].Pos).xy;
         shoora_graphics::DrawLine(p0, p1, color, thickness);
     }
-    else if (Type == shoora_primitive_type::RECT_2D)
+    else if (Type == shoora_mesh_type::POLYGON_2D || Type == shoora_mesh_type::RECT_2D)
     {
-        ASSERT(mesh->VertexCount == 4);
+        ASSERT(mesh->VertexCount >= 3);
         auto *Poly = (shoora_shape_polygon *)this->Shape.get();
         auto *WorldVertices = Poly->WorldVertices;
 
-        // NOTE: No need to do this for the polygon case, since we are already doing this for polygon in their
-        // physics loop.
-        // Shu::vec2f p0 = (model * mesh->Vertices[2].Pos).xy;
-        // Shu::vec2f p1 = (model * mesh->Vertices[1].Pos).xy;
-
-        Shu::vec2f p0 = WorldVertices[2].xy;
-        Shu::vec2f p1 = WorldVertices[1].xy;
-        shoora_graphics::DrawLine(p0, p1, color, thickness);
-        p0 = WorldVertices[1].xy;
-        p1 = WorldVertices[0].xy;
-        shoora_graphics::DrawLine(p0, p1, color, thickness);
-        p0 = WorldVertices[0].xy;
-        p1 = WorldVertices[3].xy;
-        shoora_graphics::DrawLine(p0, p1, color, thickness);
-        p0 = WorldVertices[3].xy;
-        p1 = WorldVertices[2].xy;
-        shoora_graphics::DrawLine(p0, p1, color, thickness);
+        // NOTE: No need to calculate TRS here since that's already been done in the physics loop for polygons.
+        for (i32 i = 0; i < mesh->VertexCount; ++i)
+        {
+            Shu::vec2f p0 = WorldVertices[i].xy;
+            Shu::vec2f p1 = WorldVertices[(i+1) % mesh->VertexCount].xy;
+            shoora_graphics::DrawLine(p0, p1, color, thickness);
+        }
     }
 }
 
 void
 shoora_body::Draw()
 {
-    if (this->Shape->isPrimitive)
+#if 0
+    if(this->Shape->isPrimitive)
     {
-        shoora_primitive_info Info = this->Shape->Primitive->GetInfo();
+        auto *mesh = (shoora_mesh *)this->Shape->MeshFilter;
+        shoora_mesh_info Info = mesh->GetInfo();
         shoora_graphics::Draw(Info.IndexCount, Info.IndexOffset, Info.VertexOffset);
     }
     else
     {
         ASSERT(!"TO-DO");
     }
+#endif
+    auto *mesh = (shoora_mesh *)this->Shape->MeshFilter;
+    shoora_mesh_info Info = mesh->GetInfo();
+    shoora_graphics::Draw(Info.IndexCount, Info.IndexOffset, Info.VertexOffset);
 }

@@ -12,7 +12,7 @@
 #include "graphics/vulkan_graphics.h"
 #include "scene/vulkan_scene.h"
 
-#include <mesh/primitive/geometry_primitive.h>
+#include <mesh/database/mesh_database.h>
 #include <mesh/mesh_utils.h>
 #include <physics/body.h>
 #include <physics/force.h>
@@ -532,24 +532,16 @@ InitScene()
     // Bottom Wall (Static Rigidbody)
     Shu::vec2f Window = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
-    Scene->AddBox(Shu::Vec2f(0, (-Window.y*0.5f)), 0xffffffff, Window.x, 50, 0.0f, 0.1f);
-    Scene->AddBox(Shu::Vec2f(Window.x * 0.5f, 0), 0xffffffff, 50, Window.y, 0.0f, 0.1f);
-    Scene->AddBox(Shu::Vec2f(-Window.x * 0.5f, 0), 0xffffffff, 50, Window.y, 0.0f, 0.1f);
+#if 1
+    Scene->AddBoxBody(Shu::Vec2f(0, (-Window.y*0.5f)), colorU32::White, Window.x, 50, 0.0f, 0.1f);
+    Scene->AddBoxBody(Shu::Vec2f(Window.x * 0.5f, 0), colorU32::White, 50, Window.y, 0.0f, 0.1f);
+    Scene->AddBoxBody(Shu::Vec2f(-Window.x * 0.5f, 0), colorU32::White, 50, Window.y, 0.0f, 0.1f);
 
     // Middle Square (Static regidbody)
-    Scene->AddBox(Shu::Vec2f(-150, 0), 0xffffffff, 300, 300, 0.0f, 1.0f, 35.0f*DEG_TO_RAD);
-    Scene->AddCircle(Shu::Vec2f(300, 0), 0xffffffff, 75, 0.0f, 0.5f);
-
-    // AddBox(Shu::Vec2f(10, (Window.y*0.5) - 10.0f), 0xffffffff, 75, 100, 1.0f, 0.2f);
-    // AddBox(Shu::Vec2f(100, (Window.y*0.5) - 10.0f), 0xffffffff, 75, 100, 1.0f, 0.2f);
-    // AddBox(Shu::Vec2f(200, (Window.y*0.5) - 10.0f), 0xffffffff, 75, 100, 1.0f, 0.2f);
-    // AddBox(Shu::Vec2f(300, (Window.y*0.5) - 10.0f), 0xffffffff, 75, 100, 1.0f, 0.2f);
-    // AddBox(Shu::Vec2f(0, 0), 0xffffffff, 300, 300, 0.0f, 0.7f);
-
-    // AddBox(Shu::Vec2f(50, (Window.y*0.5) - 10.0f), 0xffffffff, 100, 100, 2.0f, 0.7f);
-    // AddBox(Shu::Vec2f(90, (Window.y*0.5) - 10.0f), 0xffffffff, 100, 100, 1.0f, 0.7f);
-    // AddBox(Shu::Vec2f(110, (Window.y*0.5) - 10.0f), 0xffffffff, 100, 100, 1.0f, 0.7f);
-
+    Scene->AddBoxBody(Shu::Vec2f(-450, 0), colorU32::White, 300, 300, 0.0f, 1.0f, 35.0f*DEG_TO_RAD);
+    Scene->AddCircleBody(Shu::Vec2f(-150, 0), colorU32::White, 75, 0.0f, 0.5f);
+    Scene->AddPolygonBody(0, Shu::Vec2f(200, 0), colorU32::White, 0.0f, 0.5f, 0.0f, 7.0f);
+#endif
 }
 
 void
@@ -561,8 +553,8 @@ DrawScene(const VkCommandBuffer &CmdBuffer, const VkPipelineLayout &PipelineLayo
     vkCmdBindPipeline(CmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Handle);
 
     VkDeviceSize offsets[1] = {0};
-    vkCmdBindVertexBuffers(CmdBuffer, 0, 1, shoora_primitive_collection::GetVertexBufferHandlePtr(), offsets);
-    vkCmdBindIndexBuffer(CmdBuffer, shoora_primitive_collection::GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(CmdBuffer, 0, 1, shoora_mesh_database::GetVertexBufferHandlePtr(), offsets);
+    vkCmdBindIndexBuffer(CmdBuffer, shoora_mesh_database::GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
 
     UpdateBodiesOnInput(CurrentMousePos, CurrentMouseWorldPos);
     UpdateBodyPhysics(DeltaTime);
@@ -703,7 +695,14 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     SetupCamera(&VulkanContext->Camera, shoora_projection::PROJECTION_ORTHOGRAPHIC, 0.1f, 100.0f, 16.0f / 9.0f,
                 GlobalWindowSize.y, 45.0f /*,  Shu::Vec3f(GlobalWindowSize.x/2, GlobalWindowSize.y/2, 0.0f) */);
 
-    shoora_primitive_collection::Initialize(RenderDevice, 40);
+    // NOTE: Mesh Database setup
+
+    shoora_mesh_database::MeshDbBegin(RenderDevice);
+    Shu::vec3f Poly1[] = {{0, 10, 1}, {10, 3, 1}, {10, -5, 1}, {-10, -5, 1}, {-10, 3, 1}};
+    shoora_mesh_database::AddPolygonMeshToDb(Poly1, ARRAY_SIZE(Poly1));
+    Shu::vec3f Poly2[] = {{20, 60, 1}, {40, 20, 1}, {20, -60, 1}, {-20, -60, 1}, {-40, 20, 1}};
+    shoora_mesh_database::AddPolygonMeshToDb(Poly2, ARRAY_SIZE(Poly2));
+    shoora_mesh_database::MeshDbEnd();
 
 #if RENDER_SPONZA
     // NOTE: This is for Sponza Scene Gemoetry. Loading all meshes, textures and everything else related to it!.
@@ -896,11 +895,12 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     b32 LMBDown = Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, KeyState::SHU_KEYSTATE_DOWN);
     if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
     {
-        Scene->AddCircle(CurrentMouseWorldPos, colorU32::White, 25, 1.0, 0.7f);
+        Scene->AddCircleBody(CurrentMouseWorldPos, colorU32::White, 25, 1.0, 0.7f);
     }
     if(Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
     {
-        Scene->AddBox(CurrentMouseWorldPos, colorU32::White, 50, 50, 1.0, 0.7f);
+        // Scene->AddBoxBody(CurrentMouseWorldPos, colorU32::White, 50, 50, 1.0, 0.7f);
+        Scene->AddPolygonBody(1, CurrentMouseWorldPos, colorU32::White, 1.0f, 1.0f, 0.0f, 1.0f);
     }
     if(Platform_GetKeyInputState(SU_SPACE, KeyState::SHU_KEYSTATE_PRESS))
     {
@@ -1077,7 +1077,7 @@ DestroyVulkanRenderer(shoora_vulkan_context *Context)
     CleanupGeometry(RenderDevice, &Context->Geometry);
 
     CleanupUnlitPipeline();
-    shoora_primitive_collection::Destroy();
+    shoora_mesh_database::Destroy();
     DestroyUnlitPipelineResources();
     DestroySwapchainUniformResources(RenderDevice, &Context->Swapchain);
 

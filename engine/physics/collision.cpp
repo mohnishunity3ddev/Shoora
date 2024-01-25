@@ -1,13 +1,13 @@
 #include "collision.h"
-#include <mesh/primitive/geometry_primitive.h>
+#include <mesh/database/mesh_database.h>
 
 b32
 collision2d::IsColliding(shoora_body *A, shoora_body *B, contact &Contact)
 {
     b32 Result = false;
 
-    b32 isBodyACircle = (A->Shape->GetType() == shoora_primitive_type::CIRCLE);
-    b32 isBodyBCircle = (B->Shape->GetType() == shoora_primitive_type::CIRCLE);
+    b32 isBodyACircle = (A->Shape->GetType() == shoora_mesh_type::CIRCLE);
+    b32 isBodyBCircle = (B->Shape->GetType() == shoora_mesh_type::CIRCLE);
     b32 isBodyAPolygon = (A->Shape->GetType() == POLYGON_2D || A->Shape->GetType() == RECT_2D);
     b32 isBodyBPolygon = (B->Shape->GetType() == POLYGON_2D || B->Shape->GetType() == RECT_2D);
 
@@ -103,8 +103,8 @@ collision2d::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle,
 {
     b32 IsCollidingResult = false;
 
-    ASSERT(Polygon->Shape->GetType() == shoora_primitive_type::POLYGON_2D || shoora_primitive_type::RECT_2D);
-    ASSERT(Circle->Shape->GetType() == shoora_primitive_type::CIRCLE);
+    ASSERT(Polygon->Shape->GetType() == shoora_mesh_type::POLYGON_2D || shoora_mesh_type::RECT_2D);
+    ASSERT(Circle->Shape->GetType() == shoora_mesh_type::CIRCLE);
 
     shoora_shape_polygon *Poly  = (shoora_shape_polygon *)Polygon->Shape.get();
     shoora_shape_circle *Circ = (shoora_shape_circle *)Circle->Shape.get();
