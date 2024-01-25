@@ -11,12 +11,12 @@
 #include "vulkan_command_buffer.h"
 #include "vulkan_synchronization.h"
 
-const char *RequiredInstanceLayers[] =
+#ifdef _SHU_DEBUG
+const char *RequiredInstanceLayers[1] =
 {
-#if _DEBUG
     SHU_VK_VALIDATION_KHRONOS,
-#endif
 };
+#endif
 
 const char *RequiredInstanceExtensions[] =
 {
@@ -28,11 +28,11 @@ const char *RequiredInstanceExtensions[] =
 #if defined(__APPLE__)
     #SHU_VULKAN_EXTENSION_MACOS_SURFACE,
 #endif
-#if defined(__linux__)
+#ifdef __linux__
     SHU_VULKAN_EXTENSION_XCB_SURFACE,
 #endif
 
-#if defined(_DEBUG)
+#if _SHU_DEBUG
     SHU_VK_EXTENSION_DEBUG_UTILS,
     // SHU_VK_EXTENSION_DEBUG_REPORT
 #endif
@@ -56,9 +56,7 @@ shoora_vulkan_debug_create_info DebugCreateInfo = {.SeverityFlags = VK_DEBUG_UTI
                                                                  VK_DEBUG_REPORT_DEBUG_BIT_EXT};
 
 shoora_instance_create_info ShuraInstanceCreateInfo = {.ppRequiredInstanceExtensions = RequiredInstanceExtensions,
-                                                       .RequiredInstanceExtensionCount = ARRAY_SIZE(RequiredInstanceExtensions),
-                                                       .ppRequiredInstanceLayers = RequiredInstanceLayers,
-                                                       .RequiredInstanceLayerCount = ARRAY_SIZE(RequiredInstanceLayers)};
+                                                       .RequiredInstanceExtensionCount = ARRAY_SIZE(RequiredInstanceExtensions)};
 
 shoora_queue_info QueueInfos[] =
 {

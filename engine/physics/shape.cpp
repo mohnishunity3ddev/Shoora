@@ -33,9 +33,9 @@ shoora_shape_polygon::shoora_shape_polygon(shoora_mesh_type Type)
 shoora_shape_polygon::shoora_shape_polygon(i32 MeshId, f32 Scale)
     : shoora_shape(shoora_mesh_type::POLYGON_2D, shoora_mesh_database::GetCustomMeshFilter(MeshId))
 {
-    ASSERT(VertexCount != 0);
     this->Scale = Scale;
     this->VertexCount = MeshFilter->VertexCount;
+    ASSERT(this->VertexCount != 0);
     this->WorldVertices = new Shu::vec3f[this->VertexCount];
 }
 

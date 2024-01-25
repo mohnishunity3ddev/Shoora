@@ -41,12 +41,20 @@ typedef double f64;
 #define FPS_CAPPING_ENABLED 0
 
 #define SHU_INT_MIN (i32)1 << 31
-#define SHU_FLOAT_MIN -__FLT_MAX__
-#define SHU_FLOAT_MAX __FLT_MAX__
 
 #ifdef _MSC_VER
 #define SHU_ALIGN_16 __declspec(align(16))
+#include <cfloat>
+#define SHU_FLOAT_MIN -FLT_MAX
+#define SHU_FLOAT_MAX FLT_MAX
+#if _DEBUG
+    #define _SHU_DEBUG 1
+#else
+    #define _SHU_RELEASE 1
+#endif
 #elif defined(__clang__)
+#define SHU_FLOAT_MIN -__FLT_MAX__
+#define SHU_FLOAT_MAX __FLT_MAX__
 #define SHU_ALIGN_16 __attribute__((aligned(16)))
 #else
 #define ALIGN_16

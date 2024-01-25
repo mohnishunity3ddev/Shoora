@@ -1,6 +1,7 @@
 #if !defined(STACK_H)
 
 #include <defines.h>
+#include <platform/platform.h>
 #include <memory.h>
 
 

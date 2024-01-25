@@ -430,6 +430,7 @@ UpdateBodyPhysics(f32 dt)
     }
 }
 
+static b32 msgShown = false;
 void
 DrawBodies(const VkCommandBuffer &CmdBuffer, f32 DeltaTime, b32 Wireframe)
 {
@@ -441,9 +442,10 @@ DrawBodies(const VkCommandBuffer &CmdBuffer, f32 DeltaTime, b32 Wireframe)
     auto bottom = Shu::Vec2f(camRect.x, camRect.y - (camRect.height / 2));
     shoora_graphics::DrawLine(top, bottom, 0xff313131, 1.0f);
 
-    if (Wireframe && !isDebug)
+    if (Wireframe && !isDebug && !msgShown)
     {
         LogWarnUnformatted("Wireframe mode is only available in debug builds. Turning off Wireframe mode!\n");
+        msgShown = true;
         Wireframe = false;
     }
 
@@ -666,6 +668,10 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     VK_CHECK(volkInitialize());
 
     ShuraInstanceCreateInfo.AppName = AppInfo->AppName;
+#if _SHU_DEBUG
+    ShuraInstanceCreateInfo.ppRequiredInstanceLayers = RequiredInstanceLayers;
+    ShuraInstanceCreateInfo.RequiredInstanceLayerCount = ARRAY_SIZE(RequiredInstanceLayers);
+#endif
 
     CreateVulkanInstance(VulkanContext, &ShuraInstanceCreateInfo);
     volkLoadInstance(VulkanContext->Instance);
