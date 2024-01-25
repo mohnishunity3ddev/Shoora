@@ -11,6 +11,8 @@ struct shoora_scene
     shoora_dynamic_array<shoora_body> Bodies;
     b32 SceneHasBegun, SceneEnded;
 
+    void CheckCollisions(b32 ShowContacts);
+
   public:
     shoora_scene();
     ~shoora_scene();
@@ -24,6 +26,13 @@ struct shoora_scene
 
     i32 GetBodyCount();
     shoora_body *GetBodies();
+
+    void UpdateInput(const Shu::vec2f &CurrentMouseWorldPos);
+
+    void PhysicsUpdate(f32 dt, b32 ShowContacts);
+
+    void Draw(b32 Wireframe);
+    void DrawAxes(Shu::rect2d &Rect);
 };
 
 #define VULKAN_SCENE_H

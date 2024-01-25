@@ -44,11 +44,7 @@ struct shoora_body
                 std::unique_ptr<shoora_shape> Shape, f32 InitialRotation = 0.0f);
     shoora_body(shoora_body &&other) noexcept;
     shoora_body &operator=(shoora_body &&other) noexcept;
-
-    ~shoora_body()
-    {
-        LogUnformatted("shoora_body desctructor called!\n");
-    }
+    ~shoora_body();
 
     b32 CheckIfClicked(const Shu::vec2f &ClickedWorldPos);
     void KeepInView(const Shu::rect2d &ViewBounds, f32 DampFactor);
@@ -57,6 +53,7 @@ struct shoora_body
     b32 IsStatic() const;
 
     void UpdateWorldVertices();
+    void Update(f32 dt);
 
     void Draw();
     void DrawWireframe(const Shu::mat4f &model, f32 thickness, u32 color);

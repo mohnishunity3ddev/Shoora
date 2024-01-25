@@ -98,6 +98,11 @@ shoora_body::CheckIfClicked(const Shu::vec2f &ClickedWorldPos)
     return Result;
 }
 
+shoora_body::~shoora_body()
+{
+    LogUnformatted("shoora_body desctructor called!\n");
+}
+
 b32
 shoora_body::IsStatic() const
 {
@@ -194,6 +199,14 @@ shoora_body::IntegrateAngular(f32 dt)
     this->RotationRadians += this->AngularVelocity * dt;
 
     ClearTorque();
+}
+
+void
+shoora_body::Update(f32 dt)
+{
+    this->IntegrateLinear(dt);
+    this->IntegrateAngular(dt);
+    this->IsColliding = false;
 }
 
 void

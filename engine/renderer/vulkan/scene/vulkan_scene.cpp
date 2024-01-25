@@ -1,6 +1,23 @@
 #include "vulkan_scene.h"
 
 #include <utils/utils.h>
+#include <physics/collision.h>
+#include <physics/contact.h>
+#include <renderer/vulkan/graphics/vulkan_graphics.h>
+
+#ifdef WIN32
+#include "platform/windows/win_platform.h"
+#endif
+
+static b32 MouseTracking = false;
+static Shu::vec2f MouseInitialDownPos = Shu::Vec2f(0);
+static shoora_body *BodyToMove = nullptr;
+
+struct scene_shader_data
+{
+    Shu::mat4f Mat;
+    Shu::vec3f Col = {1, 1, 1};
+};
 
 shoora_scene::shoora_scene()
 {
@@ -19,7 +36,7 @@ shoora_scene::AddCircleBody(const Shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 
                             f32 InitialRotation)
 {
     shoora_body body{GetColor(ColorU32), Pos, Mass, Restitution, std::make_unique<shoora_shape_circle>(Radius), InitialRotation};
-    Bodies.emplace_back(std::move(body));
+    Bodies.push_back(std::move(body));
 }
 
 void
@@ -28,7 +45,7 @@ shoora_scene::AddBoxBody(const Shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Heig
 {
     shoora_body body{GetColor(ColorU32), Pos, Mass, Restitution, std::make_unique<shoora_shape_box>(Width, Height),
                      InitialRotation};
-    Bodies.emplace_back(std::move(body));
+    Bodies.push_back(std::move(body));
 }
 
 void
@@ -37,7 +54,195 @@ shoora_scene::AddPolygonBody(const u32 MeshId, const Shu::vec2f Pos, u32 ColorU3
 {
     auto poly = std::make_unique<shoora_shape_polygon>(MeshId, Scale);
     shoora_body body{GetColor(ColorU32), Pos, Mass, Restitution, std::move(poly), InitialRotation};
-    Bodies.emplace_back(std::move(body));
+    Bodies.push_back(std::move(body));
+}
+
+void
+shoora_scene::UpdateInput(const Shu::vec2f &CurrentMouseWorldPos)
+{
+    b32 LmbDown = Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, SHU_KEYSTATE_DOWN);
+
+    for (u32 BodyIndex = 0; BodyIndex < Bodies.size(); ++BodyIndex)
+    {
+        shoora_body *Body = Bodies.data() + BodyIndex;
+
+        if (LmbDown)
+        {
+            if (!MouseTracking)
+            {
+                if (Body->CheckIfClicked(CurrentMouseWorldPos))
+                {
+                    MouseTracking = true;
+                    MouseInitialDownPos = Shu::ToVec2(Body->Position);
+                    BodyToMove = Body;
+                }
+            }
+            else if (BodyToMove != nullptr)
+            {
+                BodyToMove->Position = Shu::Vec3f(CurrentMouseWorldPos, BodyToMove->Position.z);
+            }
+        }
+
+#if 0
+        if(MouseTracking)
+        {
+            DrawLine(CmdBuffer, Context->UnlitPipeline.Layout, MouseInitialDownPos, CurrentMouseWorldPos,
+                     0xffff0000, 3.0f);
+        }
+#endif
+    }
+
+    if (MouseTracking && Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, SHU_KEYSTATE_RELEASE))
+    {
+        ASSERT(BodyToMove != nullptr);
+        MouseTracking = false;
+        BodyToMove = nullptr;
+    }
+}
+
+void
+shoora_scene::CheckCollisions(b32 ShowContacts)
+{
+    // NOTE: Check for collision with the rest of the rigidbodies present in the Scene->
+    for (i32 i = 0; i < (Bodies.size() - 1); ++i)
+    {
+        shoora_body *A = Bodies.data() + i;
+        for (i32 j = (i + 1); j < Bodies.size(); ++j)
+        {
+            shoora_body *B = Bodies.data() + j;
+            contact Contact;
+            if (collision2d::IsColliding(A, B, Contact))
+            {
+                // NOTE: Visualizing the Collision Contact Info.
+                if (ShowContacts)
+                {
+                    shoora_graphics::DrawCircle(Contact.Start.xy, 3, colorU32::Cyan);
+                    shoora_graphics::DrawCircle(Contact.End.xy, 3, colorU32::Green);
+                    Shu::vec2f ContactNormalLineEnd = Shu::Vec2f(Contact.Start.x + Contact.Normal.x * 30.0f,
+                                                                 Contact.Start.y + Contact.Normal.y * 30.0f);
+                    shoora_graphics::DrawLine(Contact.Start.xy, ContactNormalLineEnd, colorU32::Yellow, 2);
+
+                    A->IsColliding = true;
+                    B->IsColliding = true;
+                }
+
+                Contact.ResolveCollision();
+            }
+        }
+    }
+}
+
+void
+shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
+{
+
+    i32 BodyCount = GetBodyCount();
+    auto *Bodies = GetBodies();
+    ASSERT(Bodies != nullptr);
+
+    for (i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
+    {
+        ASSERT(BodyIndex < BodyCount);
+        shoora_body *Body = Bodies + BodyIndex;
+
+        // NOTE: If I am debugging, the frametime is going to be huge. So hence, clamping here.
+#if _SHU_DEBUG
+        if (dt > 1.0f / 29.0f)
+        {
+            dt = 1.0f / 29.0f;
+        }
+#endif
+
+#if 1 // Weight Force
+        Shu::vec2f WeightForce = Shu::Vec2f(0.0f, -9.8f * SHU_PIXELS_PER_METER * Body->Mass);
+        Body->AddForce(WeightForce);
+#endif
+
+#if 0 // Push Force through Keys
+        Shu::vec2f PushForce = Shu::Vec2f(1.0f, 1.0f)*(SHU_PIXELS_PER_METER*100);
+        Shu::vec2f BodyForce = Shu::vec2f::Zero();
+        if(Platform_GetKeyInputState(SU_UPARROW, KeyState::SHU_KEYSTATE_DOWN)) { BodyForce.y += PushForce.y; }
+        if(Platform_GetKeyInputState(SU_DOWNARROW, KeyState::SHU_KEYSTATE_DOWN)) { BodyForce.y -= PushForce.y; }
+        if(Platform_GetKeyInputState(SU_LEFTARROW, KeyState::SHU_KEYSTATE_DOWN)) { BodyForce.x -= PushForce.x; }
+        if(Platform_GetKeyInputState(SU_RIGHTARROW, KeyState::SHU_KEYSTATE_DOWN)) { BodyForce.x += PushForce.x; }
+        Body->AddForce(BodyForce);
+#endif
+
+#if 0 // Drag Force
+        Shu::vec2f DragForce = force::GenerateDragForce(Body, 0.03f);
+        Body->AddForce(DragForce);
+#endif
+
+#if 0 // Wind Force
+        Shu::vec2f Wind = Shu::Vec2f(20.0f * SHU_PIXELS_PER_METER, 0.0f);
+        Body->AddForce(Wind);
+#endif
+
+#if 0 // Gravitation Force
+        if((BodyIndex+1) < BodyCount)
+        {
+            shoora_Body *NextBody = Bodies + (BodyIndex+1);
+            Shu::vec2f GravitationalForce = force::GenerateGravitationalForce(Body, NextBody, 100.0f, 5.0f, 100.0f);
+            Body->AddForce(GravitationalForce);
+            NextBody->AddForce(GravitationalForce*-1.0f);
+        }
+#endif
+
+#if 0 // Friction Force
+        Shu::vec2f FrictionForce = force::GenerateFrictionForce(Body, 10.0f*SHU_PIXELS_PER_METER);
+        Body->AddForce(FrictionForce);
+#endif
+
+        Body->Update(dt);
+    }
+
+#if 1
+    for (i32 i = 0; i < BodyCount; ++i)
+    {
+        Bodies[i].UpdateWorldVertices();
+    }
+#endif
+
+    CheckCollisions(ShowContacts);
+}
+
+void
+shoora_scene::Draw(b32 Wireframe)
+{
+    for(u32 BodyIndex = 0; BodyIndex < Bodies.size(); ++BodyIndex)
+    {
+        shoora_body *Body = Bodies.data() + BodyIndex;
+        auto *BodyShape = Body->Shape.get();
+
+        u32 ColorU32 = Body->IsColliding ? colorU32::Red : colorU32::Green;
+        Shu::vec3f Color = GetColor(ColorU32);
+
+        Shu::mat4f Model = Shu::TRS(Body->Position, Body->Scale, Body->RotationRadians * RAD_TO_DEG,
+                                    Shu::Vec3f(0, 0, 1));
+        scene_shader_data Value = {.Mat = Model, .Col = Color};
+
+        if (!Wireframe)
+        {
+            vkCmdPushConstants(shoora_graphics::GetCmdBuffer(), shoora_graphics::GetPipelineLayout(),
+                               VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(scene_shader_data), &Value);
+            Body->Draw();
+        }
+        else
+        {
+            Body->DrawWireframe(Model, 2.5f, ColorU32);
+        }
+    }
+}
+
+void
+shoora_scene::DrawAxes(Shu::rect2d &Rect)
+{
+    auto left = Shu::Vec2f(Rect.x - (Rect.width / 2), Rect.y);
+    auto right = Shu::Vec2f(Rect.x + (Rect.width / 2), Rect.y);
+    shoora_graphics::DrawLine(left, right, 0xff313131, 1.0f);
+    auto top = Shu::Vec2f(Rect.x, Rect.y + (Rect.height / 2));
+    auto bottom = Shu::Vec2f(Rect.x, Rect.y - (Rect.height / 2));
+    shoora_graphics::DrawLine(top, bottom, 0xff313131, 1.0f);
 }
 
 i32

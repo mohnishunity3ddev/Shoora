@@ -44,16 +44,16 @@ const char *RequiredDeviceExtensions[] =
 };
 
 shoora_vulkan_debug_create_info DebugCreateInfo = {.SeverityFlags = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
-                                                                   VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                                                                   VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                                                                   VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT,
-                                                  .MessageTypeFlags = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                                                                      VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                                                                      VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
-                                                  .ReportFlags = VK_DEBUG_REPORT_WARNING_BIT_EXT |
-                                                                 VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT |
-                                                                 VK_DEBUG_REPORT_ERROR_BIT_EXT |
-                                                                 VK_DEBUG_REPORT_DEBUG_BIT_EXT};
+                                                                    VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                                                                    VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                                                                    VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT,
+                                                   .MessageTypeFlags = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                                                                       VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                                                                       VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+                                                   .ReportFlags = VK_DEBUG_REPORT_WARNING_BIT_EXT |
+                                                                  VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT |
+                                                                  VK_DEBUG_REPORT_ERROR_BIT_EXT |
+                                                                  VK_DEBUG_REPORT_DEBUG_BIT_EXT};
 
 shoora_instance_create_info ShuraInstanceCreateInfo = {.ppRequiredInstanceExtensions = RequiredInstanceExtensions,
                                                        .RequiredInstanceExtensionCount = ARRAY_SIZE(RequiredInstanceExtensions)};

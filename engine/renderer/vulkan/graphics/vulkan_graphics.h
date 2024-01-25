@@ -8,6 +8,9 @@ struct shoora_graphics
 {
     static void UpdateCmdBuffer(const VkCommandBuffer &CmdBuffer);
     static void UpdatePipelineLayout(const VkPipelineLayout &PipelineLayout);
+    static VkCommandBuffer &GetCmdBuffer();
+    static VkPipelineLayout &GetPipelineLayout();
+
 
     static void DrawLine(const Shu::vec2f P0, const Shu::vec2f P1, u32 ColorU32, f32 Thickness);
     static void DrawRect(i32 X, i32 Y, u32 Width, u32 Height, u32 ColorU32);

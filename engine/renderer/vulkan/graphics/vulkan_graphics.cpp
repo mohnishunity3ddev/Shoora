@@ -23,6 +23,19 @@ shoora_graphics::UpdatePipelineLayout(const VkPipelineLayout &PipelineLayout)
     GlobalPipelineLayout = PipelineLayout;
 }
 
+VkCommandBuffer &
+shoora_graphics::GetCmdBuffer()
+{
+    return GlobalCommandBuffer;
+}
+
+VkPipelineLayout &
+shoora_graphics::GetPipelineLayout()
+{
+    return GlobalPipelineLayout;
+}
+
+
 void
 shoora_graphics::DrawLine(const Shu::vec2f P0, const Shu::vec2f P1, u32 ColorU32, f32 Thickness)
 {
@@ -51,7 +64,7 @@ shoora_graphics::DrawRect(i32 X, i32 Y, u32 Width, u32 Height, u32 ColorU32)
     Shu::mat4f Model = Shu::Mat4f(1.0f);
     Shu::Scale(Model, Shu::Vec3f((f32)Width * 0.5f, (f32)Height * 0.5f, 1.0f));
     Shu::Translate(Model, Shu::Vec3f(X, Y, 0.0f));
-    
+
     shoora_mesh *RectMesh = shoora_mesh_database::GetMesh(shoora_mesh_type::RECT_2D);
     data Value = {.Model = Model, .Color = GetColor(ColorU32)};
 

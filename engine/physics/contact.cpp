@@ -28,6 +28,9 @@ contact::ResolvePenetration()
     A->Position -= this->Normal*dA;
     B->Position += this->Normal*dB;
     // LogDebug("Position After resolving is: [%.2f, %.2f]\n", B->Position.x, B->Position.y);
+
+    A->UpdateWorldVertices();
+    B->UpdateWorldVertices();
 }
 
 
