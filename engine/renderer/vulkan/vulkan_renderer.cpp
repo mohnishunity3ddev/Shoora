@@ -338,7 +338,7 @@ DrawScene(const VkCommandBuffer &CmdBuffer)
 {
     auto camRect = Context->Camera.GetRect();
     Scene->DrawAxes(camRect);
-    
+
     if (WireframeMode && !isDebug && !msgShown)
     {
         LogWarnUnformatted("Wireframe mode is only available in debug builds. Turning off Wireframe mode!\n");
@@ -444,6 +444,17 @@ InitializeLightData()
 void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
 {
+    auto m = Shu::Mat6f();
+    for(i32 i = 0; i < 6; ++i)
+    {
+        for(i32 j = 0; j < 6; ++j)
+        {
+            m.m[i][j] = 6*i + j + 1;
+        }
+    }
+    auto v = Shu::Vec6f(1, 2, 3, 4, 5, 6);
+
+    auto r = m.MulVec(v);
 #if _SHU_DEBUG
     isDebug = true;
 #endif

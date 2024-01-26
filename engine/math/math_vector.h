@@ -169,6 +169,51 @@ namespace Shu
     #define Vec4u Vec4<u32>
     #define Vec4i Vec4<i32>
 
+    template <typename T>
+    struct vec6
+    {
+        union
+        {
+            struct { T x1, y1, z1, x2, y2, z2; };
+            struct { vec3<T> xyz1; vec3<T> xyz2; };
+            T E[6];
+        };
+
+        inline T Dot(const vec6<T>& A);
+
+        inline vec6<T> operator+=(const vec6<T>& A);
+        inline vec6<T> operator+=(T A);
+        inline vec6<T> operator-=(const vec6<T>& A);
+        inline vec6<T> operator-=(T A);
+
+        inline vec6<T> operator*=(T A);
+        inline vec6<T> operator/=(const vec6<T>& A);
+        inline vec6<T> operator/=(T A);
+        inline T &operator[](size_t Index);
+        inline const T &operator[](size_t Index) const;
+    };
+
+    template <typename T> SHU_EXPORT vec6<T> Vec6();
+    template <typename T> SHU_EXPORT vec6<T> Vec6(T A);
+    template <typename T> SHU_EXPORT vec6<T> Vec6(T x1, T y1, T z1, T x2, T y2, T z2);
+    template <typename T> SHU_EXPORT vec6<T> MakeVec6(const T *const Ptr);
+    template <typename T> SHU_EXPORT T Dot(const vec6<T> &A, const vec6<T> &B);
+    template <typename T> SHU_EXPORT vec6<T> operator+(const vec6<T>& A, const vec6<T>& B);
+    template <typename T> SHU_EXPORT vec6<T> operator+(const vec6<T>& A, T B);
+    template <typename T> SHU_EXPORT vec6<T> operator-(const vec6<T>& A, const vec6<T>& B);
+    template <typename T> SHU_EXPORT vec6<T> operator-(const vec6<T>& A, T B);
+    template <typename T> SHU_EXPORT vec6<T> operator*(const vec6<T>& A, const vec6<T>& B);
+    template <typename T> SHU_EXPORT vec6<T> operator*(const vec6<T>& A, T B);
+    template <typename T> SHU_EXPORT vec6<T> operator/(const vec6<T>& A, const vec6<T>& B);
+    template <typename T> SHU_EXPORT vec6<T> operator/(const vec6<T>& A, T B);
+
+    typedef vec6<i32> vec6i;
+    typedef vec6<f32> vec6f;
+    typedef vec6<u32> vec6u;
+    #define Vec6f Vec6<f32>
+    #define Vec6u Vec6<u32>
+    #define Vec6i Vec6<i32>
+
 #if 1
     // ----------------------------------------------------------------------------------------------------------------
     // Vec2
@@ -865,7 +910,285 @@ namespace Shu
 
         return this->E[Index];
     }
-#endif
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Vec6
+    // ----------------------------------------------------------------------------------------------------------------
+    template <typename T>
+    vec6<T>
+    Vec6()
+    {
+        vec6<T> Result;
+        for(i32 i = 0; i < 6; ++i)
+        {
+            Result.E[i] = 0;
+        }
+
+        return Result;
+    }
+
+    template <typename T>
+    vec6<T>
+    Vec6(T A)
+    {
+        vec6<T> Result;
+        for (i32 i = 0; i < 6; ++i)
+        {
+            Result.E[i] = A;
+        }
+
+        return Result;
+    }
+
+    template <typename T>
+    vec6<T>
+    Vec6(T x1, T y1, T z1, T x2, T y2, T z2)
+    {
+        vec6<T> Result;
+        Result.x1 = x1;
+        Result.y1 = y1;
+        Result.z1 = z1;
+
+        Result.x2 = x2;
+        Result.y2 = y2;
+        Result.z2 = z2;
+        return Result;
+    }
+
+    template <typename T>
+    vec6<T>
+    MakeVec6(const T *const Ptr)
+    {
+        vec6<T> Result = {};
+        memcpy(Result.E, Ptr, sizeof(T)*6);
+        return Result;
+    }
+
+    template <typename T>
+    T
+    Dot(const vec6<T>& A, const vec6<T>& B)
+    {
+        T Result = (T)0;
+        for (i32 i = 0; i < 6; ++i)
+        {
+            Result += A[i]*B[i];
+        }
+
+        return Result;
+    }
+
+    template <typename T>
+    vec6<T>
+    operator+(const vec6<T>& A, const vec6<T>& B)
+    {
+        vec6<T> Result;
+
+        for (i32 i = 0; i < 6; ++i)
+        {
+            Result[i] = A[i]+B[i];
+        }
+
+        return Result;
+    }
+
+    template <typename T>
+    vec6<T>
+    operator+(const vec6<T>& A, T B)
+    {
+        vec6<T> Result;
+
+        for (i32 i = 0; i < 6; ++i)
+        {
+            Result[i] = A[i] + B;
+        }
+
+        return Result;
+    }
+
+    template <typename T>
+    vec6<T>
+    operator-(const vec6<T>& A, const vec6<T>& B)
+    {
+        vec6<T> Result;
+
+        for (i32 i = 0; i < 6; ++i)
+        {
+            Result[i] = A[i]-B[i];
+        }
+
+        return Result;
+    }
+
+    template <typename T>
+    vec6<T>
+    operator-(const vec6<T>& A, T B)
+    {
+        vec6<T> Result;
+
+        for (i32 i = 0; i < 6; ++i)
+        {
+            Result[i] = A[i] - B;
+        }
+
+        return Result;
+    }
+
+    template <typename T>
+    vec6<T>
+    operator*(const vec6<T>& A, const vec6<T>& B)
+    {
+        vec6<T> Result;
+
+        for (i32 i = 0; i < 6; ++i)
+        {
+            Result[i] = A[i]*B[i];
+        }
+
+        return Result;
+    }
+
+    template <typename T>
+    vec6<T>
+    operator*(const vec6<T>& A, T B)
+    {
+        vec6<T> Result;
+
+        for (i32 i = 0; i < 6; ++i)
+        {
+            Result[i] = A[i]*B;
+        }
+
+        return Result;
+    }
+
+    template <typename T>
+    vec6<T>
+    operator/(const vec6<T>& A, const vec6<T>& B)
+    {
+        for (i32 i = 0; i < 6; ++i)
+        {
+            ASSERT(B[i] != 0.0f);
+        }
+
+        vec6<T> Result;
+
+        for(i32 i = 0; i < 6; ++i)
+        {
+            Result[i] = A[i] / B[i];
+        }
+
+        return Result;
+    }
+
+    template <typename T>
+    vec6<T>
+    operator/(const vec6<T>& A, T B)
+    {
+        ASSERT(B != 0.0f);
+
+        vec6<T> Result;
+        for(i32 i = 0; i < 6; ++i)
+        {
+            Result[i] = A[i] / B;
+        }
+        return Result;
+    }
+
+    template <typename T>
+    inline T
+    vec6<T>::Dot(const vec6<T> &A)
+    {
+        T Result = (T)0;
+
+        for(i32 i = 0; i < 6; ++i)
+        {
+            Result += this->E[i] * A[i];
+        }
+
+        return Result;
+    }
+
+    template <typename T>
+    vec6<T>
+    vec6<T>::operator+=(const vec6<T>& A)
+    {
+        *this = *this + A;
+        return *this;
+    }
+
+    template <typename T>
+    vec6<T>
+    vec6<T>::operator+=(T A)
+    {
+        *this = *this + A;
+        return *this;
+    }
+
+    template <typename T>
+    vec6<T>
+    vec6<T>::operator-=(const vec6<T>& A)
+    {
+        *this = *this - A;
+        return *this;
+    }
+
+    template <typename T>
+    vec6<T>
+    vec6<T>::operator-=(T A)
+    {
+        *this = *this - A;
+        return *this;
+    }
+
+    template <typename T>
+    vec6<T>
+    vec6<T>::operator*=(T A)
+    {
+        *this = *this * A;
+        return *this;
+    }
+
+    template <typename T>
+    vec6<T>
+    vec6<T>::operator/=(const vec6<T>& A)
+    {
+        *this = *this / A;
+        return *this;
+    }
+
+    template <typename T>
+    vec6<T>
+    vec6<T>::operator/=(T A)
+    {
+        *this = *this / A;
+        return *this;
+    }
+
+    template <typename T>
+    T &
+    vec6<T>::operator[](size_t Index)
+    {
+        if (Index < 0 && Index > 6)
+        {
+            ASSERT(!"Index Out of Bounds");
+        }
+
+        return this->E[Index];
+    }
+
+    template <typename T>
+    const T &
+    vec6<T>::operator[](size_t Index) const
+    {
+        if (Index < 0 && Index > 6)
+        {
+            ASSERT(!"Index Out of Bounds");
+        }
+
+        return this->E[Index];
+    }
+
+#endif // #if 1
 }
 
 #define MATH_VECTOR_H

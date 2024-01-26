@@ -139,6 +139,79 @@ namespace Shu
     template <typename T> SHU_EXPORT mat4<T> operator/(const mat4<T> &M1, const mat4<T> &M2);
     template <typename T> SHU_EXPORT mat4<T> Transpose(const mat4<T> &M);
 
+    template <typename T>
+    struct mat6
+    {
+        union
+        {
+            struct
+            {
+                T m00, m01, m02, m03, m04, m05;
+                T m10, m11, m12, m13, m14, m15;
+                T m20, m21, m22, m23, m24, m25;
+                T m30, m31, m32, m33, m34, m35;
+                T m40, m41, m42, m43, m44, m45;
+                T m50, m51, m52, m53, m54, m55;
+            };
+            struct
+            {
+                vec6<T> Row0, Row1, Row2;
+                vec6<T> Row3, Row4, Row5;
+            };
+            T m[6][6];
+            vec6<T> Rows[6];
+            T E[36];
+        };
+
+        inline mat6<T> ToMat6();
+        inline mat6<T> operator+=(const mat6<T> &M);
+        inline mat6<T> operator-=(const mat6<T> &M);
+        inline mat6<T> operator*=(const mat6<T> &M);
+        inline mat6<T> operator*=(T A);
+        inline mat6<T> operator/=(const mat6<T> &M);
+        inline mat6<T> operator/=(T A);
+        inline vec6<T>& operator[](size_t RowIndex);
+        inline T& operator()(size_t RowIndex, size_t ColumnIndex);
+        inline mat6<T> Transposed();
+        inline mat6<T> MakeTranspose();
+        inline mat6<T> Mul(const mat6<T> &M);
+        inline vec6<T> MulVec(const vec6<T> &V);
+        inline mat6<T> Mul(T A);
+        inline vec6<T> GetColumn(size_t Index);
+        inline vec6<T> GetRow(size_t Index);
+    };
+
+    template <typename T> SHU_EXPORT mat6<T> Mat6();
+    template <typename T> SHU_EXPORT mat6<T> Mat6(T Val);
+    template <typename T>
+    SHU_EXPORT mat6<T> Mat6(T m00, T m01, T m02, T m03, T m04, T m05,
+                            T m10, T m11, T m12, T m13, T m14, T m15,
+                            T m20, T m21, T m22, T m23, T m24, T m25,
+                            T m30, T m31, T m32, T m33, T m34, T m35,
+                            T m40, T m41, T m42, T m43, T m44, T m45,
+                            T m50, T m51, T m52, T m53, T m54, T m55);
+
+    template <typename T>
+    SHU_EXPORT mat6<T> Mat6(const vec6<T> &r0, const vec6<T> &r1, const vec6<T> &r2,
+                            const vec6<T> &r3, const vec6<T> &r4, const vec6<T> &r5);
+
+    template <typename T> SHU_EXPORT mat6<T> operator+(const mat6<T> &M1, const mat6<T> &M2);
+    template <typename T> SHU_EXPORT mat6<T> operator-(const mat6<T> &M1, const mat6<T> &M2);
+    template <typename T> SHU_EXPORT mat6<T> operator*(const mat6<T> &M1, T B);
+    template <typename T> SHU_EXPORT mat6<T> operator*(const mat6<T> &M1, const mat6<T> &M2);
+    template <typename T> SHU_EXPORT vec6<T> operator*(const mat6<T> &M, const vec6<T> &V);
+    template <typename T> SHU_EXPORT vec6<T> operator*(const vec6<T> &V, const mat6<T> &M);
+    template <typename T> SHU_EXPORT mat6<T> operator/(const mat6<T> &M, T B);
+    template <typename T> SHU_EXPORT mat6<T> operator/(const mat6<T> &M1, const mat6<T> &M2);
+    template <typename T> SHU_EXPORT mat6<T> Transpose(const mat6<T> &M);
+
+    typedef mat6<i32> mat6i;
+    typedef mat6<u32> mat6u;
+    typedef mat6<f32> mat6f;
+    #define Mat6f Mat6<f32>
+    #define Mat6u Mat6<u32>
+    #define Mat6i Mat6<i32>
+
 #if 1
     // -------------------------------------------------------------------------------------------------
     // Matrix3x3
@@ -662,7 +735,7 @@ namespace Shu
                 }
             }
         }
-        
+
         return Result;
     }
 
@@ -895,6 +968,443 @@ namespace Shu
         LogInfo("[%6u, %6u, %6u, %6u]\n", M.m30, M.m31, M.m32, M.m33);
         LogInfoUnformatted("\n");
     }
+
+    // -------------------------------------------------------------------------------------------------
+    // Matrix6x6
+    // -------------------------------------------------------------------------------------------------
+    template <typename T>
+    mat6<T>
+    Mat6()
+    {
+        mat6<T> Result = {};
+        return Result;
+    }
+
+    template <typename T>
+    mat6<T>
+    Mat6(T Val)
+    {
+        mat6<T> Result = {};
+        Result.m00 = Val;
+        Result.m11 = Val;
+        Result.m22 = Val;
+        Result.m33 = Val;
+        Result.m44 = Val;
+        Result.m55 = Val;
+        return Result;
+    }
+
+    template <typename T>
+    mat6<T>
+    Mat6(T m00, T m01, T m02, T m03, T m04, T m05,
+         T m10, T m11, T m12, T m13, T m14, T m15,
+         T m20, T m21, T m22, T m23, T m24, T m25,
+         T m30, T m31, T m32, T m33, T m34, T m35,
+         T m40, T m41, T m42, T m43, T m44, T m45,
+         T m50, T m51, T m52, T m53, T m54, T m55)
+    {
+        mat6<T> Result;
+
+        Result.m00 = m00;
+        Result.m01 = m01;
+        Result.m02 = m02;
+        Result.m03 = m03;
+        Result.m04 = m04;
+        Result.m05 = m05;
+
+        Result.m10 = m10;
+        Result.m11 = m11;
+        Result.m12 = m12;
+        Result.m13 = m13;
+        Result.m14 = m14;
+        Result.m15 = m15;
+
+        Result.m20 = m20;
+        Result.m21 = m21;
+        Result.m22 = m22;
+        Result.m23 = m23;
+        Result.m24 = m24;
+        Result.m25 = m25;
+
+        Result.m30 = m30;
+        Result.m31 = m31;
+        Result.m32 = m32;
+        Result.m33 = m33;
+        Result.m34 = m34;
+        Result.m35 = m35;
+
+        Result.m40 = m40;
+        Result.m41 = m41;
+        Result.m42 = m42;
+        Result.m43 = m43;
+        Result.m44 = m44;
+        Result.m45 = m45;
+
+        Result.m50 = m50;
+        Result.m51 = m51;
+        Result.m52 = m52;
+        Result.m53 = m53;
+        Result.m54 = m54;
+        Result.m55 = m55;
+
+        return Result;
+    }
+
+    template <typename T>
+    mat6<T>
+    Mat6(const vec6<T> &r0, const vec6<T> &r1, const vec6<T> &r2,
+         const vec6<T> &r3, const vec6<T> &r4, const vec6<T> &r5)
+    {
+        mat6<T> Result;
+
+        Result.Rows[0] = r0;
+        Result.Rows[1] = r1;
+        Result.Rows[2] = r2;
+
+        Result.Rows[3] = r3;
+        Result.Rows[4] = r4;
+        Result.Rows[5] = r5;
+
+        return Result;
+    }
+
+    template <typename T>
+    mat6<T>
+    operator+(const mat6<T> &M1, const mat6<T> &M2)
+    {
+        mat6<T> Result = {};
+
+        for(u32 i = 0; i < 36; ++i)
+        {
+            Result.E[i] = M1.E[i] + M2.E[i];
+        }
+
+        return Result;
+    }
+
+    template <typename T>
+    mat6<T>
+    operator-(const mat6<T> &M1, const mat6<T> &M2)
+    {
+        mat6<T> Result = {};
+
+        for(u32 i = 0; i < 36; ++i)
+        {
+            Result.E[i] = M1.E[i] - M2.E[i];
+        }
+
+        return Result;
+    }
+
+    template <typename T>
+    mat6<T>
+    operator*(const mat6<T> &M1, T B)
+    {
+        mat6<T> Result = {};
+
+        for(u32 i = 0; i < 36; ++i)
+        {
+            Result.E[i] = M1.E[i]*B;
+        }
+
+        return Result;
+    }
+
+    template <typename T>
+    vec6<T>
+    operator*(const mat6<T> &M, const vec6<T> &V)
+    {
+        vec6<T> Result;
+
+        Result.x1 = M.m00*V.x1 + M.m10*V.y1 + M.m20*V.z1 + M.m30*V.x2 + M.m40*V.y2 + M.m50*V.z2;
+        Result.y1 = M.m01*V.x1 + M.m11*V.y1 + M.m21*V.z1 + M.m31*V.x2 + M.m41*V.y2 + M.m51*V.z2;
+        Result.z1 = M.m02*V.x1 + M.m12*V.y1 + M.m22*V.z1 + M.m32*V.x2 + M.m42*V.y2 + M.m52*V.z2;
+        Result.x2 = M.m03*V.x1 + M.m13*V.y1 + M.m23*V.z1 + M.m33*V.x2 + M.m43*V.y2 + M.m53*V.z2;
+        Result.y2 = M.m04*V.x1 + M.m14*V.y1 + M.m24*V.z1 + M.m34*V.x2 + M.m44*V.y2 + M.m54*V.z2;
+        Result.z2 = M.m05*V.x1 + M.m15*V.y1 + M.m25*V.z1 + M.m35*V.x2 + M.m45*V.y2 + M.m55*V.z2;
+
+        return Result;
+    }
+
+    template <typename T>
+    vec6<T>
+    operator*(const vec6<T> &V, const mat6<T> &M)
+    {
+        vec6<T> Result;
+
+        Result.x1 = M.m00*V.x1 + M.m10*V.y1 + M.m20*V.z1 + M.m30*V.x2 + M.m40*V.y2 + M.m50*V.z2;
+        Result.y1 = M.m01*V.x1 + M.m11*V.y1 + M.m21*V.z1 + M.m31*V.x2 + M.m41*V.y2 + M.m51*V.z2;
+        Result.z1 = M.m02*V.x1 + M.m12*V.y1 + M.m22*V.z1 + M.m32*V.x2 + M.m42*V.y2 + M.m52*V.z2;
+        Result.x2 = M.m03*V.x1 + M.m13*V.y1 + M.m23*V.z1 + M.m33*V.x2 + M.m43*V.y2 + M.m53*V.z2;
+        Result.y2 = M.m04*V.x1 + M.m14*V.y1 + M.m24*V.z1 + M.m34*V.x2 + M.m44*V.y2 + M.m54*V.z2;
+        Result.z2 = M.m05*V.x1 + M.m15*V.y1 + M.m25*V.z1 + M.m35*V.x2 + M.m45*V.y2 + M.m55*V.z2;
+
+        return Result;
+    }
+
+    template <typename T>
+    mat6<T>
+    operator*(const mat6<T> &M1, const mat6<T> &M2)
+    {
+        mat6<T> Result = {};
+
+        for(u32 i = 0; i < 6; ++i)
+        {
+            for(u32 j = 0; j < 6; ++j)
+            {
+                for(u32 k = 0; k < 6; ++k)
+                {
+                    Result.m[i][j] += M1.m[i][k] * M2.m[k][j];
+                }
+            }
+        }
+
+        return Result;
+    }
+
+    template <typename T>
+    mat6<T>
+    operator/(const mat6<T> &M1, T B)
+    {
+        ASSERT(B != (T)0);
+        mat6<T> Result = {};
+
+        for(u32 i = 0; i < 36; ++i)
+        {
+            Result.E[i] = M1.E[i] / B;
+        }
+
+        return Result;
+    }
+
+    template <typename T>
+    mat6<T>
+    operator/(const mat6<T> &M1, const mat6<T> &M2)
+    {
+        mat6<T> Result = {};
+
+        for(u32 i = 0; i < 36; ++i)
+        {
+            ASSERT(M2.E[i] != (T)0);
+            Result.E[i] = M1.E[i] / M2.E[i];
+        }
+
+        return Result;
+    }
+
+    template <typename T>
+    mat6<T>
+    mat6<T>::operator+=(const mat6<T> &M)
+    {
+        *this = *this + M;
+        return *this;
+    }
+
+    template <typename T>
+    mat6<T>
+    mat6<T>::operator-=(const mat6<T> &M)
+    {
+        *this = *this - M;
+        return *this;
+    }
+
+    template <typename T>
+    mat6<T>
+    mat6<T>::operator*=(const mat6<T> &M)
+    {
+        *this = *this * M;
+        return *this;
+    }
+
+    template <typename T>
+    mat6<T>
+    mat6<T>::operator*=(T A)
+    {
+        *this = *this * A;
+        return *this;
+    }
+
+    template <typename T>
+    mat6<T>
+    mat6<T>::operator/=(const mat6<T> &M)
+    {
+        *this = *this / M;
+        return *this;
+    }
+
+    template <typename T>
+    mat6<T>
+    mat6<T>::operator/=(T A)
+    {
+        *this = *this / A;
+        return *this;
+    }
+
+    template <typename T>
+    mat6<T>
+    mat6<T>::Mul(const mat6<T> &M)
+    {
+        mat6<T> Result = *this * M;
+        return Result;
+    }
+
+    template <typename T>
+    mat6<T>
+    mat6<T>::Mul(T A)
+    {
+        mat6<T> Result = *this * A;
+        return Result;
+    }
+
+    template <typename T>
+    vec6<T>
+    mat6<T>::MulVec(const vec6<T> &V)
+    {
+        vec6<T> Result = V * (*this);
+        return Result;
+    }
+
+    template <typename T>
+    vec6<T>
+    mat6<T>::GetColumn(size_t Index)
+    {
+        if(Index < 0 || Index > 5)
+        {
+            ASSERT(!"Index Out of bounds");
+        }
+
+        vec6<T> Result = vec6<T>{this->m[0][Index], this->m[1][Index], this->m[2][Index],
+                                 this->m[3][Index], this->m[4][Index], this->m[5][Index]};
+        return Result;
+    }
+
+    template <typename T>
+    vec6<T>
+    mat6<T>::GetRow(size_t Index)
+    {
+        if(Index < 0 || Index > 5)
+        {
+            ASSERT(!"Index Out of bounds");
+        }
+
+        vec6<T> Result = this->Rows[Index];
+        return Result;
+    }
+
+    template <typename T>
+    vec6<T>&
+    mat6<T>::operator[](size_t RowIndex)
+    {
+        if(RowIndex < 0 || RowIndex > 5)
+        {
+            ASSERT(!"Index Out of bounds");
+        }
+
+        return this->Rows[RowIndex];
+    }
+
+    template <typename T>
+    T&
+    mat6<T>::operator()(size_t RowIndex, size_t ColumnIndex)
+    {
+        if(RowIndex < 0 || RowIndex > 5)
+        {
+            ASSERT(!"Index Out of bounds");
+        }
+        if(ColumnIndex < 0 || ColumnIndex > 5)
+        {
+            ASSERT(!"Index Out of bounds");
+        }
+
+        return this->E[RowIndex*6 + ColumnIndex];
+    }
+
+    template <typename T>
+    mat6<T>
+    Transpose(const mat6<T> &M)
+    {
+        mat6<T> Result = Mat6<T>(M.m00, M.m10, M.m20, M.m30, M.m40, M.m50,
+                                 M.m01, M.m11, M.m21, M.m31, M.m41, M.m51,
+                                 M.m02, M.m12, M.m22, M.m32, M.m42, M.m52,
+                                 M.m03, M.m13, M.m23, M.m33, M.m43, M.m53,
+                                 M.m04, M.m14, M.m24, M.m34, M.m44, M.m54,
+                                 M.m05, M.m15, M.m25, M.m35, M.m45, M.m55);
+        return Result;
+    }
+
+    template <typename T>
+    mat6<T>
+    mat6<T>::Transposed()
+    {
+        mat6<T> Result = Mat6<T>(this->m00, this->m10, this->m20, this->m30, this->m40, this->m50,
+                                 this->m01, this->m11, this->m21, this->m31, this->m41, this->m51,
+                                 this->m02, this->m12, this->m22, this->m32, this->m42, this->m52,
+                                 this->m03, this->m13, this->m23, this->m33, this->m43, this->m53,
+                                 this->m04, this->m14, this->m24, this->m34, this->m44, this->m54,
+                                 this->m05, this->m15, this->m25, this->m35, this->m45, this->m55);
+        return Result;
+    }
+
+    template <typename T>
+    mat6<T>
+    mat6<T>::MakeTranspose()
+    {
+        *this = Mat6<T>(this->m00, this->m10, this->m20, this->m30, this->m40, this->m50,
+                        this->m01, this->m11, this->m21, this->m31, this->m41, this->m51,
+                        this->m02, this->m12, this->m22, this->m32, this->m42, this->m52,
+                        this->m03, this->m13, this->m23, this->m33, this->m43, this->m53,
+                        this->m04, this->m14, this->m24, this->m34, this->m44, this->m54,
+                        this->m05, this->m15, this->m25, this->m35, this->m45, this->m55);
+        return *this;
+    }
+
+    inline void
+    DisplayMatrix(const mat6f &M)
+    {
+        LogInfoUnformatted("The Matrix is: \n");
+
+        LogInfo("[%10.4f, %10.4f, %10.4f, %10.4f, %10.4f, %10.4f]\n", M.m00, M.m10, M.m20, M.m30, M.m40, M.m50);
+        LogInfo("[%10.4f, %10.4f, %10.4f, %10.4f, %10.4f, %10.4f]\n", M.m01, M.m11, M.m21, M.m31, M.m41, M.m51);
+        LogInfo("[%10.4f, %10.4f, %10.4f, %10.4f, %10.4f, %10.4f]\n", M.m02, M.m12, M.m22, M.m32, M.m42, M.m52);
+        LogInfo("[%10.4f, %10.4f, %10.4f, %10.4f, %10.4f, %10.4f]\n", M.m03, M.m13, M.m23, M.m33, M.m43, M.m53);
+        LogInfo("[%10.4f, %10.4f, %10.4f, %10.4f, %10.4f, %10.4f]\n", M.m04, M.m14, M.m24, M.m34, M.m44, M.m54);
+        LogInfo("[%10.4f, %10.4f, %10.4f, %10.4f, %10.4f, %10.4f]\n", M.m05, M.m15, M.m25, M.m35, M.m45, M.m55);
+
+        LogInfoUnformatted("\n");
+    }
+
+    inline void
+    DisplayMatrix(const mat6i &M)
+    {
+        LogInfoUnformatted("The Matrix is: \n");
+
+        LogInfo("[%6d, %6d, %6d, %6d, %6d, %6d]\n", M.m00, M.m10, M.m20, M.m30, M.m40, M.m50);
+        LogInfo("[%6d, %6d, %6d, %6d, %6d, %6d]\n", M.m01, M.m11, M.m21, M.m31, M.m41, M.m51);
+        LogInfo("[%6d, %6d, %6d, %6d, %6d, %6d]\n", M.m02, M.m12, M.m22, M.m32, M.m42, M.m52);
+        LogInfo("[%6d, %6d, %6d, %6d, %6d, %6d]\n", M.m03, M.m13, M.m23, M.m33, M.m43, M.m53);
+        LogInfo("[%6d, %6d, %6d, %6d, %6d, %6d]\n", M.m04, M.m14, M.m24, M.m34, M.m44, M.m54);
+        LogInfo("[%6d, %6d, %6d, %6d, %6d, %6d]\n", M.m05, M.m15, M.m25, M.m35, M.m45, M.m55);
+
+
+        LogInfoUnformatted("\n");
+    }
+
+    inline void
+    DisplayMatrix(const mat6u &M)
+    {
+        LogInfoUnformatted("The Matrix is: \n");
+
+        LogInfo("[%6u, %6u, %6u, %6u, %6u, %6u]\n", M.m00, M.m10, M.m20, M.m30, M.m40, M.m50);
+        LogInfo("[%6u, %6u, %6u, %6u, %6u, %6u]\n", M.m01, M.m11, M.m21, M.m31, M.m41, M.m51);
+        LogInfo("[%6u, %6u, %6u, %6u, %6u, %6u]\n", M.m02, M.m12, M.m22, M.m32, M.m42, M.m52);
+        LogInfo("[%6u, %6u, %6u, %6u, %6u, %6u]\n", M.m03, M.m13, M.m23, M.m33, M.m43, M.m53);
+        LogInfo("[%6u, %6u, %6u, %6u, %6u, %6u]\n", M.m04, M.m14, M.m24, M.m34, M.m44, M.m54);
+        LogInfo("[%6u, %6u, %6u, %6u, %6u, %6u]\n", M.m05, M.m15, M.m25, M.m35, M.m45, M.m55);
+
+
+        LogInfoUnformatted("\n");
+    }
+
 #endif
 }
 
