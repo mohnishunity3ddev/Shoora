@@ -212,6 +212,68 @@ namespace Shu
     #define Mat6u Mat6<u32>
     #define Mat6i Mat6<i32>
 
+    // N X N Matrix
+    #include "math_vector.h"
+
+    template<typename T, size_t N>
+    struct matN
+    {
+        union
+        {
+            vecN<T, N> Rows[N];
+            T Data[N][N];
+        };
+
+        matN();
+        matN(const matN &rhs);
+
+        template <typename... Args>
+        matN(Args... args);
+
+        ~matN();
+
+        void Identity();
+        void Zero();
+
+        void Transpose();
+        matN<T, N> Transposed() const;
+
+        const matN &operator=(const matN &rhs);
+        void operator*=(T rhs);
+        vecN<T, N> operator*(const vecN<T, N> &rhs);
+        matN operator*(const matN &rhs);
+    };
+
+    template<typename T, size_t M, size_t N>
+    struct matMN
+    {
+        union
+        {
+            vecN<T, N> Rows[M];
+            T Data[M][N];
+        };
+
+        matMN();
+        matMN(const matMN &rhs);
+
+        template <typename... Args>
+        matMN(Args... args);
+        ~matMN();
+
+        void Zero();
+
+        matMN<T, N, M> Transposed() const;
+
+        const matMN &operator=(const matMN &rhs);
+        void operator*=(T rhs);
+        vecN<T, M> operator*(const vecN<T, N> &rhs) const;
+        matN<T, M> operator*(const matMN<T, N, M> &rhs) const;
+    };
+
+
+    template<typename T, size_t M, size_t N>
+    vecN<T, N> operator*(const vecN<T, M> &Vector, const matMN<T, M, N> &Matrix);
+
 #if 1
     // -------------------------------------------------------------------------------------------------
     // Matrix3x3
@@ -513,8 +575,8 @@ namespace Shu
     Transpose(const mat3<T> &M)
     {
         mat3<T> Result = Mat3<T>(M.m00, M.m10, M.m20,
-                                M.m01, M.m11, M.m12,
-                                M.m02, M.m12, M.m22);
+                                 M.m01, M.m11, M.m21,
+                                 M.m02, M.m12, M.m22);
 
         return Result;
     }
@@ -524,8 +586,8 @@ namespace Shu
     mat3<T>::Transposed()
     {
         mat3<T> Result = Mat3<T>(this->m00, this->m10, this->m20,
-                                this->m01, this->m11, this->m12,
-                                this->m02, this->m12, this->m22);
+                                 this->m01, this->m11, this->m21,
+                                 this->m02, this->m12, this->m22);
 
         return Result;
     }
@@ -535,7 +597,7 @@ namespace Shu
     mat3<T>::MakeTranspose()
     {
         *this = Mat3<T>(this->m00, this->m10, this->m20,
-                        this->m01, this->m11, this->m12,
+                        this->m01, this->m11, this->m21,
                         this->m02, this->m12, this->m22);
 
         return *this;
@@ -1405,6 +1467,297 @@ namespace Shu
         LogInfoUnformatted("\n");
     }
 
+    // --------------------------------------------------------------------------------------
+    // MatN - N X N
+    // --------------------------------------------------------------------------------------
+    template <typename T, size_t N>
+    matN<T, N>::matN()
+    {
+        this->Zero();
+    }
+
+    template <typename T, size_t N>
+    matN<T, N>::matN(const matN &rhs)
+    {
+        *this = rhs;
+    }
+
+    template <typename T, size_t N>
+    template <typename... Args>
+    matN<T, N>::matN(Args... args)
+    {
+        size_t numArgs = sizeof...(args);
+        T tempArray[N * N] = {static_cast<T>(args)...};
+        for (size_t i = 0; i < N; ++i)
+        {
+            for (size_t j = 0; j < N; ++j)
+            {
+                this->Data[i][j] = tempArray[i * N + j];
+            }
+        }
+    }
+
+    template <typename T, size_t N>
+    matN<T, N>::~matN()
+    {
+        LogInfoUnformatted("MatN Destructor called!\n");
+    }
+
+    template <typename T, size_t N>
+    const matN<T, N> &
+    matN<T, N>::operator=(const matN<T, N> &rhs)
+    {
+        for (i32 i = 0; i < N; ++i)
+        {
+            this->Rows[i] = rhs.Rows[i];
+        }
+
+        return *this;
+    }
+
+    template <typename T, size_t N>
+    void
+    matN<T, N>::Identity()
+    {
+        for (i32 i = 0; i < N; ++i)
+        {
+            this->Rows[i].Zero();
+            this->Rows[i][i] = (T)1;
+        }
+    }
+
+    template <typename T, size_t N>
+    void
+    matN<T, N>::Zero()
+    {
+        for (i32 i = 0; i < N; ++i)
+        {
+            this->Rows[i].Zero();
+        }
+    }
+
+    template <typename T, size_t N>
+    void
+    matN<T, N>::Transpose()
+    {
+        matN<T, N> temp;
+        for (i32 i = 0; i < N; ++i)
+        {
+            for (i32 j = 0; j < N; ++j)
+            {
+                temp.Data[i][j] = this->Data[j][i];
+            }
+        }
+
+        *this = temp;
+    }
+
+    template <typename T, size_t N>
+    matN<T, N>
+    matN<T, N>::Transposed() const
+    {
+        matN<T, N> Result;
+        for (i32 i = 0; i < N; ++i)
+        {
+            for (i32 j = 0; j < N; ++j)
+            {
+                Result.Data[i][j] = this->Data[j][i];
+            }
+        }
+
+        return Result;
+    }
+
+    template <typename T, size_t N>
+    void
+    matN<T, N>::operator*=(T rhs)
+    {
+        for (i32 i = 0; i < N; ++i)
+        {
+            this->Rows[i] *= rhs;
+        }
+    }
+
+    template <typename T, size_t N>
+    vecN<T, N>
+    matN<T, N>::operator*(const vecN<T, N> &rhs)
+    {
+        vecN<T, N> Result;
+        for (i32 i = 0; i < N; ++i)
+        {
+            Result[i] = (T)0;
+            for (i32 j = 0; j < N; ++j)
+            {
+                Result[i] += rhs[j] * this->Data[j][i];
+            }
+        }
+
+        return Result;
+    }
+
+    template <typename T, size_t N>
+    matN<T, N>
+    matN<T, N>::operator*(const matN<T, N> &rhs)
+    {
+        matN Result;
+        for (i32 i = 0; i < N; ++i)
+        {
+            for (i32 j = 0; j < N; ++j)
+            {
+                for (i32 k = 0; k < N; ++k)
+                {
+                    Result.Data[i][j] += this->Data[i][k] * rhs.Data[k][j];
+                }
+            }
+        }
+
+        return Result;
+    }
+
+    // --------------------------------------------------------------------------------------
+    // MatMN - M X N Matrix
+    // --------------------------------------------------------------------------------------
+
+    template<typename T, size_t M, size_t N>
+    matMN<T, M, N>::matMN() { this->Zero(); }
+
+    template<typename T, size_t M, size_t N>
+    matMN<T, M, N>::matMN(const matMN &rhs) { *this = rhs; }
+
+    template<typename T, size_t M, size_t N>
+    template <typename... Args>
+    matMN<T, M, N>::matMN(Args... args)
+    {
+        size_t numArgs = sizeof...(args);
+        T tempArray[M * N] = {static_cast<T>(args)...};
+        for (size_t i = 0; i < M; ++i)
+        {
+            for (size_t j = 0; j < N; ++j)
+            {
+                size_t index = i * N + j;
+                this->Data[i][j] = tempArray[index];
+            }
+        }
+    }
+
+    template<typename T, size_t M, size_t N>
+    matMN<T, M, N>::~matMN()
+    {
+        LogInfoUnformatted("MatMN destructor called!\n");
+    }
+
+    template <typename T, size_t M, size_t N>
+    void
+    matMN<T, M, N>::Zero()
+    {
+        for (i32 i = 0; i < M; ++i)
+        {
+            for (i32 j = 0; j < N; ++j)
+            {
+                this->Data[i][j] = (T)0;
+            }
+        }
+    }
+
+    template <typename T, size_t M, size_t N>
+    matMN<T, N, M>
+    matMN<T, M, N>::Transposed() const
+    {
+        matMN<T, N, M> Result;
+
+        for (i32 i = 0; i < M; ++i)
+        {
+            for (i32 j = 0; j < N; ++j)
+            {
+                T value = this->Data[i][j];
+                Result.Data[j][i] = value;
+            }
+        }
+
+        return Result;
+    }
+
+    template <typename T, size_t M, size_t N>
+    const matMN<T, M, N>&
+    matMN<T, M, N>::operator=(const matMN &rhs)
+    {
+        for (i32 i = 0; i < M; ++i)
+        {
+            this->Rows[i] = rhs.Rows[i];
+        }
+
+        return *this;
+    }
+
+    template <typename T, size_t M, size_t N>
+    void
+    matMN<T, M, N>::operator*=(T rhs)
+    {
+        for (i32 i = 0; i < M; ++i)
+        {
+            for (i32 j = 0; j < N; ++j)
+            {
+                this->Data[i][j] *= rhs;
+            }
+        }
+    }
+
+    template <typename T, size_t M, size_t N>
+    vecN<T, M>
+    matMN<T, M, N>::operator*(const vecN<T, N> &rhs) const
+    {
+        vecN<T, M> Result;
+        Result.Zero();
+
+        for (i32 i = 0; i < M; ++i)
+        {
+            for (i32 j = 0; j < N; ++j)
+            {
+                Result.Data[i] += this->Data[i][j] * rhs.Data[j];
+            }
+        }
+
+        return Result;
+    }
+
+    template<typename T, size_t M, size_t N>
+    vecN<T, N> operator*(const vecN<T, M> &Vector, const matMN<T, M, N> &Matrix)
+    {
+        vecN<T, N> Result;
+        Result.Zero();
+
+        for (i32 j = 0; j < N; ++j)
+        {
+            for (i32 i = 0; i < M; ++i)
+            {
+                Result.Data[j] += Vector.Data[i] * Matrix.Data[i][j];
+            }
+        }
+
+        return Result;
+    }
+
+
+    template <typename T, size_t M, size_t N>
+    matN<T, M>
+    matMN<T, M, N>::operator*(const matMN<T, N, M> &rhs) const
+    {
+        matN<T, M> Result;
+        Result.Zero();
+
+        for (i32 i = 0; i < M; ++i)
+        {
+            for (i32 j = 0; j < M; ++j)
+            {
+                for (i32 k = 0; k < N; ++k)
+                {
+                    Result.Data[i][j] += this->Data[i][k] * rhs.Data[k][j];
+                }
+            }
+        }
+
+        return Result;
+    }
 #endif
 }
 

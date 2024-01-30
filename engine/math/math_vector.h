@@ -214,6 +214,31 @@ namespace Shu
     #define Vec6u Vec6<u32>
     #define Vec6i Vec6<i32>
 
+    template <typename T, size_t N>
+    struct vecN
+    {
+        T Data[N];
+
+        vecN();
+        template <typename... Args>
+        vecN(Args... args);
+        vecN(const vecN &rhs);
+        vecN &operator=(const vecN &rhs);
+        ~vecN();
+        i32 getSize() { return N; }
+
+        T operator[](const i32 idx) const;
+        T &operator[](const i32 idx);
+        const vecN &operator*=(T rhs);
+        vecN operator*(T rhs) const;
+        vecN operator+(const vecN &rhs) const;
+        vecN operator-(const vecN &rhs) const;
+        const vecN &operator-=(const vecN &rhs);
+
+        T Dot(const vecN &rhs) const;
+        void Zero();
+    };
+
 #if 1
     // ----------------------------------------------------------------------------------------------------------------
     // Vec2
@@ -1188,6 +1213,162 @@ namespace Shu
         return this->E[Index];
     }
 
+    // -----------------------------------------------------------------------
+    // VecN
+    // -----------------------------------------------------------------------
+    template <typename T, size_t N>
+    inline vecN<T, N>::vecN()
+    {
+        for (i32 i = 0; i < N; ++i)
+        {
+            this->Data[i] = (T)0;
+        }
+    }
+
+    template <typename T, size_t N>
+    inline
+    vecN<T, N>::vecN(const vecN<T, N> &rhs)
+    {
+        for (i32 i = 0; i < N; ++i)
+        {
+            this->Data[i] = rhs.Data[i];
+        }
+    }
+
+    template <typename T, size_t N>
+    inline vecN<T, N> &
+    vecN<T, N>::operator=(const vecN<T, N> &rhs)
+    {
+        for (i32 i = 0; i < N; ++i)
+        {
+            this->Data[i] = rhs.Data[i];
+        }
+
+        return *this;
+    }
+
+    template <typename T, size_t N>
+    inline vecN<T, N>::~vecN()
+    {
+        LogInfoUnformatted("vecN Destructor called!");
+    }
+
+    template <typename T, size_t N>
+    T
+    vecN<T, N>::operator[](const i32 idx) const
+    {
+        ASSERT(idx < N);
+        return this->Data[idx];
+    }
+
+    template <typename T, size_t N>
+    T &
+    vecN<T, N>::operator[](const i32 idx)
+    {
+        ASSERT(idx < N);
+        return this->Data[idx];
+    }
+
+
+    template <typename T, size_t N>
+    const vecN<T, N> &
+    vecN<T, N>::operator*=(T rhs)
+    {
+        for (i32 i = 0; i < N; ++i)
+        {
+            this->Data[i] *= rhs;
+        }
+        return *this;
+    }
+
+    template <typename T, size_t N>
+    vecN<T, N>
+    vecN<T, N>::operator*(T rhs) const
+    {
+        vecN<T, N> Result = *this;
+        for (i32 i = 0; i < N; ++i)
+        {
+            Result.Data[i] *= rhs;
+        }
+        return Result;
+    }
+
+    template <typename T, size_t N>
+    vecN<T, N>
+    vecN<T, N>::operator+(const vecN<T, N> &rhs) const
+    {
+        vecN<T, N> Result = *this;
+        for (i32 i = 0; i < N; ++i)
+        {
+            Result.Data[i] += rhs.Data[i];
+        }
+        return Result;
+    }
+
+    template <typename T, size_t N>
+    vecN<T, N>
+    vecN<T, N>::operator-(const vecN<T, N> &rhs) const
+    {
+        vecN<T, N> Result = *this;
+        for (i32 i = 0; i < N; ++i)
+        {
+            Result.Data[i] -= rhs.Data[i];
+        }
+        return Result;
+    }
+
+    template <typename T, size_t N>
+    const vecN<T, N> &
+    vecN<T, N>::operator-=(const vecN<T, N> &rhs)
+    {
+        for (i32 i = 0; i < N; ++i)
+        {
+            this->Data[i] -= rhs.Data[i];
+        }
+        return *this;
+    }
+
+    template <typename T, size_t N>
+    T
+    vecN<T, N>::Dot(const vecN<T, N> &rhs) const
+    {
+        T Result = (T)0;
+        for (i32 i = 0; i < N; ++i)
+        {
+            Result += this->Data[i] * rhs.Data[i];
+        }
+
+        return Result;
+    }
+
+    template <typename T, size_t N>
+    void
+    vecN<T, N>::Zero()
+    {
+        for (i32 i = 0; i < N; ++i)
+        {
+            this->Data[i] = (T)0;
+        }
+    }
+
+    template <typename T, size_t N>
+    template <typename... Args>
+    vecN<T, N>::vecN(Args... args)
+    {
+        size_t numArgs = sizeof...(args);
+        T tempArray[N] = {static_cast<T>(args)...};
+        for (size_t i = 0; i < N; ++i)
+        {
+            if (i < numArgs)
+            {
+                this->Data[i] = tempArray[i];
+            }
+            else
+            {
+                this->Data[i] = (T)0;
+            }
+        }
+    }
 #endif // #if 1
 }
 
