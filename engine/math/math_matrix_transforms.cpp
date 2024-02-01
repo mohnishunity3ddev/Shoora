@@ -4,6 +4,19 @@
 namespace Shu
 {
     mat4f
+    TRSInverse(const Shu::vec3f &Pos, const Shu::vec3f &Scale,
+               const f32 RotationAngleDegrees, const Shu::vec3f &RotationAxis)
+    {
+        Shu::mat4f Model = Shu::Mat4f(1.0f);
+
+        Shu::Translate(Model, -Pos);
+        Shu::Rotate(Model, Shu::QuatAngleAxis(-RotationAngleDegrees, RotationAxis));
+        Shu::Scale(Model, Scale.Reciprocal());
+
+        return Model;
+    }
+
+    mat4f
     TRS(const Shu::vec3f &Pos, const Shu::vec3f &Scale,
         const f32 RotationAngleDegrees, const Shu::vec3f &RotationAxis)
     {

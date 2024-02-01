@@ -10,6 +10,8 @@ namespace Shu
     template <typename T> SHU_EXPORT mat4<T> Translate(mat4<T> &Mat, const vec3<T> &Tv);
     template <typename T> SHU_EXPORT mat4<T> Scale(mat4<T> &Mat, const vec3<T> &Sv);
 
+    SHU_EXPORT mat4f TRSInverse(const Shu::vec3f &Pos, const Shu::vec3f &Scale,
+                                const f32 RotationAngleDegrees, const Shu::vec3f &RotationAxis);
     SHU_EXPORT mat4f TRS(const Shu::vec3f &Pos, const Shu::vec3f &Scale, const f32 RotationAngle,
                          const Shu::vec3f &RotationAxis);
     SHU_EXPORT mat4f RotateGimbalLock(mat4f &Mat, const vec3f &Axis, f32 AngleInDegrees);

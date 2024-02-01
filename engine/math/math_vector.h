@@ -91,6 +91,7 @@ namespace Shu
         inline T Magnitude() const;
         inline T Dot(const vec3<T> &A);
         inline vec3<T> Cross(const vec3<T> &A);
+        inline vec3<T> Reciprocal() const;
         static vec3<T> Zero()
         {
             vec3<T> Result = {(T)0, (T)0, (T)0};
@@ -588,6 +589,19 @@ namespace Shu
     vec3<T>::Cross(const vec3<T> &A)
     {
         vec3<T> Result = Cross(*this, A);
+        return Result;
+    }
+
+    template <typename T>
+    inline vec3<T>
+    vec3<T>::Reciprocal() const
+    {
+        vec3<T> Result;
+
+        Result.x = NearlyEqualUlps(this->x, 0.0f) ? 0.0f : (1.0f/this->x);
+        Result.y = NearlyEqualUlps(this->y, 0.0f) ? 0.0f : (1.0f/this->y);
+        Result.z = NearlyEqualUlps(this->z, 0.0f) ? 0.0f : (1.0f/this->z);
+
         return Result;
     }
 
