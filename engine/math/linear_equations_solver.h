@@ -8,7 +8,7 @@ namespace Shu
 {
     template<typename T>
     vec3<T>
-    SolveLinearEquations(const mat3<T> &M, const vec3<T> &V)
+    LCP_Mat3(const mat3<T> &M, const vec3<T> &V)
     {
         auto invM = M.InverseTranspose();
         auto v = V * invM;
@@ -28,11 +28,11 @@ namespace Shu
 
     template<typename T>
     vec4<T>
-    SolveLinearEquations(const mat4<T> &M, const vec4<T> &V)
+    LCP_Mat4(const mat4<T> &M, const vec4<T> &V)
     {
         auto invM = M.InverseTranspose();
         auto v = V * invM;
-    
+
     #if _SHU_DEBUG
         auto s1 = M.m00*v.x + M.m01*v.y + M.m02*v.z + M.m03*v.w;
         auto s2 = M.m10*v.x + M.m11*v.y + M.m12*v.z + M.m13*v.w;
@@ -56,8 +56,6 @@ namespace Shu
         matMN<T,N,N+1> MatMN{A};
         MatMN.AddColumn(N, b);
 
-        auto re = MatMN.RowEchelon();
-        ASSERT(re.IsRowEchelon());
         i32 nRows = (i32)N;
         i32 nCols = (i32)(N + 1);
 
@@ -68,6 +66,10 @@ namespace Shu
     #endif
 
         vecN<T,N> Result{};
+        auto re = MatMN.RowEchelon();
+        ASSERT(re.IsRowEchelon());
+
+        // TODO(mani): This part could be a little short maybe? a little easier?
         i32 vecIndex = N - 1;
         i32 colIndex = nCols - 2;
         for(i32 rowIndex = nRows-1; rowIndex >= 0; --rowIndex, --vecIndex)
@@ -120,8 +122,6 @@ namespace Shu
         vecN<T,N> Result{};
         for(i32 iter = 0; iter < N; iter++)
         {
-            LogInfo("iter%i: [", iter);
-
             for(i32 i = 0; i < N; i++)
             {
                 T dx = (b.Data[i] - A.Rows[i].Dot(Result)) / A.Data[i][i];
@@ -129,12 +129,8 @@ namespace Shu
                 {
                     Result[i] += dx;
                 }
-                LogInfo("%.2f ", Result[i]);
             }
-            LogInfo("].\n");
         }
-
-        // vecN<T,N> cmp = A.Transposed()*Result;
 
         return Result;
     }
