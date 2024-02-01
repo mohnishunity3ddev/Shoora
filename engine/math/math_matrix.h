@@ -43,6 +43,15 @@ namespace Shu
         inline mat3<T> Mul(T A);
         inline vec3<T> GetColumn(size_t Index);
         inline vec3<T> GetRow(size_t Index);
+
+        inline T Determinant() const;
+        inline T CoFactor(i32 i, i32 j) const;
+        inline mat3<T> Adjoint() const;
+        inline mat3<T> Inverse() const;
+        inline mat3<T> InverseTranspose() const;
+
+        inline b32 IsIdentity();
+
         inline vec3<T>& operator[](size_t RowIndex);
         inline T& operator()(size_t RowIndex, size_t ColumnIndex);
     };
@@ -111,6 +120,14 @@ namespace Shu
         inline mat4<T> Mul(T A);
         inline vec4<T> GetColumn(size_t Index);
         inline vec4<T> GetRow(size_t Index);
+
+        inline mat3<T> Minor(i32 i, i32 j) const;
+        inline T Determinant() const;
+        inline T CoFactor(i32 i, i32 j) const;
+        inline mat4<T> Adjoint() const;
+        inline mat4<T> Inverse() const;
+        inline mat4<T> InverseTranspose() const;
+
     };
 
     typedef mat4<i32> mat4i;
@@ -134,6 +151,7 @@ namespace Shu
     template <typename T> SHU_EXPORT mat4<T> operator*(const mat4<T> &M1, T B);
     template <typename T> SHU_EXPORT mat4<T> operator*(const mat4<T> &M1, const mat4<T> &M2);
     template <typename T> SHU_EXPORT vec4<T> operator*(const mat4<T> &M, const vec4<T> &V);
+    template <typename T> SHU_EXPORT vec4<T> operator*(const vec4<T> &V, const mat4<T> &M);
     template <typename T> SHU_EXPORT vec4<T> operator*(const mat4<T> &M, const vec3<T> &V);
     template <typename T> SHU_EXPORT mat4<T> operator/(const mat4<T> &M, T B);
     template <typename T> SHU_EXPORT mat4<T> operator/(const mat4<T> &M1, const mat4<T> &M2);
@@ -237,11 +255,12 @@ namespace Shu
 
         void Transpose();
         matN<T, N> Transposed() const;
+        b32 IsDiagonallyDominant() const;
 
         const matN &operator=(const matN &rhs);
         void operator*=(T rhs);
-        vecN<T, N> operator*(const vecN<T, N> &rhs);
-        matN operator*(const matN &rhs);
+        vecN<T, N> operator*(const vecN<T, N> &rhs) const;
+        matN<T,N> operator*(const matN<T,N> &rhs) const;
     };
 
     template<typename T, size_t M, size_t N>
@@ -255,6 +274,7 @@ namespace Shu
 
         matMN();
         matMN(const matMN &rhs);
+        matMN(const matN<T, M> &rhs);
 
         template <typename... Args>
         matMN(Args... args);
@@ -262,7 +282,11 @@ namespace Shu
 
         void Zero();
 
+        void AddColumn(i32 columnIndex, const vecN<T, M> &v);
         matMN<T, N, M> Transposed() const;
+
+        matMN<T, M, N> RowEchelon() const;
+        b32 IsRowEchelon() const;
 
         const matMN &operator=(const matMN &rhs);
         void operator*=(T rhs);
@@ -540,7 +564,123 @@ namespace Shu
         return Result;
     }
 
+    template <typename T>
+    T
+    mat3<T>::Determinant() const
+    {
+        auto c00 =  m00 * (m11*m22 - m12*m21);
+        auto c01 = -m01 * (m10*m22 - m12*m20);
+        auto c02 =  m02 * (m10*m21 - m11*m20);
 
+        auto Result = c00 + c01 + c02;
+        return Result;
+    }
+
+    template<typename T>
+    T
+    mat3<T>::CoFactor(i32 row, i32 column) const
+    {
+        ASSERT(row >= 0 && row < 3);
+        ASSERT(column >= 0 && column < 3);
+
+        T Sign = (((row + column) & 0x1) == 0) ? (T)1 : (T)-1;
+
+        i32 r1 = (row + 1) % 3;
+        i32 r2 = (r1 + 1) % 3;
+        if(r2 < r1) {
+            SWAP(r1, r2);
+        }
+        i32 c1 = (column + 1) % 3;
+        i32 c2 = (c1 + 1) % 3;
+        if(c2 < c1) {
+            SWAP(c1, c2);
+        }
+
+        T detMinor = (this->m[r1][c1]*this->m[r2][c2]) - (this->m[r1][c2]*this->m[r2][c1]);
+
+        return detMinor * Sign;
+    }
+
+    template<typename T>
+    mat3<T>
+    mat3<T>::Adjoint() const
+    {
+        mat3<T> Result{};
+        for(i32 rowIndex = 0; rowIndex < 3; ++rowIndex)
+        {
+            for(i32 colIndex = 0; colIndex < 3; ++colIndex)
+            {
+                Result.m[colIndex][rowIndex] = this->CoFactor(rowIndex, colIndex);
+            }
+        }
+        return Result;
+    }
+
+    template <typename T>
+    b32
+    mat3<T>::IsIdentity()
+    {
+        b32 Result = true;
+
+        for(i32 x = 0; x < 3; ++x)
+        {
+            for(i32 y = 0; y < 3; ++y)
+            {
+                if(x == y)
+                {
+                    b32 isOne = NearlyEqual(this->m[x][y], 1.0f);
+                    if(!isOne) {
+                        Result = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    b32 isZero = NearlyEqual(this->m[x][y], 0.0f);
+                    if(!isZero) {
+                        Result = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return Result;
+    }
+
+
+    template<typename T>
+    mat3<T>
+    mat3<T>::Inverse() const
+    {
+        mat3<T> Result = this->Adjoint();
+
+        auto det = this->Determinant();
+        ASSERT(det != 0.0f);
+        Result /= det;
+
+        return Result;
+    }
+
+    template<typename T>
+    mat3<T>
+    mat3<T>::InverseTranspose() const
+    {
+        mat3<T> Result{};
+        for(i32 rowIndex = 0; rowIndex < 3; ++rowIndex)
+        {
+            for(i32 colIndex = 0; colIndex < 3; ++colIndex)
+            {
+                Result.m[rowIndex][colIndex] = this->CoFactor(rowIndex, colIndex);
+            }
+        }
+
+        auto det = this->Determinant();
+        ASSERT(!NearlyEqualUlps(det, 0.0f, 1));
+        Result /= det;
+
+        return Result;
+    }
 
     template <typename T>
     vec3<T> &
@@ -770,6 +910,20 @@ namespace Shu
 
     template <typename T>
     vec4<T>
+    operator*(const vec4<T> &V, const mat4<T> &M)
+    {
+        vec4<T> Result;
+
+        Result.x = M.m00*V.x + M.m10*V.y + M.m20*V.z + M.m30*V.w;
+        Result.y = M.m01*V.x + M.m11*V.y + M.m21*V.z + M.m31*V.w;
+        Result.z = M.m02*V.x + M.m12*V.y + M.m22*V.z + M.m32*V.w;
+        Result.w = M.m03*V.x + M.m13*V.y + M.m23*V.z + M.m33*V.w;
+
+        return Result;
+    }
+
+    template <typename T>
+    vec4<T>
     operator*(const mat4<T> &M, const vec3<T> &V)
     {
         vec4<T> Result;
@@ -981,9 +1135,9 @@ namespace Shu
     mat4<T>::Transposed()
     {
         mat4<T> Result = Mat4<T>(this->m00, this->m10, this->m20, this->m30,
-                                this->m01, this->m11, this->m21, this->m31,
-                                this->m02, this->m12, this->m22, this->m32,
-                                this->m03, this->m13, this->m23, this->m33);
+                                 this->m01, this->m11, this->m21, this->m31,
+                                 this->m02, this->m12, this->m22, this->m32,
+                                 this->m03, this->m13, this->m23, this->m33);
         return Result;
     }
 
@@ -997,6 +1151,109 @@ namespace Shu
                         this->m03, this->m13, this->m23, this->m33);
         return *this;
     }
+
+    template <typename T>
+    mat3<T>
+    mat4<T>::Minor(i32 i, i32 j) const
+    {
+        ASSERT(i >= 0 && i < 4);
+        ASSERT(j >= 0 && j < 4);
+
+        mat3<T> Result{};
+        i32 yy = 0;
+        for (i32 y = 0; y < 4; ++y)
+        {
+            if(y == j) continue;
+            i32 xx = 0;
+            for (i32 x = 0; x < 4; ++x)
+            {
+                if(x == i) continue;
+                Result.m[xx][yy] = this->m[x][y];
+                ++xx;
+            }
+            ++yy;
+        }
+
+        return Result;
+    }
+
+    template <typename T>
+    T
+    mat4<T>::CoFactor(i32 i, i32 j) const
+    {
+        T Sign = ((i + j) & 0x1) ? (T)-1 : (T)1;
+
+        T Result = Sign * Minor(i, j).Determinant();
+        return Result;
+    }
+
+    template <typename T>
+    T
+    mat4<T>::Determinant() const
+    {
+        T Result = (T)0;
+        for(i32 colIndex = 0; colIndex < 4; ++colIndex)
+        {
+            T Sign = colIndex & 0x1 ? (T)-1 : (T)1;
+
+            T currElement = this->m[0][colIndex];
+            if(!NearlyEqual(currElement, 0.0f))
+            {
+                auto Minor = this->Minor(0, colIndex);
+                Result += (Sign * currElement * Minor.Determinant());
+            }
+        }
+
+        return Result;
+    }
+
+    template <typename T>
+    mat4<T>
+    mat4<T>::Adjoint() const
+    {
+        mat4<T> Result;
+        for(i32 x = 0; x < 4; ++x)
+        {
+            for(i32 y = 0; y < 4; ++y)
+            {
+                Result.m[y][x] = CoFactor(x, y);
+            }
+        }
+
+        return Result;
+    }
+
+    template <typename T>
+    mat4<T>
+    mat4<T>::Inverse() const
+    {
+        mat4<T> Result = this->Adjoint();
+
+        auto det = this->Determinant();
+        Result /= det;
+
+        return Result;
+    }
+
+    template <typename T>
+    mat4<T>
+    mat4<T>::InverseTranspose() const
+    {
+        mat4<T> Result;
+        for(i32 x = 0; x < 4; ++x)
+        {
+            for(i32 y = 0; y < 4; ++y)
+            {
+                Result.m[x][y] = CoFactor(x, y);
+            }
+        }
+
+        auto det = this->Determinant();
+        Result /= det;
+
+        return Result;
+    }
+
 
     inline void
     DisplayMatrix(const mat4f &M)
@@ -1569,6 +1826,34 @@ namespace Shu
     }
 
     template <typename T, size_t N>
+    b32
+    matN<T,N>::IsDiagonallyDominant() const
+    {
+        b32 Result = true;
+
+        for(i32 rowIndex = 0; rowIndex < N; ++rowIndex)
+        {
+            T diagVal = ABSOLUTE(this->Data[rowIndex][rowIndex]);
+
+            T sum = (T)0;
+            for (i32 colIndex = 0; colIndex < N; ++colIndex)
+            {
+                if(colIndex == rowIndex) continue;
+
+                sum += ABSOLUTE(this->Data[rowIndex][colIndex]);
+            }
+
+            if(diagVal < sum) {
+                Result = false;
+                break;
+            }
+        }
+
+        return Result;
+    }
+
+
+    template <typename T, size_t N>
     void
     matN<T, N>::operator*=(T rhs)
     {
@@ -1580,7 +1865,7 @@ namespace Shu
 
     template <typename T, size_t N>
     vecN<T, N>
-    matN<T, N>::operator*(const vecN<T, N> &rhs)
+    matN<T, N>::operator*(const vecN<T, N> &rhs) const
     {
         vecN<T, N> Result;
         for (i32 i = 0; i < N; ++i)
@@ -1597,7 +1882,7 @@ namespace Shu
 
     template <typename T, size_t N>
     matN<T, N>
-    matN<T, N>::operator*(const matN<T, N> &rhs)
+    matN<T, N>::operator*(const matN<T, N> &rhs) const
     {
         matN Result;
         for (i32 i = 0; i < N; ++i)
@@ -1623,6 +1908,20 @@ namespace Shu
 
     template<typename T, size_t M, size_t N>
     matMN<T, M, N>::matMN(const matMN &rhs) { *this = rhs; }
+
+    template<typename T, size_t M, size_t N>
+    matMN<T, M, N>::matMN(const matN<T, M> &rhs)
+    {
+        ASSERT(M < N);
+        this->Zero();
+        for (i32 i = 0; i < M; ++i)
+        {
+            for (i32 j = 0; j < M; ++j)
+            {
+                this->Data[i][j] = rhs.Data[i][j];
+            }
+        }
+    }
 
     template<typename T, size_t M, size_t N>
     template <typename... Args>
@@ -1660,6 +1959,17 @@ namespace Shu
     }
 
     template <typename T, size_t M, size_t N>
+    void
+    matMN<T, M, N>::AddColumn(i32 columnIndex, const vecN<T, M> &v)
+    {
+        ASSERT(columnIndex < N);
+        for(i32 i = 0; i < M; ++i)
+        {
+            this->Data[i][columnIndex] = v.Data[i];
+        }
+    }
+
+    template <typename T, size_t M, size_t N>
     matMN<T, N, M>
     matMN<T, M, N>::Transposed() const
     {
@@ -1672,6 +1982,89 @@ namespace Shu
                 T value = this->Data[i][j];
                 Result.Data[j][i] = value;
             }
+        }
+
+        return Result;
+    }
+
+    template <typename T, size_t M, size_t N>
+    void RowMultAdd(matMN<T, M, N> &Mat, i32 ModRowIndex, i32 RefRowIndex, T factor)
+    {
+        ASSERT(ModRowIndex >= 0 && ModRowIndex < M);
+        ASSERT(RefRowIndex >= 0 && RefRowIndex < M);
+
+        for(i32 colIndex = 0; colIndex < N; ++colIndex)
+        {
+            T refVal = Mat.Data[RefRowIndex][colIndex];
+            T currVal = Mat.Data[ModRowIndex][colIndex];
+
+            Mat.Data[ModRowIndex][colIndex] = currVal + factor * refVal;
+        }
+    }
+
+    template <typename T, size_t M, size_t N>
+    b32
+    matMN<T, M, N>::IsRowEchelon() const
+    {
+        b32 Result = false;
+
+        // Proving that lower diagonal elements are all zero.
+        T sum = (T)0;
+        for(i32 rowIndex = 1; rowIndex < M; ++rowIndex)
+        {
+            for(i32 colIndex = 0; colIndex < rowIndex; ++colIndex)
+            {
+                sum += this->Data[rowIndex][colIndex];
+            }
+        }
+
+        Result = NearlyEqual(sum, 0.0f);
+        return Result;
+    }
+
+
+    template <typename T, size_t M, size_t N>
+    matMN<T, M, N>
+    matMN<T, M, N>::RowEchelon() const
+    {
+        matMN<T, M, N> Result = *this;
+        if(N < M) {
+            ASSERT(!"The matrix must have at least as many columns as rows");
+            return Result;
+        }
+
+        i32 cRow, cCol;
+        i32 maxCount = 1;
+        i32 count = 0;
+        b32 completeFlag = false;
+
+        while(!completeFlag && count < maxCount)
+        {
+            for(i32 diagIndex = 0; diagIndex < M; ++diagIndex)
+            {
+                cRow = diagIndex;
+                cCol = diagIndex;
+
+                for(i32 rowIndex = cRow + 1; rowIndex < M; ++rowIndex)
+                {
+                    if(!NearlyEqualUlps<T>(Result.Data[rowIndex][cCol], 0.0f))
+                    {
+                        i32 rowOneIndex = cCol;
+
+                        T currentElementValue = Result.Data[rowIndex][cCol];
+                        T rowOneValue = Result.Data[rowOneIndex][cCol];
+
+                        if(!NearlyEqualUlps<T>(rowOneValue, 0.0f))
+                        {
+                            T correctionFactor = -(currentElementValue / rowOneValue);
+                            RowMultAdd(Result, rowIndex, rowOneIndex, correctionFactor);
+                        }
+                    }
+                }
+            }
+
+            ASSERT(Result.IsRowEchelon());
+            ++count;
         }
 
         return Result;

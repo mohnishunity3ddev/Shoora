@@ -47,6 +47,7 @@ typedef double f64;
 #include <cfloat>
 #define SHU_FLOAT_MIN -FLT_MAX
 #define SHU_FLOAT_MAX FLT_MAX
+#define SHU_EPSILON FLT_EPSILON
 #if _DEBUG
     #define _SHU_DEBUG 1
 #else
@@ -77,11 +78,15 @@ enum shoora_quality
 #define ABSOLUTE(Val) (Val) < 0 ? -(Val) : (Val)
 #define SIGN(Val) (Val) < 0 ? -1 : 1
 
+#if _SHU_DEBUG
 #define ASSERT(Expression)                                                                                        \
     if (!(Expression))                                                                                            \
     {                                                                                                             \
         *((int volatile *)0) = 0;                                                                                 \
     }
+#else
+#define ASSERT(Expression)
+#endif
 
 #define OFFSET_OF(Var, Member) (u64)(&(((Var *)0)->Member))
 #define SHU_INVALID_DEFAULT                                                                                       \
@@ -391,6 +396,80 @@ DefaultGreaterEqualComparator(const T &a, const T &b)
         (a) = (b);                                                                                                \
         (b) = temp;                                                                                               \
     }
+
+inline b32
+NearlyEqual(f32 n, f32 expected, f32 epsilon = 2.0f*SHU_EPSILON)
+{
+    auto t = ABSOLUTE(n - expected);
+    b32 Result = (t <= epsilon);
+    return Result;
+}
+
+// inline b32
+// NearlyEqualUlps(f32 n, f32 expected, i64 maxUlps = 2)
+// {
+//     b32 Result = false;
+//     if(n == expected) {
+//         Result = true;
+//     } else {
+//         u32 uN = *((u32 *)&n);
+//         u32 uExp = *((u32 *)&expected);
+//         u32 diff = 0;
+//         if(uExp > uN) {
+//             diff = uExp - uN;
+//         } else {
+//             diff = uN - uExp;
+//         }
+//         Result = (diff <= maxUlps);
+//     }
+
+//     return Result;
+// }
+
+#define SHU_NEARLY_EQ(n, e, type, diff, res)                                                                      \
+    {                                                                                                             \
+        type uN = *((type *)&n);                                                                                  \
+        type uExp = *((type *)&e);                                                                                \
+        if (uExp > uN)                                                                                            \
+        {                                                                                                         \
+            diff = uExp - uN;                                                                                     \
+        }                                                                                                         \
+        else                                                                                                      \
+        {                                                                                                         \
+            diff = uN - uExp;                                                                                     \
+        }                                                                                                         \
+        res = (diff <= maxUlps);                                                                                  \
+    }
+
+template<typename T>
+inline b32
+NearlyEqualUlps(T n, T expected, i64 maxUlps = 2)
+{
+    b32 Result = false;
+    u64 Diff = 0;
+    if(n == expected) {
+        Result = true;
+    } else {
+        if(sizeof(T) == 8) // Double
+        {
+            u64 diff = 0;
+            SHU_NEARLY_EQ(n, expected, u64, diff, Result);
+            Diff = diff;
+        }
+        else if (sizeof(T) == 4)
+        {
+            u32 diff = 0;
+            SHU_NEARLY_EQ(n, expected, u32, diff, Result);
+            Diff = diff;
+        }
+        else
+        {
+            SHU_INVALID_CODEPATH;
+        }
+    }
+
+    return Result;
+}
 
 #define ALIGN4(Number) AlignAs(Number, 4)
 #define ALIGN8(Number) AlignAs(Number, 8)

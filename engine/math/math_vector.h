@@ -1,5 +1,6 @@
 #if !defined(MATH_VECTOR_H)
 #include "defines.h"
+#include <platform/platform.h>
 #include <cmath>
 
 namespace Shu
