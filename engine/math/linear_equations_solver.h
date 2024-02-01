@@ -67,19 +67,22 @@ namespace Shu
 
         vecN<T,N> Result{};
         auto re = MatMN.RowEchelon();
-        ASSERT(re.IsRowEchelon());
 
         // TODO(mani): This part could be a little short maybe? a little easier?
         i32 vecIndex = N - 1;
         i32 colIndex = nCols - 2;
-        for(i32 rowIndex = nRows-1; rowIndex >= 0; --rowIndex, --vecIndex)
+        for(i32 rowIndex = nRows-1;
+            rowIndex >= 0;
+            --rowIndex, --vecIndex)
         {
             auto numer = re.Data[rowIndex][nCols - 1];
             auto denom = re.Data[rowIndex][colIndex--];
             i32 nIterations = nRows - rowIndex - 1;
 
             i32 innerColIndex = nCols - 2;
-            for (i32 iterIndex = 0; iterIndex < nIterations; ++iterIndex, --innerColIndex)
+            for(i32 iterIndex = 0;
+                iterIndex < nIterations;
+                ++iterIndex, --innerColIndex)
             {
                 auto vData = Result.Data[N - iterIndex - 1];
                 auto mData = re.Data[rowIndex][innerColIndex];
