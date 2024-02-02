@@ -87,6 +87,14 @@ struct shoora_dynamic_array
         return arr[Index];
     }
 
+    inline T *
+    get(i32 Index)
+    {
+        ASSERT(Index < Size);
+        T *Result = arr + Index;
+        return Result;
+    }
+    
     inline T*
     data()
     {

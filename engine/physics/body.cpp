@@ -75,6 +75,33 @@ shoora_body::operator=(shoora_body &&other) noexcept
     return *this;
 }
 
+Shu::vec2f
+shoora_body::WorldToLocalSpace(const Shu::vec2f &PointWS) const
+{
+    // NOTE: Inverse of the model matrix. We are doing the 2d version of that here.
+    Shu::vec2f invTranslation = PointWS - this->Position.xy;
+    Shu::vec2f invRotation = invTranslation.Rotate(-this->RotationRadians);
+
+    f32 invScaleX = NearlyEqual(Scale.x, 0.0f) ? 0.0f : (1.0f/this->Scale.x);
+    f32 invScaleY = NearlyEqual(Scale.y, 0.0f) ? 0.0f : (1.0f/this->Scale.y);
+    Shu::vec2f invScale = Shu::Vec2f(invRotation.x*invScaleX, invRotation.y*invScaleY);
+
+    Shu::vec2f Result = invScale;
+    return Result;
+}
+
+Shu::vec2f
+shoora_body::LocalToWorldSpace(const Shu::vec2f &PointLS) const
+{
+    // NOTE: This is the 2d version of the model matrix we calculate using Shu::TRS()
+    Shu::vec2f Scaled = Shu::Vec2f(PointLS.x*this->Scale.x, PointLS.y*this->Scale.y);
+    Shu::vec2f Rotated = Scaled.Rotate(RotationRadians);
+    Shu::vec2f Translated = Rotated + this->Position.xy;
+
+    Shu::vec2f Result = Translated;
+    return Translated;
+}
+
 b32
 shoora_body::CheckIfClicked(const Shu::vec2f &ClickedWorldPos)
 {
@@ -124,7 +151,7 @@ shoora_body::UpdateWorldVertices()
 
 // NOTE: Impulse denotes a change in velocity for the body.
 void
-shoora_body::ApplyImpulse(const Shu::vec2f &Impulse)
+shoora_body::ApplyImpulseLinear(const Shu::vec2f &Impulse)
 {
     if(this->IsStatic()) {
         return;
@@ -134,7 +161,17 @@ shoora_body::ApplyImpulse(const Shu::vec2f &Impulse)
 }
 
 void
-shoora_body::ApplyImpulse(const Shu::vec2f &Impulse, const Shu::vec2f &R)
+shoora_body::ApplyImpulseAngular(f32 Impulse)
+{
+    if(this->IsStatic()) {
+        return;
+    }
+    
+    this->AngularVelocity += Impulse * this->InvI;
+}
+
+void
+shoora_body::ApplyImpulseAtPoint(const Shu::vec2f &Impulse, const Shu::vec2f &R)
 {
     if(this->IsStatic()) {
         return;
@@ -161,52 +198,42 @@ shoora_body::ClearForces()
     this->SumForces = Shu::vec3f::Zero();
 }
 void
-shoora_body::ClearTorque()
+shoora_body::ClearTorques()
 {
     this->SumTorques = 0.0f;
 }
 
 void
-shoora_body::IntegrateLinear(f32 DeltaTime)
+shoora_body::IntegrateForces(const f32 deltaTime)
 {
-    if(this->IsStatic()) {
+    if(IsStatic()) {
         return;
     }
 
-    this->Acceleration = this->SumForces * InvMass;
-    this->Acceleration.z = 0.0f;
-
-    this->Velocity += this->Acceleration * DeltaTime;
-    this->Velocity.z = 0.0f;
-
-    this->Position += this->Velocity * DeltaTime;
-    this->Position.z = 0.0f;
-
-    ClearForces();
-}
-
-void
-shoora_body::IntegrateAngular(f32 dt)
-{
-    if(this->IsStatic()) {
-        return;
-    }
+    this->Acceleration = this->SumForces * this->InvMass;
+    this->Velocity += this->Acceleration * deltaTime;
 
     // alpha = Tau / Moment of Inertia
     this->AngularAcceleration = this->SumTorques * InvI;
+    this->AngularVelocity += this->AngularAcceleration * deltaTime;
 
-    this->AngularVelocity += this->AngularAcceleration * dt;
-    this->RotationRadians += this->AngularVelocity * dt;
-
-    ClearTorque();
+    ClearForces();
+    ClearTorques();
 }
 
 void
-shoora_body::Update(f32 dt)
+shoora_body::IntegrateVelocities(const f32 deltaTime)
 {
-    this->IntegrateLinear(dt);
-    this->IntegrateAngular(dt);
-    this->IsColliding = false;
+    if(IsStatic()) {
+        return;
+    }
+
+    this->Position += this->Velocity * deltaTime;
+    this->Position.z = 0.0f;
+
+    this->RotationRadians += this->AngularVelocity * deltaTime;
+
+    this->UpdateWorldVertices();
 }
 
 void

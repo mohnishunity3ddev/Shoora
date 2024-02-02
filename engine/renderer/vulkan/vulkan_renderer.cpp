@@ -15,6 +15,7 @@
 #include <mesh/database/mesh_database.h>
 #include <mesh/mesh_utils.h>
 #include <physics/body.h>
+#include <physics/constraint.h>
 #include <physics/force.h>
 #include <physics/collision.h>
 #include <utils/utils.h>
@@ -321,7 +322,7 @@ InitScene()
     // Bottom Wall (Static Rigidbody)
     Shu::vec2f Window = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
-#if 1
+#if 0
     Scene->AddBoxBody(Shu::Vec2f(0, (-Window.y*0.5f)), colorU32::White, Window.x, 50, 0.0f, 0.1f);
     Scene->AddBoxBody(Shu::Vec2f(Window.x * 0.5f, 0), colorU32::White, 50, Window.y, 0.0f, 0.1f);
     Scene->AddBoxBody(Shu::Vec2f(-Window.x * 0.5f, 0), colorU32::White, 50, Window.y, 0.0f, 0.1f);
@@ -331,6 +332,14 @@ InitScene()
     Scene->AddCircleBody(Shu::Vec2f(-150, 0), colorU32::White, 75, 0.0f, 0.5f);
     Scene->AddPolygonBody(0, Shu::Vec2f(200, 0), colorU32::White, 0.0f, 0.5f, 0.0f, 7.0f);
 #endif
+
+    // Add two rigid bodies
+    auto *a = Scene->AddCircleBody(Shu::Vec2f(0, 0), colorU32::Red, 30.0f, 0.0f, 1.0f);
+    auto *b = Scene->AddCircleBody(Shu::Vec2f(-100, 0), colorU32::Green, 20.0f, 1.0f, 1.0f);
+
+    // Add a joint constraint
+    joint_constraint_2d *Joint = new joint_constraint_2d(a, b, a->Position.xy);
+    Scene->AddConstraint2D(Joint);
 }
 
 void
@@ -694,6 +703,7 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         // Scene->AddBoxBody(CurrentMouseWorldPos, colorU32::White, 50, 50, 1.0, 0.7f);
         Scene->AddPolygonBody(1, CurrentMouseWorldPos, colorU32::White, 1.0f, 1.0f, 0.0f, 1.0f);
     }
+
     if(Platform_GetKeyInputState(SU_SPACE, KeyState::SHU_KEYSTATE_PRESS))
     {
         GlobalShowContacts = !GlobalShowContacts;

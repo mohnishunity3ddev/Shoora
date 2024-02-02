@@ -257,6 +257,8 @@ namespace Shu
         matN<T, N> Transposed() const;
         b32 IsDiagonallyDominant() const;
 
+        vecN<T, N> GetColumn(i32 Index) const;
+
         const matN &operator=(const matN &rhs);
         void operator*=(T rhs);
         vecN<T, N> operator*(const vecN<T, N> &rhs) const;
@@ -291,7 +293,9 @@ namespace Shu
         const matMN &operator=(const matMN &rhs);
         void operator*=(T rhs);
         vecN<T, M> operator*(const vecN<T, N> &rhs) const;
+
         matN<T, M> operator*(const matMN<T, N, M> &rhs) const;
+        matMN<T, M, N> operator*(const matN<T, N> &rhs) const;
     };
 
 
@@ -1757,7 +1761,23 @@ namespace Shu
     template <typename T, size_t N>
     matN<T, N>::~matN()
     {
-        LogInfoUnformatted("MatN Destructor called!\n");
+        // LogInfoUnformatted("MatN Destructor called!\n");
+    }
+
+    template <typename T, size_t N>
+    vecN<T, N>
+    matN<T, N>::GetColumn(i32 Index) const
+    {
+        ASSERT(Index < N);
+        vecN<T, N> Result;
+        Result.Zero();
+
+        for(i32 i = 0; i < N; ++i)
+        {
+            Result.Data[i] = this->Data[i][Index];
+        }
+
+        return Result;
     }
 
     template <typename T, size_t N>
@@ -1942,7 +1962,7 @@ namespace Shu
     template<typename T, size_t M, size_t N>
     matMN<T, M, N>::~matMN()
     {
-        LogInfoUnformatted("MatMN destructor called!\n");
+        // LogInfoUnformatted("MatMN destructor called!\n");
     }
 
     template <typename T, size_t M, size_t N>
@@ -2151,6 +2171,27 @@ namespace Shu
 
         return Result;
     }
+
+    template <typename T, size_t M, size_t N>
+    matMN<T, M, N>
+    matMN<T, M, N>::operator*(const matN<T, N> &rhs) const
+    {
+        matMN<T, M, N> Result;
+        Result.Zero();
+
+        for (i32 rowIndex = 0; rowIndex < M; ++rowIndex)
+        {
+            T sum = (T)0;
+            for (i32 colIndex = 0; colIndex < N; ++colIndex)
+            {
+                vecN<T,N> column = rhs.GetColumn(colIndex);
+                Result.Data[rowIndex][colIndex] = this->Rows[rowIndex].Dot(column);
+            }
+        }
+
+        return Result;
+    }
+
 #endif
 }
 

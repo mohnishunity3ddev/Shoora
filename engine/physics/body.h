@@ -53,22 +53,28 @@ struct shoora_body
     b32 IsStatic() const;
 
     void UpdateWorldVertices();
-    void Update(f32 dt);
+
+    Shu::vec2f WorldToLocalSpace(const Shu::vec2f &PointWS) const;
+    Shu::vec2f LocalToWorldSpace(const Shu::vec2f &PointLS) const;
 
     void Draw();
     void DrawWireframe(const Shu::mat4f &model, f32 thickness, u32 color);
 
-    void ApplyImpulse(const Shu::vec2f &Impulse);
-    void ApplyImpulse(const Shu::vec2f &Impulse, const Shu::vec2f &R);
+    void ApplyImpulseLinear(const Shu::vec2f &Impulse);
+    void ApplyImpulseAngular(float Impulse);
+    void ApplyImpulseAtPoint(const Shu::vec2f &Impulse, const Shu::vec2f &R);
 
     void AddForce(const Shu::vec2f &Force);
     void AddTorque(f32 Torque);
 
     void ClearForces();
-    void ClearTorque();
+    void ClearTorques();
 
     void IntegrateLinear(f32 DeltaTime);
     void IntegrateAngular(f32 DeltaTime);
+
+    void IntegrateForces(const f32 deltaTime);
+    void IntegrateVelocities(const f32 deltaTime);
 };
 
 #define BODY_H

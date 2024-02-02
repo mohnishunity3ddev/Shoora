@@ -29,6 +29,7 @@ namespace Shu
         inline T Cross(const vec2<T>& A) const;
         inline T SqMagnitude();
         inline T Magnitude() const;
+        inline vec2<T> Rotate(f32 AngleRadians) const;
         inline f32 GetSlopeAngleInDegrees();
         static vec2<T> Zero()
         {
@@ -431,6 +432,21 @@ namespace Shu
     vec2<T>::Magnitude() const
     {
         T Result = sqrtf(this->x*this->x + this->y*this->y);
+        return Result;
+    }
+
+    template <typename T>
+    vec2<T>
+    vec2<T>::Rotate(f32 AngleRadians) const
+    {
+        vec2<T> Result;
+
+        f32 CosAlpha = CosRad(AngleRadians);
+        f32 SinAlpha = SinRad(AngleRadians);
+
+        Result.x = this->x*CosAlpha -this->y*SinAlpha;
+        Result.y = this->x*SinAlpha + this->y*CosAlpha;
+
         return Result;
     }
 
@@ -1265,7 +1281,7 @@ namespace Shu
     template <typename T, size_t N>
     inline vecN<T, N>::~vecN()
     {
-        LogInfoUnformatted("vecN Destructor called!");
+        // LogInfoUnformatted("vecN Destructor called!");
     }
 
     template <typename T, size_t N>

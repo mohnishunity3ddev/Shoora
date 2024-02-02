@@ -87,6 +87,6 @@ contact::ResolveCollision()
 
     Shu::vec2f Impulse = ImpulseAlongNormal + ImpulseAlongTangent;
 
-    A->ApplyImpulse(Impulse, Ra);
-    B->ApplyImpulse(-Impulse, Rb);
+    A->ApplyImpulseAtPoint(Impulse, Ra);
+    B->ApplyImpulseAtPoint(-Impulse, Rb);
 }

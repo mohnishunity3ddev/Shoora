@@ -22,39 +22,60 @@ struct scene_shader_data
 shoora_scene::shoora_scene()
 {
     Bodies.reserve(32);
+    Constraints2D.reserve(64);
 }
 
-shoora_scene::~shoora_scene() { LogWarnUnformatted("shoora scene destructor called!\n"); }
+shoora_scene::~shoora_scene()
+{
+    LogWarnUnformatted("shoora scene destructor called!\n");
+
+    size_t constraintsCount = Constraints2D.size();
+    for(size_t i = 0; i < constraintsCount; ++i)
+    {
+        auto *C = Constraints2D[i];
+        delete C;
+    }
+}
 
 void
 shoora_scene::AddMeshToScene(const Shu::vec3f *vPositions, u32 vCount)
 {
 }
 
-void
+shoora_body *
 shoora_scene::AddCircleBody(const Shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 Mass, f32 Restitution,
                             f32 InitialRotation)
 {
-    shoora_body body{GetColor(ColorU32), Pos, Mass, Restitution, std::make_unique<shoora_shape_circle>(Radius), InitialRotation};
+    shoora_body body{GetColor(ColorU32), Pos, Mass, Restitution, std::make_unique<shoora_shape_circle>(Radius),
+                     InitialRotation};
     Bodies.emplace_back(std::move(body));
+
+    shoora_body *b = Bodies.get(Bodies.size() - 1);
+    return b;
 }
 
-void
+shoora_body *
 shoora_scene::AddBoxBody(const Shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Height, f32 Mass, f32 Restitution,
                          f32 InitialRotation)
 {
     shoora_body body{GetColor(ColorU32), Pos, Mass, Restitution, std::make_unique<shoora_shape_box>(Width, Height),
                      InitialRotation};
     Bodies.emplace_back(std::move(body));
+
+    shoora_body *b = Bodies.get(Bodies.size() - 1);
+    return b;
 }
 
-void
+shoora_body *
 shoora_scene::AddPolygonBody(const u32 MeshId, const Shu::vec2f Pos, u32 ColorU32, f32 Mass, f32 Restitution,
                              f32 InitialRotation, f32 Scale)
 {
     shoora_body body{GetColor(ColorU32), Pos, Mass, Restitution,
                      std::make_unique<shoora_shape_polygon>(MeshId, Scale), InitialRotation};
     Bodies.emplace_back(std::move(body));
+
+    shoora_body *b = Bodies.get(Bodies.size() - 1);
+    return b;
 }
 
 void
@@ -135,29 +156,26 @@ shoora_scene::CheckCollisions(b32 ShowContacts)
 void
 shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
 {
+    // NOTE: If I am debugging, the frametime is going to be huge. So hence, clamping here.
+#if _SHU_DEBUG
+    if (dt > (1.0f/29.0f))
+        dt = (1.0f/29.0f);
+#endif
 
     i32 BodyCount = GetBodyCount();
     auto *Bodies = GetBodies();
     ASSERT(Bodies != nullptr);
 
-    for (i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
+    // Sum all the external forces to the body
+    for(i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
     {
         ASSERT(BodyIndex < BodyCount);
         shoora_body *Body = Bodies + BodyIndex;
 
-        // NOTE: If I am debugging, the frametime is going to be huge. So hence, clamping here.
-#if _SHU_DEBUG
-        if (dt > 1.0f / 29.0f)
-        {
-            dt = 1.0f / 29.0f;
-        }
-#endif
-
-#if 1 // Weight Force
-        Shu::vec2f WeightForce = Shu::Vec2f(0.0f, -9.8f * SHU_PIXELS_PER_METER * Body->Mass);
+        Shu::vec2f WeightForce = Shu::Vec2f(0.0f, -9.8f*SHU_PIXELS_PER_METER*Body->Mass);
         Body->AddForce(WeightForce);
-#endif
 
+#if 1
 #if 0 // Push Force through Keys
         Shu::vec2f PushForce = Shu::Vec2f(1.0f, 1.0f)*(SHU_PIXELS_PER_METER*100);
         Shu::vec2f BodyForce = Shu::vec2f::Zero();
@@ -167,17 +185,14 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
         if(Platform_GetKeyInputState(SU_RIGHTARROW, KeyState::SHU_KEYSTATE_DOWN)) { BodyForce.x += PushForce.x; }
         Body->AddForce(BodyForce);
 #endif
-
 #if 0 // Drag Force
         Shu::vec2f DragForce = force::GenerateDragForce(Body, 0.03f);
         Body->AddForce(DragForce);
 #endif
-
 #if 0 // Wind Force
         Shu::vec2f Wind = Shu::Vec2f(20.0f * SHU_PIXELS_PER_METER, 0.0f);
         Body->AddForce(Wind);
 #endif
-
 #if 0 // Gravitation Force
         if((BodyIndex+1) < BodyCount)
         {
@@ -187,21 +202,38 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
             NextBody->AddForce(GravitationalForce*-1.0f);
         }
 #endif
-
 #if 0 // Friction Force
         Shu::vec2f FrictionForce = force::GenerateFrictionForce(Body, 10.0f*SHU_PIXELS_PER_METER);
         Body->AddForce(FrictionForce);
 #endif
-
-        Body->Update(dt);
-    }
-
-#if 1
-    for (i32 i = 0; i < BodyCount; ++i)
-    {
-        Bodies[i].UpdateWorldVertices();
-    }
 #endif
+
+    }
+
+    // integrate the acceleration due to the above forces and calculate the velocity.
+    for(i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
+    {
+        auto *b = Bodies + BodyIndex;
+        b->IntegrateForces(dt);
+    }
+
+    // NOTE: Solve Constraints.
+    // Solve the constraints based on the velocity calculated above and solve the constraints.
+    // the solver is an impulse solver, so if in case, some corrective impulse has to be applied for the
+    // constraint, then this Solve function already calls it before returning. So after this call, we have the
+    // final velocity for the body and it can be integrated to get the position of the body.
+    for(i32 i = 0; i < Constraints2D.size(); ++i)
+    {
+        auto *C = Constraints2D[i];
+        C->Solve();
+    }
+
+    // Integrate the velocities to get the final position for the body.
+    for(i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
+    {
+        auto *b = Bodies + BodyIndex;
+        b->IntegrateVelocities(dt);
+    }
 
     CheckCollisions(ShowContacts);
 }
@@ -215,13 +247,15 @@ shoora_scene::Draw(b32 Wireframe)
         auto *BodyShape = Body->Shape.get();
 
         u32 ColorU32 = Body->IsColliding ? colorU32::Red : colorU32::Green;
-        Shu::vec3f Color = GetColor(ColorU32);
+        // Shu::vec3f Color = GetColor(ColorU32);
+        Shu::vec3f Color = Body->Color;
 
         Shu::mat4f Model = Shu::TRS(Body->Position, Body->Scale, Body->RotationRadians * RAD_TO_DEG,
                                     Shu::Vec3f(0, 0, 1));
         scene_shader_data Value = {.Mat = Model, .Col = Color};
 
-        if (!Wireframe)
+#if 1
+        if(!Wireframe)
         {
             vkCmdPushConstants(shoora_graphics::GetCmdBuffer(), shoora_graphics::GetPipelineLayout(),
                                VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(scene_shader_data), &Value);
@@ -229,8 +263,15 @@ shoora_scene::Draw(b32 Wireframe)
         }
         else
         {
-            Body->DrawWireframe(Model, 2.5f, ColorU32);
+            // Body->DrawWireframe(Model, 2.5f, ColorU32);
+            Body->DrawWireframe(Model, 2.5f, GetColorU32(Body->Color));
         }
+#else
+        vkCmdPushConstants(shoora_graphics::GetCmdBuffer(), shoora_graphics::GetPipelineLayout(),
+                           VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(scene_shader_data), &Value);
+        Body->Draw();
+        Body->DrawWireframe(Model, 1.5f, 0xffffffff);
+#endif
     }
 }
 
@@ -244,6 +285,24 @@ shoora_scene::DrawAxes(Shu::rect2d &Rect)
     auto bottom = Shu::Vec2f(Rect.x, Rect.y - (Rect.height / 2));
     shoora_graphics::DrawLine(top, bottom, 0xff313131, 1.0f);
 }
+
+void
+shoora_scene::AddConstraint2D(constraint_2d *Constraint)
+{
+    Constraints2D.push_back(Constraint);
+}
+
+i32
+shoora_scene::GetConstraints2DCount()
+{
+    return Constraints2D.size();
+}
+
+// constraint_2d **
+// shoora_scene::GetConstraints2D()
+// {
+//     return Constraints2D.data();
+// }
 
 i32
 shoora_scene::GetBodyCount()

@@ -29,6 +29,7 @@ void StringSubString(const char *SrcString, u32 StartIndex, u32 EndIndex, char *
 b32 StringsEqual(const char *A, const char *B);
 
 Shu::vec3f GetColor(u32 Col);
+u32 GetColorU32(const Shu::vec3f &Color);
 
 #define UTILS_H
 #endif // UTILS_H

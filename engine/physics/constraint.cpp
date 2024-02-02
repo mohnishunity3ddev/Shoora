@@ -1,0 +1,120 @@
+#include "constraint.h"
+#include <math/linear_equations_solver.h>
+
+Shu::matN<f32, 6>
+constraint_2d::GetInverseMassMatrix() const
+{
+    Shu::matN<f32, 6> Result;
+    Result.Zero();
+
+    Result.Data[0][0] = A->InvMass;
+    Result.Data[1][1] = A->InvMass;
+    Result.Data[2][2] = A->InvI;
+    Result.Data[3][3] = B->InvMass;
+    Result.Data[4][4] = B->InvMass;
+    Result.Data[5][5] = B->InvI;
+
+    return Result;
+}
+
+Shu::vecN<f32, 6>
+constraint_2d::GetVelocities() const
+{
+    Shu::vecN<f32, 6> Result;
+
+    ASSERT(A != nullptr && B != nullptr);
+
+    Result[0] = A->Velocity.x;
+    Result[1] = A->Velocity.y;
+    Result[2] = A->AngularVelocity;
+    Result[3] = B->Velocity.x;
+    Result[4] = B->Velocity.y;
+    Result[5] = B->AngularVelocity;
+
+    return Result;
+}
+
+joint_constraint_2d::joint_constraint_2d()
+    : constraint_2d()
+{
+    // Default Constructor. Not implemented yet!
+}
+
+joint_constraint_2d::joint_constraint_2d(shoora_body *a, shoora_body *b, const Shu::vec2f &anchorPointWS)
+    : constraint_2d()
+{
+    ASSERT(a != nullptr && b != nullptr);
+
+    this->A = a;
+    this->B = b;
+
+    this->AnchorPointLS_A = a->WorldToLocalSpace(anchorPointWS);
+    this->AnchorPointLS_B = b->WorldToLocalSpace(anchorPointWS);
+}
+
+void
+joint_constraint_2d::Solve()
+{
+    // NOTE: --Compute the Jacobian--
+    // Already computed the jacobian in my notes. Only populating it here.
+    // [2(pa - pb) | 2(ra X (pa - pb) | 2(pb - pa) | 2(rb X (pb - pa)))] = J
+    Jacobian.Zero();
+
+    // Get the anchor point for the joint in world space.
+    const Shu::vec2f pA = A->LocalToWorldSpace(AnchorPointLS_A);
+    const Shu::vec2f pB = B->LocalToWorldSpace(AnchorPointLS_B);
+
+    const Shu::vec2f rA = pA - A->Position.xy;
+    const Shu::vec2f rB = pB - B->Position.xy;
+
+    // This is multiplied with A's linear velocity.
+    Shu::vec2f J1 = (pA - pB) * 2.0f;
+    Jacobian.Data[0][0] = J1.x;
+    Jacobian.Data[1][0] = J1.y;
+    // This one gets multiplied with the angular velocity of A.
+    f32 J2 = rA.Cross(pA - pB) * 2.0f;
+    Jacobian.Data[2][0] = J2;
+
+    // This is multiplied with B's linear velocity.
+    Shu::vec2f J3 = (pB - pA) * 2.0f;
+    Jacobian.Data[3][0] = J3.x;
+    Jacobian.Data[4][0] = J3.y;
+    // This one gets multiplied with the angular velocity of A.
+    f32 J4 = rB.Cross(pB - pA) * 2.0f;
+    Jacobian.Data[5][0] = J4;
+
+    // V = GetVelocities()
+    const Shu::vecN<f32, 6> V = GetVelocities();
+    const Shu::matN<f32, 6> InvM = GetInverseMassMatrix();
+
+    // Calculate the Lagrange Multiplier - which is the impulse magnitude to be applied to the bodies to solve the
+    // constraint.
+    // NOTE: we calculated the lambda(Lagrange multiplier/Impulse magnitude) to be
+    // -(JV + b) / (J*(M^-1)*Jt) where Jt is the transpose of J.
+    const auto J = Jacobian;
+    const auto Jt = J.Transposed();
+
+    Shu::matN<f32, 1> lhs = ((Jt * InvM) * J); // A
+    Shu::vecN<f32, 1> rhs = (V * J * -1.0f); // b
+    // NOTE: This is a linear eq where lhs is a mat, and rhs is a vector.
+    // in the form Ax = b. So we pass in A and b and get back a solution x.
+    Shu::vecN<f32, 1> Lambda = Shu::LCP_GaussSeidel(lhs, rhs);
+
+    f32 ImpulseMagnitude = Lambda[0];
+    Shu::vecN<f32 , 6> ImpulseDirection = Jt.Rows[0];
+
+    // NOTE: This is the final impulse we need to apply to all the bodies in this constraint to solve the
+    // constraint.
+    Shu::vecN<f32, 6> FinalImpulses = ImpulseDirection * ImpulseMagnitude;
+
+    A->ApplyImpulseLinear(Shu::Vec2f(FinalImpulses[0], FinalImpulses[1]));
+    A->ApplyImpulseAngular(FinalImpulses[2]);
+    B->ApplyImpulseLinear(Shu::Vec2f(FinalImpulses[3], FinalImpulses[4]));
+    B->ApplyImpulseAngular(FinalImpulses[5]);
+}
+
+void
+penetration_constraint_2d::Solve()
+{
+
+}

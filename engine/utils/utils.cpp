@@ -14,6 +14,21 @@ GetColor(u32 Col)
 }
 
 u32
+GetColorU32(const Shu::vec3f &Color)
+{
+    u32 ColorU32 = 0xff000000;
+
+    u32 r = (u32)(Color.r * 255.0f);
+    ColorU32 |= (r << 16);
+    u32 g = (u32)(Color.g * 255.0f);
+    ColorU32 |= (g << 8);
+    u32 b = (u32)(Color.b * 255.0f);
+    ColorU32 |= (b << 0);
+
+    return ColorU32;
+}
+
+u32
 GetMaxValueIndex(u32 *NumsArray, u32 NumsCount)
 {
     u32 MaxIndex = 0;

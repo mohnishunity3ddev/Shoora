@@ -1,0 +1,48 @@
+#if !defined(CONSTRAINT_H)
+
+#include <defines.h>
+#include <math/math.h>
+#include "body.h"
+
+struct constraint_2d
+{
+    shoora_body *A;
+    shoora_body *B;
+
+    // NOTE: The anchor point where the bodies are to be fixed at in the local space of the corresponding rigid
+    // bodies.
+    Shu::vec2f AnchorPointLS_A; // The anchor point in A's Local Space
+    Shu::vec2f AnchorPointLS_B; // The anchor point in B's Local Space
+
+    constraint_2d() = default;
+    virtual ~constraint_2d() = default;
+
+    Shu::matN<f32, 6> GetInverseMassMatrix() const;
+    Shu::vecN<f32, 6> GetVelocities() const;
+
+    virtual void Solve() {}
+};
+
+struct joint_constraint_2d : public constraint_2d
+{
+  private:
+    Shu::matMN<f32, 6, 1> Jacobian;
+
+  public:
+    joint_constraint_2d();
+    joint_constraint_2d(shoora_body *a, shoora_body *b, const Shu::vec2f &anchorPointWS);
+
+    // NOTE: This is where we solve the constraint by finding out the impulse which must be applied to the bodies
+    // so that the constraint that is breaking is resolved.
+    virtual void Solve() override;
+};
+
+struct penetration_constraint_2d : public constraint_2d
+{
+    Shu::matMN<f32, 6, 1> Jacobian;
+
+    virtual void Solve() override;
+};
+
+#define CONSTRAINT_H
+#endif // CONSTRAINT_H
