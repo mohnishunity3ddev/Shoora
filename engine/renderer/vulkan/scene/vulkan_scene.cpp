@@ -261,15 +261,14 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
 void
 shoora_scene::Draw(b32 Wireframe)
 {
-    for(i32 jIndex = 0; jIndex < Constraints2D.size(); ++jIndex)
-    {
-        auto *c = Constraints2D[jIndex];
-        Shu::vec2f pA = c->A->LocalToWorldSpace(c->AnchorPointLS_A);
-        Shu::vec2f pB = c->B->LocalToWorldSpace(c->AnchorPointLS_A);
-        shoora_graphics::DrawLine(pA, pB, colorU32::White, 1.0f);
-    }
+    // string connecting the anchor to the ragdoll head
+    const shoora_body *Anchor = Bodies.data();
 
-    for (u32 BodyIndex = 0; BodyIndex < Bodies.size(); ++BodyIndex)
+    Shu::vec2f pA = Anchor->Position.xy;
+    Shu::vec2f pB = Bodies[1].Position.xy;
+    shoora_graphics::DrawLine(pA, pB, colorU32::White, 1.0f);
+
+    for (u32 BodyIndex = 1; BodyIndex < Bodies.size(); ++BodyIndex)
     {
         shoora_body *Body = Bodies.data() + BodyIndex;
         auto *BodyShape = Body->Shape.get();
@@ -300,6 +299,13 @@ shoora_scene::Draw(b32 Wireframe)
         Body->Draw();
         Body->DrawWireframe(Model, 1.5f, 0xffffffff);
 #endif
+    }
+
+    for (i32 cIndex = 0; cIndex < Constraints2D.size(); ++cIndex)
+    {
+        auto *c = Constraints2D[cIndex];
+        auto pos = c->A->LocalToWorldSpace(c->AnchorPointLS_A);
+        shoora_graphics::DrawCircle(pos, 5, colorU32::Red);
     }
 }
 

@@ -339,9 +339,8 @@ InitScene()
     // Add a joint constraint
     joint_constraint_2d *Joint = new joint_constraint_2d(a, b, a->Position.xy);
     Scene->AddConstraint2D(Joint);
-#endif
 
-    // NOTE: -- Chain of constraints --
+    // -- Chain of constraints --
     const i32 NUM_BODIES = 8;
     Scene->AddCircleBody(Shu::Vec2f(0.0f, Window.y * 0.5f - 100.0f), colorU32::Red, 15, 0.0f, 1.0f);
     for(i32 i = 1; i < NUM_BODIES; ++i)
@@ -359,6 +358,38 @@ InitScene()
         joint_constraint_2d *Joint = new joint_constraint_2d(a, b, a->Position.xy);
         Scene->AddConstraint2D(Joint);
     }
+#endif
+
+    // -- 2D Ragdoll --
+    auto green = colorU32::Green;
+
+    auto *Anchor = Scene->AddCircleBody(Shu::Vec2f(0.0f, Window.y * 0.5f - 200.0f), colorU32::Red, 5, 0.0f, 1.0f);
+    Shu::vec2f HeadPos = Anchor->Position.xy + Shu::Vec2f(0.0f, -70.0f);
+    auto *Head = Scene->AddCircleBody(HeadPos, green, 25, 5, 1.0f);
+    Shu::vec2f TorsoPos = HeadPos + Shu::Vec2f(0.0f, -80.0f);
+    auto *Torso = Scene->AddBoxBody(TorsoPos, green, 50, 100, 3, 1.0f);
+    Shu::vec2f LeftArmPos = TorsoPos + Shu::Vec2f(-32, 10);
+    auto *LeftArm = Scene->AddBoxBody(LeftArmPos, green, 15, 70, 1, 1.0f);
+    Shu::vec2f RightArmPos = TorsoPos + Shu::Vec2f(32, 10);
+    auto *RightArm = Scene->AddBoxBody(RightArmPos, green, 15, 70, 1, 1.0f);
+    Shu::vec2f LeftLegPos = TorsoPos + Shu::Vec2f(-20, -97);
+    auto *LeftLeg = Scene->AddBoxBody(LeftLegPos, green, 20, 90, 1, 1.0f);
+    Shu::vec2f RightLegPos = TorsoPos + Shu::Vec2f(20, -97);
+    auto *RightLeg = Scene->AddBoxBody(RightLegPos, green, 20, 90, 1, 1.0f);
+    
+    // Joints
+    joint_constraint_2d *string = new joint_constraint_2d(Anchor, Head, Anchor->Position.xy);
+    joint_constraint_2d *neck = new joint_constraint_2d(Head, Torso, Head->Position.xy + Shu::Vec2f(0, -25));
+    joint_constraint_2d *leftShoulder = new joint_constraint_2d(Torso, LeftArm, Torso->Position.xy + Shu::Vec2f(-28, 45));
+    joint_constraint_2d *rightShoulder = new joint_constraint_2d(Torso, RightArm, Torso->Position.xy + Shu::Vec2f(28, 45));
+    joint_constraint_2d *leftHip = new joint_constraint_2d(Torso, LeftLeg, Torso->Position.xy + Shu::Vec2f(-20, -50));
+    joint_constraint_2d *rightHip = new joint_constraint_2d(Torso, RightLeg, Torso->Position.xy + Shu::Vec2f(20, -50));
+    Scene->AddConstraint2D(string);
+    Scene->AddConstraint2D(neck);
+    Scene->AddConstraint2D(leftShoulder);
+    Scene->AddConstraint2D(rightShoulder);
+    Scene->AddConstraint2D(leftHip);
+    Scene->AddConstraint2D(rightHip);
 }
 
 void
