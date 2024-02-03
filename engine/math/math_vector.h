@@ -235,6 +235,7 @@ namespace Shu
         const vecN &operator*=(T rhs);
         vecN operator*(T rhs) const;
         vecN operator+(const vecN &rhs) const;
+        void operator+=(const vecN &rhs);
         vecN operator-(const vecN &rhs) const;
         const vecN &operator-=(const vecN &rhs);
 
@@ -1334,6 +1335,16 @@ namespace Shu
             Result.Data[i] += rhs.Data[i];
         }
         return Result;
+    }
+
+    template <typename T, size_t N>
+    void
+    vecN<T, N>::operator+=(const vecN<T, N> &rhs)
+    {
+        for (i32 i = 0; i < N; ++i)
+        {
+            this->Data[i] += rhs.Data[i];
+        }
     }
 
     template <typename T, size_t N>

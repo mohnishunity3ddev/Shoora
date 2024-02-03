@@ -20,21 +20,28 @@ struct constraint_2d
     Shu::matN<f32, 6> GetInverseMassMatrix() const;
     Shu::vecN<f32, 6> GetVelocities() const;
 
+    virtual void PreSolve() {}
     virtual void Solve() {}
+    virtual void PostSolve() {}
 };
 
 struct joint_constraint_2d : public constraint_2d
 {
   private:
     Shu::matMN<f32, 6, 1> Jacobian;
+    Shu::vecN<f32, 1> CachedLambda;
 
   public:
     joint_constraint_2d();
     joint_constraint_2d(shoora_body *a, shoora_body *b, const Shu::vec2f &anchorPointWS);
 
+    // NOTE: This is where the Warm starting takes place to limit the number of solver iterations in the Solve()
+    // method.
+    virtual void PreSolve() override;
     // NOTE: This is where we solve the constraint by finding out the impulse which must be applied to the bodies
     // so that the constraint that is breaking is resolved.
     virtual void Solve() override;
+    virtual void PostSolve() override;
 };
 
 struct penetration_constraint_2d : public constraint_2d

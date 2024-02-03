@@ -38,12 +38,16 @@ joint_constraint_2d::joint_constraint_2d()
     : constraint_2d()
 {
     // Default Constructor. Not implemented yet!
+    Jacobian.Zero();
+    CachedLambda.Zero();
 }
 
 joint_constraint_2d::joint_constraint_2d(shoora_body *a, shoora_body *b, const Shu::vec2f &anchorPointWS)
     : constraint_2d()
 {
     ASSERT(a != nullptr && b != nullptr);
+    Jacobian.Zero();
+    CachedLambda.Zero();
 
     this->A = a;
     this->B = b;
@@ -53,7 +57,7 @@ joint_constraint_2d::joint_constraint_2d(shoora_body *a, shoora_body *b, const S
 }
 
 void
-joint_constraint_2d::Solve()
+joint_constraint_2d::PreSolve()
 {
     // NOTE: --Compute the Jacobian--
     // Already computed the jacobian in my notes. Only populating it here.
@@ -83,6 +87,27 @@ joint_constraint_2d::Solve()
     f32 J4 = rB.Cross(pB - pA) * 2.0f;
     Jacobian.Data[5][0] = J4;
 
+    // IMPORTANT: NOTE: This is where we do our actual Warm Starting.
+    // We apply the impulse based on the solution for Lambda from the Previous Frame's solver iterations. Apply it
+    // once here. Now, we are pretty much very close to the actual solution so it will require fewer iterations for
+    // the solver to get to near correct lambda value for this current frame.
+    auto Jt = Jacobian.Transposed();
+    f32 ImpulseMagnitude = CachedLambda[0];
+    Shu::vecN<f32, 6> ImpulseDirection = Jt.Rows[0];
+
+    // NOTE: This is the final impulse we need to apply to all the bodies in this constraint to solve the
+    // constraint.
+    Shu::vecN<f32, 6> FinalImpulses = ImpulseDirection * ImpulseMagnitude;
+
+    A->ApplyImpulseLinear(Shu::Vec2f(FinalImpulses[0], FinalImpulses[1]));
+    A->ApplyImpulseAngular(FinalImpulses[2]);
+    B->ApplyImpulseLinear(Shu::Vec2f(FinalImpulses[3], FinalImpulses[4]));
+    B->ApplyImpulseAngular(FinalImpulses[5]);
+}
+
+void
+joint_constraint_2d::Solve()
+{
     // V = GetVelocities()
     const Shu::vecN<f32, 6> V = GetVelocities();
     const Shu::matN<f32, 6> InvM = GetInverseMassMatrix();
@@ -111,6 +136,14 @@ joint_constraint_2d::Solve()
     A->ApplyImpulseAngular(FinalImpulses[2]);
     B->ApplyImpulseLinear(Shu::Vec2f(FinalImpulses[3], FinalImpulses[4]));
     B->ApplyImpulseAngular(FinalImpulses[5]);
+
+    this->CachedLambda += Lambda;
+}
+
+void
+joint_constraint_2d::PostSolve()
+{
+
 }
 
 void

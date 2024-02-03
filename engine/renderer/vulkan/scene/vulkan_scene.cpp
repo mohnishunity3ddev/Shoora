@@ -217,18 +217,35 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
         b->IntegrateForces(dt);
     }
 
+    i32 cSize = Constraints2D.size();
+
+    // NOTE: Here is where we do the warm starting. Apply impulses first using the cached Impulse Magnitude that we
+    // have calculated the previous frame and applying it first before running the iterations. This reduces the
+    // number of iterations we have to do to get a realistic result.
+    for (i32 i = 0; i < cSize; ++i)
+    {
+        auto *C = Constraints2D[i];
+        C->PreSolve();
+    }
+
     // NOTE: Solve Constraints.
     // Solve the constraints based on the velocity calculated above and solve the constraints.
     // the solver is an impulse solver, so if in case, some corrective impulse has to be applied for the
     // constraint, then this Solve function already calls it before returning. So after this call, we have the
     // final velocity for the body and it can be integrated to get the position of the body.
-    for (i32 iter = 0; iter < 100; ++iter)
+    for (i32 iter = 0; iter < 5; ++iter)
     {
-        for (i32 i = 0; i < Constraints2D.size(); ++i)
+        for (i32 i = 0; i < cSize; ++i)
         {
             auto *C = Constraints2D[i];
             C->Solve();
         }
+    }
+
+    for (i32 i = 0; i < cSize; ++i)
+    {
+        auto *C = Constraints2D[i];
+        C->PostSolve();
     }
 
     // Integrate the velocities to get the final position for the body.
