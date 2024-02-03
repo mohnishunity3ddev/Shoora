@@ -1,5 +1,5 @@
 {
-    "editor.fontFamily": "'comic code ligatures regular', 'maple mono nf', 'caskaydiacove nf mono', 'pragmatapro mono liga', 'iosevkaterm nerd font mono', 'agave nerd font mono r', 'JetBrainsMono nerd font mono'",
+    "editor.fontFamily": "'maple mono nf', 'comic code ligatures regular', 'caskaydiacove nf mono', 'pragmatapro mono liga', 'iosevkaterm nerd font mono', 'agave nerd font mono r', 'JetBrainsMono nerd font mono'",
     "editor.fontSize": 16,
     // "editor.lineHeight": 25,
     // "editor.letterSpacing": 0.5,
@@ -115,7 +115,7 @@
         "xutility": "cpp",
         "*.in": "cpp"
     },
-
+    
     "files.trimTrailingWhitespace": true,
     "editor.renderLineHighlight": "all",
     "workbench.colorCustomizations": {
@@ -139,4 +139,9 @@
         "editor.lineHighlightBorder": "#D0FEEC00"
     },
     "peacock.color": "#343434",
+    "zenMode.fullScreen": true,
+    "zenMode.hideActivityBar": true,
+    "zenMode.showTabs": "single",
+    "zenMode.hideStatusBar": true,
+    "zenMode.restore": true
 }

@@ -222,10 +222,13 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
     // the solver is an impulse solver, so if in case, some corrective impulse has to be applied for the
     // constraint, then this Solve function already calls it before returning. So after this call, we have the
     // final velocity for the body and it can be integrated to get the position of the body.
-    for(i32 i = 0; i < Constraints2D.size(); ++i)
+    for (i32 iter = 0; iter < 1; ++iter)
     {
-        auto *C = Constraints2D[i];
-        C->Solve();
+        for (i32 i = 0; i < Constraints2D.size(); ++i)
+        {
+            auto *C = Constraints2D[i];
+            C->Solve();
+        }
     }
 
     // Integrate the velocities to get the final position for the body.
@@ -241,7 +244,15 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
 void
 shoora_scene::Draw(b32 Wireframe)
 {
-    for(u32 BodyIndex = 0; BodyIndex < Bodies.size(); ++BodyIndex)
+    for(i32 jIndex = 0; jIndex < Constraints2D.size(); ++jIndex)
+    {
+        auto *c = Constraints2D[jIndex];
+        Shu::vec2f pA = c->A->LocalToWorldSpace(c->AnchorPointLS_A);
+        Shu::vec2f pB = c->B->LocalToWorldSpace(c->AnchorPointLS_A);
+        shoora_graphics::DrawLine(pA, pB, colorU32::White, 1.0f);
+    }
+
+    for (u32 BodyIndex = 0; BodyIndex < Bodies.size(); ++BodyIndex)
     {
         shoora_body *Body = Bodies.data() + BodyIndex;
         auto *BodyShape = Body->Shape.get();
@@ -314,4 +325,10 @@ shoora_body *
 shoora_scene::GetBodies()
 {
     return Bodies.data();
+}
+
+shoora_body *
+shoora_scene::GetBody(i32 Index)
+{
+    return Bodies.get(Index);
 }

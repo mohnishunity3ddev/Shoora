@@ -30,6 +30,8 @@ shoora_body::shoora_body(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32
 
     this->SumForces = this->Velocity = this->Acceleration = Shu::vec3f::Zero();
     this->SumTorques = 0.0f;
+
+    this->UpdateWorldVertices();
 }
 
 shoora_body::shoora_body(shoora_body &&other) noexcept
@@ -166,7 +168,7 @@ shoora_body::ApplyImpulseAngular(f32 Impulse)
     if(this->IsStatic()) {
         return;
     }
-    
+
     this->AngularVelocity += Impulse * this->InvI;
 }
 

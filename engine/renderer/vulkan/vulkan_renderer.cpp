@@ -331,15 +331,34 @@ InitScene()
     Scene->AddBoxBody(Shu::Vec2f(-450, 0), colorU32::White, 300, 300, 0.0f, 1.0f, 35.0f*DEG_TO_RAD);
     Scene->AddCircleBody(Shu::Vec2f(-150, 0), colorU32::White, 75, 0.0f, 0.5f);
     Scene->AddPolygonBody(0, Shu::Vec2f(200, 0), colorU32::White, 0.0f, 0.5f, 0.0f, 7.0f);
-#endif
 
+    // -- Simple Pendulum --
     // Add two rigid bodies
     auto *a = Scene->AddCircleBody(Shu::Vec2f(0, 0), colorU32::Red, 30.0f, 0.0f, 1.0f);
     auto *b = Scene->AddCircleBody(Shu::Vec2f(-100, 0), colorU32::Green, 20.0f, 1.0f, 1.0f);
-
     // Add a joint constraint
     joint_constraint_2d *Joint = new joint_constraint_2d(a, b, a->Position.xy);
     Scene->AddConstraint2D(Joint);
+#endif
+
+    // NOTE: -- Chain of constraints --
+    const i32 NUM_BODIES = 8;
+    Scene->AddCircleBody(Shu::Vec2f(0.0f, Window.y * 0.5f - 100.0f), colorU32::Red, 15, 0.0f, 1.0f);
+    for(i32 i = 1; i < NUM_BODIES; ++i)
+    {
+        f32 Mass = 1.0f;
+        u32 Color = colorU32::Green;
+        Shu::vec2f Pos = Shu::Vec2f(-(i * 40.0f), Window.y*0.5f - 100.0f);
+        Scene->AddBoxBody(Pos, Color, 30, 30, Mass, 1.0f);
+    }
+
+    for (i32 i = 1; i < NUM_BODIES; ++i)
+    {
+        shoora_body *a = Scene->GetBody(i - 1);
+        shoora_body *b = Scene->GetBody(i);
+        joint_constraint_2d *Joint = new joint_constraint_2d(a, b, a->Position.xy);
+        Scene->AddConstraint2D(Joint);
+    }
 }
 
 void

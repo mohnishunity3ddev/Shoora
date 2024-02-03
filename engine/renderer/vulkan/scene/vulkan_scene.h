@@ -35,6 +35,7 @@ struct shoora_scene
 
     i32 GetBodyCount();
     shoora_body *GetBodies();
+    shoora_body *GetBody(i32 Index);
 
     void UpdateInput(const Shu::vec2f &CurrentMouseWorldPos);
 
