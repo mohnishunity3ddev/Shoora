@@ -20,7 +20,7 @@ struct constraint_2d
     Shu::matN<f32, 6> GetInverseMassMatrix() const;
     Shu::vecN<f32, 6> GetVelocities() const;
 
-    virtual void PreSolve() {}
+    virtual void PreSolve(const f32 dt) {}
     virtual void Solve() {}
     virtual void PostSolve() {}
 };
@@ -30,6 +30,8 @@ struct joint_constraint_2d : public constraint_2d
   private:
     Shu::matMN<f32, 6, 1> Jacobian;
     Shu::vecN<f32, 1> CachedLambda;
+    // NOTE: Baumgarte Stabilization Factor.
+    f32 Bias;
 
   public:
     joint_constraint_2d();
@@ -37,7 +39,7 @@ struct joint_constraint_2d : public constraint_2d
 
     // NOTE: This is where the Warm starting takes place to limit the number of solver iterations in the Solve()
     // method.
-    virtual void PreSolve() override;
+    virtual void PreSolve(const f32 dt) override;
     // NOTE: This is where we solve the constraint by finding out the impulse which must be applied to the bodies
     // so that the constraint that is breaking is resolved.
     virtual void Solve() override;

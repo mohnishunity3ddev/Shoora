@@ -225,7 +225,7 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
     for (i32 i = 0; i < cSize; ++i)
     {
         auto *C = Constraints2D[i];
-        C->PreSolve();
+        C->PreSolve(dt);
     }
 
     // NOTE: Solve Constraints.

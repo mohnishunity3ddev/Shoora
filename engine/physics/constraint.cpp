@@ -35,7 +35,7 @@ constraint_2d::GetVelocities() const
 }
 
 joint_constraint_2d::joint_constraint_2d()
-    : constraint_2d()
+    : constraint_2d(), Bias(0.0f)
 {
     // Default Constructor. Not implemented yet!
     Jacobian.Zero();
@@ -43,7 +43,7 @@ joint_constraint_2d::joint_constraint_2d()
 }
 
 joint_constraint_2d::joint_constraint_2d(shoora_body *a, shoora_body *b, const Shu::vec2f &anchorPointWS)
-    : constraint_2d()
+    : constraint_2d(), Bias(0.0f)
 {
     ASSERT(a != nullptr && b != nullptr);
     Jacobian.Zero();
@@ -57,7 +57,7 @@ joint_constraint_2d::joint_constraint_2d(shoora_body *a, shoora_body *b, const S
 }
 
 void
-joint_constraint_2d::PreSolve()
+joint_constraint_2d::PreSolve(const f32 dt)
 {
     // NOTE: --Compute the Jacobian--
     // Already computed the jacobian in my notes. Only populating it here.
@@ -103,6 +103,19 @@ joint_constraint_2d::PreSolve()
     A->ApplyImpulseAngular(FinalImpulses[2]);
     B->ApplyImpulseLinear(Shu::Vec2f(FinalImpulses[3], FinalImpulses[4]));
     B->ApplyImpulseAngular(FinalImpulses[5]);
+
+    // Computing the bias term (using Baumgarte stabilization techinique)
+    const f32 beta = 0.1f;
+    // NOTE: The positional error "C". Here since this is a distance constraint. pB and pA should be the same. The
+    // distance between them therefore is the error. And by adding this bias term, what we are saying is when this
+    // is subtracted from our solution, it moves us closer to a solution with less error. if we chose beta as 1.0f
+    // then correcting will be whole and sudded. We chose the beta to be 0.1f so the solution will "move" towards
+    // the solution with the least amount of error.
+    f32 C = (pB - pA).Dot(pB - pA);
+    // NOTE: Adding a bias here leads to increase in the energy of the system. So we are adding a threshold, if the
+    // positional error is too small, we dont want to add bias to the system.
+    C = MAX(0.0f, C - 0.01f);
+    Bias = (beta / dt) * C;
 }
 
 void
@@ -121,6 +134,8 @@ joint_constraint_2d::Solve()
 
     Shu::matN<f32, 1> lhs = ((Jt * InvM) * J); // A
     Shu::vecN<f32, 1> rhs = (V * J * -1.0f); // b
+    rhs[0] -= Bias;
+
     // NOTE: This is a linear eq where lhs is a mat, and rhs is a vector.
     // in the form Ax = b. So we pass in A and b and get back a solution x.
     Shu::vecN<f32, 1> Lambda = Shu::LCP_GaussSeidel(lhs, rhs);
