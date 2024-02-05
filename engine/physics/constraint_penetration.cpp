@@ -67,11 +67,28 @@ penetration_constraint_2d::PreSolve(const f32 dt)
     // B->ApplyImpulseLinear(Shu::Vec2f(FinalImpulses[3], FinalImpulses[4]));
     // B->ApplyImpulseAngular(FinalImpulses[5]);
 
+    // NOTE: Doing this for adding bounciness based on the coefficient of restitution between the two bodies.
+    // if one wants "bouncy" collisions, the constraint for the post-impulse velocity does not require a zero
+    // normal velocity, but a fraction of the pre-impulse normal velocity
+
     // Baumgarte Stabilization!
-    const f32 beta = 0.25f;
+    const f32 beta = 0.2f;
     f32 C = (pB - pA).Dot(-n);
-    C = MIN(0.0f, C + 0.02f);
-    Bias = (beta / dt) * C;
+    C = MIN(0.0f, C + 0.01f);
+
+    // Calculate pre-collision velocity along the collision normal
+    Shu::vec2f LinearVa = A->Velocity.xy;
+    Shu::vec2f AngularVa = Shu::Vec2f(-A->AngularVelocity * rA.y, A->AngularVelocity * rA.x); // <-- NOTE: this is W.Cross(R)
+    Shu::vec2f Va = LinearVa + AngularVa;
+    Shu::vec2f LinearVb = B->Velocity.xy;
+    Shu::vec2f AngularVb = Shu::Vec2f(-B->AngularVelocity * rB.y, B->AngularVelocity * rB.x);
+    Shu::vec2f Vb = LinearVb + AngularVb;
+
+    Shu::vec2f RelV = Va - Vb;
+    f32 RelVDotNormal = RelV.Dot(n);
+
+    f32 Restitution = MIN(A->CoeffRestitution, B->CoeffRestitution);
+    Bias = ((beta / dt) * C) + (Restitution*RelVDotNormal);
 }
 
 // IMPORTANT: NOTE: Check
@@ -108,7 +125,13 @@ penetration_constraint_2d::Solve()
     // We want them to repel from one another if they are colliding, that is why setting the Lambda to zero here so
     // that the constraint eq C(dot) >= 0 holds.
     this->CachedLambda[0] = (this->CachedLambda[0] < 0.0f) ? 0.0f : this->CachedLambda[0];
+    // check https://web.archive.org/web/20220801182625/http://myselph.de/gamePhysics/friction.html
+    if(this->Friction > 0.0f) {
+        const f32 Max = this->CachedLambda[0] * this->Friction;
+        this->CachedLambda[1] = ClampToRange(Lambda[1], -Max, Max);
+    }
     Lambda = this->CachedLambda - OldLambda;
+
 
     auto Impulses = J * Lambda;
     A->ApplyImpulseLinear(Shu::Vec2f(Impulses[0], Impulses[1]));

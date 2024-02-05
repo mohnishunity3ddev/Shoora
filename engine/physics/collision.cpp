@@ -162,7 +162,7 @@ collision2d::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle,
     if(!isInside)
     {
         auto EdgeNormal = ClosestEdge.Normal();
-
+        
         auto CurrCenter = Shu::Normalize(CircleCenter - MinVertex.xy);
         auto CurrDot = Shu::Dot(CurrCenter, ClosestEdge);
 
