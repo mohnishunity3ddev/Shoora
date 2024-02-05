@@ -61,10 +61,10 @@ typedef double f64;
 #define ALIGN_16
 #endif
 
-#define SHU_PI 3.14159265359f
-#define SHU_PI_BY_2 1.57079632679f
-#define DEG_TO_RAD SHU_PI / 180.0f
-#define RAD_TO_DEG 180.0f / SHU_PI
+#define SHU_PI (3.14159265359f)
+#define SHU_PI_BY_2 (1.57079632679f)
+#define DEG_TO_RAD (SHU_PI / 180.0f)
+#define RAD_TO_DEG (180.0f / SHU_PI)
 
 enum shoora_quality
 {
@@ -75,8 +75,8 @@ enum shoora_quality
     Quality_Count
 };
 
-#define ABSOLUTE(Val) (Val) < 0 ? -(Val) : (Val)
-#define SIGN(Val) (Val) < 0 ? -1 : 1
+#define ABSOLUTE(Val) (((Val) < 0) ? (-Val) : (Val))
+#define SIGN(Val) (((Val) < 0) ? (-1) : (1))
 
 #if _SHU_DEBUG
 #define ASSERT(Expression)                                                                                        \
@@ -306,8 +306,8 @@ enum shoora_quality
 
 #define MEMZERO(MemPtr, Size)                                                                                     \
     {                                                                                                             \
-        u8 *Ptr = (u8 *)MemPtr;                                                                                   \
-        for (i32 i = 0; i < Size; ++i)                                                                            \
+        u8 *Ptr = (u8 *)(MemPtr);                                                                                 \
+        for (i32 i = 0; (i < (Size)); ++i)                                                                        \
         {                                                                                                         \
             *Ptr++ = 0;                                                                                           \
         }                                                                                                         \
@@ -324,9 +324,9 @@ enum shoora_quality
         }                                                                                                         \
     }
 
-#define NANOSECONDS(Seconds) Seconds * 1000000000
-#define MAX(A, B) (A) > (B) ? A : B
-#define MIN(A, B) (A) < (B) ? A : B
+#define NANOSECONDS(Seconds) ((Seconds) * 1000000000)
+#define MAX(A, B) ((A) > (B) ? (A) : (B))
+#define MIN(A, B) ((A) < (B) ? (A) : (B))
 
 template <typename T>
 inline T
@@ -428,17 +428,17 @@ NearlyEqual(f32 n, f32 expected, f32 epsilon = 2.0f*SHU_EPSILON)
 
 #define SHU_NEARLY_EQ(n, e, type, diff, res)                                                                      \
     {                                                                                                             \
-        type uN = *((type *)&n);                                                                                  \
-        type uExp = *((type *)&e);                                                                                \
+        type uN = *((type *)&(n));                                                                            \
+        type uExp = *((type *)&(e));                                                                          \
         if (uExp > uN)                                                                                            \
         {                                                                                                         \
-            diff = uExp - uN;                                                                                     \
+            (diff) = uExp - uN;                                                                                   \
         }                                                                                                         \
         else                                                                                                      \
         {                                                                                                         \
-            diff = uN - uExp;                                                                                     \
+            (diff) = uN - uExp;                                                                                   \
         }                                                                                                         \
-        res = (diff <= maxUlps);                                                                                  \
+        (res) = ((diff) <= maxUlps);                                                                              \
     }
 
 template<typename T>
@@ -471,16 +471,16 @@ NearlyEqualUlps(T n, T expected, i64 maxUlps = 2)
     return Result;
 }
 
-#define ALIGN4(Number) AlignAs(Number, 4)
-#define ALIGN8(Number) AlignAs(Number, 8)
-#define ALIGN16(Number) AlignAs(Number, 16)
-#define ALIGN32(Number) AlignAs(Number, 32)
-#define ALIGN64(Number) AlignAs(Number, 64)
+#define ALIGN4(Number) AlignAs((Number), 4)
+#define ALIGN8(Number) AlignAs((Number), 8)
+#define ALIGN16(Number) AlignAs((Number), 16)
+#define ALIGN32(Number) AlignAs((Number), 32)
+#define ALIGN64(Number) AlignAs((Number), 64)
 
 #define WIN32_LOG_OUTPUT(FormatString, ...)                                                                       \
     {                                                                                                             \
         char TextBuffer[256];                                                                                     \
-        _snprintf_s(TextBuffer, 256, FormatString, __VA_ARGS__);                                                  \
+        _snprintf_s(TextBuffer, 256, (FormatString), __VA_ARGS__);                                                \
         OutputDebugStringA(TextBuffer);                                                                           \
     }
 
@@ -489,9 +489,6 @@ NearlyEqualUlps(T n, T expected, i64 maxUlps = 2)
 #elif defined(__clang__)
 #define SHU_EXPORT __attribute__((visibility("default")))
 #endif
-
-
-
 
 #define DEFINES_H
 #endif // DEFINES_H

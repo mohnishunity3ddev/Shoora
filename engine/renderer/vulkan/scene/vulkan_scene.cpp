@@ -198,8 +198,8 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
                 // NOTE: Visualizing the Collision Contact Info.
                 if(ShowContacts)
                 {
-                    shoora_graphics::DrawCircle(Contact.Start.xy, 3, colorU32::Cyan);
-                    shoora_graphics::DrawCircle(Contact.End.xy, 3, colorU32::Green);
+                    shoora_graphics::DrawCircle(Contact.Start.xy, 10, colorU32::Cyan);
+                    shoora_graphics::DrawCircle(Contact.End.xy, 10, colorU32::Green);
                     Shu::vec2f ContactNormalLineEnd = Shu::Vec2f(Contact.Start.x + Contact.Normal.x * 30.0f,
                                                                  Contact.Start.y + Contact.Normal.y * 30.0f);
                     shoora_graphics::DrawLine(Contact.Start.xy, ContactNormalLineEnd, colorU32::Yellow, 2);
@@ -236,7 +236,7 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
     }
     for(i32 i = 0; i < pSize; ++i)
     {
-        auto &penConstraint = PenetrationConstraints2D[i];
+        penetration_constraint_2d &penConstraint = PenetrationConstraints2D[i];
         penConstraint.PreSolve(dt);
     }
 
@@ -254,7 +254,7 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
         }
         for(i32 i = 0; i < pSize; ++i)
         {
-            auto &penConstraint = PenetrationConstraints2D[i];
+            penetration_constraint_2d &penConstraint = PenetrationConstraints2D[i];
             penConstraint.Solve();
         }
     }
@@ -266,7 +266,7 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
     }
     for(i32 i = 0; i < pSize; ++i)
     {
-        auto &penConstraint = PenetrationConstraints2D[i];
+        penetration_constraint_2d &penConstraint = PenetrationConstraints2D[i];
         penConstraint.PostSolve();
     }
 

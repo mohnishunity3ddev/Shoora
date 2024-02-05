@@ -25,7 +25,7 @@ collision2d::IsColliding(shoora_body *A, shoora_body *B, contact &Contact)
     }
     else if(isBodyACircle && isBodyBPolygon)
     {
-        Result = IsCollidingPolygonCircle(B, A, Contact);
+        Result = IsCollidingPolygonCircle(B, A, Contact, true);
     }
     else if(isBodyAPolygon && isBodyBCircle)
     {
@@ -103,7 +103,7 @@ collision2d::IsCollidingPolygonPolygon(shoora_body *A, shoora_body *B, contact &
 }
 
 b32
-collision2d::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle, contact &Contact)
+collision2d::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle, contact &Contact, b32 Invert)
 {
     b32 IsCollidingResult = false;
 
@@ -225,9 +225,23 @@ collision2d::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle,
 
     if(IsCollidingResult)
     {
-        // ASSERT(Contact.Depth > 0.0f);
-        Contact.A = Polygon;
-        Contact.B = Circle;
+        ASSERT(Contact.Depth >= 0.0f);
+        if(!Invert)
+        {
+            Contact.A = Polygon;
+            Contact.B = Circle;
+        }
+        else
+        {
+            Contact.A = Circle;
+            Contact.B = Polygon;
+
+            auto temp = Contact.Start;
+            Contact.Start = Contact.End;
+            Contact.End = temp;
+
+            Contact.Normal = -Contact.Normal;
+        }
     }
 
     return IsCollidingResult;

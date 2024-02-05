@@ -305,7 +305,7 @@ WorldToMouse(const Shu::vec2f &WorldPos)
 {
     f32 x = WorldPos.x;
     f32 y = WorldPos.y - (f32)GlobalWindowSize.y;
-
+    
     Shu::vec2f Result;
     Result.x = x;
     Result.y = y;
@@ -750,8 +750,8 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     }
     if(Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
     {
-        // Scene->AddBoxBody(CurrentMouseWorldPos, colorU32::White, 50, 50, 1.0, 0.7f);
-        Scene->AddPolygonBody(1, CurrentMouseWorldPos, colorU32::White, 1.0f, 1.0f, 0.0f, 1.0f);
+        Scene->AddBoxBody(CurrentMouseWorldPos, colorU32::White, 50, 50, 1.0, 0.7f);
+        // Scene->AddPolygonBody(1, CurrentMouseWorldPos, colorU32::White, 1.0f, 1.0f, 0.0f, 1.0f);
     }
 
     if(Platform_GetKeyInputState(SU_SPACE, KeyState::SHU_KEYSTATE_PRESS))

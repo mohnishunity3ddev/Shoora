@@ -42,7 +42,6 @@ penetration_constraint_2d::PreSolve(const f32 dt)
     f32 J4 = rB.Cross(n);
     Jacobian.Data[5][0] = J4;
 
-    /*
     auto Jt = Jacobian.Transposed();
     f32 ImpulseMagnitude = CachedLambda[0];
     Shu::vecN<f32, 6> ImpulseDirection = Jt.Rows[0];
@@ -53,7 +52,6 @@ penetration_constraint_2d::PreSolve(const f32 dt)
     A->ApplyImpulseAngular(FinalImpulses[2]);
     B->ApplyImpulseLinear(Shu::Vec2f(FinalImpulses[3], FinalImpulses[4]));
     B->ApplyImpulseAngular(FinalImpulses[5]);
-    */
 
     const f32 beta = 0.1f;
     f32 C = (pB - pA).Dot(-n);
@@ -76,6 +74,11 @@ penetration_constraint_2d::Solve()
 
     Shu::vecN<f32, 1> Lambda = Shu::LCP_GaussSeidel(lhs, rhs);
 
+    Shu::vecN<f32, 1> OldLambda = this->CachedLambda;
+    this->CachedLambda += Lambda;
+    this->CachedLambda[0] = (this->CachedLambda[0] < 0.0f) ? 0.0f : this->CachedLambda[0];
+    Lambda = this->CachedLambda - OldLambda;
+
     f32 ImpulseMagnitude = Lambda[0];
     Shu::vecN<f32, 6> ImpulseDirection = Jt.Rows[0];
 
@@ -85,8 +88,6 @@ penetration_constraint_2d::Solve()
     A->ApplyImpulseAngular(FinalImpulses[2]);
     B->ApplyImpulseLinear(Shu::Vec2f(FinalImpulses[3], FinalImpulses[4]));
     B->ApplyImpulseAngular(FinalImpulses[5]);
-
-    /*this->CachedLambda += Lambda;*/
 }
 
 void
