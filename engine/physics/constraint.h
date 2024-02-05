@@ -3,6 +3,7 @@
 #include <defines.h>
 #include <math/math.h>
 #include "body.h"
+#include "contact.h"
 
 struct constraint_2d
 {
@@ -48,9 +49,20 @@ struct joint_constraint_2d : public constraint_2d
 
 struct penetration_constraint_2d : public constraint_2d
 {
+  private:
     Shu::matMN<f32, 6, 1> Jacobian;
+    Shu::vecN<f32, 1> CachedLambda;
+    f32 Bias;
+    Shu::vec2f Normal;
 
+  public:
+    penetration_constraint_2d();
+    penetration_constraint_2d(shoora_body *a, shoora_body *b, const contact &contact);
+
+
+    virtual void PreSolve(const f32 dt) override;
     virtual void Solve() override;
+    virtual void PostSolve() override;
 };
 
 #define CONSTRAINT_H

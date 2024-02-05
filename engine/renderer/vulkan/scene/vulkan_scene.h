@@ -11,12 +11,11 @@ struct shoora_scene
 {
   private:
     shoora_dynamic_array<shoora_body> Bodies;
+    // TODO: Use our dynamic array instead here.
     std::vector<constraint_2d *> Constraints2D;
+    std::vector<penetration_constraint_2d> PenetrationConstraints2D;
 
-    b32 SceneHasBegun = false, SceneEnded = false;
-
-    void CheckCollisions(b32 ShowContacts);
-
+    b32 SceneAddBegin = false, SceneAddEnd = false;
   public:
     shoora_scene();
     ~shoora_scene();

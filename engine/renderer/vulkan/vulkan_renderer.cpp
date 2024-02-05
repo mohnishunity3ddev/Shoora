@@ -322,7 +322,6 @@ InitScene()
     // Bottom Wall (Static Rigidbody)
     Shu::vec2f Window = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
-#if 0
     Scene->AddBoxBody(Shu::Vec2f(0, (-Window.y*0.5f)), colorU32::White, Window.x, 50, 0.0f, 0.1f);
     Scene->AddBoxBody(Shu::Vec2f(Window.x * 0.5f, 0), colorU32::White, 50, Window.y, 0.0f, 0.1f);
     Scene->AddBoxBody(Shu::Vec2f(-Window.x * 0.5f, 0), colorU32::White, 50, Window.y, 0.0f, 0.1f);
@@ -332,6 +331,7 @@ InitScene()
     Scene->AddCircleBody(Shu::Vec2f(-150, 0), colorU32::White, 75, 0.0f, 0.5f);
     Scene->AddPolygonBody(0, Shu::Vec2f(200, 0), colorU32::White, 0.0f, 0.5f, 0.0f, 7.0f);
 
+#if 0
     // -- Simple Pendulum --
     // Add two rigid bodies
     auto *a = Scene->AddCircleBody(Shu::Vec2f(0, 0), colorU32::Red, 30.0f, 0.0f, 1.0f);
@@ -358,7 +358,6 @@ InitScene()
         joint_constraint_2d *Joint = new joint_constraint_2d(a, b, a->Position.xy);
         Scene->AddConstraint2D(Joint);
     }
-#endif
 
     // -- 2D Ragdoll --
     auto green = colorU32::Green;
@@ -376,7 +375,7 @@ InitScene()
     auto *LeftLeg = Scene->AddBoxBody(LeftLegPos, green, 20, 90, 1, 1.0f);
     Shu::vec2f RightLegPos = TorsoPos + Shu::Vec2f(20, -97);
     auto *RightLeg = Scene->AddBoxBody(RightLegPos, green, 20, 90, 1, 1.0f);
-    
+
     // Joints
     joint_constraint_2d *string = new joint_constraint_2d(Anchor, Head, Anchor->Position.xy);
     joint_constraint_2d *neck = new joint_constraint_2d(Head, Torso, Head->Position.xy + Shu::Vec2f(0, -25));
@@ -390,6 +389,7 @@ InitScene()
     Scene->AddConstraint2D(rightShoulder);
     Scene->AddConstraint2D(leftHip);
     Scene->AddConstraint2D(rightHip);
+#endif
 }
 
 void

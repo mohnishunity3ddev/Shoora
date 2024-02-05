@@ -4,6 +4,10 @@
 b32
 collision2d::IsColliding(shoora_body *A, shoora_body *B, contact &Contact)
 {
+    if(A->IsStatic() && B->IsStatic()) {
+        return false;
+    }
+
     b32 Result = false;
 
     b32 isBodyACircle = (A->Shape->GetType() == shoora_mesh_type::CIRCLE);

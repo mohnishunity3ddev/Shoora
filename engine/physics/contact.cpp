@@ -11,6 +11,7 @@
 void
 contact::ResolvePenetration()
 {
+#if 0
     if(this->A->IsStatic() && this->B->IsStatic()) {
         return;
     }
@@ -31,12 +32,14 @@ contact::ResolvePenetration()
 
     A->UpdateWorldVertices();
     B->UpdateWorldVertices();
+#endif
 }
 
 
 void
 contact::ResolveCollision()
 {
+#if 0
     if (this->A->IsStatic() && this->B->IsStatic()) {
         return;
     }
@@ -89,4 +92,5 @@ contact::ResolveCollision()
 
     A->ApplyImpulseAtPoint(Impulse, Ra);
     B->ApplyImpulseAtPoint(-Impulse, Rb);
+#endif
 }

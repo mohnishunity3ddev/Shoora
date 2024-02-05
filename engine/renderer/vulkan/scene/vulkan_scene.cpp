@@ -23,6 +23,7 @@ shoora_scene::shoora_scene()
 {
     Bodies.reserve(32);
     Constraints2D.reserve(64);
+    PenetrationConstraints2D.reserve(64);
 }
 
 shoora_scene::~shoora_scene()
@@ -122,38 +123,6 @@ shoora_scene::UpdateInput(const Shu::vec2f &CurrentMouseWorldPos)
 }
 
 void
-shoora_scene::CheckCollisions(b32 ShowContacts)
-{
-    // NOTE: Check for collision with the rest of the rigidbodies present in the Scene->
-    for (i32 i = 0; i < (Bodies.size() - 1); ++i)
-    {
-        shoora_body *A = Bodies.data() + i;
-        for (i32 j = (i + 1); j < Bodies.size(); ++j)
-        {
-            shoora_body *B = Bodies.data() + j;
-            contact Contact;
-            if (collision2d::IsColliding(A, B, Contact))
-            {
-                // NOTE: Visualizing the Collision Contact Info.
-                if (ShowContacts)
-                {
-                    shoora_graphics::DrawCircle(Contact.Start.xy, 3, colorU32::Cyan);
-                    shoora_graphics::DrawCircle(Contact.End.xy, 3, colorU32::Green);
-                    Shu::vec2f ContactNormalLineEnd = Shu::Vec2f(Contact.Start.x + Contact.Normal.x * 30.0f,
-                                                                 Contact.Start.y + Contact.Normal.y * 30.0f);
-                    shoora_graphics::DrawLine(Contact.Start.xy, ContactNormalLineEnd, colorU32::Yellow, 2);
-
-                    A->IsColliding = true;
-                    B->IsColliding = true;
-                }
-
-                Contact.ResolveCollision();
-            }
-        }
-    }
-}
-
-void
 shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
 {
     // NOTE: If I am debugging, the frametime is going to be huge. So hence, clamping here.
@@ -174,7 +143,6 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
 
         Shu::vec2f WeightForce = Shu::Vec2f(0.0f, -9.8f*SHU_PIXELS_PER_METER*Body->Mass);
         Body->AddForce(WeightForce);
-
 #if 1
 #if 0 // Push Force through Keys
         Shu::vec2f PushForce = Shu::Vec2f(1.0f, 1.0f)*(SHU_PIXELS_PER_METER*100);
@@ -207,7 +175,6 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
         Body->AddForce(FrictionForce);
 #endif
 #endif
-
     }
 
     // integrate the acceleration due to the above forces and calculate the velocity.
@@ -217,15 +184,60 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
         b->IntegrateForces(dt);
     }
 
+
+    // NOTE: Check for collision with the rest of the rigidbodies present in the Scene->
+    for(i32 i = 0; i < (BodyCount - 1); ++i)
+    {
+        shoora_body *A = Bodies + i;
+        for(i32 j = (i + 1); j < BodyCount; ++j)
+        {
+            shoora_body *B = Bodies + j;
+            contact Contact;
+            if(collision2d::IsColliding(A, B, Contact))
+            {
+                // NOTE: Visualizing the Collision Contact Info.
+                if(ShowContacts)
+                {
+                    shoora_graphics::DrawCircle(Contact.Start.xy, 3, colorU32::Cyan);
+                    shoora_graphics::DrawCircle(Contact.End.xy, 3, colorU32::Green);
+                    Shu::vec2f ContactNormalLineEnd = Shu::Vec2f(Contact.Start.x + Contact.Normal.x * 30.0f,
+                                                                 Contact.Start.y + Contact.Normal.y * 30.0f);
+                    shoora_graphics::DrawLine(Contact.Start.xy, ContactNormalLineEnd, colorU32::Yellow, 2);
+
+                    A->IsColliding = true;
+                    B->IsColliding = true;
+                }
+
+                // NOTE: This was the old way of resolving collisions using the projection method where we manually
+                // changed the positions of the objects such that they are not colliding anymore. Now, we switch to
+                // adding the penetration constraint which will do its thing, calculate Jacobian and Lagrange
+                // multiplier and apply impulses accordingly to separate colliding objects.
+            #if 0
+                Contact.ResolveCollision();
+            #else
+                // Add a new penetration constraint.
+                penetration_constraint_2d penConstraint(A, B, Contact);
+                PenetrationConstraints2D.emplace_back(penConstraint);
+            #endif
+            }
+        }
+    }
+
     i32 cSize = Constraints2D.size();
+    i32 pSize = PenetrationConstraints2D.size();
 
     // NOTE: Here is where we do the warm starting. Apply impulses first using the cached Impulse Magnitude that we
     // have calculated the previous frame and applying it first before running the iterations. This reduces the
     // number of iterations we have to do to get a realistic result.
-    for (i32 i = 0; i < cSize; ++i)
+    for(i32 i = 0; i < cSize; ++i)
     {
         auto *C = Constraints2D[i];
         C->PreSolve(dt);
+    }
+    for(i32 i = 0; i < pSize; ++i)
+    {
+        auto &penConstraint = PenetrationConstraints2D[i];
+        penConstraint.PreSolve(dt);
     }
 
     // NOTE: Solve Constraints.
@@ -233,19 +245,29 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
     // the solver is an impulse solver, so if in case, some corrective impulse has to be applied for the
     // constraint, then this Solve function already calls it before returning. So after this call, we have the
     // final velocity for the body and it can be integrated to get the position of the body.
-    for (i32 iter = 0; iter < 5; ++iter)
+    for(i32 iter = 0; iter < 5; ++iter)
     {
-        for (i32 i = 0; i < cSize; ++i)
+        for(i32 i = 0; i < cSize; ++i)
         {
             auto *C = Constraints2D[i];
             C->Solve();
         }
+        for(i32 i = 0; i < pSize; ++i)
+        {
+            auto &penConstraint = PenetrationConstraints2D[i];
+            penConstraint.Solve();
+        }
     }
 
-    for (i32 i = 0; i < cSize; ++i)
+    for(i32 i = 0; i < cSize; ++i)
     {
         auto *C = Constraints2D[i];
         C->PostSolve();
+    }
+    for(i32 i = 0; i < pSize; ++i)
+    {
+        auto &penConstraint = PenetrationConstraints2D[i];
+        penConstraint.PostSolve();
     }
 
     // Integrate the velocities to get the final position for the body.
@@ -255,20 +277,22 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
         b->IntegrateVelocities(dt);
     }
 
-    CheckCollisions(ShowContacts);
+    PenetrationConstraints2D.clear();
 }
 
 void
 shoora_scene::Draw(b32 Wireframe)
 {
+#if 0
     // string connecting the anchor to the ragdoll head
     const shoora_body *Anchor = Bodies.data();
-
     Shu::vec2f pA = Anchor->Position.xy;
     Shu::vec2f pB = Bodies[1].Position.xy;
     shoora_graphics::DrawLine(pA, pB, colorU32::White, 1.0f);
-
     for (u32 BodyIndex = 1; BodyIndex < Bodies.size(); ++BodyIndex)
+#endif
+
+    for (u32 BodyIndex = 0; BodyIndex < Bodies.size(); ++BodyIndex)
     {
         shoora_body *Body = Bodies.data() + BodyIndex;
         auto *BodyShape = Body->Shape.get();
