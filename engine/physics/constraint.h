@@ -50,10 +50,20 @@ struct joint_constraint_2d : public constraint_2d
 struct penetration_constraint_2d : public constraint_2d
 {
   private:
-    Shu::matMN<f32, 6, 1> Jacobian;
-    Shu::vecN<f32, 1> CachedLambda;
+    // There are two columns here since we have two sets. One for the collision resolution along the normal.
+    // And the other for Friction.
+    Shu::matMN<f32, 6, 2> Jacobian;
+
+    Shu::vecN<f32, 2> CachedLambda;
+
+    // Baumgarte Syabilization Factor.
     f32 Bias;
+
+    // Normal direction of the penetration in A's local Space.
     Shu::vec2f Normal;
+
+    // Friction Coefficient between the two penetrating bodies.
+    f32 Friction;
 
   public:
     penetration_constraint_2d();

@@ -23,7 +23,7 @@ namespace Shu
         inline vec2<T> operator*=(T A);
         inline vec2<T> operator/=(const vec2<T>& A);
         inline vec2<T> operator/=(T A);
-        inline vec2<T> Normal();
+        inline vec2<T> Normal() const;
         inline T& operator[](size_t Index);
         inline T Dot(const vec2<T>& A);
         inline T Cross(const vec2<T>& A) const;
@@ -402,7 +402,7 @@ namespace Shu
 
     template <typename T>
     vec2<T>
-    vec2<T>::Normal()
+    vec2<T>::Normal() const
     {
         vec2<T> Result = Shu::Normalize(Shu::Vec2<T>(-this->y, this->x));
         return Result;

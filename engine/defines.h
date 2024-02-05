@@ -428,17 +428,17 @@ NearlyEqual(f32 n, f32 expected, f32 epsilon = 2.0f*SHU_EPSILON)
 
 #define SHU_NEARLY_EQ(n, e, type, diff, res)                                                                      \
     {                                                                                                             \
-        type uN = *((type *)&(n));                                                                            \
-        type uExp = *((type *)&(e));                                                                          \
+        type uN = *((type *)&n);                                                                                  \
+        type uExp = *((type *)&e);                                                                                \
         if (uExp > uN)                                                                                            \
         {                                                                                                         \
-            (diff) = uExp - uN;                                                                                   \
+            diff = uExp - uN;                                                                                     \
         }                                                                                                         \
         else                                                                                                      \
         {                                                                                                         \
-            (diff) = uN - uExp;                                                                                   \
+            diff = uN - uExp;                                                                                     \
         }                                                                                                         \
-        (res) = ((diff) <= maxUlps);                                                                              \
+        res = (diff <= maxUlps);                                                                                  \
     }
 
 template<typename T>
@@ -459,13 +459,36 @@ NearlyEqualUlps(T n, T expected, i64 maxUlps = 2)
         else if (sizeof(T) == 4)
         {
             u32 diff = 0;
-            SHU_NEARLY_EQ(n, expected, u32, diff, Result);
+            {
+                u32 uN = *((u32 *)&n);
+                u32 uExp = *((u32 *)&expected);
+                // Check for -0.0f
+                if(uN == 0x8fffffff && expected >= 0.0f) uN = 0;
+                if(uExp == 0x8fffffff && n >= 0.0f) uExp = 0;
+                if (uExp > uN)
+                {
+                    diff = uExp - uN;
+                }
+                else
+                {
+                    diff = uN - uExp;
+                }
+                Result = (diff <= maxUlps);
+                if(!Result) {
+                    int x = 0;
+                }
+            };
             Diff = diff;
         }
         else
         {
             SHU_INVALID_CODEPATH;
         }
+    }
+
+    if(!Result)
+    {
+        int x = 0;
     }
 
     return Result;
