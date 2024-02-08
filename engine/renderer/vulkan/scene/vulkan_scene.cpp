@@ -250,7 +250,7 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
     // the solver is an impulse solver, so if in case, some corrective impulse has to be applied for the
     // constraint, then this Solve function already calls it before returning. So after this call, we have the
     // final velocity for the body and it can be integrated to get the position of the body.
-    for(i32 iter = 0; iter < 5; ++iter)
+    for(i32 iter = 0; iter < 10; ++iter)
     {
         for(i32 i = 0; i < cSize; ++i)
         {

@@ -74,7 +74,7 @@ penetration_constraint_2d::PreSolve(const f32 dt)
     // Baumgarte Stabilization!
     const f32 beta = 0.2f;
     f32 C = (pB - pA).Dot(-n);
-    C = MIN(0.0f, C + 0.01f);
+    C = MIN(0.0f, C + 0.02f);
 
     // Calculate pre-collision velocity along the collision normal
     Shu::vec2f LinearVa = A->Velocity.xy;
