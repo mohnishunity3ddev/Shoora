@@ -2,15 +2,15 @@
 #include <renderer/vulkan/graphics/vulkan_graphics.h>
 
 shoora_body::shoora_body(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Mass, f32 Restitution,
-                         std::unique_ptr<shoora_shape> Shape, f32 InitialRotation)
+                         std::unique_ptr<shoora_shape> Shape, f32 InitialRotationInRadians)
 {
     ASSERT(Mass >= 0.0f);
-    ASSERT(Restitution > 0.0f && Restitution <= 1.0f);
+    ASSERT(Restitution >= 0.0f && Restitution <= 1.0f);
 
     this->Color = Color;
     this->Position = Shu::Vec3f(InitPos, 0.0f);
 
-    this->RotationRadians = InitialRotation;
+    this->RotationRadians = InitialRotationInRadians;
     this->AngularVelocity = 0.0f;
     this->AngularAcceleration = 0.0f;
 
@@ -226,9 +226,11 @@ shoora_body::IntegrateForces(const f32 deltaTime)
 void
 shoora_body::IntegrateVelocities(const f32 deltaTime)
 {
+#if 0
     if(IsStatic()) {
         return;
     }
+#endif
 
     this->Position += this->Velocity * deltaTime;
     this->Position.z = 0.0f;

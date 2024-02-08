@@ -45,9 +45,15 @@ struct shoora_shape_polygon : shoora_shape
     virtual Shu::vec3f GetDim() const override;
     virtual shoora_mesh_type GetType() const override;
 
-    f32 FindMinSeparation(shoora_shape_polygon *Other, Shu::vec2f &SeparationAxis, Shu::vec2f &Point);
+    f32 FindMinSeparation(shoora_shape_polygon *Other, i32 &ReferenceEdgeIndex, Shu::vec2f &SupportPoint);
 
     Shu::vec3f GetEdgeAt(i32 index);
+
+    // NOTE: The incident edge on this shape is the one whose normal is the one which most opposes the passed in
+    // reference edge's normal. In other words the incident edge has the WORST alignment with the reference edge.
+    i32 GetIncidentEdgeIndex(const Shu::vec2f &ReferenceEdgeNormal);
+    i32 GetNextVertexIndex(i32 EdgeIndex);
+    i32 ClipSegmentToLine(Shu::vec2f Contacts[2], Shu::vec2f Clipped[2], Shu::vec2f r0, Shu::vec2f r1);
     void UpdateWorldVertices(Shu::mat4f &ModelMatrix);
 };
 

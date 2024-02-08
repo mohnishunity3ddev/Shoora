@@ -22,7 +22,7 @@ struct shoora_body
     f32 AngularVelocity;
     f32 AngularAcceleration;
     f32 CoeffRestitution;
-
+    
     Shu::vec3f SumForces;
     f32 SumTorques;
 
@@ -41,7 +41,7 @@ struct shoora_body
     shoora_body(const shoora_body &other) = delete;
     shoora_body &operator=(const shoora_body &other) = delete;
     shoora_body(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Mass, f32 Restitution,
-                std::unique_ptr<shoora_shape> Shape, f32 InitialRotation = 0.0f);
+                std::unique_ptr<shoora_shape> Shape, f32 InitialRotationInRadians = 0.0f);
     shoora_body(shoora_body &&other) noexcept;
     shoora_body &operator=(shoora_body &&other) noexcept;
     ~shoora_body();

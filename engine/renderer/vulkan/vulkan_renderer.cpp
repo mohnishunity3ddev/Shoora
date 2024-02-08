@@ -38,7 +38,7 @@ static shoora_vulkan_context *Context = nullptr;
 static b32 isDebug = false;
 static b32 WireframeMode = true;
 static f32 TestCameraScale = 0.5f;
-static b32 GlobalShowContacts = false;
+static b32 GlobalShowContacts = true;
 
 // NOTE: ALso make the same changes to the lighting shader.
 // TODO)): Automate this so that changing this automatically makes changes to the shader using shader variation.
@@ -305,7 +305,7 @@ WorldToMouse(const Shu::vec2f &WorldPos)
 {
     f32 x = WorldPos.x;
     f32 y = WorldPos.y - (f32)GlobalWindowSize.y;
-    
+
     Shu::vec2f Result;
     Result.x = x;
     Result.y = y;
@@ -322,14 +322,16 @@ InitScene()
     // Bottom Wall (Static Rigidbody)
     Shu::vec2f Window = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
-    Scene->AddBoxBody(Shu::Vec2f(0, (-Window.y*0.5f)), colorU32::White, Window.x, 50, 0.0f, 0.1f);
-    Scene->AddBoxBody(Shu::Vec2f(Window.x * 0.5f, 0), colorU32::White, 50, Window.y, 0.0f, 0.1f);
-    Scene->AddBoxBody(Shu::Vec2f(-Window.x * 0.5f, 0), colorU32::White, 50, Window.y, 0.0f, 0.1f);
+    // Walls
+    Scene->AddBoxBody(Shu::Vec2f(0, (-Window.y*0.5f)), colorU32::White, Window.x, 50, 0.0f, 0.0f);
+    Scene->AddBoxBody(Shu::Vec2f(Window.x * 0.5f, 0), colorU32::White, 50, Window.y, 0.0f, 0.0f);
+    Scene->AddBoxBody(Shu::Vec2f(-Window.x * 0.5f, 0), colorU32::White, 50, Window.y, 0.0f, 0.0f);
 
     // Middle Square (Static regidbody)
-    Scene->AddBoxBody(Shu::Vec2f(-450, 0), colorU32::White, 300, 300, 0.0f, 1.0f, 35.0f*DEG_TO_RAD);
-    Scene->AddCircleBody(Shu::Vec2f(-150, 0), colorU32::White, 75, 0.0f, 0.5f);
-    Scene->AddPolygonBody(0, Shu::Vec2f(200, 0), colorU32::White, 0.0f, 0.5f, 0.0f, 7.0f);
+    Scene->AddBoxBody(Shu::Vec2f(-450, 0), colorU32::White, 300, 300, 0.0f, 0.0f);
+    // Scene->AddBoxBody(Shu::Vec2f(0, 0), colorU32::White, 150, 150, 1.0f, 0.2f);
+    Scene->AddCircleBody(Shu::Vec2f(-150, 0), colorU32::White, 75, 0.0f, 0.0f);
+    Scene->AddPolygonBody(0, Shu::Vec2f(200, 0), colorU32::White, 0.0f, 0.0f, 0.0f, 7.0f);
 
 #if 0
     // -- Simple Pendulum --
@@ -746,11 +748,11 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     b32 LMBDown = Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, KeyState::SHU_KEYSTATE_DOWN);
     if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
     {
-        Scene->AddCircleBody(CurrentMouseWorldPos, colorU32::White, 25, 1.0, 0.7f);
+        Scene->AddCircleBody(CurrentMouseWorldPos, colorU32::White, 25, 1.0, 0.0f);
     }
     if(Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
     {
-        Scene->AddBoxBody(CurrentMouseWorldPos, colorU32::White, 50, 50, 1.0, 0.7f);
+        Scene->AddBoxBody(CurrentMouseWorldPos, colorU32::White, 50, 50, 1.0, 0.0f);
         // Scene->AddPolygonBody(1, CurrentMouseWorldPos, colorU32::White, 1.0f, 1.0f, 0.0f, 1.0f);
     }
 

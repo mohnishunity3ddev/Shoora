@@ -2,7 +2,7 @@
 #include <mesh/database/mesh_database.h>
 
 b32
-collision2d::IsColliding(shoora_body *A, shoora_body *B, contact &Contact)
+collision2d::IsColliding(shoora_body *A, shoora_body *B, arr<contact> &Contacts)
 {
     if(A->IsStatic() && B->IsStatic()) {
         return false;
@@ -17,26 +17,26 @@ collision2d::IsColliding(shoora_body *A, shoora_body *B, contact &Contact)
 
     if(isBodyACircle && isBodyBCircle)
     {
-        Result = IsCollidingCircleCircle(A, B, Contact);
+        Result = IsCollidingCircleCircle(A, B, Contacts);
     }
     else if(isBodyAPolygon && isBodyBPolygon)
     {
-        Result = IsCollidingPolygonPolygon(A, B, Contact);
+        Result = IsCollidingPolygonPolygon(A, B, Contacts);
     }
     else if(isBodyACircle && isBodyBPolygon)
     {
-        Result = IsCollidingPolygonCircle(B, A, Contact, true);
+        Result = IsCollidingPolygonCircle(B, A, Contacts, true);
     }
     else if(isBodyAPolygon && isBodyBCircle)
     {
-        Result = IsCollidingPolygonCircle(A, B, Contact);
+        Result = IsCollidingPolygonCircle(A, B, Contacts);
     }
 
     return Result;
 }
 
 b32
-collision2d::IsCollidingCircleCircle(shoora_body *A, shoora_body *B, contact &Contact)
+collision2d::IsCollidingCircleCircle(shoora_body *A, shoora_body *B, arr<contact> &Contacts)
 {
     shoora_shape_circle *CircleA = (shoora_shape_circle *)A->Shape.get();
     shoora_shape_circle *CircleB = (shoora_shape_circle *)B->Shape.get();
@@ -48,6 +48,7 @@ collision2d::IsCollidingCircleCircle(shoora_body *A, shoora_body *B, contact &Co
     if(IsColliding)
     {
         // TODO)): There is a collision here. Handle collision contact info here.
+        contact Contact;
         Contact.A = A;
         Contact.B = B;
 
@@ -57,53 +58,119 @@ collision2d::IsCollidingCircleCircle(shoora_body *A, shoora_body *B, contact &Co
         Contact.End = A->Position + (Contact.Normal * CircleA->Radius);
 
         Contact.Depth = (Contact.End - Contact.Start).Magnitude();
+
+        Contacts.add(Contact);
     }
+
+    // NOTE: Circle to Circle collision can produce a max of 1 contact.
+    ASSERT(Contacts.size <= 1);
 
     return IsColliding;
 }
 
 b32
-collision2d::IsCollidingPolygonPolygon(shoora_body *A, shoora_body *B, contact &Contact)
+collision2d::IsCollidingPolygonPolygon(shoora_body *A, shoora_body *B, arr<contact> &Contacts)
 {
     auto *PolyA = (shoora_shape_polygon *)A->Shape.get();
     auto *PolyB = (shoora_shape_polygon *)B->Shape.get();
 
-    Shu::vec2f AxisA, PointA;
-    Shu::vec2f AxisB, PointB;
-    f32 abSeparation = PolyA->FindMinSeparation(PolyB, AxisA, PointB);
+    i32 ReferenceEdgeIndexA = -1, ReferenceEdgeIndexB = -1;
+    // NOTE: Support points are the corresponding vertex on the bodies which has the best penetration.
+    Shu::vec2f SupportPointA, SupportPointB;
+    // NOTE: This one is taking the body A as a reference body and b as the body that is incident on it.
+    f32 abSeparation = PolyA->FindMinSeparation(PolyB, ReferenceEdgeIndexA, SupportPointB);
+    ASSERT(ReferenceEdgeIndexA != -1);
     if(abSeparation >= 0.0f)
     {
         return false;
     }
-    f32 baSeparation = PolyB->FindMinSeparation(PolyA, AxisB, PointA);
+    // NOTE: This one is taking the body B as a reference body and A as the body that is incident on it.
+    f32 baSeparation = PolyB->FindMinSeparation(PolyA, ReferenceEdgeIndexB, SupportPointA);
+    ASSERT(ReferenceEdgeIndexB != -1);
     if(baSeparation >= 0.0f)
     {
         return false;
     }
 
-    Contact.A = A;
-    Contact.B = B;
-
-    if (abSeparation > baSeparation)
+    // NOTE: Finding the Reference Edge.
+    shoora_shape_polygon *ReferenceShape;
+    shoora_shape_polygon *IncidentShape;
+    i32 ReferenceEdgeIndex = -1;
+    if(abSeparation > baSeparation)
     {
-        Contact.Normal = Shu::Vec3f(AxisA.Normal(), 0.0f);
-        Contact.Depth = -abSeparation;
-        Contact.Start = Shu::Vec3f(PointB, 0.0f);
-        Contact.End = Contact.Start + Contact.Normal*Contact.Depth;
+        // NOTE: Set A as the reference shape and B as the incident shape.
+        ReferenceShape = PolyA;
+        IncidentShape = PolyB;
+        ReferenceEdgeIndex = ReferenceEdgeIndexA;
     }
     else
     {
-        Contact.Normal = Shu::Vec3f(-AxisB.Normal(), 0.0f);
-        Contact.Depth = -baSeparation;
-        Contact.End = Shu::Vec3f(PointA, 0.0f);
-        Contact.Start = Contact.End - Contact.Normal*Contact.Depth;
+        // NOTE: Set B as the reference shape and A as the incident shape.
+        ReferenceShape = PolyB;
+        IncidentShape = PolyA;
+        ReferenceEdgeIndex = ReferenceEdgeIndexB;
+    }
+    ASSERT(ReferenceEdgeIndex != -1);
+    Shu::vec2f ReferenceEdge = ReferenceShape->GetEdgeAt(ReferenceEdgeIndex).xy;
+
+    // NOTE: Perform Clipping(Erin Catto)
+    // For more info: Check this - https://box2d.org/files/ErinCatto_SequentialImpulses_GDC2006.pdf Slide number 14
+
+    // NOTE: Finding the Incident Edge.
+    i32 IncidentVertexIndex = IncidentShape->GetIncidentEdgeIndex(ReferenceEdge.Normal());
+    ASSERT(IncidentVertexIndex != -1);
+    i32 NextIncidentVertexIndex = IncidentShape->GetNextVertexIndex(IncidentVertexIndex);
+
+    Shu::vec2f i0 = IncidentShape->WorldVertices[IncidentVertexIndex].xy;
+    Shu::vec2f i1 = IncidentShape->WorldVertices[NextIncidentVertexIndex].xy;
+    Shu::vec2f ContactPoints[2] = {i0, i1};
+    Shu::vec2f ClippedPoints[2] = {i0, i1};
+    for(i32 i = 0; i < ReferenceShape->VertexCount; ++i)
+    {
+        if(i == ReferenceEdgeIndex) continue;
+
+        Shu::vec2f r0 = ReferenceShape->WorldVertices[i].xy;
+        Shu::vec2f r1 = ReferenceShape->WorldVertices[((i + 1) % ReferenceShape->VertexCount)].xy;
+
+        i32 NumClipped = ReferenceShape->ClipSegmentToLine(ContactPoints, ClippedPoints, r0, r1);
+        if(NumClipped < 2)
+        {
+            break;
+        }
+
+        ContactPoints[0] = ClippedPoints[0];
+        ContactPoints[1] = ClippedPoints[1];
+    }
+
+    Shu::vec2f ReferenceVertex = ReferenceShape->WorldVertices[ReferenceEdgeIndex].xy;
+    Shu::vec2f ReferenceFaceNormal = ReferenceEdge.Normal();
+    for (i32 i = 0; i < 2; ++i)
+    {
+        Shu::vec2f ClippedVertex = ClippedPoints[i];
+        f32 Proj = (ClippedVertex - ReferenceVertex).Dot(ReferenceFaceNormal);
+        if(Proj <= 0)
+        {
+            contact Contact;
+            Contact.A = A;
+            Contact.B = B;
+            Contact.Normal = Shu::Vec3f(ReferenceFaceNormal, 0.0f);
+            Contact.Start = Shu::Vec3f(ClippedVertex, 0.0f);
+            Contact.End = Contact.Start + Contact.Normal * (-Proj);
+            if(baSeparation >= abSeparation)
+            {
+                SWAP(Contact.Start, Contact.End);
+                Contact.Normal = -Contact.Normal;
+            }
+
+            Contacts.add(Contact);
+        }
     }
 
     return true;
 }
 
 b32
-collision2d::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle, contact &Contact, b32 Invert)
+collision2d::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle, arr<contact> &Contacts, b32 Invert)
 {
     b32 IsCollidingResult = false;
 
@@ -122,6 +189,7 @@ collision2d::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle,
     b32 isInside = true;
     Shu::vec2f ClosestEdge;
     f32 MaxProjection = SHU_FLOAT_MIN;
+    contact Contact;
     for(i32 i = 0; i < Poly->VertexCount; ++i)
     {
         auto CurrentEdge = Poly->GetEdgeAt(i).xy;
@@ -162,7 +230,7 @@ collision2d::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle,
     if(!isInside)
     {
         auto EdgeNormal = ClosestEdge.Normal();
-        
+
         auto CurrCenter = Shu::Normalize(CircleCenter - MinVertex.xy);
         auto CurrDot = Shu::Dot(CurrCenter, ClosestEdge);
 
@@ -242,6 +310,8 @@ collision2d::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle,
 
             Contact.Normal = -Contact.Normal;
         }
+
+        Contacts.add(Contact);
     }
 
     return IsCollidingResult;

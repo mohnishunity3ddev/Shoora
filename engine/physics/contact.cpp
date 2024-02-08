@@ -1,3 +1,4 @@
+#if 0
 #include "contact.h"
 
 // NOTE:
@@ -94,3 +95,4 @@ contact::ResolveCollision()
     B->ApplyImpulseAtPoint(-Impulse, Rb);
 #endif
 }
+#endif

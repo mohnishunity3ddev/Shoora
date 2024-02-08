@@ -102,6 +102,7 @@ shoora_scene::UpdateInput(const Shu::vec2f &CurrentMouseWorldPos)
             else if (BodyToMove != nullptr)
             {
                 BodyToMove->Position = Shu::Vec3f(CurrentMouseWorldPos, BodyToMove->Position.z);
+                BodyToMove->UpdateWorldVertices();
             }
         }
 
@@ -184,7 +185,6 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
         b->IntegrateForces(dt);
     }
 
-
     // NOTE: Check for collision with the rest of the rigidbodies present in the Scene->
     for(i32 i = 0; i < (BodyCount - 1); ++i)
     {
@@ -192,33 +192,38 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
         for(i32 j = (i + 1); j < BodyCount; ++j)
         {
             shoora_body *B = Bodies + j;
-            contact Contact;
-            if(collision2d::IsColliding(A, B, Contact))
+            contact Contacts[MAX_CONTACT_COUNT];
+            arr<contact> ContactsArr(Contacts, ARRAY_SIZE(Contacts));
+            if(collision2d::IsColliding(A, B, ContactsArr))
             {
-                // NOTE: Visualizing the Collision Contact Info.
-                if(ShowContacts)
+                for (i32 i = 0; i < ContactsArr.size; ++i)
                 {
-                    shoora_graphics::DrawCircle(Contact.Start.xy, 10, colorU32::Cyan);
-                    shoora_graphics::DrawCircle(Contact.End.xy, 10, colorU32::Green);
-                    Shu::vec2f ContactNormalLineEnd = Shu::Vec2f(Contact.Start.x + Contact.Normal.x * 30.0f,
-                                                                 Contact.Start.y + Contact.Normal.y * 30.0f);
-                    shoora_graphics::DrawLine(Contact.Start.xy, ContactNormalLineEnd, colorU32::Yellow, 2);
+                    contact Contact = ContactsArr.data[i];
+                    // NOTE: Visualizing the Collision Contact Info.
+                    if (ShowContacts)
+                    {
+                        shoora_graphics::DrawCircle(Contact.Start.xy, 10, colorU32::Cyan);
+                        shoora_graphics::DrawCircle(Contact.End.xy, 10, colorU32::Green);
+                        Shu::vec2f ContactNormalLineEnd = Shu::Vec2f(Contact.Start.x + Contact.Normal.x * 30.0f,
+                                                                     Contact.Start.y + Contact.Normal.y * 30.0f);
+                        shoora_graphics::DrawLine(Contact.Start.xy, ContactNormalLineEnd, colorU32::Yellow, 2);
 
-                    A->IsColliding = true;
-                    B->IsColliding = true;
+                        A->IsColliding = true;
+                        B->IsColliding = true;
+                    }
+
+                    // NOTE: This was the old way of resolving collisions using the projection method where we
+                    // manually changed the positions of the objects such that they are not colliding anymore. Now,
+                    // we switch to adding the penetration constraint which will do its thing, calculate Jacobian
+                    // and Lagrange multiplier and apply impulses accordingly to separate colliding objects.
+#if 0
+                    Contact.ResolveCollision();
+#else
+                    // Add a new penetration constraint.
+                    penetration_constraint_2d penConstraint(A, B, Contact);
+                    PenetrationConstraints2D.emplace_back(penConstraint);
+#endif
                 }
-
-                // NOTE: This was the old way of resolving collisions using the projection method where we manually
-                // changed the positions of the objects such that they are not colliding anymore. Now, we switch to
-                // adding the penetration constraint which will do its thing, calculate Jacobian and Lagrange
-                // multiplier and apply impulses accordingly to separate colliding objects.
-            #if 0
-                Contact.ResolveCollision();
-            #else
-                // Add a new penetration constraint.
-                penetration_constraint_2d penConstraint(A, B, Contact);
-                PenetrationConstraints2D.emplace_back(penConstraint);
-            #endif
             }
         }
     }
@@ -276,7 +281,6 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
         auto *b = Bodies + BodyIndex;
         b->IntegrateVelocities(dt);
     }
-
     PenetrationConstraints2D.clear();
 }
 

@@ -81,6 +81,68 @@ shoora_shape_polygon::GetEdgeAt(i32 Index)
     return Result;
 }
 
+i32
+shoora_shape_polygon::GetIncidentEdgeIndex(const Shu::vec2f &ReferenceEdgeNormal)
+{
+    i32 IncidentEdgeIndex = -1;
+
+    f32 minDot = SHU_FLOAT_MAX;
+    for (i32 i = 0; i < this->VertexCount; ++i)
+    {
+        auto edge = GetEdgeAt(i);
+        auto normal = edge.xy.Normal();
+
+        auto d = normal.Dot(ReferenceEdgeNormal);
+        if(d < minDot)
+        {
+            minDot = d;
+            IncidentEdgeIndex = i;
+        }
+    }
+
+    return IncidentEdgeIndex;
+}
+
+i32
+shoora_shape_polygon::GetNextVertexIndex(i32 EdgeIndex)
+{
+    i32 Result = -1;
+    Result = (EdgeIndex + 1) % this->VertexCount;
+    ASSERT(Result != -1);
+    return Result;
+}
+
+i32
+shoora_shape_polygon::ClipSegmentToLine(Shu::vec2f Contacts[2], Shu::vec2f Clipped[2], Shu::vec2f r0,
+                                        Shu::vec2f r1)
+{
+    i32 NumVertices = 0;
+
+    Shu::vec2f Normal = (r1 - r0).Normal();
+    f32 Distance0 = (Contacts[0] - r0).Dot(Normal);
+    f32 Distance1 = (Contacts[1] - r0).Dot(Normal);
+
+    if(Distance0 <= 0.0f)
+    {
+        Clipped[NumVertices++] = Contacts[0];
+    }
+    if(Distance1 <= 0.0f)
+    {
+        Clipped[NumVertices++] = Contacts[1];
+    }
+
+    if(Distance0 * Distance1 < 0)
+    {
+        f32 TotalDistance = Distance0 - Distance1;
+        f32 t = Distance0 / TotalDistance;
+
+        Shu::vec2f Clip = Contacts[0] + (Contacts[1] - Contacts[0]) * t;
+        Clipped[NumVertices++] = Clip;
+    }
+
+    return NumVertices;
+}
+
 shoora_mesh_type
 shoora_shape_polygon::GetType() const
 {
@@ -103,7 +165,7 @@ shoora_shape_polygon::GetType() const
 // 4-> And we take the maximum of all these "minimums" when other normals are also tested for all vertices of b.
 // IMPORTANT: NOTE: if the separation is negative, then there was collision otherwise no collision.
 f32
-shoora_shape_polygon::FindMinSeparation(shoora_shape_polygon *Other, Shu::vec2f &SeparationAxis, Shu::vec2f &Point)
+shoora_shape_polygon::FindMinSeparation(shoora_shape_polygon *Other, i32 &ReferenceEdgeIndex, Shu::vec2f &SupportPoint)
 {
     auto *MeshFilterA = this->GetMeshFilter();
     ASSERT(MeshFilterA != nullptr);
@@ -140,8 +202,8 @@ shoora_shape_polygon::FindMinSeparation(shoora_shape_polygon *Other, Shu::vec2f 
         // NOTE: Tracking the max(lowest distance a point on body B is "Behind" an edge in body A)
         if(BestSeparation < MinSeparation) {
             BestSeparation = MinSeparation;
-            SeparationAxis = EdgeA;
-            Point = MinVertex;
+            ReferenceEdgeIndex = i;
+            SupportPoint = MinVertex;
         }
     }
 

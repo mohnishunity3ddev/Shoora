@@ -500,6 +500,24 @@ NearlyEqualUlps(T n, T expected, i64 maxUlps = 2)
 #define ALIGN32(Number) AlignAs((Number), 32)
 #define ALIGN64(Number) AlignAs((Number), 64)
 
+template<typename T>
+struct arr
+{
+    T *data;
+    i32 size;
+    i32 maxSize;
+
+    arr() = delete;
+    arr(T *d, i32 max) : data(d), size(0), maxSize(max) {}
+
+    inline void
+    add(const T &item)
+    {
+        ASSERT((size + 1) < maxSize);
+        data[size++] = item;
+    }
+};
+
 #define WIN32_LOG_OUTPUT(FormatString, ...)                                                                       \
     {                                                                                                             \
         char TextBuffer[256];                                                                                     \
