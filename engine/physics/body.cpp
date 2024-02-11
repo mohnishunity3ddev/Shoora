@@ -213,11 +213,9 @@ shoora_body::IntegrateForces(const f32 deltaTime)
     }
 
     this->Acceleration = this->SumForces * this->InvMass;
-    this->Velocity += this->Acceleration * deltaTime;
-
+    
     // alpha = Tau / Moment of Inertia
     this->AngularAcceleration = this->SumTorques * InvI;
-    this->AngularVelocity += this->AngularAcceleration * deltaTime;
 
     ClearForces();
     ClearTorques();
@@ -232,9 +230,18 @@ shoora_body::IntegrateVelocities(const f32 deltaTime)
     }
 #endif
 
+    // NOTE: Semi-Implicit Euler Integration :
+    // Computing the velocity of the next frame and getting position of the body in the current frame using the
+    // next frame's velocity.
+    // -> Lot more Accurate than Explicit Euler Integration(which computes based on previous frame velocity)
+    // -> System loses energy as time goes on(Unlike Explicit Euler).
+    this->Velocity += this->Acceleration * deltaTime;
+
     this->Position += this->Velocity * deltaTime;
     this->Position.z = 0.0f;
 
+
+    this->AngularVelocity += this->AngularAcceleration * deltaTime;
     this->RotationRadians += this->AngularVelocity * deltaTime;
 
     this->UpdateWorldVertices();
