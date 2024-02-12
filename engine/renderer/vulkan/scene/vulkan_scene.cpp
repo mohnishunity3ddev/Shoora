@@ -50,7 +50,7 @@ shoora_scene::AddCubeBody(const Shu::vec3f &Pos, const Shu::vec3f &Scale, u32 Co
     shoora_body body{GetColor(ColorU32), Pos, Mass, Restitution,
                      std::make_unique<shoora_shape_cube>(Scale.x, Scale.y, Scale.z), InitialRotation};
     Bodies.emplace_back(std::move(body));
-    
+
     shoora_body *b = Bodies.get(Bodies.size() - 1);
     return b;
 }
@@ -62,7 +62,7 @@ shoora_scene::AddSphereBody(const Shu::vec3f &Pos, u32 ColorU32, f32 Radius, f32
     shoora_body body{GetColor(ColorU32), Pos, Mass, Restitution, std::make_unique<shoora_shape_sphere>(Radius),
                      InitialRotation};
     Bodies.emplace_back(std::move(body));
-
+    
     shoora_body *b = Bodies.get(Bodies.size() - 1);
     return b;
 }

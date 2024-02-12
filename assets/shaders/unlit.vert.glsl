@@ -3,7 +3,7 @@
 layout(location = 0) in vec3 InPos;
 layout(location = 1) in vec3 InNormal;
 layout(location = 2) in vec3 InColor;
-layout(location = 3) in vec3 InUV;
+layout(location = 3) in vec2 InUV;
 
 layout(set = 0, binding = 0) uniform UniformBuffer
 {
@@ -18,11 +18,13 @@ layout(push_constant) uniform PushConstantBlock
 } PushConstant;
 
 layout(location = 0) out vec3 OutColor;
+layout(location = 1) out vec2 OutUV;
 
 void
 main()
 {
     OutColor = PushConstant.Color;
+    OutUV = InUV;
 
     mat4 MVP = PushConstant.Model*ubo.View*ubo.Projection;
     vec4 Pos = vec4(InPos, 1.)*MVP;

@@ -227,7 +227,7 @@ struct shoora_vulkan_geometry
     shoora_model Model;
     shoora_vulkan_vertex_buffers VertBuffers;
     shoora_vulkan_image_sampler *ImageBuffers;
-    
+
     VkDescriptorPool DescriptorPool;
 
     shader_data ShaderData;
@@ -246,12 +246,13 @@ struct shoora_vulkan_context
     shoora_vulkan_swapchain Swapchain;
     VkRenderPass GraphicsRenderPass;
 
-    VkDescriptorSetLayout UnlitSetLayout;
-    VkDescriptorSet UnlitSets[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
-
-    shoora_vulkan_buffer FragUnlitBuffers[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
-    shoora_vulkan_graphics_pipeline UnlitPipeline;
     VkDescriptorPool UnlitDescriptorPool;
+    VkDescriptorSetLayout UnlitSetLayouts[2];
+    VkDescriptorSet UnlitSets[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
+    VkDescriptorSet UnlitSamplerSet;
+    shoora_vulkan_buffer FragUnlitBuffers[SHU_VK_MAX_SWAPCHAIN_IMAGE_COUNT];
+    shoora_vulkan_image_sampler UnlitImageSampler;
+    shoora_vulkan_graphics_pipeline UnlitPipeline;
 
     shoora_vulkan_graphics_pipeline GraphicsPipeline;
     // shoora_vulkan_graphics_pipeline WireframePipeline;

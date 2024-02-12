@@ -14,6 +14,12 @@ struct colorU32
     static const u32 Yellow = 0xffffff00;
     static const u32 White = 0xffffffff;
     static const u32 Gray = 0xff313131;
+
+    static const u32 Proto_Orange = 0xffFB8621;
+    static const u32 Proto_Yellow = 0xffFFB900;
+    static const u32 Proto_Green = 0xff6DA174;
+    static const u32 Proto_Red = 0xffBD4334;
+    static const u32 Proto_Blue = 0xff697FC4;
 };
 
 u32 GetMaxValueIndex(u32 *NumsArray, u32 NumsCount);

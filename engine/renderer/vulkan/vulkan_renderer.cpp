@@ -258,8 +258,9 @@ InitScene()
     // Bottom Wall (Static Rigidbody)
     Shu::vec2f Window = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
-    Scene->AddSphereBody(Shu::Vec3f(0.0f, 0.0f, 10.0f), 0xffffffff, 1.0f, 0.0f, 0.5f);
-    Scene->AddCubeBody(Shu::Vec3f(1.5f, 0.0f, 10.0f), Shu::Vec3f(1.0f), 0xffff0000, 0.0f, 0.5f);
+    Scene->AddSphereBody(Shu::Vec3f(0.0f, 0.0f, 10.0f), colorU32::Proto_Red, 1.0f, 0.0f, 0.5f);
+    Scene->AddCubeBody(Shu::Vec3f(1.5f, 0.0f, 10.0f), Shu::Vec3f(1.0f), colorU32::Proto_Orange, 0.0f, 0.5f);
+    Scene->AddCubeBody(Shu::Vec3f(0, -5, 10), Shu::Vec3f(50, .25f, 50), colorU32::Proto_Green, 0.0f, 0.5f);
 }
 
 void
@@ -281,41 +282,46 @@ CreateUnlitPipeline(shoora_vulkan_context *Context)
     shoora_vulkan_device *RenderDevice = &Context->Device;
     shoora_vulkan_swapchain *Swapchain = &Context->Swapchain;
 
-    VkDescriptorPoolSize Sizes[1];
+    VkDescriptorPoolSize Sizes[2];
     Sizes[0] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SHU_MAX_FRAMES_IN_FLIGHT);
+    Sizes[1] = GetDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1);
     CreateDescriptorPool(&Context->Device, ARRAY_SIZE(Sizes), Sizes, 4, &Context->UnlitDescriptorPool);
 
     CreateUniformBuffers(RenderDevice, Context->FragUnlitBuffers, ARRAY_SIZE(Context->FragUnlitBuffers),
                          sizeof(light_shader_vert_data));
 
     VkDescriptorSetLayoutBinding Bindings[1];
-    // NOTE: So, This descriptor's data has already been computed and is being used in other pipelines
-    // This is the one which contains Model, View, Projection Matrices data.
-    Bindings[0] = GetDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-                                                VK_SHADER_STAGE_VERTEX_BIT);
-    CreateDescriptorSetLayout(RenderDevice, Bindings, ARRAY_SIZE(Bindings), &Context->UnlitSetLayout);
-
+    Bindings[0] = GetDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT);
+    CreateDescriptorSetLayout(RenderDevice, Bindings, ARRAY_SIZE(Bindings), &Context->UnlitSetLayouts[0]);
     for(u32 Index = 0; Index < SHU_MAX_FRAMES_IN_FLIGHT; ++Index)
     {
-        AllocateDescriptorSets(RenderDevice, Context->UnlitDescriptorPool, 1, &Context->UnlitSetLayout,
+        AllocateDescriptorSets(RenderDevice, Context->UnlitDescriptorPool, 1, &Context->UnlitSetLayouts[0],
                                &Context->UnlitSets[Index]);
-        // NOTE: MVP Matrices Data - three 4x4 Matrices
-        UpdateBufferDescriptorSet(RenderDevice, Context->UnlitSets[Index], 0,
-                                  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Context->FragUnlitBuffers[Index].Handle,
-                                  2*sizeof(Shu::mat4f), 0);
-        // NOTE: Light Fragment Data - one vec3 - Color
-        // UpdateBufferDescriptorSet(RenderDevice, Context->UnlitSets[Index], 1,
-        //                           VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Context->FragUnlitBuffers[Index].Handle,
-        //                           sizeof(Shu::vec3f), OFFSET_OF(light_shader_vert_data, Color));
+        UpdateBufferDescriptorSet(RenderDevice, Context->UnlitSets[Index], 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                  Context->FragUnlitBuffers[Index].Handle, 2*sizeof(Shu::mat4f), 0);
     }
+
+    CreateCombinedImageSampler(RenderDevice, "images/proto/Grid_02.png", VK_SAMPLE_COUNT_1_BIT,
+                               &Context->UnlitImageSampler);
+    auto ImageSamplerBinding = GetDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
+                                                             VK_SHADER_STAGE_FRAGMENT_BIT);
+    CreateDescriptorSetLayout(RenderDevice, &ImageSamplerBinding, 1, &Context->UnlitSetLayouts[1]);
+    AllocateDescriptorSets(RenderDevice, Context->UnlitDescriptorPool, 1, &Context->UnlitSetLayouts[1],
+                           &Context->UnlitSamplerSet);
+    VkDescriptorImageInfo ImageInfo;
+    ImageInfo.sampler = Context->UnlitImageSampler.Sampler;
+    ImageInfo.imageView = Context->UnlitImageSampler.Image.ImageView;
+    ImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    UpdateImageDescriptorSets(RenderDevice, Context->UnlitSamplerSet, 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                              1, &ImageInfo);
 
     VkPushConstantRange PushConstants[1];
     PushConstants[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     PushConstants[0].offset = 0;
     PushConstants[0].size = sizeof(light_shader_push_constant_data);
 
-    CreatePipelineLayout(RenderDevice, 1, &Context->UnlitSetLayout, ARRAY_SIZE(PushConstants), PushConstants,
-                         &Context->UnlitPipeline.Layout);
+    CreatePipelineLayout(RenderDevice, ARRAY_SIZE(Context->UnlitSetLayouts), Context->UnlitSetLayouts,
+                         ARRAY_SIZE(PushConstants), PushConstants, &Context->UnlitPipeline.Layout);
     CreateGraphicsPipeline(Context, "shaders/spirv/unlit.vert.spv", "shaders/spirv/unlit.frag.spv",
                            &Context->UnlitPipeline);
 }
@@ -324,6 +330,8 @@ void
 CleanupUnlitPipeline()
 {
     vkDestroyDescriptorPool(Context->Device.LogicalDevice, Context->UnlitDescriptorPool, nullptr);
+    DestroyImage2D(&Context->Device, &Context->UnlitImageSampler.Image);
+    vkDestroySampler(Context->Device.LogicalDevice, Context->UnlitImageSampler.Sampler, nullptr);
 }
 
 void
@@ -336,7 +344,8 @@ DestroyUnlitPipelineResources()
         DestroyUniformBuffer(&Context->Device, &Context->FragUnlitBuffers[Index]);
     }
 
-    vkDestroyDescriptorSetLayout(Context->Device.LogicalDevice, Context->UnlitSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(Context->Device.LogicalDevice, Context->UnlitSetLayouts[0], nullptr);
+    vkDestroyDescriptorSetLayout(Context->Device.LogicalDevice, Context->UnlitSetLayouts[1], nullptr);
     DestroyPipeline(&Context->Device, &Context->UnlitPipeline);
 }
 
@@ -447,7 +456,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
                          &VulkanContext->WireframePipeline.Layout);
     CreateWireframePipeline(VulkanContext, "shaders/spirv/wireframe.vert.spv", "shaders/spirv/wireframe.frag.spv");
 #endif
-    
+
     // Unlit Pipeline
     CreateUnlitPipeline(VulkanContext);
 
@@ -698,8 +707,9 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 #endif
 
 #if UNLIT_PIPELINE
+        VkDescriptorSet unlitSets[2] = {Context->UnlitSets[ImageIndex], Context->UnlitSamplerSet};
         vkCmdBindDescriptorSets(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Layout, 0,
-                                1, &Context->UnlitSets[ImageIndex], 0, nullptr);
+                                ARRAY_SIZE(unlitSets), unlitSets, 0, nullptr);
         vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Handle);
 
         VkDeviceSize offsets[1] = {0};
