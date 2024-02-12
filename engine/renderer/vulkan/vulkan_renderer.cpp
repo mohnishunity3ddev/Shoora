@@ -203,71 +203,7 @@ ImGuiNewFrame()
 #endif
 
     ImGui::ColorEdit3("Clear Color", GlobalRenderState.ClearColor.E);
-
-#if MATERIAL_VIEWER
-    const char *MaterialNames[] =
-    {
-        "Emerald", "Jade", "Obsidian", "Pearl", "Ruby", "Turquoise", "Brass", "Bronze", "Chrome", "Copper",
-        "Gold", "Silver", "Black Plastic", "Cyan Plastic", "Green Plastic", "Red Plastic", "White Plastic",
-        "Yellow Plastic", "Black Rubber", "Cyan Rubber", "Green Rubber", "Red Rubber", "White Rubber",
-        "Yellow Rubber",
-    };
-    static int CurrentItem = 0;
-    if(ImGui::Combo("Select Material", &CurrentItem, MaterialNames, ARRAY_SIZE(MaterialNames)))
-    {
-        GetMaterial((MaterialType)CurrentItem, &FragUniformData.Material);
-    }
-#endif
     ImGui::End();
-
-#if 0
-    ImVec2 SecondWindowPos = ImVec2(GlobalWindowSize.x - DesiredWidth, 400);
-    ImVec2 SecondWindowSize = ImVec2(0, 0);
-    ImGui::SetNextWindowPos(SecondWindowPos, ImGuiCond_Always);
-    ImGui::SetNextWindowSize(SecondWindowSize, ImGuiCond_Always);
-    ImGui::Begin("Light Data", nullptr, WindowFlags);
-
-    if(ImGui::CollapsingHeader("Point Light Data"))
-    {
-        if(ImGui::CollapsingHeader("Point Light 01"))
-        {
-            ImGui::DragFloat3("Position 01", GlobalFragUniformData.PointLightData[0].Pos.E, GlobalImGuiDragFloatStep);
-            ImGui::ColorEdit3("Color 01", GlobalFragUniformData.PointLightData[0].Color.E);
-            ImGui::SliderFloat("Intensity 01", &GlobalFragUniformData.PointLightData[0].Intensity, 0.3f, 10.0f);
-        }
-
-        if(ImGui::CollapsingHeader("Point Light 02"))
-        {
-            ImGui::DragFloat3("Position 02", GlobalFragUniformData.PointLightData[1].Pos.E, GlobalImGuiDragFloatStep);
-            ImGui::ColorEdit3("Color 02", GlobalFragUniformData.PointLightData[1].Color.E);
-            ImGui::SliderFloat("Intensity 02", &GlobalFragUniformData.PointLightData[1].Intensity, 0.3f, 10.0f);
-        }
-
-        if(ImGui::CollapsingHeader("Point Light 03"))
-        {
-            ImGui::DragFloat3("Position 03", GlobalFragUniformData.PointLightData[2].Pos.E, GlobalImGuiDragFloatStep);
-            ImGui::ColorEdit3("Color 03", GlobalFragUniformData.PointLightData[2].Color.E);
-            ImGui::SliderFloat("Intensity 03", &GlobalFragUniformData.PointLightData[2].Intensity, 0.3f, 10.0f);
-        }
-
-        if(ImGui::CollapsingHeader("Point Light 04"))
-        {
-            ImGui::DragFloat3("Position 04", GlobalFragUniformData.PointLightData[3].Pos.E, GlobalImGuiDragFloatStep);
-            ImGui::ColorEdit3("Color 04", GlobalFragUniformData.PointLightData[3].Color.E);
-            ImGui::SliderFloat("Intensity 04", &GlobalFragUniformData.PointLightData[3].Intensity, 0.3f, 10.0f);
-        }
-    }
-
-    if(ImGui::CollapsingHeader("Spot Light"))
-    {
-        ImGui::SliderFloat("Inner Cutoff", &GlobalFragUniformData.SpotlightData.InnerCutoffAngles, 10.0f, 45.0f);
-        ImGui::SliderFloat("Outer Cutoff", &GlobalFragUniformData.SpotlightData.OuterCutoffAngles,
-                           GlobalFragUniformData.SpotlightData.InnerCutoffAngles, 45.0f);
-        ImGui::ColorEdit3("Color", GlobalFragUniformData.SpotlightData.Color.E);
-        ImGui::SliderFloat("Intensity", &GlobalFragUniformData.SpotlightData.Intensity, 0.3f, 100.0f);
-    }
-    ImGui::End();
-#endif
 
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(400, 0), ImGuiCond_Always);
@@ -324,85 +260,11 @@ InitScene()
 
     Scene->AddSphereBody(Shu::Vec3f(0.0f, 0.0f, 10.0f), 0xffffffff, 1.0f, 0.0f, 0.5f);
     Scene->AddCubeBody(Shu::Vec3f(1.5f, 0.0f, 10.0f), Shu::Vec3f(1.0f), 0xffff0000, 0.0f, 0.5f);
-#if 0
-    // Walls
-    Scene->AddBoxBody(Shu::Vec2f(0, (-Window.y*0.5f)), colorU32::White, Window.x, 50, 0.0f, 0.5f);
-    Scene->AddBoxBody(Shu::Vec2f(Window.x * 0.5f, 0), colorU32::White, 50, Window.y, 0.0f, 0.5f);
-    Scene->AddBoxBody(Shu::Vec2f(-Window.x * 0.5f, 0), colorU32::White, 50, Window.y, 0.0f, 0.5f);
-
-    // Middle Square (Static regidbody)
-    Scene->AddBoxBody(Shu::Vec2f(-450, 0), colorU32::White, 300, 300, 0.0f, 0.0f);
-    // Scene->AddBoxBody(Shu::Vec2f(0, 0), colorU32::White, 150, 150, 1.0f, 0.2f);
-    Scene->AddCircleBody(Shu::Vec2f(-150, 0), colorU32::White, 75, 0.0f, 0.0f);
-    Scene->AddPolygonBody(0, Shu::Vec2f(200, 0), colorU32::White, 0.0f, 0.0f, 0.0f, 7.0f);
-
-    // -- Simple Pendulum --
-    // Add two rigid bodies
-    auto *a = Scene->AddCircleBody(Shu::Vec2f(0, 0), colorU32::Red, 30.0f, 0.0f, 1.0f);
-    auto *b = Scene->AddCircleBody(Shu::Vec2f(-100, 0), colorU32::Green, 20.0f, 1.0f, 1.0f);
-    // Add a joint constraint
-    joint_constraint_2d *Joint = new joint_constraint_2d(a, b, a->Position.xy);
-    Scene->AddConstraint2D(Joint);
-
-    // -- Chain of constraints --
-    const i32 NUM_BODIES = 8;
-    Scene->AddCircleBody(Shu::Vec2f(0.0f, Window.y * 0.5f - 100.0f), colorU32::Red, 15, 0.0f, 1.0f);
-    for(i32 i = 1; i < NUM_BODIES; ++i)
-    {
-        f32 Mass = 1.0f;
-        u32 Color = colorU32::Green;
-        Shu::vec2f Pos = Shu::Vec2f(-(i * 40.0f), Window.y*0.5f - 100.0f);
-        Scene->AddBoxBody(Pos, Color, 30, 30, Mass, 1.0f);
-    }
-
-    for (i32 i = 1; i < NUM_BODIES; ++i)
-    {
-        shoora_body *a = Scene->GetBody(i - 1);
-        shoora_body *b = Scene->GetBody(i);
-        joint_constraint_2d *Joint = new joint_constraint_2d(a, b, a->Position.xy);
-        Scene->AddConstraint2D(Joint);
-    }
-
-    // -- 2D Ragdoll --
-    auto green = colorU32::Green;
-
-    auto *Anchor = Scene->AddCircleBody(Shu::Vec2f(0.0f, Window.y * 0.5f - 200.0f), colorU32::Red, 5, 0.0f, 1.0f);
-    Shu::vec2f HeadPos = Anchor->Position.xy + Shu::Vec2f(0.0f, -70.0f);
-    auto *Head = Scene->AddCircleBody(HeadPos, green, 25, 5, 1.0f);
-    Shu::vec2f TorsoPos = HeadPos + Shu::Vec2f(0.0f, -80.0f);
-    auto *Torso = Scene->AddBoxBody(TorsoPos, green, 50, 100, 3, 1.0f);
-    Shu::vec2f LeftArmPos = TorsoPos + Shu::Vec2f(-32, 10);
-    auto *LeftArm = Scene->AddBoxBody(LeftArmPos, green, 15, 70, 1, 1.0f);
-    Shu::vec2f RightArmPos = TorsoPos + Shu::Vec2f(32, 10);
-    auto *RightArm = Scene->AddBoxBody(RightArmPos, green, 15, 70, 1, 1.0f);
-    Shu::vec2f LeftLegPos = TorsoPos + Shu::Vec2f(-20, -97);
-    auto *LeftLeg = Scene->AddBoxBody(LeftLegPos, green, 20, 90, 1, 1.0f);
-    Shu::vec2f RightLegPos = TorsoPos + Shu::Vec2f(20, -97);
-    auto *RightLeg = Scene->AddBoxBody(RightLegPos, green, 20, 90, 1, 1.0f);
-
-    // Joints
-    joint_constraint_2d *string = new joint_constraint_2d(Anchor, Head, Anchor->Position.xy);
-    joint_constraint_2d *neck = new joint_constraint_2d(Head, Torso, Head->Position.xy + Shu::Vec2f(0, -25));
-    joint_constraint_2d *leftShoulder = new joint_constraint_2d(Torso, LeftArm, Torso->Position.xy + Shu::Vec2f(-28, 45));
-    joint_constraint_2d *rightShoulder = new joint_constraint_2d(Torso, RightArm, Torso->Position.xy + Shu::Vec2f(28, 45));
-    joint_constraint_2d *leftHip = new joint_constraint_2d(Torso, LeftLeg, Torso->Position.xy + Shu::Vec2f(-20, -50));
-    joint_constraint_2d *rightHip = new joint_constraint_2d(Torso, RightLeg, Torso->Position.xy + Shu::Vec2f(20, -50));
-    Scene->AddConstraint2D(string);
-    Scene->AddConstraint2D(neck);
-    Scene->AddConstraint2D(leftShoulder);
-    Scene->AddConstraint2D(rightShoulder);
-    Scene->AddConstraint2D(leftHip);
-    Scene->AddConstraint2D(rightHip);
-#endif
 }
 
 void
 DrawScene(const VkCommandBuffer &CmdBuffer)
 {
-#if 1
-    // auto camRect = Context->Camera.GetRect();
-    // Scene->DrawAxes(camRect);
-
     if(WireframeMode && !isDebug && !msgShown)
     {
         LogWarnUnformatted("Wireframe mode is only available in debug builds. Turning off Wireframe mode!\n");
@@ -411,22 +273,6 @@ DrawScene(const VkCommandBuffer &CmdBuffer)
     }
 
     Scene->Draw(WireframeMode);
-#else
-    VkDeviceSize offsets[1] = {0};
-    vkCmdBindVertexBuffers(CmdBuffer, 0, 1, &GlobalSphereVertBuffers.VertexBuffer.Handle, offsets);
-    vkCmdBindIndexBuffer(CmdBuffer, GlobalSphereVertBuffers.IndexBuffer.Handle, 0, VK_INDEX_TYPE_UINT32);
-
-    auto *meshFilter = &GlobalSphere.MeshFilter;
-    Shu::vec3f Position = Shu::Vec3f(0, 0, 10.0f);
-    Shu::vec3f Scale = Shu::Vec3f(1.0f);
-
-    Shu::mat4f Model = Shu::TRS(Position, Scale, 0.0f, Shu::Vec3f(0, 0, 1));
-    light_shader_push_constant_data Value{.Model = Model, .Color = GetColor(0xffffffff)};
-    vkCmdPushConstants(shoora_graphics::GetCmdBuffer(), shoora_graphics::GetPipelineLayout(),
-                       VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(light_shader_push_constant_data), &Value);
-    vkCmdDrawIndexed(shoora_graphics::GetCmdBuffer(), meshFilter->IndexCount, 1, 0, 0, 0);
-#endif
-
 }
 
 void
@@ -601,7 +447,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
                          &VulkanContext->WireframePipeline.Layout);
     CreateWireframePipeline(VulkanContext, "shaders/spirv/wireframe.vert.spv", "shaders/spirv/wireframe.frag.spv");
 #endif
-
+    
     // Unlit Pipeline
     CreateUnlitPipeline(VulkanContext);
 
@@ -684,51 +530,6 @@ GetMousePosDelta(f32 CurrentMouseDeltaX, f32 CurrentMouseDeltaY, f32 *outMouseDe
     GlobalLastFrameMousePos.x = CurrentMouseDeltaX;
     GlobalLastFrameMousePos.y = CurrentMouseDeltaY;
 }
-
-#if 0
-void
-RenderCubes(VkCommandBuffer CmdBuffer)
-{
-    static f32 LocalStaticAngle = 0.0f;
-    LocalStaticAngle += GlobalDeltaTime;
-    if(LocalStaticAngle >= 360.0f)
-    {
-        LocalStaticAngle = 360.0f;
-    }
-    for(u32 Index = 0;
-        Index < ARRAY_SIZE(CubePositions);
-        ++Index)
-    {
-        Shu::mat4f Model = GlobalMat4Identity;
-        Shu::Scale(Model, Shu::Vec3f(0.5f, 0.5f, 0.5f));
-        f32 LocalAngle = LocalStaticAngle*(Index + 1)*0.05f;
-        Shu::RotateGimbalLock(Model, Shu::Vec3f(0.5f*(Index + 1), 0.3f*(Index + 1), 1.0f*(Index + 1)),
-                              LocalAngle*AngleSpeed);
-        Shu::Translate(Model, CubePositions[Index]);
-        GlobalPushConstBlock.Model = Model;
-        vkCmdPushConstants(CmdBuffer, Context->GraphicsPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
-                           sizeof(push_const_block), &GlobalPushConstBlock);
-        vkCmdDrawIndexed(CmdBuffer, ARRAY_SIZE(CubeIndices), 1, 0, 0, 1);
-    }
-}
-void
-RenderLightCubes(VkCommandBuffer CmdBuffer)
-{
-    for(u32 Index = 0;
-        Index < ARRAY_SIZE(GlobalLightPushConstantData);
-        ++Index)
-    {
-        Shu::mat4f *pModel = &GlobalLightPushConstantData[Index].Model;
-        *pModel = GlobalMat4Identity;
-        Shu::Scale(*pModel, Shu::Vec3f(0.05f));
-        Shu::Translate(*pModel, GlobalFragUniformData.PointLightData[Index].Pos);
-        GlobalLightPushConstantData[Index].Color = GlobalFragUniformData.PointLightData[Index].Color;
-        vkCmdPushConstants(CmdBuffer, Context->UnlitPipeline.Layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
-                           sizeof(light_shader_push_constant_data), &GlobalLightPushConstantData[Index]);
-        vkCmdDrawIndexed(CmdBuffer, ARRAY_SIZE(CubeIndices), 1, 0, 0, 1);
-    }
-}
-#endif
 
 void
 DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
