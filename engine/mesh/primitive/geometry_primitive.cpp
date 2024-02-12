@@ -42,6 +42,9 @@ static Shu::vec3f CubeVertexPositions[] =
     Shu::vec3f{-0.5f,  0.5f,   0.5f}    // Top-Left
 };
 
+static shoora_model UVSphereModel{};
+static b32 MeshesGenerated = false;
+
 // NOTE: Cube
 static shoora_vertex_info CubeVertices[] =
 {
@@ -217,8 +220,20 @@ shoora_primitive_collection::GenerateCircleMesh(shoora_mesh *Mesh, shoora_vertex
     RunningVertexCount += MeshFilter->VertexCount;
 }
 
-shoora_mesh_filter
-shoora_primitive_collection::GetPrimitiveInfo(u32 Type)
+void
+shoora_primitive_collection::GenerateUVSphereMesh()
+{
+#if 1
+    // TODO: Dont rely on Loading Meshes using GLTF!!
+    LoadModel(&UVSphereModel, "meshes/primitives/uv_sphere.glb");
+#else
+    // TODO: Do Custom Implementation here!
+#endif
+
+    MeshesGenerated = true;
+}
+
+shoora_mesh_filter shoora_primitive_collection::GetPrimitiveInfo(u32 Type)
 {
     shoora_mesh_filter Result = {};
 
@@ -241,8 +256,7 @@ shoora_primitive_collection::GetPrimitiveInfo(u32 Type)
             Result.VertexCount = ARRAY_SIZE(RectVertices);
             Result.Indices = RectIndices;
             Result.IndexCount = ARRAY_SIZE(RectIndices);
-        }
-        break;
+        } break;
 
         case shoora_mesh_type::CUBE:
         {
@@ -250,8 +264,7 @@ shoora_primitive_collection::GetPrimitiveInfo(u32 Type)
             Result.VertexCount = ARRAY_SIZE(CubeVertices);
             Result.Indices = CubeIndices;
             Result.IndexCount = ARRAY_SIZE(CubeIndices);
-        }
-        break;
+        } break;
 
         case shoora_mesh_type::LINE:
         {
@@ -259,8 +272,13 @@ shoora_primitive_collection::GetPrimitiveInfo(u32 Type)
             Result.VertexCount = ARRAY_SIZE(LineVertices);
             Result.Indices = nullptr;
             Result.IndexCount = 0;
-        }
-        break;
+        } break;
+
+        case shoora_mesh_type::UV_SPHERE:
+        {
+            ASSERT(MeshesGenerated);
+            Result = UVSphereModel.MeshFilter;
+        } break;
 
         SHU_INVALID_DEFAULT;
     }
@@ -271,14 +289,31 @@ shoora_primitive_collection::GetPrimitiveInfo(u32 Type)
 i32
 shoora_primitive_collection::GetTotalVertexCount()
 {
+    ASSERT(MeshesGenerated);
     i32 Result = (CIRCLE_PRIMITIVE_RESOLUTION + 1) + ARRAY_SIZE(CubeVertices) + ARRAY_SIZE(RectVertices) +
-                 ARRAY_SIZE(LineVertices);
+                 ARRAY_SIZE(LineVertices) + UVSphereModel.MeshFilter.VertexCount;
     return Result;
 }
 
 i32
 shoora_primitive_collection::GetTotalIndexCount()
 {
-    i32 Result = (CIRCLE_PRIMITIVE_RESOLUTION * 3) + ARRAY_SIZE(CubeIndices) + ARRAY_SIZE(RectIndices);
+    ASSERT(MeshesGenerated);
+    i32 Result = (CIRCLE_PRIMITIVE_RESOLUTION * 3) + ARRAY_SIZE(CubeIndices) + ARRAY_SIZE(RectIndices) +
+                 UVSphereModel.MeshFilter.IndexCount;
     return Result;
+}
+
+void
+shoora_primitive_collection::Cleanup()
+{
+    ASSERT(UVSphereModel.MeshFilter.Vertices != nullptr &&
+           UVSphereModel.MeshFilter.Indices != nullptr);
+    free(UVSphereModel.MeshFilter.Vertices);
+    free(UVSphereModel.MeshFilter.Indices);
+
+    if(UVSphereModel.Nodes) { free(UVSphereModel.Nodes); }
+    if(UVSphereModel.Materials) { free(UVSphereModel.Materials); }
+    if(UVSphereModel.Textures) { free(UVSphereModel.Textures); }
+
 }

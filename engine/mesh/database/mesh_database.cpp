@@ -25,7 +25,7 @@ static shoora_mesh *_LineMesh;
 static shoora_mesh *_Rect2DMesh;
 static shoora_mesh *_CircleMesh;
 static shoora_mesh *_CubeMesh;
-static shoora_mesh *_SphereMesh;
+static shoora_mesh *_UVSphereMesh;
 static u32 PrimitiveCount;
 
 static shoora_mesh *CustomPolyMeshes;
@@ -59,6 +59,8 @@ void shoora_mesh_database::MeshDbEnd()
 void
 Initialize()
 {
+    shoora_primitive_collection::GenerateUVSphereMesh();
+
     // Get the required memory size to hold all the meshes to be used in the scene
     // that is the total number of vertices for primitives and any other custom polygon ones.
     TotalVertexCount = shoora_primitive_collection::GetTotalVertexCount();
@@ -81,6 +83,7 @@ Initialize()
     _CubeMesh = &Meshes[TotalMeshCount++];
     _Rect2DMesh = &Meshes[TotalMeshCount++];
     _LineMesh = &Meshes[TotalMeshCount++];
+    _UVSphereMesh = &Meshes[TotalMeshCount++];
 
     PrimitiveCount = TotalMeshCount;
 
@@ -88,6 +91,22 @@ Initialize()
     shoora_primitive_collection::GenerateCircleMesh(_CircleMesh, Vertices + RunningVertexCount,
                                                     Indices + RunningIndexCount, RunningVertexCount,
                                                     RunningIndexCount);
+
+    auto UVSphereInfo = shoora_primitive_collection::GetPrimitiveInfo((u32)shoora_mesh_type::UV_SPHERE);
+    shoora_mesh *UVSphereMesh = _UVSphereMesh;
+    UVSphereMesh->Type = shoora_mesh_type::UV_SPHERE;
+    UVSphereMesh->VertexOffset = RunningVertexCount;
+    UVSphereMesh->IndexOffset = RunningIndexCount;
+    shoora_mesh_filter *UVSphereMeshFilter = &UVSphereMesh->MeshFilter;
+    UVSphereMeshFilter->Vertices = Vertices + RunningVertexCount;
+    UVSphereMeshFilter->VertexCount = UVSphereInfo.VertexCount;
+    UVSphereMeshFilter->Indices = Indices + RunningIndexCount;
+    UVSphereMeshFilter->IndexCount = UVSphereInfo.IndexCount;
+    memcpy(UVSphereMeshFilter->Vertices, UVSphereInfo.Vertices, UVSphereMeshFilter->VertexCount * sizeof(shoora_vertex_info));
+    memcpy(UVSphereMeshFilter->Indices, UVSphereInfo.Indices, UVSphereMeshFilter->IndexCount * sizeof(u32));
+    RunningVertexCount += UVSphereMeshFilter->VertexCount;
+    RunningIndexCount += UVSphereMeshFilter->IndexCount;
+
 
     auto CubeInfo = shoora_primitive_collection::GetPrimitiveInfo((u32)shoora_mesh_type::CUBE);
     shoora_mesh *CubeMesh = _CubeMesh;
@@ -175,6 +194,8 @@ Initialize()
     CreateVertexBuffers(RenderDevice, Vertices, TotalVertexCount, Indices, TotalIndexCount,
                         &vBuffer, &iBuffer);
 
+    shoora_primitive_collection::Cleanup();
+
 #ifdef _SHU_DEBUG
     // NOTE: This is how we name vulkan objects. Easier to read validation errors if errors are there!
     LogInfo("This is a debug build brother!\n");
@@ -192,30 +213,11 @@ shoora_mesh_database::GetMesh(shoora_mesh_type Type)
 
     switch (Type)
     {
-    case shoora_mesh_type::CIRCLE:
-    {
-        Result = _CircleMesh;
-    }
-    break;
-
-    case shoora_mesh_type::RECT_2D:
-    {
-        Result = _Rect2DMesh;
-    }
-    break;
-
-    case shoora_mesh_type::CUBE:
-    {
-        Result = _CubeMesh;
-    }
-    break;
-
-    case shoora_mesh_type::LINE:
-    {
-        Result = _LineMesh;
-    }
-    break;
-
+        case shoora_mesh_type::CIRCLE: { Result = _CircleMesh; } break;
+        case shoora_mesh_type::UV_SPHERE: { Result = _UVSphereMesh; } break;
+        case shoora_mesh_type::RECT_2D: { Result = _Rect2DMesh; } break;
+        case shoora_mesh_type::CUBE: { Result = _CubeMesh; } break;
+        case shoora_mesh_type::LINE: { Result = _LineMesh; } break;
         SHU_INVALID_DEFAULT;
     }
 

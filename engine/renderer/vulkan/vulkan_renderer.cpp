@@ -36,7 +36,7 @@
 static shoora_vulkan_context *Context = nullptr;
 
 static b32 isDebug = false;
-static b32 WireframeMode = true;
+static b32 WireframeMode = false;
 static f32 TestCameraScale = 0.5f;
 static b32 GlobalShowContacts = true;
 
@@ -322,6 +322,9 @@ InitScene()
     // Bottom Wall (Static Rigidbody)
     Shu::vec2f Window = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
+    // Scene->AddSphereBody(Shu::Vec3f(0.0f, 0.0f, 10.0f), 0xffffffff, 1.0f, 0.0f, 0.5f);
+    Scene->AddCubeBody(Shu::Vec3f(0.0f, 0.0f, 10.0f), Shu::Vec3f(5.0f), 0xffffffff, 0.0f, 0.5f);
+#if 0
     // Walls
     Scene->AddBoxBody(Shu::Vec2f(0, (-Window.y*0.5f)), colorU32::White, Window.x, 50, 0.0f, 0.5f);
     Scene->AddBoxBody(Shu::Vec2f(Window.x * 0.5f, 0), colorU32::White, 50, Window.y, 0.0f, 0.5f);
@@ -333,7 +336,6 @@ InitScene()
     Scene->AddCircleBody(Shu::Vec2f(-150, 0), colorU32::White, 75, 0.0f, 0.0f);
     Scene->AddPolygonBody(0, Shu::Vec2f(200, 0), colorU32::White, 0.0f, 0.0f, 0.0f, 7.0f);
 
-#if 0
     // -- Simple Pendulum --
     // Add two rigid bodies
     auto *a = Scene->AddCircleBody(Shu::Vec2f(0, 0), colorU32::Red, 30.0f, 0.0f, 1.0f);
@@ -397,10 +399,11 @@ InitScene()
 void
 DrawScene(const VkCommandBuffer &CmdBuffer)
 {
-    auto camRect = Context->Camera.GetRect();
-    Scene->DrawAxes(camRect);
+#if 1
+    // auto camRect = Context->Camera.GetRect();
+    // Scene->DrawAxes(camRect);
 
-    if (WireframeMode && !isDebug && !msgShown)
+    if(WireframeMode && !isDebug && !msgShown)
     {
         LogWarnUnformatted("Wireframe mode is only available in debug builds. Turning off Wireframe mode!\n");
         msgShown = true;
@@ -408,6 +411,22 @@ DrawScene(const VkCommandBuffer &CmdBuffer)
     }
 
     Scene->Draw(WireframeMode);
+#else
+    VkDeviceSize offsets[1] = {0};
+    vkCmdBindVertexBuffers(CmdBuffer, 0, 1, &GlobalSphereVertBuffers.VertexBuffer.Handle, offsets);
+    vkCmdBindIndexBuffer(CmdBuffer, GlobalSphereVertBuffers.IndexBuffer.Handle, 0, VK_INDEX_TYPE_UINT32);
+
+    auto *meshFilter = &GlobalSphere.MeshFilter;
+    Shu::vec3f Position = Shu::Vec3f(0, 0, 10.0f);
+    Shu::vec3f Scale = Shu::Vec3f(1.0f);
+
+    Shu::mat4f Model = Shu::TRS(Position, Scale, 0.0f, Shu::Vec3f(0, 0, 1));
+    light_shader_push_constant_data Value{.Model = Model, .Color = GetColor(0xffffffff)};
+    vkCmdPushConstants(shoora_graphics::GetCmdBuffer(), shoora_graphics::GetPipelineLayout(),
+                       VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(light_shader_push_constant_data), &Value);
+    vkCmdDrawIndexed(shoora_graphics::GetCmdBuffer(), meshFilter->IndexCount, 1, 0, 0, 0);
+#endif
+
 }
 
 void
@@ -430,9 +449,7 @@ CreateUnlitPipeline(shoora_vulkan_context *Context)
                                                 VK_SHADER_STAGE_VERTEX_BIT);
     CreateDescriptorSetLayout(RenderDevice, Bindings, ARRAY_SIZE(Bindings), &Context->UnlitSetLayout);
 
-    for(u32 Index = 0;
-        Index < SHU_MAX_FRAMES_IN_FLIGHT;
-        ++Index)
+    for(u32 Index = 0; Index < SHU_MAX_FRAMES_IN_FLIGHT; ++Index)
     {
         AllocateDescriptorSets(RenderDevice, Context->UnlitDescriptorPool, 1, &Context->UnlitSetLayout,
                                &Context->UnlitSets[Index]);
@@ -545,11 +562,10 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     CreateRenderPass(RenderDevice, Swapchain, &VulkanContext->GraphicsRenderPass);
     CreateSwapchainFramebuffers(RenderDevice, Swapchain, VulkanContext->GraphicsRenderPass);
 
-    SetupCamera(&VulkanContext->Camera, shoora_projection::PROJECTION_ORTHOGRAPHIC, 0.1f, 100.0f, 16.0f / 9.0f,
+    SetupCamera(&VulkanContext->Camera, shoora_projection::PROJECTION_PERSPECTIVE, 0.1f, 100.0f, 16.0f / 9.0f,
                 GlobalWindowSize.y, 45.0f /*,  Shu::Vec3f(GlobalWindowSize.x/2, GlobalWindowSize.y/2, 0.0f) */);
 
     // NOTE: Mesh Database setup
-
     shoora_mesh_database::MeshDbBegin(RenderDevice);
     Shu::vec3f Poly1[] = {{0, 10, 1}, {10, 3, 1}, {10, -5, 1}, {-10, -5, 1}, {-10, 3, 1}};
     shoora_mesh_database::AddPolygonMeshToDb(Poly1, ARRAY_SIZE(Poly1));
@@ -746,6 +762,7 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     }
 
     b32 LMBDown = Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, KeyState::SHU_KEYSTATE_DOWN);
+#if 0
     if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
     {
         Scene->AddCircleBody(CurrentMouseWorldPos, colorU32::White, 25, 1.0, 0.5f);
@@ -755,11 +772,11 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         Scene->AddBoxBody(CurrentMouseWorldPos, colorU32::White, 50, 50, 1.0, 0.5f);
         // Scene->AddPolygonBody(1, CurrentMouseWorldPos, colorU32::White, 1.0f, 1.0f, 0.0f, 1.0f);
     }
-
     if(Platform_GetKeyInputState(SU_SPACE, KeyState::SHU_KEYSTATE_PRESS))
     {
         GlobalShowContacts = !GlobalShowContacts;
     }
+#endif
 
     if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
     {

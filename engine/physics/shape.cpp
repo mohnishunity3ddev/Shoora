@@ -211,7 +211,8 @@ shoora_shape_polygon::FindMinSeparation(shoora_shape_polygon *Other, i32 &Refere
 }
 
 // NOTE: Circle
-shoora_shape_circle::shoora_shape_circle(u32 Radius) : shoora_shape(shoora_mesh_type::CIRCLE)
+shoora_shape_circle::shoora_shape_circle(u32 Radius)
+    : shoora_shape(shoora_mesh_type::CIRCLE)
 {
     this->Radius = Radius;
 }
@@ -239,6 +240,38 @@ shoora_mesh_type
 shoora_shape_circle::GetType() const
 {
     return shoora_mesh_type::CIRCLE;
+}
+
+// NOTE: Sphere
+shoora_shape_sphere::shoora_shape_sphere(u32 Radius)
+    : shoora_shape(shoora_mesh_type::UV_SPHERE)
+{
+    this->Radius = Radius;
+}
+
+shoora_shape_sphere::~shoora_shape_sphere()
+{
+    LogUnformatted("shoora_shape_sphere destructor called!\n");
+}
+
+f32
+shoora_shape_sphere::GetMomentOfInertia() const
+{
+    f32 Result = (2.0f * this->Radius * this->Radius) / 5.0f;
+    return Result;
+}
+
+Shu::vec3f
+shoora_shape_sphere::GetDim() const
+{
+    Shu::vec3f Result = Shu::Vec3f(this->Radius, this->Radius, this->Radius);
+    return Result;
+}
+
+shoora_mesh_type
+shoora_shape_sphere::GetType() const
+{
+    return shoora_mesh_type::UV_SPHERE;
 }
 
 
@@ -272,4 +305,39 @@ shoora_mesh_type
 shoora_shape_box::GetType() const
 {
     return shoora_mesh_type::RECT_2D;
+}
+
+// NOTE: Cube Stuff
+shoora_shape_cube::shoora_shape_cube(u32 Width, u32 Height, u32 Depth)
+    : shoora_shape(shoora_mesh_type::CUBE)
+{
+    this->Width = Width;
+    this->Height = Height;
+    this->Depth = Depth;
+}
+
+shoora_shape_cube::~shoora_shape_cube()
+{
+    LogUnformatted("shoora_shape_cube destructor called!\n");
+}
+
+f32
+shoora_shape_cube::GetMomentOfInertia() const
+{
+    // TODO: Return an Inertia tensor.
+    f32 Result = 5000.0f;
+    return Result;
+}
+
+Shu::vec3f
+shoora_shape_cube::GetDim() const
+{
+    Shu::vec3f Result = Shu::Vec3f(this->Width, this->Height, this->Depth);
+    return Result;
+}
+
+shoora_mesh_type
+shoora_shape_cube::GetType() const
+{
+    return shoora_mesh_type::CUBE;
 }

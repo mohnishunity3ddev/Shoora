@@ -69,6 +69,18 @@ struct shoora_shape_circle : shoora_shape
     virtual shoora_mesh_type GetType() const override;
 };
 
+struct shoora_shape_sphere : shoora_shape
+{
+    // shoora_shape_circle() = delete;
+    shoora_shape_sphere(u32 Radius);
+    virtual ~shoora_shape_sphere();
+
+    f32 Radius;
+    virtual f32 GetMomentOfInertia() const override;
+    virtual Shu::vec3f GetDim() const override;
+    virtual shoora_mesh_type GetType() const override;
+};
+
 struct shoora_shape_box : shoora_shape_polygon
 {
     // shoora_shape_box() = delete;
@@ -76,6 +88,17 @@ struct shoora_shape_box : shoora_shape_polygon
     virtual ~shoora_shape_box();
 
     u32 Width, Height;
+    virtual f32 GetMomentOfInertia() const override;
+    virtual Shu::vec3f GetDim() const override;
+    virtual shoora_mesh_type GetType() const override;
+};
+
+struct shoora_shape_cube : shoora_shape
+{
+    shoora_shape_cube(u32 Width, u32 Height, u32 Depth);
+    virtual ~shoora_shape_cube();
+
+    u32 Width, Height, Depth;
     virtual f32 GetMomentOfInertia() const override;
     virtual Shu::vec3f GetDim() const override;
     virtual shoora_mesh_type GetType() const override;

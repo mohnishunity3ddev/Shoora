@@ -59,25 +59,27 @@ void
 LoadTextureImages(cgltf_image *Images, u32 ImageCount, const char *BasePath, shoora_model *Model)
 {
     Model->TextureCount = ImageCount;
-    Model->Textures = (shoora_mesh_texture *)malloc(sizeof(shoora_mesh_texture)*ImageCount);
-    memset(Model->Textures, 0, sizeof(shoora_mesh_texture) * ImageCount);
-    LogInfoUnformatted("Images are: \n");
-
-    for(u32 Index = 0;
-        Index < ImageCount;
-        ++Index)
+    Model->Textures = nullptr;
+    if(ImageCount > 0)
     {
-        shoora_mesh_texture *Tex = Model->Textures + Index;
-        Tex->ImageFilename = Images[Index].uri;
+        Model->Textures = (shoora_mesh_texture *)malloc(sizeof(shoora_mesh_texture)*ImageCount);
+        memset(Model->Textures, 0, sizeof(shoora_mesh_texture) * ImageCount);
+        LogInfoUnformatted("Images are: \n");
 
-        char ImagePath[512];
-        StringConcat(BasePath, Images[Index].uri, ImagePath);
+        for(u32 Index = 0; Index < ImageCount; ++Index)
+        {
+            shoora_mesh_texture *Tex = Model->Textures + Index;
+            Tex->ImageFilename = Images[Index].uri;
 
-        // TODO)): Load the Image Data.
-        LogInfo("Image[%d]: %s \n", Index, ImagePath);
+            char ImagePath[512];
+            StringConcat(BasePath, Images[Index].uri, ImagePath);
 
-        Tex->ImageData = LoadImageFile(ImagePath, false);
-        Model->TotalTextureSize += Tex->ImageData.TotalSize;
+            // TODO)): Load the Image Data.
+            LogInfo("Image[%d]: %s \n", Index, ImagePath);
+
+            Tex->ImageData = LoadImageFile(ImagePath, false);
+            Model->TotalTextureSize += Tex->ImageData.TotalSize;
+        }
     }
 }
 
@@ -94,63 +96,65 @@ u32 UsedCount = 0;
 void
 LoadMaterials(cgltf_material *Materials, u32 MaterialCount, shoora_model *Model)
 {
-    Model->Materials = (shoora_mesh_material *)malloc(sizeof(shoora_mesh_material)*MaterialCount);
+    Model->Materials = nullptr;
     Model->MaterialCount = MaterialCount;
 
-    for(u32 Index = 0;
-        Index < MaterialCount;
-        ++Index)
+    if(MaterialCount > 0)
     {
-        cgltf_material *glTFMat = Materials + Index;
-        shoora_mesh_material *Mat = Model->Materials + Index;
+        Model->Materials = (shoora_mesh_material *)malloc(sizeof(shoora_mesh_material)*MaterialCount);
+        for(u32 Index = 0; Index < MaterialCount; ++Index)
+        {
+            cgltf_material *glTFMat = Materials + Index;
+            shoora_mesh_material *Mat = Model->Materials + Index;
 
-        cgltf_texture *glTFColorTex = glTFMat->pbr_metallic_roughness.base_color_texture.texture;
-        if(glTFMat->has_pbr_metallic_roughness &&
-           glTFColorTex != nullptr)
-        {
-            const char* BaseColorTexUri = glTFColorTex->image->uri;
-            ASSERT(BaseColorTexUri);
-            Mat->BaseColorTextureIndex = GetImageIndex(BaseColorTexUri, Model);
-            UsedTexIndices[UsedCount++] = Mat->BaseColorTextureIndex;
-        }
-        else
-        {
-            // NOTE: The last texture loaded in this mesh is the default white texture which we will use as default
-            Mat->BaseColorTextureIndex = Model->TextureCount - 1;
-        }
+            cgltf_texture *glTFColorTex = glTFMat->pbr_metallic_roughness.base_color_texture.texture;
+            if(glTFMat->has_pbr_metallic_roughness &&
+            glTFColorTex != nullptr)
+            {
+                const char* BaseColorTexUri = glTFColorTex->image->uri;
+                ASSERT(BaseColorTexUri);
+                Mat->BaseColorTextureIndex = GetImageIndex(BaseColorTexUri, Model);
+                UsedTexIndices[UsedCount++] = Mat->BaseColorTextureIndex;
+            }
+            else
+            {
+                // NOTE: The last texture loaded in this mesh is the default white texture which we will use as default
+                Mat->BaseColorTextureIndex = Model->TextureCount - 1;
+            }
 
-        cgltf_texture *glTFMetallicTex = glTFMat->pbr_metallic_roughness.metallic_roughness_texture.texture;
-        if (glTFMat->has_pbr_metallic_roughness && glTFMetallicTex != nullptr)
-        {
-            const char *MetallicRoughnessTex = glTFMetallicTex->image->uri;
-            ASSERT(MetallicRoughnessTex);
-            Mat->MetallicTextureIndex = GetImageIndex(MetallicRoughnessTex, Model);
-            UsedTexIndices[UsedCount++] = Mat->MetallicTextureIndex;
-        }
-        else
-        {
-            // NOTE: The last texture loaded in this mesh is the default white texture which we will use as default
-            Mat->MetallicTextureIndex = Model->TextureCount - 1;
-        }
+            cgltf_texture *glTFMetallicTex = glTFMat->pbr_metallic_roughness.metallic_roughness_texture.texture;
+            if (glTFMat->has_pbr_metallic_roughness && glTFMetallicTex != nullptr)
+            {
+                const char *MetallicRoughnessTex = glTFMetallicTex->image->uri;
+                ASSERT(MetallicRoughnessTex);
+                Mat->MetallicTextureIndex = GetImageIndex(MetallicRoughnessTex, Model);
+                UsedTexIndices[UsedCount++] = Mat->MetallicTextureIndex;
+            }
+            else
+            {
+                // NOTE: The last texture loaded in this mesh is the default white texture which we will use as default
+                Mat->MetallicTextureIndex = Model->TextureCount - 1;
+            }
 
-        cgltf_texture *glTFNormalTex = glTFMat->normal_texture.texture;
-        if(glTFNormalTex != nullptr)
-        {
-            const char *NormalTexUri = glTFNormalTex->image->uri;
-            ASSERT(NormalTexUri);
-            Mat->NormalTextureIndex = GetImageIndex(NormalTexUri, Model);
-            UsedTexIndices[UsedCount++] = Mat->NormalTextureIndex;
-        }
-        else
-        {
-            // NOTE: The last texture loaded in this mesh is the default white texture which we will use as default
-            Mat->NormalTextureIndex = Model->TextureCount - 1;
-        }
+            cgltf_texture *glTFNormalTex = glTFMat->normal_texture.texture;
+            if(glTFNormalTex != nullptr)
+            {
+                const char *NormalTexUri = glTFNormalTex->image->uri;
+                ASSERT(NormalTexUri);
+                Mat->NormalTextureIndex = GetImageIndex(NormalTexUri, Model);
+                UsedTexIndices[UsedCount++] = Mat->NormalTextureIndex;
+            }
+            else
+            {
+                // NOTE: The last texture loaded in this mesh is the default white texture which we will use as default
+                Mat->NormalTextureIndex = Model->TextureCount - 1;
+            }
 
-        Mat->AlphaCutoff = glTFMat->alpha_cutoff;
-        Mat->AlphaMode = (shoora_mesh_alpha_mode)glTFMat->alpha_mode;
-        Mat->DoubleSided = glTFMat->double_sided;
-        // Mat->BaseColorFactor = GLTFMat->BaseColorFactor;
+            Mat->AlphaCutoff = glTFMat->alpha_cutoff;
+            Mat->AlphaMode = (shoora_mesh_alpha_mode)glTFMat->alpha_mode;
+            Mat->DoubleSided = glTFMat->double_sided;
+            // Mat->BaseColorFactor = GLTFMat->BaseColorFactor;
+        }
     }
 }
 
@@ -158,31 +162,23 @@ void
 GetTotalVertexIndicesCount(const cgltf_scene *pScenes, const u32 SceneCount,
                            u32 *pVertexCount, u32 *pIndexCount, u32 *pNodeCount)
 {
-    for(u32 SceneIndex = 0;
-        SceneIndex < SceneCount;
-        ++SceneIndex)
+    for(u32 SceneIndex = 0; SceneIndex < SceneCount; ++SceneIndex)
     {
         const cgltf_scene *Scene = pScenes + SceneIndex;
 
         *pNodeCount += Scene->nodes_count;
-        for(u32 NodeIndex = 0;
-            NodeIndex < Scene->nodes_count;
-            ++NodeIndex)
+        for(u32 NodeIndex = 0; NodeIndex < Scene->nodes_count; ++NodeIndex)
         {
             cgltf_node *Node = Scene->nodes[NodeIndex];
             cgltf_mesh *NodeMesh = Node->mesh;
             *pNodeCount += Node->children_count;
 
-            for(u32 PrimitiveIndex = 0;
-                PrimitiveIndex < NodeMesh->primitives_count;
-                ++PrimitiveIndex)
+            for(u32 PrimitiveIndex = 0; PrimitiveIndex < NodeMesh->primitives_count; ++PrimitiveIndex)
             {
                 cgltf_primitive *Primitive = NodeMesh->primitives + PrimitiveIndex;
 
                 u32 AttributeCount = Primitive->attributes_count;
-                for(u32 AttrIndex = 0;
-                    AttrIndex < AttributeCount;
-                    ++AttrIndex)
+                for(u32 AttrIndex = 0; AttrIndex < AttributeCount; ++AttrIndex)
                 {
                     const cgltf_attribute *Attribute = &Primitive->attributes[AttrIndex];
                     if(Attribute->type == cgltf_attribute_type_position)

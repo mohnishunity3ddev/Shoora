@@ -1,14 +1,14 @@
 #include "body.h"
 #include <renderer/vulkan/graphics/vulkan_graphics.h>
 
-shoora_body::shoora_body(const Shu::vec3f &Color, const Shu::vec2f &InitPos, f32 Mass, f32 Restitution,
+shoora_body::shoora_body(const Shu::vec3f &Color, const Shu::vec3f &InitPos, f32 Mass, f32 Restitution,
                          std::unique_ptr<shoora_shape> Shape, f32 InitialRotationInRadians)
 {
     ASSERT(Mass >= 0.0f);
     ASSERT(Restitution >= 0.0f && Restitution <= 1.0f);
 
     this->Color = Color;
-    this->Position = Shu::Vec3f(InitPos, 0.0f);
+    this->Position = InitPos;
 
     this->RotationRadians = InitialRotationInRadians;
     this->AngularVelocity = 0.0f;
@@ -213,7 +213,7 @@ shoora_body::IntegrateForces(const f32 deltaTime)
     }
 
     this->Acceleration = this->SumForces * this->InvMass;
-    
+
     // alpha = Tau / Moment of Inertia
     this->AngularAcceleration = this->SumTorques * InvI;
 
@@ -238,7 +238,7 @@ shoora_body::IntegrateVelocities(const f32 deltaTime)
     this->Velocity += this->Acceleration * deltaTime;
 
     this->Position += this->Velocity * deltaTime;
-    this->Position.z = 0.0f;
+    // this->Position.z = 0.0f;
 
 
     this->AngularVelocity += this->AngularAcceleration * deltaTime;
@@ -292,7 +292,7 @@ shoora_body::DrawWireframe(const Shu::mat4f &model, f32 thickness, u32 color)
     shoora_mesh_filter *mesh = this->Shape->MeshFilter;
     shoora_mesh_type Type = this->Shape->Type;
 
-    if (Type == shoora_mesh_type::CIRCLE)
+    if(Type == shoora_mesh_type::CIRCLE)
     {
         for (i32 i = 1; i < mesh->VertexCount; ++i)
         {
