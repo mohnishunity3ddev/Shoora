@@ -322,8 +322,8 @@ InitScene()
     // Bottom Wall (Static Rigidbody)
     Shu::vec2f Window = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
-    // Scene->AddSphereBody(Shu::Vec3f(0.0f, 0.0f, 10.0f), 0xffffffff, 1.0f, 0.0f, 0.5f);
-    Scene->AddCubeBody(Shu::Vec3f(0.0f, 0.0f, 10.0f), Shu::Vec3f(5.0f), 0xffffffff, 0.0f, 0.5f);
+    Scene->AddSphereBody(Shu::Vec3f(0.0f, 0.0f, 10.0f), 0xffffffff, 1.0f, 0.0f, 0.5f);
+    Scene->AddCubeBody(Shu::Vec3f(1.5f, 0.0f, 10.0f), Shu::Vec3f(1.0f), 0xffff0000, 0.0f, 0.5f);
 #if 0
     // Walls
     Scene->AddBoxBody(Shu::Vec2f(0, (-Window.y*0.5f)), colorU32::White, Window.x, 50, 0.0f, 0.5f);

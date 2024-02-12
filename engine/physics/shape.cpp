@@ -211,7 +211,7 @@ shoora_shape_polygon::FindMinSeparation(shoora_shape_polygon *Other, i32 &Refere
 }
 
 // NOTE: Circle
-shoora_shape_circle::shoora_shape_circle(u32 Radius)
+shoora_shape_circle::shoora_shape_circle(f32 Radius)
     : shoora_shape(shoora_mesh_type::CIRCLE)
 {
     this->Radius = Radius;
@@ -243,7 +243,7 @@ shoora_shape_circle::GetType() const
 }
 
 // NOTE: Sphere
-shoora_shape_sphere::shoora_shape_sphere(u32 Radius)
+shoora_shape_sphere::shoora_shape_sphere(f32 Radius)
     : shoora_shape(shoora_mesh_type::UV_SPHERE)
 {
     this->Radius = Radius;

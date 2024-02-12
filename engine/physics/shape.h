@@ -60,9 +60,9 @@ struct shoora_shape_polygon : shoora_shape
 struct shoora_shape_circle : shoora_shape
 {
     // shoora_shape_circle() = delete;
-    shoora_shape_circle(u32 Radius);
+    shoora_shape_circle(f32 Radius);
     virtual ~shoora_shape_circle();
-
+    
     f32 Radius;
     virtual f32 GetMomentOfInertia() const override;
     virtual Shu::vec3f GetDim() const override;
@@ -72,7 +72,7 @@ struct shoora_shape_circle : shoora_shape
 struct shoora_shape_sphere : shoora_shape
 {
     // shoora_shape_circle() = delete;
-    shoora_shape_sphere(u32 Radius);
+    shoora_shape_sphere(f32 Radius);
     virtual ~shoora_shape_sphere();
 
     f32 Radius;
