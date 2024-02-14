@@ -416,7 +416,8 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     CreateSwapchainFramebuffers(RenderDevice, Swapchain, VulkanContext->GraphicsRenderPass);
 
     SetupCamera(&VulkanContext->Camera, shoora_projection::PROJECTION_PERSPECTIVE, 0.1f, 100.0f, 16.0f / 9.0f,
-                GlobalWindowSize.y, 45.0f /*,  Shu::Vec3f(GlobalWindowSize.x/2, GlobalWindowSize.y/2, 0.0f) */);
+                GlobalWindowSize.y, 45.0f,
+                Shu::Vec3f(0, 0, -20) /*,  Shu::Vec3f(GlobalWindowSize.x/2, GlobalWindowSize.y/2, 0.0f) */);
 
     // NOTE: Mesh Database setup
     shoora_mesh_database::MeshDbBegin(RenderDevice);

@@ -244,7 +244,7 @@ shoora_shape_circle::GetType() const
 
 // NOTE: Sphere
 shoora_shape_sphere::shoora_shape_sphere(f32 Radius)
-    : shoora_shape(shoora_mesh_type::UV_SPHERE)
+    : shoora_shape(shoora_mesh_type::SPHERE)
 {
     this->Radius = Radius;
 }
@@ -271,7 +271,7 @@ shoora_shape_sphere::GetDim() const
 shoora_mesh_type
 shoora_shape_sphere::GetType() const
 {
-    return shoora_mesh_type::UV_SPHERE;
+    return shoora_mesh_type::SPHERE;
 }
 
 

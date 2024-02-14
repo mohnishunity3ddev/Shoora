@@ -92,9 +92,9 @@ Initialize()
                                                     Indices + RunningIndexCount, RunningVertexCount,
                                                     RunningIndexCount);
 
-    auto UVSphereInfo = shoora_primitive_collection::GetPrimitiveInfo((u32)shoora_mesh_type::UV_SPHERE);
+    auto UVSphereInfo = shoora_primitive_collection::GetPrimitiveInfo((u32)shoora_mesh_type::SPHERE);
     shoora_mesh *UVSphereMesh = _UVSphereMesh;
-    UVSphereMesh->Type = shoora_mesh_type::UV_SPHERE;
+    UVSphereMesh->Type = shoora_mesh_type::SPHERE;
     UVSphereMesh->VertexOffset = RunningVertexCount;
     UVSphereMesh->IndexOffset = RunningIndexCount;
     shoora_mesh_filter *UVSphereMeshFilter = &UVSphereMesh->MeshFilter;
@@ -214,7 +214,7 @@ shoora_mesh_database::GetMesh(shoora_mesh_type Type)
     switch (Type)
     {
         case shoora_mesh_type::CIRCLE: { Result = _CircleMesh; } break;
-        case shoora_mesh_type::UV_SPHERE: { Result = _UVSphereMesh; } break;
+        case shoora_mesh_type::SPHERE: { Result = _UVSphereMesh; } break;
         case shoora_mesh_type::RECT_2D: { Result = _Rect2DMesh; } break;
         case shoora_mesh_type::CUBE: { Result = _CubeMesh; } break;
         case shoora_mesh_type::LINE: { Result = _LineMesh; } break;

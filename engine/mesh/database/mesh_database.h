@@ -17,7 +17,7 @@ enum shoora_mesh_type
     RECT_2D,
     CIRCLE,
     CUBE,
-    UV_SPHERE,
+    SPHERE,
     MAX_COUNT
 };
 

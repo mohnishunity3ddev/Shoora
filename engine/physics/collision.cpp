@@ -11,9 +11,12 @@ collision2d::IsColliding(shoora_body *A, shoora_body *B, arr<contact> &Contacts)
     b32 Result = false;
 
     b32 isBodyACircle = (A->Shape->GetType() == shoora_mesh_type::CIRCLE);
-    b32 isBodyBCircle = (B->Shape->GetType() == shoora_mesh_type::CIRCLE);
     b32 isBodyAPolygon = (A->Shape->GetType() == POLYGON_2D || A->Shape->GetType() == RECT_2D);
+    b32 isBodyASphere = (A->Shape->GetType() == shoora_mesh_type::SPHERE);
+
+    b32 isBodyBCircle = (B->Shape->GetType() == shoora_mesh_type::CIRCLE);
     b32 isBodyBPolygon = (B->Shape->GetType() == POLYGON_2D || B->Shape->GetType() == RECT_2D);
+    b32 isBodyBSphere = (B->Shape->GetType() == shoora_mesh_type::SPHERE);
 
     if(isBodyACircle && isBodyBCircle)
     {
@@ -30,6 +33,29 @@ collision2d::IsColliding(shoora_body *A, shoora_body *B, arr<contact> &Contacts)
     else if(isBodyAPolygon && isBodyBCircle)
     {
         Result = IsCollidingPolygonCircle(A, B, Contacts);
+    }
+    else if(isBodyASphere && isBodyBSphere)
+    {
+        Result = IsCollidingSphereSphere(A, B, Contacts);
+    }
+
+    return Result;
+}
+
+b32
+collision2d::IsCollidingSphereSphere(shoora_body *A, shoora_body *B, arr<contact> &Contacts)
+{
+    b32 Result = false;
+
+    shoora_shape_sphere *SphereA = (shoora_shape_sphere *)A->Shape.get();
+    shoora_shape_sphere *SphereB = (shoora_shape_sphere *)B->Shape.get();
+
+    f32 SumRadiiAB = SphereA->Radius + SphereB->Radius;
+    f32 DistSquared = (A->Position - B->Position).SqMagnitude();
+
+    if(DistSquared <= SumRadiiAB*SumRadiiAB)
+    {
+        Result = true;
     }
 
     return Result;
@@ -92,6 +118,8 @@ collision2d::IsCollidingPolygonPolygon(shoora_body *A, shoora_body *B, arr<conta
         return false;
     }
 
+    // NOTE: Getting Multiple Contact points using Clipping(Erin Catto)
+    // For more info: Check this - https://box2d.org/files/ErinCatto_SequentialImpulses_GDC2006.pdf Slide number 14
     // NOTE: Finding the Reference Edge.
     shoora_shape_polygon *ReferenceShape;
     shoora_shape_polygon *IncidentShape;
@@ -114,7 +142,6 @@ collision2d::IsCollidingPolygonPolygon(shoora_body *A, shoora_body *B, arr<conta
     Shu::vec2f ReferenceEdge = ReferenceShape->GetEdgeAt(ReferenceEdgeIndex).xy;
 
     // NOTE: Perform Clipping(Erin Catto)
-    // For more info: Check this - https://box2d.org/files/ErinCatto_SequentialImpulses_GDC2006.pdf Slide number 14
 
     // NOTE: Finding the Incident Edge.
     i32 IncidentVertexIndex = IncidentShape->GetIncidentEdgeIndex(ReferenceEdge.Normal());

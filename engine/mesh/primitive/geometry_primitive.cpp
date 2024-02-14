@@ -275,7 +275,7 @@ shoora_mesh_filter shoora_primitive_collection::GetPrimitiveInfo(u32 Type)
             Result.IndexCount = 0;
         } break;
 
-        case shoora_mesh_type::UV_SPHERE:
+        case shoora_mesh_type::SPHERE:
         {
             ASSERT(MeshesGenerated);
             Result = UVSphereModel.MeshFilter;

@@ -169,8 +169,25 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
         Body->AddForce(WeightForce);
     }
 
+    for(i32 i = 0; i < BodyCount; ++i)
+    {
+        for(i32 j = i+1; j < BodyCount; ++j)
+        {
+            shoora_body *BodyA = Bodies + i;
+            shoora_body *BodyB = Bodies + j;
+
+            contact Contacts[4];
+            arr<contact> ContactsArr{Contacts, ARRAY_SIZE(Contacts)};
+            if(collision2d::IsColliding(BodyA, BodyB, ContactsArr))
+            {
+                BodyA->LinearVelocity = Shu::Vec3f(0.0f);
+                BodyB->LinearVelocity = Shu::Vec3f(0.0f);
+            }
+        }
+    }
+
     // integrate the acceleration due to the above forces and calculate the velocity.
-    for(i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
+    for (i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
     {
         auto *b = Bodies + BodyIndex;
         b->IntegrateForces(dt);
