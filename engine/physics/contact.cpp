@@ -7,8 +7,13 @@ contact::ResolvePenetration()
         return;
     }
 
-    this->A->LinearVelocity = Shu::Vec3f(0.0f);
-    this->B->LinearVelocity = this->A->LinearVelocity;
+    const Shu::vec3f n = this->Normal;
+    const f32 VRelDotN = (B->LinearVelocity - A->LinearVelocity).Dot(n);
+    const f32 ImpulseMag = (2.0f*VRelDotN) / (A->InvMass + B->InvMass);
+    const Shu::vec3f Impulse = n * ImpulseMag;
+
+    A->ApplyImpulseLinear(Impulse);
+    B->ApplyImpulseLinear(-Impulse);
 
     // if B has infinity mass, B.invMass = 0, therefore, dB will be zero.
     // So, we will only move A by the collision depth if B has infinite mass.
@@ -31,6 +36,8 @@ contact::ResolveCollision()
 
     // Separate out the bodies so that there is no penetration
     this->ResolvePenetration();
+
+
 
 #if 0
     f32 E = MIN(A->CoeffRestitution, B->CoeffRestitution);
