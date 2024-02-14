@@ -7,9 +7,11 @@ contact::ResolvePenetration()
         return;
     }
 
+    f32 Elasticity = ClampToRange(A->CoeffRestitution*B->CoeffRestitution, 0.0f, 1.0f);
+
     const Shu::vec3f n = this->Normal;
     const f32 VRelDotN = (B->LinearVelocity - A->LinearVelocity).Dot(n);
-    const f32 ImpulseMag = (2.0f*VRelDotN) / (A->InvMass + B->InvMass);
+    const f32 ImpulseMag = ((1.0f + Elasticity)*VRelDotN) / (A->InvMass + B->InvMass);
     const Shu::vec3f Impulse = n * ImpulseMag;
 
     A->ApplyImpulseLinear(Impulse);

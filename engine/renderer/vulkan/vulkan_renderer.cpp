@@ -257,8 +257,8 @@ InitScene()
     // Bottom Wall (Static Rigidbody)
     Shu::vec2f Window = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
-    Scene->AddSphereBody(Shu::Vec3f(0.0f, 0.0f, 10.0f), colorU32::Proto_Red, 1.0f, 1.0f, 0.5f);
-    Scene->AddSphereBody(Shu::Vec3f(0.0f, -510.0f, 10.0f), colorU32::Gray, 500.0f, 0.0f, 0.5f);
+    Scene->AddSphereBody(Shu::Vec3f(10.0f, 0.0f, 10.0f), colorU32::Proto_Red, 1.0f, 1.0f, 1.0f);
+    Scene->AddSphereBody(Shu::Vec3f(0.0f, -510.0f, 10.0f), colorU32::Gray, 500.0f, 0.0f, 1.0f);
 }
 
 void
@@ -415,9 +415,9 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     CreateRenderPass(RenderDevice, Swapchain, &VulkanContext->GraphicsRenderPass);
     CreateSwapchainFramebuffers(RenderDevice, Swapchain, VulkanContext->GraphicsRenderPass);
 
-    SetupCamera(&VulkanContext->Camera, shoora_projection::PROJECTION_PERSPECTIVE, 0.1f, 100.0f, 16.0f / 9.0f,
+    SetupCamera(&VulkanContext->Camera, shoora_projection::PROJECTION_PERSPECTIVE, 0.1f, 1000.0f, 16.0f / 9.0f,
                 GlobalWindowSize.y, 45.0f, Shu::Vec3f(0, 0, -20));
-
+    
     // NOTE: Mesh Database setup
     shoora_mesh_database::MeshDbBegin(RenderDevice);
     Shu::vec3f Poly1[] = {{0, 10, 1}, {10, 3, 1}, {10, -5, 1}, {-10, -5, 1}, {-10, 3, 1}};

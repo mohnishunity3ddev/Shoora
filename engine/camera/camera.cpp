@@ -118,7 +118,7 @@ HandleInput(const shoora_camera_input *CameraInput)
             f32 MovementSpeed = this->MovementSpeed;
             if(CameraInput->MoveFaster)
             {
-                MovementSpeed *= 3.0f;
+                MovementSpeed *= 10.0f;
             }
 
             MoveDirection = Shu::Normalize(MoveDirection);
