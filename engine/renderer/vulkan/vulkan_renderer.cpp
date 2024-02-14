@@ -38,7 +38,7 @@ static shoora_vulkan_context *Context = nullptr;
 static b32 isDebug = false;
 static b32 WireframeMode = false;
 static f32 TestCameraScale = 0.5f;
-static b32 GlobalShowContacts = true;
+static b32 GlobalShowContacts = false;
 
 // NOTE: ALso make the same changes to the lighting shader.
 // TODO)): Automate this so that changing this automatically makes changes to the shader using shader variation.
@@ -416,8 +416,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     CreateSwapchainFramebuffers(RenderDevice, Swapchain, VulkanContext->GraphicsRenderPass);
 
     SetupCamera(&VulkanContext->Camera, shoora_projection::PROJECTION_PERSPECTIVE, 0.1f, 100.0f, 16.0f / 9.0f,
-                GlobalWindowSize.y, 45.0f,
-                Shu::Vec3f(0, 0, -20) /*,  Shu::Vec3f(GlobalWindowSize.x/2, GlobalWindowSize.y/2, 0.0f) */);
+                GlobalWindowSize.y, 45.0f, Shu::Vec3f(0, 0, -20));
 
     // NOTE: Mesh Database setup
     shoora_mesh_database::MeshDbBegin(RenderDevice);
@@ -581,11 +580,11 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         Scene->AddBoxBody(CurrentMouseWorldPos, colorU32::White, 50, 50, 1.0, 0.5f);
         // Scene->AddPolygonBody(1, CurrentMouseWorldPos, colorU32::White, 1.0f, 1.0f, 0.0f, 1.0f);
     }
+#endif
     if(Platform_GetKeyInputState(SU_SPACE, KeyState::SHU_KEYSTATE_PRESS))
     {
         GlobalShowContacts = !GlobalShowContacts;
     }
-#endif
 
     if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
     {

@@ -91,6 +91,22 @@ shoora_graphics::DrawCircle(Shu::vec2f pos, f32 radius, u32 ColorU32)
 }
 
 void
+shoora_graphics::DrawSphere(Shu::vec3f pos, f32 radius, u32 ColorU32)
+{
+    Shu::mat4f Model = Shu::Mat4f(1.0f);
+    Shu::Scale(Model, Shu::Vec3f(radius));
+    Shu::Translate(Model, pos);
+
+    shoora_mesh *Mesh = shoora_mesh_database::GetMesh(shoora_mesh_type::SPHERE);
+    data Value = {.Model = Model, .Color = GetColor(ColorU32)};
+
+    vkCmdPushConstants(GlobalCommandBuffer, GlobalPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(data),
+                       &Value);
+    vkCmdDrawIndexed(GlobalCommandBuffer, Mesh->MeshFilter.IndexCount, 1, Mesh->IndexOffset, Mesh->VertexOffset,
+                     0);
+}
+
+void
 shoora_graphics::DrawSpring(const Shu::vec2f &startPos, const Shu::vec2f &endPos, f32 restLength, f32 thickness,
                         i32 nDivisions, u32 Color)
 {

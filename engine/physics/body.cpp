@@ -142,6 +142,7 @@ shoora_body::UpdateWorldVertices()
     if (Shape->Type == POLYGON_2D || Shape->Type == RECT_2D)
     {
         shoora_shape_polygon *polygon = (shoora_shape_polygon *)this->Shape.get();
+        // TODO: Calculate Model Matrix here.
         polygon->UpdateWorldVertices(this->Model);
     }
 #endif

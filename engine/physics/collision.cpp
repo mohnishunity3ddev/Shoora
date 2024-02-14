@@ -2,7 +2,7 @@
 #include <mesh/database/mesh_database.h>
 
 b32
-collision2d::IsColliding(shoora_body *A, shoora_body *B, arr<contact> &Contacts)
+collision::IsColliding(shoora_body *A, shoora_body *B, arr<contact> &Contacts)
 {
     if(A->IsStatic() && B->IsStatic()) {
         return false;
@@ -43,18 +43,29 @@ collision2d::IsColliding(shoora_body *A, shoora_body *B, arr<contact> &Contacts)
 }
 
 b32
-collision2d::IsCollidingSphereSphere(shoora_body *A, shoora_body *B, arr<contact> &Contacts)
+collision::IsCollidingSphereSphere(shoora_body *A, shoora_body *B, arr<contact> &Contacts)
 {
     b32 Result = false;
 
     shoora_shape_sphere *SphereA = (shoora_shape_sphere *)A->Shape.get();
     shoora_shape_sphere *SphereB = (shoora_shape_sphere *)B->Shape.get();
 
-    f32 SumRadiiAB = SphereA->Radius + SphereB->Radius;
-    f32 DistSquared = (A->Position - B->Position).SqMagnitude();
+    Shu::vec3f AB = B->Position - A->Position;
 
-    if(DistSquared <= SumRadiiAB*SumRadiiAB)
+    f32 RadiusSum = SphereA->Radius + SphereB->Radius;
+    f32 DistSquared = AB.SqMagnitude();
+
+    if(DistSquared <= RadiusSum*RadiusSum)
     {
+        contact Contact{};
+        Contact.A = A;
+        Contact.B = B;
+        Contact.Normal = Shu::Normalize(AB);
+        Contact.Start = B->Position - Contact.Normal*SphereB->Radius;
+        Contact.End = A->Position + Contact.Normal*SphereA->Radius;
+        Contact.Depth = (Contact.End - Contact.Start).Magnitude();
+        Contacts.add(Contact);
+
         Result = true;
     }
 
@@ -62,7 +73,7 @@ collision2d::IsCollidingSphereSphere(shoora_body *A, shoora_body *B, arr<contact
 }
 
 b32
-collision2d::IsCollidingCircleCircle(shoora_body *A, shoora_body *B, arr<contact> &Contacts)
+collision::IsCollidingCircleCircle(shoora_body *A, shoora_body *B, arr<contact> &Contacts)
 {
     shoora_shape_circle *CircleA = (shoora_shape_circle *)A->Shape.get();
     shoora_shape_circle *CircleB = (shoora_shape_circle *)B->Shape.get();
@@ -95,7 +106,7 @@ collision2d::IsCollidingCircleCircle(shoora_body *A, shoora_body *B, arr<contact
 }
 
 b32
-collision2d::IsCollidingPolygonPolygon(shoora_body *A, shoora_body *B, arr<contact> &Contacts)
+collision::IsCollidingPolygonPolygon(shoora_body *A, shoora_body *B, arr<contact> &Contacts)
 {
     auto *PolyA = (shoora_shape_polygon *)A->Shape.get();
     auto *PolyB = (shoora_shape_polygon *)B->Shape.get();
@@ -197,7 +208,7 @@ collision2d::IsCollidingPolygonPolygon(shoora_body *A, shoora_body *B, arr<conta
 }
 
 b32
-collision2d::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle, arr<contact> &Contacts, b32 Invert)
+collision::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle, arr<contact> &Contacts, b32 Invert)
 {
     b32 IsCollidingResult = false;
 

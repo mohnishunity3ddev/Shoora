@@ -1,46 +1,30 @@
-#if 0
 #include "contact.h"
 
-// NOTE:
-// If two bodies have collided and penetrated inside of each other in a frame, we want to resolve that penetration,
-// so that the bodies are now not colliding/penetrating. Here, we do this using the projection method which is we
-// change the position of both bodies so that they move along the contact normals until their penetration depth
-// becomes zero(in other words, not colliding). How much we move the body depends on its mass. the more the mass,
-// the less we move it. The sum of the total distance moved by both of the bodies is equal to the penetration
-// depth. Instead of using the mass of the bodies, we use their inverseMass as done by most physics engines.
-// NOTE: This is the Projection Method for resolving collisions.
 void
 contact::ResolvePenetration()
 {
-#if 0
     if(this->A->IsStatic() && this->B->IsStatic()) {
         return;
     }
 
+    this->A->LinearVelocity = Shu::Vec3f(0.0f);
+    this->B->LinearVelocity = this->A->LinearVelocity;
+
+    // if B has infinity mass, B.invMass = 0, therefore, dB will be zero.
+    // So, we will only move A by the collision depth if B has infinite mass.
     f32 dA = (this->Depth * A->InvMass) / (A->InvMass + B->InvMass);
     f32 dB = (this->Depth * B->InvMass) / (A->InvMass + B->InvMass);
 
-    if(this->Depth > 50) {
-        int x = 0;
-    }
-
-    // LogWarn("Position Before resolving is: [%.2f, %.2f]\n", B->Position.x, B->Position.y);
-    // NOTE: Here, we move the two bodies along the contact normal so that they move away from each other so that
-    // penetration depth between them is zero, and they are not colliding anymore.
     A->Position -= this->Normal*dA;
     B->Position += this->Normal*dB;
-    // LogDebug("Position After resolving is: [%.2f, %.2f]\n", B->Position.x, B->Position.y);
 
     A->UpdateWorldVertices();
     B->UpdateWorldVertices();
-#endif
 }
-
 
 void
 contact::ResolveCollision()
 {
-#if 0
     if (this->A->IsStatic() && this->B->IsStatic()) {
         return;
     }
@@ -48,6 +32,7 @@ contact::ResolveCollision()
     // Separate out the bodies so that there is no penetration
     this->ResolvePenetration();
 
+#if 0
     f32 E = MIN(A->CoeffRestitution, B->CoeffRestitution);
     f32 F = MIN(A->FrictionCoeff, B->FrictionCoeff);
 
@@ -95,4 +80,3 @@ contact::ResolveCollision()
     B->ApplyImpulseAtPoint(-Impulse, Rb);
 #endif
 }
-#endif

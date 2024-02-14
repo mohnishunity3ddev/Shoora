@@ -24,7 +24,7 @@ void
 main()
 {
     OutColor = PushConstant.Color;
-    OutUV = InUV;
+    OutUV = InUV*PushConstant.Model[0][0]*.5;
 
     mat4 MVP = PushConstant.Model*ubo.View*ubo.Projection;
     vec4 Pos = vec4(InPos, 1.)*MVP;

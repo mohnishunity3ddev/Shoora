@@ -169,6 +169,13 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
         Body->AddForce(WeightForce);
     }
 
+    // integrate the acceleration due to the above forces and calculate the velocity.
+    for (i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
+    {
+        auto *b = Bodies + BodyIndex;
+        b->IntegrateForces(dt);
+    }
+
     for(i32 i = 0; i < BodyCount; ++i)
     {
         for(i32 j = i+1; j < BodyCount; ++j)
@@ -178,19 +185,22 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
 
             contact Contacts[4];
             arr<contact> ContactsArr{Contacts, ARRAY_SIZE(Contacts)};
-            if(collision2d::IsColliding(BodyA, BodyB, ContactsArr))
+            if(collision::IsColliding(BodyA, BodyB, ContactsArr))
             {
-                BodyA->LinearVelocity = Shu::Vec3f(0.0f);
-                BodyB->LinearVelocity = Shu::Vec3f(0.0f);
+                for(i32 cI = 0; cI < ContactsArr.size; ++cI)
+                {
+                    contact *C = ContactsArr.data + cI;
+
+                    C->ResolveCollision();
+
+                    if(ShowContacts)
+                    {
+                        shoora_graphics::DrawSphere(C->Start, .1f, colorU32::Cyan);
+                        shoora_graphics::DrawSphere(C->End, .1f, colorU32::Green);
+                    }
+                }
             }
         }
-    }
-
-    // integrate the acceleration due to the above forces and calculate the velocity.
-    for (i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
-    {
-        auto *b = Bodies + BodyIndex;
-        b->IntegrateForces(dt);
     }
 
     // Integrate the velocities to get the final position for the body.

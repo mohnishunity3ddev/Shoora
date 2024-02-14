@@ -19,10 +19,10 @@ struct contact
 
     Shu::vec3f Normal;
     f32 Depth;
+    f32 TimeOfImpact;
 
-
-    // void ResolvePenetration();
-    // void ResolveCollision();
+    void ResolvePenetration();
+    void ResolveCollision();
 };
 
 #define CONTACT_H
