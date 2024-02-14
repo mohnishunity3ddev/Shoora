@@ -14,6 +14,7 @@ namespace Shu
                                 const f32 RotationAngleDegrees, const Shu::vec3f &RotationAxis);
     SHU_EXPORT mat4f TRS(const Shu::vec3f &Pos, const Shu::vec3f &Scale, const f32 RotationAngle,
                          const Shu::vec3f &RotationAxis);
+    SHU_EXPORT mat4f TRS(const Shu::vec3f &Pos, const Shu::vec3f &Scale, const Shu::quat Rotation);
     SHU_EXPORT mat4f RotateGimbalLock(mat4f &Mat, const vec3f &Axis, f32 AngleInDegrees);
     SHU_EXPORT mat4f Rotate(mat4f &Mat, const quat &Q);
     SHU_EXPORT mat4f LookAt(const vec3f &CamPos, const vec3f &LookingTowards, const vec3f WorldUp, mat4f &M);

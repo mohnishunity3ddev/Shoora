@@ -30,6 +30,18 @@ namespace Shu
     }
 
     mat4f
+    TRS(const Shu::vec3f &Pos, const Shu::vec3f &Scale, const Shu::quat Rotation)
+    {
+        Shu::mat4f Model = Shu::Mat4f(1.0f);
+
+        Shu::Scale(Model, Scale);
+        Shu::Rotate(Model, Rotation);
+        Shu::Translate(Model, Pos);
+
+        return Model;
+    }
+
+    mat4f
     Rotate(mat4f &Mat, const quat &Q)
     {
         quat Quat = QuatNormalize(Q);

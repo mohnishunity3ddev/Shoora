@@ -26,15 +26,15 @@ struct shoora_scene
     i32 GetConstraints2DCount();
 
     shoora_body *AddCubeBody(const Shu::vec3f &Pos, const Shu::vec3f &Scale, u32 ColorU32, f32 Mass,
-                             f32 Restitution, f32 InitialRotation = 0);
+                             f32 Restitution, const Shu::vec3f &EulerAngles = Shu::Vec3f(0.0f));
     shoora_body *AddSphereBody(const Shu::vec3f &Pos, u32 ColorU32, f32 Radius, f32 Mass, f32 Restitution,
-                               f32 InitialRotation = 0);
+                               const Shu::vec3f &EulerAngles = Shu::Vec3f(0.0f));
     shoora_body *AddBoxBody(const Shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Height, f32 Mass, f32 Restitution,
-                            f32 InitialRotation = 0);
+                            const Shu::vec3f &EulerAngles = Shu::Vec3f(0.0f));
     shoora_body *AddCircleBody(const Shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 Mass, f32 Restitution,
-                               f32 InitialRotation = 0);
+                               const Shu::vec3f &EulerAngles = Shu::Vec3f(0.0f));
     shoora_body *AddPolygonBody(const u32 MeshId, const Shu::vec2f Pos, u32 ColorU32, f32 Mass, f32 Restitution,
-                                f32 InitialRotation, f32 Scale = 1.0f);
+                                const Shu::vec3f &EulerAngles = Shu::Vec3f(0.0f), f32 Scale = 1.0f);
 
     i32 GetBodyCount();
     shoora_body *GetBodies();

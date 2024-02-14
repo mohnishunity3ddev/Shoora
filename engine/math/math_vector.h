@@ -31,6 +31,7 @@ namespace Shu
         inline T Magnitude() const;
         inline vec2<T> Rotate(f32 AngleRadians) const;
         inline f32 GetSlopeAngleInDegrees();
+        inline b32 IsValid() const;
         static vec2<T> Zero()
         {
             vec2<T> Result = {(T)0, (T)0};
@@ -93,6 +94,7 @@ namespace Shu
         inline T Dot(const vec3<T> &A);
         inline vec3<T> Cross(const vec3<T> &A);
         inline vec3<T> Reciprocal() const;
+        inline b32 IsValid() const;
         static vec3<T> Zero()
         {
             vec3<T> Result = {(T)0, (T)0, (T)0};
@@ -109,6 +111,7 @@ namespace Shu
     template <typename T> SHU_EXPORT vec3<T> Vec3();
     template <typename T> SHU_EXPORT vec3<T> Vec3(T A);
     template <typename T> SHU_EXPORT vec3<T> Vec3(T x, T y, T z);
+    template <typename T> SHU_EXPORT vec3<T> Vec3(const vec2<T> &V);
     template <typename T> SHU_EXPORT vec3<T> MakeVec3(const T *const Ptr);
     template <typename T> SHU_EXPORT vec3<T> Vec3(const vec2<T>& xy, T z);
     template <typename T> SHU_EXPORT vec3<T> ToVec3(const vec2<T>& A);
@@ -120,6 +123,7 @@ namespace Shu
     template <typename T> SHU_EXPORT vec3<T> operator-(const vec3<T>& A);
     template <typename T> SHU_EXPORT vec3<T> operator*(const vec3<T>& A, T B);
     template <typename T> SHU_EXPORT vec3<T> operator*(T A, const vec3<T> &B);
+    template <typename T> SHU_EXPORT vec3<T> operator*(const vec3<T> &A, const vec3<T> &B);
     template <typename T> SHU_EXPORT vec3<T> operator/(const vec3<T>& A, const vec3<T>& B);
     template <typename T> SHU_EXPORT vec3<T> operator/(const vec3<T>& A, T B);
     template <typename T> SHU_EXPORT T SqMagnitude(const vec3<T> &A);
@@ -151,6 +155,7 @@ namespace Shu
         inline vec4<T> operator/=(const vec4<T>& A);
         inline vec4<T> operator/=(T A);
         inline T &operator[](size_t Index);
+        inline b32 IsValid() const;
     };
 
     template <typename T> SHU_EXPORT vec4<T> Vec4();
@@ -194,6 +199,7 @@ namespace Shu
         inline vec6<T> operator/=(T A);
         inline T &operator[](size_t Index);
         inline const T &operator[](size_t Index) const;
+        inline b32 IsValid() const;
     };
 
     template <typename T> SHU_EXPORT vec6<T> Vec6();
@@ -241,6 +247,7 @@ namespace Shu
 
         T Dot(const vecN &rhs) const;
         void Zero();
+        inline b32 IsValid() const;
     };
 
 #if 1
@@ -461,6 +468,19 @@ namespace Shu
     }
 
     template <typename T>
+    b32
+    vec2<T>::IsValid() const
+    {
+        b32 Result = true;
+        if(this->x * 0.0f != this->x * 0.0f) {
+            Result = false;
+        } else if(this->y * 0.0f != this->y * 0.0f) {
+            Result = false;
+        }
+        return Result;
+    }
+
+    template <typename T>
     T
     SqMagnitude(const vec2<T> &A)
     {
@@ -535,6 +555,14 @@ namespace Shu
     Vec3(T x, T y, T z)
     {
         vec3<T> Result = {x, y, z};
+        return Result;
+    }
+
+    template <typename T>
+    vec3<T>
+    Vec3(const vec2<T> &V)
+    {
+        vec3<T> Result = {V.x, V.y, (T)0};
         return Result;
     }
 
@@ -623,6 +651,24 @@ namespace Shu
     }
 
     template <typename T>
+    inline b32
+    vec3<T>::IsValid() const
+    {
+        b32 Result = true;
+
+        // Checking For Nans
+        if(this->x * 0.0f != this->x * 0.0f) {
+            Result = false;
+        } else if(this->y * 0.0f != this->y * 0.0f) {
+            Result = false;
+        } else if(this->z * 0.0f != this->z * 0.0f) {
+            Result = false;
+        }
+
+        return Result;
+    }
+
+    template <typename T>
     vec3<T>
     operator+(const vec3<T>& A, const vec3<T>& B)
     {
@@ -683,6 +729,19 @@ namespace Shu
         Result.x = A * B.x;
         Result.y = A * B.y;
         Result.z = A * B.z;
+
+        return Result;
+    }
+
+    template <typename T>
+    vec3<T>
+    operator*(const vec3<T> &A, const vec3<T> &B)
+    {
+        vec3<T> Result;
+
+        Result.x = A.x * B.x;
+        Result.y = A.y * B.y;
+        Result.z = A.z * B.z;
 
         return Result;
     }
@@ -968,6 +1027,26 @@ namespace Shu
         return this->E[Index];
     }
 
+    template <typename T>
+    b32
+    vec4<T>::IsValid() const
+    {
+        b32 Result = true;
+
+        // Checking For Nans
+        if(this->x * 0.0f != this->x * 0.0f) {
+            Result = false;
+        } else if(this->y * 0.0f != this->y * 0.0f) {
+            Result = false;
+        } else if(this->z * 0.0f != this->z * 0.0f) {
+            Result = false;
+        } else if(this->w * 0.0f != this->w * 0.0f) {
+            Result = false;
+        }
+
+        return Result;
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // Vec6
     // ----------------------------------------------------------------------------------------------------------------
@@ -1245,6 +1324,23 @@ namespace Shu
         return this->E[Index];
     }
 
+    template <typename T>
+    b32
+    vec6<T>::IsValid() const
+    {
+        b32 Result = true;
+
+        for (i32 i = 0; i < 6; ++i)
+        {
+            if(this->E[i] * 0.0f != this->E[i] * 0.0f) {
+                Result = false;
+                break;
+            }
+        }
+
+        return Result;
+    }
+
     // -----------------------------------------------------------------------
     // VecN
     // -----------------------------------------------------------------------
@@ -1391,6 +1487,22 @@ namespace Shu
         {
             this->Data[i] = (T)0;
         }
+    }
+
+    template <typename T, size_t N>
+    b32
+    vecN<T, N>::IsValid() const
+    {
+        b32 Result = true;
+        for (i32 i = 0; i < N; ++i)
+        {
+            if (this->Data[i] * 0.0f != this->Data[i] * 0.0f)
+            {
+                Result = false;
+                break;
+            }
+        }
+        return Result;
     }
 
     template <typename T, size_t N>

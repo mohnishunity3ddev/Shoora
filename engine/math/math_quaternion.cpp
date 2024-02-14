@@ -143,7 +143,7 @@ namespace Shu
     }
 
     quat
-    QuatInverse(quat &A)
+    QuatInverse(const quat &A)
     {
         if (QuatSqMagnitude(A) != 1.0f)
         {

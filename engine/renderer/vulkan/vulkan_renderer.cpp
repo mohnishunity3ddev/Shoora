@@ -93,7 +93,6 @@ struct light_shader_vert_data
 {
     Shu::mat4f View;
     Shu::mat4f Projection;
-
     // Fragment Shader
 };
 
@@ -258,9 +257,8 @@ InitScene()
     // Bottom Wall (Static Rigidbody)
     Shu::vec2f Window = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
-    Scene->AddSphereBody(Shu::Vec3f(0.0f, 0.0f, 10.0f), colorU32::Proto_Red, 1.0f, 0.0f, 0.5f);
-    Scene->AddCubeBody(Shu::Vec3f(1.5f, 0.0f, 10.0f), Shu::Vec3f(1.0f), colorU32::Proto_Orange, 0.0f, 0.5f);
-    Scene->AddCubeBody(Shu::Vec3f(0, -5, 10), Shu::Vec3f(50, .25f, 50), colorU32::Proto_Green, 0.0f, 0.5f);
+    Scene->AddSphereBody(Shu::Vec3f(0.0f, 0.0f, 10.0f), colorU32::Proto_Red, 1.0f, 1.0f, 0.5f);
+    Scene->AddSphereBody(Shu::Vec3f(0.0f, -510.0f, 10.0f), colorU32::Gray, 500.0f, 0.0f, 0.5f);
 }
 
 void

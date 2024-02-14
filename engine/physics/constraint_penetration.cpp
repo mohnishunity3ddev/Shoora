@@ -11,16 +11,19 @@ penetration_constraint_2d::penetration_constraint_2d() : constraint_2d()
 penetration_constraint_2d::penetration_constraint_2d(shoora_body *a, shoora_body *b, const contact &contact)
     : penetration_constraint_2d()
 {
+#if 0
     this->A = a;
     this->B = b;
     this->AnchorPointLS_A = a->WorldToLocalSpace(contact.Start.xy);
     this->AnchorPointLS_B = b->WorldToLocalSpace(contact.End.xy);
     this->Normal = a->WorldToLocalSpace(contact.Normal.xy);
+#endif
 }
 
 void
 penetration_constraint_2d::PreSolve(const f32 dt)
 {
+#if 0
     Jacobian.Zero();
 
     const Shu::vec2f pA = A->LocalToWorldSpace(AnchorPointLS_A);
@@ -89,6 +92,7 @@ penetration_constraint_2d::PreSolve(const f32 dt)
 
     f32 Restitution = MIN(A->CoeffRestitution, B->CoeffRestitution);
     Bias = ((beta / dt) * C) + (Restitution*RelVDotNormal);
+#endif
 }
 
 // IMPORTANT: NOTE: Check
@@ -96,6 +100,7 @@ penetration_constraint_2d::PreSolve(const f32 dt)
 void
 penetration_constraint_2d::Solve()
 {
+#if 0
     const Shu::vecN<f32, 6> V = GetVelocities();
     const Shu::matN<f32, 6> InvM = GetInverseMassMatrix();
 
@@ -138,6 +143,7 @@ penetration_constraint_2d::Solve()
     A->ApplyImpulseAngular(Impulses[2]);
     B->ApplyImpulseLinear(Shu::Vec2f(Impulses[3], Impulses[4]));
     B->ApplyImpulseAngular(Impulses[5]);
+#endif
 }
 
 void

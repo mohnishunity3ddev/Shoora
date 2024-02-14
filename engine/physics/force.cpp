@@ -11,12 +11,12 @@ force::GenerateDragForce(const shoora_body *Body, f32 DragCoefficient)
 
     Shu::vec2f DragForce = Shu::Vec2f(0, 0);
 
-    if(Body->Velocity.SqMagnitude() > 0)
+    if(Body->LinearVelocity.SqMagnitude() > 0)
     {
-        Shu::vec3f VelocityNormalized = Shu::Normalize(Body->Velocity);
+        Shu::vec3f VelocityNormalized = Shu::Normalize(Body->LinearVelocity);
         Shu::vec2f DragDirection = Shu::Vec2f(VelocityNormalized)*-1.0f;
 
-        f32 DragMagnitude = DragCoefficient * Body->Velocity.SqMagnitude();
+        f32 DragMagnitude = DragCoefficient * Body->LinearVelocity.SqMagnitude();
 
         DragForce = DragDirection * DragMagnitude;
     }
@@ -29,7 +29,7 @@ force::GenerateFrictionForce(const shoora_body *Body, f32 FrictionCoefficient)
 {
     Shu::vec2f FrictionForce = Shu::Vec2f(0.0f);
 
-    Shu::vec3f VelocityNormalized = Shu::Normalize(Body->Velocity);
+    Shu::vec3f VelocityNormalized = Shu::Normalize(Body->LinearVelocity);
     Shu::vec2f FrictionDir = Shu::Vec2f(VelocityNormalized) * -1.0f;
 
     f32 FrictionMagnitude = FrictionCoefficient;
@@ -81,6 +81,6 @@ force::GenerateSpringForce(const shoora_body *pA, const shoora_body *pB, f32 Res
     f32 SpringMagnitude = -k * displacement;
 
     Shu::vec2f SpringForce = SpringDirection * SpringMagnitude;
-    
+
     return SpringForce;
 }

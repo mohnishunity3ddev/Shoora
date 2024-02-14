@@ -45,10 +45,10 @@ shoora_scene::AddMeshToScene(const Shu::vec3f *vPositions, u32 vCount)
 
 shoora_body *
 shoora_scene::AddCubeBody(const Shu::vec3f &Pos, const Shu::vec3f &Scale, u32 ColorU32, f32 Mass,
-                          f32 Restitution, f32 InitialRotation)
+                          f32 Restitution, const Shu::vec3f &EulerAngles)
 {
     shoora_body body{GetColor(ColorU32), Pos, Mass, Restitution,
-                     std::make_unique<shoora_shape_cube>(Scale.x, Scale.y, Scale.z), InitialRotation};
+                     std::make_unique<shoora_shape_cube>(Scale.x, Scale.y, Scale.z), EulerAngles};
     Bodies.emplace_back(std::move(body));
 
     shoora_body *b = Bodies.get(Bodies.size() - 1);
@@ -57,22 +57,22 @@ shoora_scene::AddCubeBody(const Shu::vec3f &Pos, const Shu::vec3f &Scale, u32 Co
 
 shoora_body *
 shoora_scene::AddSphereBody(const Shu::vec3f &Pos, u32 ColorU32, f32 Radius, f32 Mass, f32 Restitution,
-                            f32 InitialRotation)
+                            const Shu::vec3f &EulerAngles)
 {
     shoora_body body{GetColor(ColorU32), Pos, Mass, Restitution, std::make_unique<shoora_shape_sphere>(Radius),
-                     InitialRotation};
+                     EulerAngles};
     Bodies.emplace_back(std::move(body));
-    
+
     shoora_body *b = Bodies.get(Bodies.size() - 1);
     return b;
 }
 
 shoora_body *
 shoora_scene::AddCircleBody(const Shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 Mass, f32 Restitution,
-                            f32 InitialRotation)
+                            const Shu::vec3f &EulerAngles)
 {
     shoora_body body{GetColor(ColorU32), Shu::Vec3f(Pos, 1.0f), Mass, Restitution,
-                     std::make_unique<shoora_shape_circle>(Radius), InitialRotation};
+                     std::make_unique<shoora_shape_circle>(Radius), EulerAngles};
     Bodies.emplace_back(std::move(body));
     shoora_body *b = Bodies.get(Bodies.size() - 1);
     return b;
@@ -80,10 +80,10 @@ shoora_scene::AddCircleBody(const Shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 
 
 shoora_body *
 shoora_scene::AddBoxBody(const Shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Height, f32 Mass, f32 Restitution,
-                         f32 InitialRotation)
+                         const Shu::vec3f &EulerAngles)
 {
     shoora_body body{GetColor(ColorU32), Shu::Vec3f(Pos, 1.0f), Mass, Restitution,
-                     std::make_unique<shoora_shape_box>(Width, Height), InitialRotation};
+                     std::make_unique<shoora_shape_box>(Width, Height), EulerAngles};
     Bodies.emplace_back(std::move(body));
 
     shoora_body *b = Bodies.get(Bodies.size() - 1);
@@ -92,10 +92,10 @@ shoora_scene::AddBoxBody(const Shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Heig
 
 shoora_body *
 shoora_scene::AddPolygonBody(const u32 MeshId, const Shu::vec2f Pos, u32 ColorU32, f32 Mass, f32 Restitution,
-                             f32 InitialRotation, f32 Scale)
+                             const Shu::vec3f &EulerAngles, f32 Scale)
 {
     shoora_body body{GetColor(ColorU32), Shu::Vec3f(Pos, 1.0f), Mass, Restitution,
-                     std::make_unique<shoora_shape_polygon>(MeshId, Scale), InitialRotation};
+                     std::make_unique<shoora_shape_polygon>(MeshId, Scale), EulerAngles};
     Bodies.emplace_back(std::move(body));
 
     shoora_body *b = Bodies.get(Bodies.size() - 1);
@@ -165,40 +165,8 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
         ASSERT(BodyIndex < BodyCount);
         shoora_body *Body = Bodies + BodyIndex;
 
-        Shu::vec2f WeightForce = Shu::Vec2f(0.0f, -9.8f*SHU_PIXELS_PER_METER*Body->Mass);
+        Shu::vec3f WeightForce = Shu::Vec3f(0.0f, -9.8f*Body->Mass, 0.0f);
         Body->AddForce(WeightForce);
-#if 1
-#if 0 // Push Force through Keys
-        Shu::vec2f PushForce = Shu::Vec2f(1.0f, 1.0f)*(SHU_PIXELS_PER_METER*100);
-        Shu::vec2f BodyForce = Shu::vec2f::Zero();
-        if(Platform_GetKeyInputState(SU_UPARROW, KeyState::SHU_KEYSTATE_DOWN)) { BodyForce.y += PushForce.y; }
-        if(Platform_GetKeyInputState(SU_DOWNARROW, KeyState::SHU_KEYSTATE_DOWN)) { BodyForce.y -= PushForce.y; }
-        if(Platform_GetKeyInputState(SU_LEFTARROW, KeyState::SHU_KEYSTATE_DOWN)) { BodyForce.x -= PushForce.x; }
-        if(Platform_GetKeyInputState(SU_RIGHTARROW, KeyState::SHU_KEYSTATE_DOWN)) { BodyForce.x += PushForce.x; }
-        Body->AddForce(BodyForce);
-#endif
-#if 0 // Drag Force
-        Shu::vec2f DragForce = force::GenerateDragForce(Body, 0.03f);
-        Body->AddForce(DragForce);
-#endif
-#if 0 // Wind Force
-        Shu::vec2f Wind = Shu::Vec2f(20.0f * SHU_PIXELS_PER_METER, 0.0f);
-        Body->AddForce(Wind);
-#endif
-#if 0 // Gravitation Force
-        if((BodyIndex+1) < BodyCount)
-        {
-            shoora_Body *NextBody = Bodies + (BodyIndex+1);
-            Shu::vec2f GravitationalForce = force::GenerateGravitationalForce(Body, NextBody, 100.0f, 5.0f, 100.0f);
-            Body->AddForce(GravitationalForce);
-            NextBody->AddForce(GravitationalForce*-1.0f);
-        }
-#endif
-#if 0 // Friction Force
-        Shu::vec2f FrictionForce = force::GenerateFrictionForce(Body, 10.0f*SHU_PIXELS_PER_METER);
-        Body->AddForce(FrictionForce);
-#endif
-#endif
     }
 
     // integrate the acceleration due to the above forces and calculate the velocity.
@@ -208,103 +176,12 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
         b->IntegrateForces(dt);
     }
 
-    // NOTE: Check for collision with the rest of the rigidbodies present in the Scene->
-    for(i32 i = 0; i < (BodyCount - 1); ++i)
-    {
-        shoora_body *A = Bodies + i;
-        for(i32 j = (i + 1); j < BodyCount; ++j)
-        {
-            shoora_body *B = Bodies + j;
-            contact Contacts[MAX_CONTACT_COUNT];
-            arr<contact> ContactsArr(Contacts, ARRAY_SIZE(Contacts));
-            if(collision2d::IsColliding(A, B, ContactsArr))
-            {
-                for (i32 i = 0; i < ContactsArr.size; ++i)
-                {
-                    contact Contact = ContactsArr.data[i];
-                    // NOTE: Visualizing the Collision Contact Info.
-                    if (ShowContacts)
-                    {
-                        shoora_graphics::DrawCircle(Contact.Start.xy, 10, colorU32::Cyan);
-                        shoora_graphics::DrawCircle(Contact.End.xy, 10, colorU32::Green);
-                        Shu::vec2f ContactNormalLineEnd = Shu::Vec2f(Contact.Start.x + Contact.Normal.x * 30.0f,
-                                                                     Contact.Start.y + Contact.Normal.y * 30.0f);
-                        shoora_graphics::DrawLine(Contact.Start.xy, ContactNormalLineEnd, colorU32::Yellow, 2);
-
-                        A->IsColliding = true;
-                        B->IsColliding = true;
-                    }
-
-                    // NOTE: This was the old way of resolving collisions using the projection method where we
-                    // manually changed the positions of the objects such that they are not colliding anymore. Now,
-                    // we switch to adding the penetration constraint which will do its thing, calculate Jacobian
-                    // and Lagrange multiplier and apply impulses accordingly to separate colliding objects.
-#if 0
-                    Contact.ResolveCollision();
-#else
-                    // Add a new penetration constraint.
-                    penetration_constraint_2d penConstraint(A, B, Contact);
-                    PenetrationConstraints2D.emplace_back(penConstraint);
-#endif
-                }
-            }
-        }
-    }
-
-    i32 cSize = Constraints2D.size();
-    i32 pSize = PenetrationConstraints2D.size();
-
-    // NOTE: Here is where we do the warm starting. Apply impulses first using the cached Impulse Magnitude that we
-    // have calculated the previous frame and applying it first before running the iterations. This reduces the
-    // number of iterations we have to do to get a realistic result.
-    for(i32 i = 0; i < cSize; ++i)
-    {
-        auto *C = Constraints2D[i];
-        C->PreSolve(dt);
-    }
-    for(i32 i = 0; i < pSize; ++i)
-    {
-        penetration_constraint_2d &penConstraint = PenetrationConstraints2D[i];
-        penConstraint.PreSolve(dt);
-    }
-
-    // NOTE: Solve Constraints.
-    // Solve the constraints based on the velocity calculated above and solve the constraints.
-    // the solver is an impulse solver, so if in case, some corrective impulse has to be applied for the
-    // constraint, then this Solve function already calls it before returning. So after this call, we have the
-    // final velocity for the body and it can be integrated to get the position of the body.
-    for(i32 iter = 0; iter < 10; ++iter)
-    {
-        for(i32 i = 0; i < cSize; ++i)
-        {
-            auto *C = Constraints2D[i];
-            C->Solve();
-        }
-        for(i32 i = 0; i < pSize; ++i)
-        {
-            penetration_constraint_2d &penConstraint = PenetrationConstraints2D[i];
-            penConstraint.Solve();
-        }
-    }
-
-    for(i32 i = 0; i < cSize; ++i)
-    {
-        auto *C = Constraints2D[i];
-        C->PostSolve();
-    }
-    for(i32 i = 0; i < pSize; ++i)
-    {
-        penetration_constraint_2d &penConstraint = PenetrationConstraints2D[i];
-        penConstraint.PostSolve();
-    }
-
     // Integrate the velocities to get the final position for the body.
     for(i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
     {
         auto *b = Bodies + BodyIndex;
         b->IntegrateVelocities(dt);
     }
-    PenetrationConstraints2D.clear();
 }
 
 void
@@ -328,8 +205,7 @@ shoora_scene::Draw(b32 Wireframe)
         // Shu::vec3f Color = GetColor(ColorU32);
         Shu::vec3f Color = Body->Color;
 
-        Shu::mat4f Model = Shu::TRS(Body->Position, Body->Scale, Body->RotationRadians * RAD_TO_DEG,
-                                    Shu::Vec3f(0, 0, 1));
+        Shu::mat4f Model = Shu::TRS(Body->Position, Body->Scale, Body->Rotation);
         scene_shader_data Value = {.Mat = Model, .Col = Color};
 
 #if 1
@@ -355,8 +231,8 @@ shoora_scene::Draw(b32 Wireframe)
     for (i32 cIndex = 0; cIndex < Constraints2D.size(); ++cIndex)
     {
         auto *c = Constraints2D[cIndex];
-        auto pos = c->A->LocalToWorldSpace(c->AnchorPointLS_A);
-        shoora_graphics::DrawCircle(pos, 5, colorU32::Red);
+        auto pos = c->A->LocalToWorldSpace(Shu::Vec3f(c->AnchorPointLS_A));
+        shoora_graphics::DrawCircle(pos.xy, 5, colorU32::Red);
     }
 }
 

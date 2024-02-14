@@ -2,17 +2,14 @@
 #include <renderer/vulkan/graphics/vulkan_graphics.h>
 
 shoora_body::shoora_body(const Shu::vec3f &Color, const Shu::vec3f &InitPos, f32 Mass, f32 Restitution,
-                         std::unique_ptr<shoora_shape> Shape, f32 InitialRotationInRadians)
+                         std::unique_ptr<shoora_shape> Shape, Shu::vec3f eulerAngles)
 {
     ASSERT(Mass >= 0.0f);
     ASSERT(Restitution >= 0.0f && Restitution <= 1.0f);
 
     this->Color = Color;
     this->Position = InitPos;
-
-    this->RotationRadians = InitialRotationInRadians;
-    this->AngularVelocity = 0.0f;
-    this->AngularAcceleration = 0.0f;
+    this->Rotation = Shu::QuatFromEuler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
 
     this->FrictionCoeff = 0.7f;
 
@@ -28,16 +25,15 @@ shoora_body::shoora_body(const Shu::vec3f &Color, const Shu::vec3f &InitPos, f32
     this->Shape = std::move(Shape);
     this->Scale = (this->Shape)->GetDim();
 
-    this->SumForces = this->Velocity = this->Acceleration = Shu::vec3f::Zero();
+    this->SumForces = this->LinearVelocity = this->Acceleration = Shu::vec3f::Zero();
     this->SumTorques = 0.0f;
 
     this->UpdateWorldVertices();
 }
 
 shoora_body::shoora_body(shoora_body &&other) noexcept
-    : IsColliding(other.IsColliding), Position(std::move(other.Position)), Velocity(std::move(other.Velocity)),
-      Acceleration(std::move(other.Acceleration)), RotationRadians(other.RotationRadians),
-      AngularVelocity(other.AngularVelocity), AngularAcceleration(other.AngularAcceleration),
+    : IsColliding(other.IsColliding), Position(std::move(other.Position)), LinearVelocity(std::move(other.LinearVelocity)),
+      Acceleration(std::move(other.Acceleration)), Rotation(std::move(other.Rotation)),
       CoeffRestitution(other.CoeffRestitution), SumForces(std::move(other.SumForces)),
       SumTorques(other.SumTorques), FrictionCoeff(other.FrictionCoeff), Mass(other.Mass), InvMass(other.InvMass),
       I(other.I), InvI(other.InvI), Scale(std::move(other.Scale)), Color(std::move(other.Color)),
@@ -54,11 +50,9 @@ shoora_body::operator=(shoora_body &&other) noexcept
     {
         IsColliding = other.IsColliding;
         Position = std::move(other.Position);
-        Velocity = std::move(other.Velocity);
+        LinearVelocity = std::move(other.LinearVelocity);
         Acceleration = std::move(other.Acceleration);
-        RotationRadians = other.RotationRadians;
-        AngularVelocity = other.AngularVelocity;
-        AngularAcceleration = other.AngularAcceleration;
+        Rotation = std::move(other.Rotation);
         CoeffRestitution = other.CoeffRestitution;
         SumForces = std::move(other.SumForces);
         SumTorques = other.SumTorques;
@@ -77,30 +71,32 @@ shoora_body::operator=(shoora_body &&other) noexcept
     return *this;
 }
 
-Shu::vec2f
-shoora_body::WorldToLocalSpace(const Shu::vec2f &PointWS) const
+Shu::vec3f
+shoora_body::WorldToLocalSpace(const Shu::vec3f &PointWS) const
 {
     // NOTE: Inverse of the model matrix. We are doing the 2d version of that here.
-    Shu::vec2f invTranslation = PointWS - this->Position.xy;
-    Shu::vec2f invRotation = invTranslation.Rotate(-this->RotationRadians);
+    Shu::vec3f invTranslation = PointWS - this->Position;
+
+    Shu::vec3f invRotation = Shu::QuatRotateVec(Shu::QuatInverse(this->Rotation), invTranslation);
 
     f32 invScaleX = NearlyEqual(Scale.x, 0.0f) ? 0.0f : (1.0f/this->Scale.x);
     f32 invScaleY = NearlyEqual(Scale.y, 0.0f) ? 0.0f : (1.0f/this->Scale.y);
-    Shu::vec2f invScale = Shu::Vec2f(invRotation.x*invScaleX, invRotation.y*invScaleY);
+    f32 invScaleZ = NearlyEqual(Scale.z, 0.0f) ? 0.0f : (1.0f/this->Scale.z);
+    Shu::vec3f invScaleXYZ = Shu::Vec3f(invScaleX, invScaleY, invScaleZ);
 
-    Shu::vec2f Result = invScale;
-    return Result;
+    Shu::vec3f invScale = invRotation * invScaleXYZ;
+
+    return invScale;
 }
 
-Shu::vec2f
-shoora_body::LocalToWorldSpace(const Shu::vec2f &PointLS) const
+Shu::vec3f
+shoora_body::LocalToWorldSpace(const Shu::vec3f &PointLS) const
 {
     // NOTE: This is the 2d version of the model matrix we calculate using Shu::TRS()
-    Shu::vec2f Scaled = Shu::Vec2f(PointLS.x*this->Scale.x, PointLS.y*this->Scale.y);
-    Shu::vec2f Rotated = Scaled.Rotate(RotationRadians);
-    Shu::vec2f Translated = Rotated + this->Position.xy;
+    Shu::vec3f Scaled = this->Scale * PointLS;
+    Shu::vec3f Rotated = Shu::QuatRotateVec(this->Rotation, Scaled);
+    Shu::vec3f Translated = Rotated + this->Position;
 
-    Shu::vec2f Result = Translated;
     return Translated;
 }
 
@@ -142,51 +138,55 @@ shoora_body::IsStatic() const
 void
 shoora_body::UpdateWorldVertices()
 {
+#if 0
     if (Shape->Type == POLYGON_2D || Shape->Type == RECT_2D)
     {
         shoora_shape_polygon *polygon = (shoora_shape_polygon *)this->Shape.get();
-        auto ModelMatrix = Shu::TRS(this->Position, this->Scale, this->RotationRadians * RAD_TO_DEG,
-                                    Shu::Vec3f(0, 0, 1));
-        polygon->UpdateWorldVertices(ModelMatrix);
+        polygon->UpdateWorldVertices(this->Model);
     }
+#endif
 }
 
 // NOTE: Impulse denotes a change in velocity for the body.
 void
-shoora_body::ApplyImpulseLinear(const Shu::vec2f &Impulse)
+shoora_body::ApplyImpulseLinear(const Shu::vec3f &Impulse)
 {
     if(this->IsStatic()) {
         return;
     }
 
-    this->Velocity += Shu::Vec3f(Impulse * this->InvMass, 0.0f);
+    this->LinearVelocity += Impulse * this->InvMass;
 }
 
 void
 shoora_body::ApplyImpulseAngular(f32 Impulse)
 {
+#if 0
     if(this->IsStatic()) {
         return;
     }
 
     this->AngularVelocity += Impulse * this->InvI;
+#endif
 }
 
 void
 shoora_body::ApplyImpulseAtPoint(const Shu::vec2f &Impulse, const Shu::vec2f &R)
 {
+#if 0
     if(this->IsStatic()) {
         return;
     }
 
     this->Velocity += Shu::Vec3f(Impulse * this->InvMass, 0.0f);
     this->AngularVelocity += R.Cross(Impulse) * InvI;
+#endif
 }
 
 void
-shoora_body::AddForce(const Shu::vec2f &Force)
+shoora_body::AddForce(const Shu::vec3f &Force)
 {
-    this->SumForces += Shu::Vec3f(Force, 0.0f);
+    this->SumForces += Force;
 }
 void
 shoora_body::AddTorque(f32 Torque)
@@ -197,7 +197,7 @@ shoora_body::AddTorque(f32 Torque)
 void
 shoora_body::ClearForces()
 {
-    this->SumForces = Shu::vec3f::Zero();
+    this->SumForces = Shu::Vec3f(0.0f);
 }
 void
 shoora_body::ClearTorques()
@@ -215,7 +215,9 @@ shoora_body::IntegrateForces(const f32 deltaTime)
     this->Acceleration = this->SumForces * this->InvMass;
 
     // alpha = Tau / Moment of Inertia
+#if 0
     this->AngularAcceleration = this->SumTorques * InvI;
+#endif
 
     ClearForces();
     ClearTorques();
@@ -224,25 +226,17 @@ shoora_body::IntegrateForces(const f32 deltaTime)
 void
 shoora_body::IntegrateVelocities(const f32 deltaTime)
 {
-#if 0
     if(IsStatic()) {
         return;
     }
-#endif
 
-    // NOTE: Semi-Implicit Euler Integration :
-    // Computing the velocity of the next frame and getting position of the body in the current frame using the
-    // next frame's velocity.
-    // -> Lot more Accurate than Explicit Euler Integration(which computes based on previous frame velocity)
-    // -> System loses energy as time goes on(Unlike Explicit Euler).
-    this->Velocity += this->Acceleration * deltaTime;
+    this->LinearVelocity += this->Acceleration * deltaTime;
+    this->Position += this->LinearVelocity * deltaTime;
 
-    this->Position += this->Velocity * deltaTime;
-    // this->Position.z = 0.0f;
-
-
+#if 0
     this->AngularVelocity += this->AngularAcceleration * deltaTime;
     this->RotationRadians += this->AngularVelocity * deltaTime;
+#endif
 
     this->UpdateWorldVertices();
 }
@@ -267,22 +261,22 @@ shoora_body::KeepInView(const Shu::rect2d &ViewBounds, f32 DampFactor)
     if ((this->Position.y - Dim.y) < boundY.x)
     {
         this->Position.y = boundY.x + Dim.y;
-        this->Velocity.y *= DampFactor;
+        this->LinearVelocity.y *= DampFactor;
     }
     if ((this->Position.y + Dim.y) > boundY.y)
     {
         this->Position.y = boundY.y - Dim.y;
-        this->Velocity.y *= DampFactor;
+        this->LinearVelocity.y *= DampFactor;
     }
     if ((this->Position.x - Dim.x) < boundX.x)
     {
         this->Position.x = boundX.x + Dim.x;
-        this->Velocity.x *= DampFactor;
+        this->LinearVelocity.x *= DampFactor;
     }
     if ((this->Position.x + Dim.x) > boundX.y)
     {
         this->Position.x = boundX.y - Dim.x;
-        this->Velocity.x *= DampFactor;
+        this->LinearVelocity.x *= DampFactor;
     }
 }
 

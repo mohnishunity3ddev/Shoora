@@ -14,13 +14,16 @@ struct shoora_body
 
     // linear motion
     Shu::vec3f Position;
-    Shu::vec3f Velocity;
+    Shu::quat Rotation;
+
+    Shu::vec3f LinearVelocity;
     Shu::vec3f Acceleration;
 
     // Angular motion
-    f32 RotationRadians;
-    f32 AngularVelocity;
-    f32 AngularAcceleration;
+    // f32 RotationRadians;
+    // f32 AngularVelocity;
+    // f32 AngularAcceleration;
+
     f32 CoeffRestitution;
 
     Shu::vec3f SumForces;
@@ -41,7 +44,7 @@ struct shoora_body
     shoora_body(const shoora_body &other) = delete;
     shoora_body &operator=(const shoora_body &other) = delete;
     shoora_body(const Shu::vec3f &Color, const Shu::vec3f &InitPos, f32 Mass, f32 Restitution,
-                std::unique_ptr<shoora_shape> Shape, f32 InitialRotationInRadians = 0.0f);
+                std::unique_ptr<shoora_shape> Shape, Shu::vec3f eulerAngles = Shu::Vec3f(0.0f));
     shoora_body(shoora_body &&other) noexcept;
     shoora_body &operator=(shoora_body &&other) noexcept;
     ~shoora_body();
@@ -54,17 +57,17 @@ struct shoora_body
 
     void UpdateWorldVertices();
 
-    Shu::vec2f WorldToLocalSpace(const Shu::vec2f &PointWS) const;
-    Shu::vec2f LocalToWorldSpace(const Shu::vec2f &PointLS) const;
+    Shu::vec3f WorldToLocalSpace(const Shu::vec3f &PointWS) const;
+    Shu::vec3f LocalToWorldSpace(const Shu::vec3f &PointLS) const;
 
     void Draw();
     void DrawWireframe(const Shu::mat4f &model, f32 thickness, u32 color);
 
-    void ApplyImpulseLinear(const Shu::vec2f &Impulse);
+    void ApplyImpulseLinear(const Shu::vec3f &Impulse);
     void ApplyImpulseAngular(float Impulse);
     void ApplyImpulseAtPoint(const Shu::vec2f &Impulse, const Shu::vec2f &R);
 
-    void AddForce(const Shu::vec2f &Force);
+    void AddForce(const Shu::vec3f &Force);
     void AddTorque(f32 Torque);
 
     void ClearForces();

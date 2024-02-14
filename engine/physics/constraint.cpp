@@ -22,6 +22,7 @@ constraint_2d::GetVelocities() const
 {
     Shu::vecN<f32, 6> Result;
 
+#if 0
     ASSERT(A != nullptr && B != nullptr);
 
     Result[0] = A->Velocity.x;
@@ -30,7 +31,7 @@ constraint_2d::GetVelocities() const
     Result[3] = B->Velocity.x;
     Result[4] = B->Velocity.y;
     Result[5] = B->AngularVelocity;
-
+#endif
     return Result;
 }
 

@@ -41,7 +41,7 @@ namespace Shu
     SHU_EXPORT quat operator*(const f32 S, const quat &A);
     SHU_EXPORT quat QuatDifference(const quat &A, const quat &B);
     SHU_EXPORT quat QuatConjugate(const quat &A);
-    SHU_EXPORT quat QuatInverse(quat &A);
+    SHU_EXPORT quat QuatInverse(const quat &A);
     SHU_EXPORT f32 QuatAngleBetweenRadians(const quat &A, const quat &B);
     SHU_EXPORT f32 QuatAngleBetweenDegrees(const quat &A, const quat &B);
     SHU_EXPORT void QuatNormalize(quat &A);

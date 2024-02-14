@@ -10,6 +10,7 @@ joint_constraint_2d::joint_constraint_2d() : constraint_2d(), Bias(0.0f)
 joint_constraint_2d::joint_constraint_2d(shoora_body *a, shoora_body *b, const Shu::vec2f &anchorPointWS)
     : constraint_2d(), Bias(0.0f)
 {
+#if 0
     ASSERT(a != nullptr && b != nullptr);
     Jacobian.Zero();
     CachedLambda.Zero();
@@ -19,11 +20,13 @@ joint_constraint_2d::joint_constraint_2d(shoora_body *a, shoora_body *b, const S
 
     this->AnchorPointLS_A = a->WorldToLocalSpace(anchorPointWS);
     this->AnchorPointLS_B = b->WorldToLocalSpace(anchorPointWS);
+#endif
 }
 
 void
 joint_constraint_2d::PreSolve(const f32 dt)
 {
+#if 0
     // NOTE: --Compute the Jacobian--
     // Already computed the jacobian in my notes. Only populating it here.
     // [2(pa - pb) | 2(ra X (pa - pb) | 2(pb - pa) | 2(rb X (pb - pa)))] = J
@@ -81,11 +84,13 @@ joint_constraint_2d::PreSolve(const f32 dt)
     // positional error is too small, we dont want to add bias to the system.
     C = MAX(0.0f, C - 0.01f);
     Bias = (beta / dt) * C;
+#endif
 }
 
 void
 joint_constraint_2d::Solve()
 {
+#if 0
     // V = GetVelocities()
     const Shu::vecN<f32, 6> V = GetVelocities();
     const Shu::matN<f32, 6> InvM = GetInverseMassMatrix();
@@ -118,6 +123,7 @@ joint_constraint_2d::Solve()
     B->ApplyImpulseAngular(FinalImpulses[5]);
 
     this->CachedLambda += Lambda;
+#endif
 }
 
 void
