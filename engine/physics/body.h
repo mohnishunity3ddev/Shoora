@@ -19,6 +19,8 @@ struct shoora_body
     Shu::vec3f LinearVelocity;
     Shu::vec3f Acceleration;
 
+    Shu::vec3f AngularVelocity;
+
     // Angular motion
     // f32 RotationRadians;
     // f32 AngularVelocity;
@@ -32,8 +34,9 @@ struct shoora_body
     f32 FrictionCoeff;
     f32 Mass;
     f32 InvMass;
-    f32 I; // Moment of inertia.
-    f32 InvI; // Inverse of moment of inertia.
+
+    Shu::mat3f InertiaTensor; // Moment of inertia.
+    Shu::mat3f InverseInertiaTensor; // Inverse of moment of inertia.
 
     Shu::vec3f Scale;
     Shu::vec3f Color;
@@ -59,22 +62,23 @@ struct shoora_body
 
     Shu::vec3f WorldToLocalSpace(const Shu::vec3f &PointWS) const;
     Shu::vec3f LocalToWorldSpace(const Shu::vec3f &PointLS) const;
+    Shu::mat3f GetInverseInertiaTensorWS() const;
+
+    Shu::vec3f GetCenterOfMassLS() const;
+    Shu::vec3f GetCenterOfMassWS() const;
 
     void Draw();
     void DrawWireframe(const Shu::mat4f &model, f32 thickness, u32 color);
 
-    void ApplyImpulseLinear(const Shu::vec3f &Impulse);
-    void ApplyImpulseAngular(float Impulse);
-    void ApplyImpulseAtPoint(const Shu::vec2f &Impulse, const Shu::vec2f &R);
+    void ApplyImpulseLinear(const Shu::vec3f &LinearImpulse);
+    void ApplyImpulseAngular(const Shu::vec3f &AngularImpulse);
+    void ApplyImpulseAtPoint(const Shu::vec3f &Impulse, const Shu::vec3f &ImpulsePointWS);
 
     void AddForce(const Shu::vec3f &Force);
     void AddTorque(f32 Torque);
 
     void ClearForces();
     void ClearTorques();
-
-    void IntegrateLinear(f32 DeltaTime);
-    void IntegrateAngular(f32 DeltaTime);
 
     void IntegrateForces(const f32 deltaTime);
     void IntegrateVelocities(const f32 deltaTime);

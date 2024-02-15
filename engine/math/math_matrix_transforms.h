@@ -20,7 +20,7 @@ namespace Shu
     SHU_EXPORT mat4f LookAt(const vec3f &CamPos, const vec3f &LookingTowards, const vec3f WorldUp, mat4f &M);
     SHU_EXPORT mat4f Perspective(f32 FOVy, f32 Aspect, f32 ZNear, f32 ZFar);
     SHU_EXPORT mat4f Orthographic(f32 Width, f32 Height, f32 Near, f32 Far);
-
+    
     template <typename T>
     mat4<T>
     Translate(mat4<T> &Mat, const vec3<T> &Tv)

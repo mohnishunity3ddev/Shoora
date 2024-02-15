@@ -19,11 +19,15 @@ struct shoora_shape
     shoora_shape(shoora_mesh_type Type, shoora_mesh_filter *MeshFilter);
 
     virtual ~shoora_shape() = default;
-    virtual f32 GetMomentOfInertia() const = 0;
+    virtual Shu::mat3f InertiaTensor() const = 0;
     virtual Shu::vec3f GetDim() const = 0;
     virtual shoora_mesh_type GetType() const = 0;
+    virtual Shu::vec3f GetCenterOfMass() { return CenterOfMass; }
 
     shoora_mesh_filter *GetMeshFilter();
+
+  protected:
+    Shu::vec3f CenterOfMass;
 };
 
 struct shoora_shape_polygon : shoora_shape
@@ -41,7 +45,7 @@ struct shoora_shape_polygon : shoora_shape
     shoora_shape_polygon(shoora_mesh_type Type);
     virtual ~shoora_shape_polygon();
 
-    virtual f32 GetMomentOfInertia() const override;
+    virtual Shu::mat3f InertiaTensor() const override;
     virtual Shu::vec3f GetDim() const override;
     virtual shoora_mesh_type GetType() const override;
 
@@ -62,9 +66,9 @@ struct shoora_shape_circle : shoora_shape
     // shoora_shape_circle() = delete;
     shoora_shape_circle(f32 Radius);
     virtual ~shoora_shape_circle();
-    
+
     f32 Radius;
-    virtual f32 GetMomentOfInertia() const override;
+    virtual Shu::mat3f InertiaTensor() const override;
     virtual Shu::vec3f GetDim() const override;
     virtual shoora_mesh_type GetType() const override;
 };
@@ -74,9 +78,9 @@ struct shoora_shape_sphere : shoora_shape
     // shoora_shape_circle() = delete;
     shoora_shape_sphere(f32 Radius);
     virtual ~shoora_shape_sphere();
-
+    
     f32 Radius;
-    virtual f32 GetMomentOfInertia() const override;
+    virtual Shu::mat3f InertiaTensor() const override;
     virtual Shu::vec3f GetDim() const override;
     virtual shoora_mesh_type GetType() const override;
 };
@@ -88,7 +92,7 @@ struct shoora_shape_box : shoora_shape_polygon
     virtual ~shoora_shape_box();
 
     u32 Width, Height;
-    virtual f32 GetMomentOfInertia() const override;
+    virtual Shu::mat3f InertiaTensor() const override;
     virtual Shu::vec3f GetDim() const override;
     virtual shoora_mesh_type GetType() const override;
 };
@@ -99,7 +103,7 @@ struct shoora_shape_cube : shoora_shape
     virtual ~shoora_shape_cube();
 
     u32 Width, Height, Depth;
-    virtual f32 GetMomentOfInertia() const override;
+    virtual Shu::mat3f InertiaTensor() const override;
     virtual Shu::vec3f GetDim() const override;
     virtual shoora_mesh_type GetType() const override;
 };

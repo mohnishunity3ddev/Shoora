@@ -417,7 +417,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
 
     SetupCamera(&VulkanContext->Camera, shoora_projection::PROJECTION_PERSPECTIVE, 0.1f, 1000.0f, 16.0f / 9.0f,
                 GlobalWindowSize.y, 45.0f, Shu::Vec3f(0, 0, -20));
-    
+
     // NOTE: Mesh Database setup
     shoora_mesh_database::MeshDbBegin(RenderDevice);
     Shu::vec3f Poly1[] = {{0, 10, 1}, {10, 3, 1}, {10, -5, 1}, {-10, -5, 1}, {-10, 3, 1}};

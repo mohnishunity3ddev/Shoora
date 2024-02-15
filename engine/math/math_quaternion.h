@@ -3,6 +3,7 @@
 
 #include "defines.h"
 #include "math_vector.h"
+#include "math_matrix.h"
 
 namespace Shu
 {
@@ -30,11 +31,13 @@ namespace Shu
         f32 AngleRadians() const;
         vec3f AxisNormalized() const;
         vec3f ToEuler() const;
+        mat3f ToMat3f() const;
+        mat4f ToMat4f() const;
     };
 
     SHU_EXPORT quat Quat(f32 w, f32 vx, f32 vy, f32 vz);
     SHU_EXPORT quat Quat(f32 Real, vec3f Complex);
-    SHU_EXPORT quat QuatAngleAxis(f32 AngleInDegrees, vec3f Axis);
+    SHU_EXPORT quat QuatAngleAxis(f32 AngleInDegrees, const vec3f &Axis);
     SHU_EXPORT quat operator-(const quat &A, const quat &B);
     SHU_EXPORT quat operator+(const quat &A, const quat &B);
     SHU_EXPORT quat operator*(const quat &A, const quat &B);

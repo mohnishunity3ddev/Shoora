@@ -27,14 +27,14 @@ namespace Shu
     }
 
     quat
-    QuatAngleAxis(f32 AngleInDegrees, vec3f Axis)
+    QuatAngleAxis(f32 AngleInDegrees, const vec3f &Axis)
     {
         quat Result;
 
         Result.real = Shu::Cos(AngleInDegrees*0.5f);
 
-        Axis = Normalize(Axis);
-        Result.complex = Axis*Shu::Sin(AngleInDegrees*0.5f);
+        Shu::vec3f axis = Normalize(Axis);
+        Result.complex = axis*Shu::Sin(AngleInDegrees*0.5f);
 
         return Result;
     }
@@ -340,6 +340,41 @@ namespace Shu
 
         vec3f Euler = Shu::Vec3f(xAngle, yAngle, zAngle) * RAD_TO_DEG;
         return Euler;
+    }
+
+    mat3f
+    quat::ToMat3f() const
+    {
+        quat Quat = QuatNormalize(*this);
+        f32 w = this->real; // cos(theta / 2)
+        f32 x = this->complex.x; // nx*sin(theta / 2)
+        f32 y = this->complex.y; // ny*sin(theta / 2)
+        f32 z = this->complex.z; // nz*sin(theta / 2)
+
+        Shu::vec3f Row0 = Shu::Vec3f(1.0f - 2*y*y - 2*z*z,    2*x*y + 2*w*z,            2*x*z - 2*w*y);
+        Shu::vec3f Row1 = Shu::Vec3f(2*x*y - 2*w*z,           1.0f - 2*x*x - 2*z*z,     2*y*z + 2*w*x);
+        Shu::vec3f Row2 = Shu::Vec3f(2*x*z + 2*w*y,           2*y*z - 2*w*x,            1.0f - 2*x*x - 2*y*y);
+
+        Shu::mat3f Result = Shu::Mat3f(Row0, Row1, Row2, matrix_type::ORTHOGONAL);
+        return Result;
+    }
+
+    mat4f
+    quat::ToMat4f() const
+    {
+        quat Quat = QuatNormalize(*this);
+        f32 w = this->real; // cos(theta / 2)
+        f32 x = this->complex.x; // nx*sin(theta / 2)
+        f32 y = this->complex.y; // ny*sin(theta / 2)
+        f32 z = this->complex.z; // nz*sin(theta / 2)
+
+        Shu::vec4f Row0 = Shu::Vec4f(1.0f - 2.0f*y*y - 2.0f*z*z,    2.0f*x*y + 2.0f*w*z,            2.0f*x*z - 2.0f*w*y,            0.0f);
+        Shu::vec4f Row1 = Shu::Vec4f(2.0f*x*y - 2.0f*w*z,           1.0f - 2.0f*x*x - 2.0f*z*z,     2.0f*y*z + 2.0f*w*x,            0.0f);
+        Shu::vec4f Row2 = Shu::Vec4f(2.0f*x*z + 2.0f*w*y,           2.0f*y*z - 2.0f*w*x,            1.0f - 2.0f*x*x - 2.0f*y*y,     0.0f);
+        Shu::vec4f Row3 = Shu::Vec4f(0.0f,                          0.0f,                           0.0f,                           1.0f);
+
+        Shu::mat4f Result = Shu::Mat4f(Row0, Row1, Row2, Row3, matrix_type::ORTHOGONAL);
+        return Result;
     }
 
     // Returns rotation in YXZ sequence

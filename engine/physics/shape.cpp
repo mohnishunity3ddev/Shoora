@@ -37,6 +37,9 @@ shoora_shape_polygon::shoora_shape_polygon(i32 MeshId, f32 Scale)
     this->VertexCount = MeshFilter->VertexCount;
     ASSERT(this->VertexCount != 0);
     this->WorldVertices = new Shu::vec3f[this->VertexCount];
+
+    // TODO: Change this. Arbitrary polygons may not have their center of mass in their center.
+    this->CenterOfMass = Shu::Vec3f(0.0f);
 }
 
 shoora_shape_polygon::~shoora_shape_polygon()
@@ -46,11 +49,12 @@ shoora_shape_polygon::~shoora_shape_polygon()
     this->WorldVertices = nullptr;
 }
 
-f32
-shoora_shape_polygon::GetMomentOfInertia() const
+Shu::mat3f
+shoora_shape_polygon::InertiaTensor() const
 {
-    // TODO: Come up with logic to calculate moment of inertia for random polygons.
-    return 5000.0f;
+    // TODO: Calculate real inertia tensor.
+    Shu::mat3f Result = Shu::Mat3f(5000.0f);
+    return Result;
 }
 
 Shu::vec3f
@@ -215,6 +219,7 @@ shoora_shape_circle::shoora_shape_circle(f32 Radius)
     : shoora_shape(shoora_mesh_type::CIRCLE)
 {
     this->Radius = Radius;
+    this->CenterOfMass = Shu::Vec3f(0.0f);
 }
 
 shoora_shape_circle::~shoora_shape_circle()
@@ -222,10 +227,10 @@ shoora_shape_circle::~shoora_shape_circle()
     LogUnformatted("shoora_shape_circle destructor called!\n");
 }
 
-f32
-shoora_shape_circle::GetMomentOfInertia() const
+Shu::mat3f
+shoora_shape_circle::InertiaTensor() const
 {
-    f32 Result = 0.5f * this->Radius * this->Radius;
+    Shu::mat3f Result = Shu::Mat3f(0.5f*this->Radius*this->Radius);
     return Result;
 }
 
@@ -247,6 +252,7 @@ shoora_shape_sphere::shoora_shape_sphere(f32 Radius)
     : shoora_shape(shoora_mesh_type::SPHERE)
 {
     this->Radius = Radius;
+    this->CenterOfMass = Shu::Vec3f(0.0f);
 }
 
 shoora_shape_sphere::~shoora_shape_sphere()
@@ -254,10 +260,10 @@ shoora_shape_sphere::~shoora_shape_sphere()
     LogUnformatted("shoora_shape_sphere destructor called!\n");
 }
 
-f32
-shoora_shape_sphere::GetMomentOfInertia() const
+Shu::mat3f
+shoora_shape_sphere::InertiaTensor() const
 {
-    f32 Result = (2.0f * this->Radius * this->Radius) / 5.0f;
+    Shu::mat3f Result = Shu::Mat3f(0.4f*this->Radius*this->Radius);
     return Result;
 }
 
@@ -280,6 +286,7 @@ shoora_shape_box::shoora_shape_box(u32 Width, u32 Height) : shoora_shape_polygon
 {
     this->Width = Width;
     this->Height = Height;
+    this->CenterOfMass = Shu::Vec3f(0.0f);
 }
 
 shoora_shape_box::~shoora_shape_box()
@@ -287,10 +294,10 @@ shoora_shape_box::~shoora_shape_box()
     LogUnformatted("shoora_shape_box destructor called!\n");
 }
 
-f32
-shoora_shape_box::GetMomentOfInertia() const
+Shu::mat3f
+shoora_shape_box::InertiaTensor() const
 {
-    f32 Result = (this->Width * this->Width + this->Height * this->Height) / 12.0f;
+    Shu::mat3f Result = Shu::Mat3f((this->Width*this->Width + this->Height*this->Height) / 12.0f);
     return Result;
 }
 
@@ -314,6 +321,7 @@ shoora_shape_cube::shoora_shape_cube(u32 Width, u32 Height, u32 Depth)
     this->Width = Width;
     this->Height = Height;
     this->Depth = Depth;
+    this->CenterOfMass = Shu::Vec3f(0.0f);
 }
 
 shoora_shape_cube::~shoora_shape_cube()
@@ -321,11 +329,11 @@ shoora_shape_cube::~shoora_shape_cube()
     LogUnformatted("shoora_shape_cube destructor called!\n");
 }
 
-f32
-shoora_shape_cube::GetMomentOfInertia() const
+Shu::mat3f
+shoora_shape_cube::InertiaTensor() const
 {
     // TODO: Return an Inertia tensor.
-    f32 Result = 5000.0f;
+    Shu::mat3f Result = Shu::Mat3f(5000.0f);
     return Result;
 }
 

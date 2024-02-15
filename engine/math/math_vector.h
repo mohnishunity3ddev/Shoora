@@ -91,6 +91,7 @@ namespace Shu
         inline T& operator[](size_t Index);
         inline T SqMagnitude() const;
         inline T Magnitude() const;
+        inline void Normalize();
         inline T Dot(const vec3<T> &A);
         inline vec3<T> Cross(const vec3<T> &A);
         inline vec3<T> Reciprocal() const;
@@ -843,6 +844,14 @@ namespace Shu
         // NOTE: Change this to use ouw own Square Root function
         T Result = sqrtf(this->x*this->x + this->y*this->y + this->z*this->z);
         return Result;
+    }
+
+    template <typename T>
+    void
+    vec3<T>::Normalize()
+    {
+        // NOTE: Change this to use ouw own Square Root function
+        *this = Normalize(*this);
     }
 
     template <typename T>

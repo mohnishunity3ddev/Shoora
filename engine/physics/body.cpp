@@ -18,9 +18,9 @@ shoora_body::shoora_body(const Shu::vec3f &Color, const Shu::vec3f &InitPos, f32
     this->Mass = Mass;
     // Epsilon is an infinitesimally small value.
     this->InvMass = (this->Mass < FLT_EPSILON) ? 0.0f : (1.0f/this->Mass);
-    this->I = (Mass * Shape->GetMomentOfInertia());
-    ASSERT(this->I >= 0.0f);
-    this->InvI = (this->I < FLT_EPSILON) ? 0.0f : (1.0f/this->I);
+    this->InertiaTensor = (Shape->InertiaTensor() * Mass);
+    this->InertiaTensor.Type = Shu::matrix_type::IDENTITY;
+    this->InverseInertiaTensor = this->InertiaTensor.IsZero() ? Shu::Mat3f(0.0f) : this->InertiaTensor.Inverse();
 
     this->Shape = std::move(Shape);
     this->Scale = (this->Shape)->GetDim();
@@ -36,7 +36,7 @@ shoora_body::shoora_body(shoora_body &&other) noexcept
       Acceleration(std::move(other.Acceleration)), Rotation(std::move(other.Rotation)),
       CoeffRestitution(other.CoeffRestitution), SumForces(std::move(other.SumForces)),
       SumTorques(other.SumTorques), FrictionCoeff(other.FrictionCoeff), Mass(other.Mass), InvMass(other.InvMass),
-      I(other.I), InvI(other.InvI), Scale(std::move(other.Scale)), Color(std::move(other.Color)),
+      InertiaTensor(other.InertiaTensor), InverseInertiaTensor(other.InverseInertiaTensor), Scale(std::move(other.Scale)), Color(std::move(other.Color)),
       Shape(std::move(other.Shape))
 {
     other.IsColliding = false;
@@ -59,8 +59,8 @@ shoora_body::operator=(shoora_body &&other) noexcept
         FrictionCoeff = other.FrictionCoeff;
         Mass = other.Mass;
         InvMass = other.InvMass;
-        I = other.I;
-        InvI = other.InvI;
+        InertiaTensor = other.InertiaTensor;
+        InverseInertiaTensor = other.InverseInertiaTensor;
         Scale = std::move(other.Scale);
         Color = std::move(other.Color);
         Shape = std::move(other.Shape);
@@ -98,6 +98,32 @@ shoora_body::LocalToWorldSpace(const Shu::vec3f &PointLS) const
     Shu::vec3f Translated = Rotated + this->Position;
 
     return Translated;
+}
+
+Shu::mat3f
+shoora_body::GetInverseInertiaTensorWS() const
+{
+    Shu::mat3f Result;
+
+    Shu::mat3f RotationMatrix = Rotation.ToMat3f();
+    Result = ((RotationMatrix*InverseInertiaTensor)*RotationMatrix.Transposed());
+
+    return Result;
+}
+
+Shu::vec3f
+shoora_body::GetCenterOfMassLS() const
+{
+    Shu::vec3f Result = this->Shape->GetCenterOfMass();
+    return Result;
+}
+
+Shu::vec3f
+shoora_body::GetCenterOfMassWS() const
+{
+    auto CenterLS = this->Shape->GetCenterOfMass();
+    Shu::vec3f Result = this->Position + Shu::QuatRotateVec(this->Rotation, CenterLS);
+    return Result;
 }
 
 b32
@@ -150,38 +176,50 @@ shoora_body::UpdateWorldVertices()
 
 // NOTE: Impulse denotes a change in velocity for the body.
 void
-shoora_body::ApplyImpulseLinear(const Shu::vec3f &Impulse)
+shoora_body::ApplyImpulseLinear(const Shu::vec3f &LinearImpulse)
 {
     if(this->IsStatic()) {
         return;
     }
 
-    this->LinearVelocity += Impulse * this->InvMass;
+    this->LinearVelocity += LinearImpulse * this->InvMass;
 }
 
 void
-shoora_body::ApplyImpulseAngular(f32 Impulse)
+shoora_body::ApplyImpulseAngular(const Shu::vec3f &AngularImpulse)
 {
-#if 0
     if(this->IsStatic()) {
         return;
     }
 
-    this->AngularVelocity += Impulse * this->InvI;
-#endif
+    // NOTE: This Impulse is in WS, so we need the inertia tensor also in WS.
+    this->AngularVelocity += AngularImpulse * this->GetInverseInertiaTensorWS();
+
+    // NOTE: Clamping the angular velocity due to performance issues if not done.
+    const f32 MaxAngularSpeed = 30.0f;
+    if(this->AngularVelocity.SqMagnitude() > MaxAngularSpeed*MaxAngularSpeed)
+    {
+        this->AngularVelocity.Normalize();
+        this->AngularVelocity *= MaxAngularSpeed;
+    }
 }
 
 void
-shoora_body::ApplyImpulseAtPoint(const Shu::vec2f &Impulse, const Shu::vec2f &R)
+shoora_body::ApplyImpulseAtPoint(const Shu::vec3f &Impulse, const Shu::vec3f &ImpulsePointWS)
 {
-#if 0
-    if(this->IsStatic()) {
-        return;
-    }
+    if(this->IsStatic()) { return; }
 
-    this->Velocity += Shu::Vec3f(Impulse * this->InvMass, 0.0f);
-    this->AngularVelocity += R.Cross(Impulse) * InvI;
-#endif
+    ApplyImpulseLinear(Impulse);
+
+    // NOTE: Impulse is change in momentum
+    // L = I*w = r X p (Angular momentum = Inertia * angular velocity = distVector Cross linear momentum)
+    // dL = I*dw = r X J(impulse that was passed here) - [Change in angular momentum / Angular Impulse = Inertia times change in angular velocity].
+    // dw = inverseInertia * (r X J) - Here inverseInertia is a tensor matrix in World Space.
+    Shu::vec3f Center = GetCenterOfMassWS();
+    Shu::vec3f R = ImpulsePointWS - Center;
+    Shu::vec3f AngularImpulse = R.Cross(Impulse);
+
+    ApplyImpulseAngular(AngularImpulse);
 }
 
 void
@@ -234,12 +272,26 @@ shoora_body::IntegrateVelocities(const f32 deltaTime)
     this->LinearVelocity += this->Acceleration * deltaTime;
     this->Position += this->LinearVelocity * deltaTime;
 
-#if 0
-    this->AngularVelocity += this->AngularAcceleration * deltaTime;
-    this->RotationRadians += this->AngularVelocity * deltaTime;
-#endif
+    // NOTE: The Angular Velocity stored in this body is around its center of mass which may not be its Position.
+    Shu::vec3f CenterOfMassWS = GetCenterOfMassWS();
+    Shu::vec3f CMToPos = this->Position - CenterOfMassWS;
 
-    this->UpdateWorldVertices();
+    // NOTE: This is the internal torque caused by precession(The Tennis Racket Problem/Intermediate Axes theorem).
+    // IMPORTANT: NOTE: Did not understand this. Research more on this.
+    // T(Torque) = I*Alpha = w X (I*w)
+    Shu::mat3f InertiaTensorWS = GetInverseInertiaTensorWS();
+    Shu::vec3f Alpha = (this->AngularVelocity.Cross(this->AngularVelocity*InertiaTensorWS)) * InertiaTensorWS.Inverse();
+    this->AngularVelocity += Alpha * deltaTime;
+
+    // Update Rotation Quaternion
+    Shu::vec3f dAngle = this->AngularVelocity * deltaTime;
+    Shu::quat dq = Shu::QuatAngleAxis(dAngle.Magnitude()*RAD_TO_DEG, this->AngularVelocity);
+    this->Rotation = (dq * Rotation);
+    Shu::QuatNormalize(this->Rotation);
+
+    // NOTE: We are doing this because the quaternion(rotation) is around the center of mass not the position of
+    // the body. This will handle cases where the center of mass of the body is not the same as its position.
+    this->Position = CenterOfMassWS + Shu::QuatRotateVec(dq, CMToPos);
 }
 
 void
