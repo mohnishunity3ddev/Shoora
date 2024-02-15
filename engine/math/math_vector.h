@@ -635,7 +635,7 @@ namespace Shu
     vec3<T>
     vec3<T>::Cross(const vec3<T> &A)
     {
-        vec3<T> Result = Cross(*this, A);
+        vec3<T> Result = Shu::Cross(*this, A);
         return Result;
     }
 
@@ -862,7 +862,7 @@ namespace Shu
     vec3<T>::Normalize()
     {
         // NOTE: Change this to use ouw own Square Root function
-        *this = Normalize(*this);
+        *this = Shu::Normalize(*this);
     }
 
     template <typename T>
