@@ -122,6 +122,7 @@ Shu::vec3f
 shoora_body::GetCenterOfMassWS() const
 {
     auto CenterLS = this->Shape->GetCenterOfMass();
+    CenterLS *= this->Scale;
     Shu::vec3f Result = this->Position + Shu::QuatRotateVec(this->Rotation, CenterLS);
     return Result;
 }
@@ -280,7 +281,16 @@ shoora_body::IntegrateVelocities(const f32 deltaTime)
     // IMPORTANT: NOTE: Did not understand this. Research more on this.
     // T(Torque) = I*Alpha = w X (I*w)
     Shu::mat3f InertiaTensorWS = GetInverseInertiaTensorWS();
-    Shu::vec3f Alpha = (this->AngularVelocity.Cross(this->AngularVelocity*InertiaTensorWS)) * InertiaTensorWS.Inverse();
+    Shu::vec3f w = this->AngularVelocity;
+    Shu::vec3f InternalTorqueVector = (this->AngularVelocity.Cross(this->AngularVelocity * InertiaTensorWS));
+    // IMPORTANT: NOTE: This torque formula is given here. The cross product gives this.
+    // Taken from: https://en.wikipedia.org/wiki/Tennis_racket_theorem#Theory
+#if 0
+    InternalTorqueVector.x = -(InertiaTensorWS.m22 - InertiaTensorWS.m11)*w.z*w.y;
+    InternalTorqueVector.y = -(InertiaTensorWS.m00 - InertiaTensorWS.m22)*w.x*w.z;
+    InternalTorqueVector.z = -(InertiaTensorWS.m11 - InertiaTensorWS.m00)*w.x*w.y;
+#endif
+    Shu::vec3f Alpha = InternalTorqueVector*InertiaTensorWS.Inverse();
     this->AngularVelocity += Alpha * deltaTime;
 
     // Update Rotation Quaternion
@@ -291,6 +301,7 @@ shoora_body::IntegrateVelocities(const f32 deltaTime)
 
     // NOTE: We are doing this because the quaternion(rotation) is around the center of mass not the position of
     // the body. This will handle cases where the center of mass of the body is not the same as its position.
+    // Also, we are multiplying the change in orientation dq not the whole orientation Q(this->Rotation).
     this->Position = CenterOfMassWS + Shu::QuatRotateVec(dq, CMToPos);
 }
 

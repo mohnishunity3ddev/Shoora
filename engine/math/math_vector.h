@@ -86,6 +86,7 @@ namespace Shu
         inline vec3<T> operator+=(const vec3<T>& A);
         inline vec3<T> operator-=(const vec3<T>& A);
         inline vec3<T> operator*=(T A);
+        inline vec3<T> operator*=(const vec3<T> &A);
         inline vec3<T> operator/=(const vec3<T>& A);
         inline vec3<T> operator/=(T A);
         inline T& operator[](size_t Index);
@@ -798,6 +799,16 @@ namespace Shu
     vec3<T>::operator*=(T A)
     {
         *this = *this * A;
+        return *this;
+    }
+
+    template <typename T>
+    vec3<T>
+    vec3<T>::operator*=(const vec3<T> &A)
+    {
+        this->x *= A.x;
+        this->y *= A.y;
+        this->z *= A.z;
         return *this;
     }
 
