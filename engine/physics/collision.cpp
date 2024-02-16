@@ -58,12 +58,12 @@ collision::IsCollidingSphereSphere(shoora_body *A, shoora_body *B, arr<contact> 
     if(DistSquared <= RadiusSum*RadiusSum)
     {
         contact Contact{};
-        Contact.A = A;
-        Contact.B = B;
+        Contact.ReferenceBodyA = A;
+        Contact.IncidentBodyB = B;
         Contact.Normal = Shu::Normalize(AB);
-        Contact.Start = B->Position - Contact.Normal*SphereB->Radius;
-        Contact.End = A->Position + Contact.Normal*SphereA->Radius;
-        Contact.Depth = (Contact.End - Contact.Start).Magnitude();
+        Contact.ReferenceContactPointA = B->Position - Contact.Normal*SphereB->Radius;
+        Contact.IncidentContactPointB = A->Position + Contact.Normal*SphereA->Radius;
+        Contact.Depth = (Contact.IncidentContactPointB - Contact.ReferenceContactPointA).Magnitude();
         Contacts.add(Contact);
 
         Result = true;
@@ -86,15 +86,15 @@ collision::IsCollidingCircleCircle(shoora_body *A, shoora_body *B, arr<contact> 
     {
         // TODO)): There is a collision here. Handle collision contact info here.
         contact Contact;
-        Contact.A = A;
-        Contact.B = B;
+        Contact.ReferenceBodyA = A;
+        Contact.IncidentBodyB = B;
 
         Contact.Normal = Shu::Normalize(DistanceAB);
 
-        Contact.Start = B->Position - (Contact.Normal * CircleB->Radius);
-        Contact.End = A->Position + (Contact.Normal * CircleA->Radius);
+        Contact.ReferenceContactPointA = B->Position - (Contact.Normal * CircleB->Radius);
+        Contact.IncidentContactPointB = A->Position + (Contact.Normal * CircleA->Radius);
 
-        Contact.Depth = (Contact.End - Contact.Start).Magnitude();
+        Contact.Depth = (Contact.IncidentContactPointB - Contact.ReferenceContactPointA).Magnitude();
 
         Contacts.add(Contact);
     }
@@ -189,14 +189,14 @@ collision::IsCollidingPolygonPolygon(shoora_body *A, shoora_body *B, arr<contact
         if(Proj <= 0)
         {
             contact Contact;
-            Contact.A = A;
-            Contact.B = B;
+            Contact.ReferenceBodyA = A;
+            Contact.IncidentBodyB = B;
             Contact.Normal = Shu::Vec3f(ReferenceFaceNormal, 0.0f);
-            Contact.Start = Shu::Vec3f(ClippedVertex, 0.0f);
-            Contact.End = Contact.Start + Contact.Normal * (-Proj);
+            Contact.ReferenceContactPointA = Shu::Vec3f(ClippedVertex, 0.0f);
+            Contact.IncidentContactPointB = Contact.ReferenceContactPointA + Contact.Normal * (-Proj);
             if(baSeparation >= abSeparation)
             {
-                SWAP(Contact.Start, Contact.End);
+                SWAP(Contact.ReferenceContactPointA, Contact.IncidentContactPointB);
                 Contact.Normal = -Contact.Normal;
             }
 
@@ -280,9 +280,9 @@ collision::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle, a
             {
                 IsCollidingResult = true;
                 Contact.Depth = Radius - CenterToVertDistance;
-                Contact.End = Shu::Vec3f(MinVertex.xy, 0.0f);
+                Contact.IncidentContactPointB = Shu::Vec3f(MinVertex.xy, 0.0f);
                 Contact.Normal = Shu::Vec3f(Shu::Normalize(CircleCenter - MinVertex.xy), 0.0f);
-                Contact.Start = Contact.End - Contact.Normal*Contact.Depth;
+                Contact.ReferenceContactPointA = Contact.IncidentContactPointB - Contact.Normal*Contact.Depth;
             }
         }
         else
@@ -298,9 +298,9 @@ collision::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle, a
                 {
                     IsCollidingResult = true;
                     Contact.Depth = Radius - CenterToNextVertDistance;
-                    Contact.End = Shu::Vec3f(MinNextVertex.xy, 0.0f);
+                    Contact.IncidentContactPointB = Shu::Vec3f(MinNextVertex.xy, 0.0f);
                     Contact.Normal = Shu::Vec3f(Shu::Normalize(CircleCenter - MinNextVertex.xy), 0.0f);
-                    Contact.Start = Contact.End - Contact.Normal*Contact.Depth;
+                    Contact.ReferenceContactPointA = Contact.IncidentContactPointB - Contact.Normal*Contact.Depth;
                 }
             }
             else
@@ -313,8 +313,8 @@ collision::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle, a
                     Contact.Depth = Radius - DistanceFromClosestEdge;
                     Contact.Normal = Shu::Vec3f(EdgeNormal, 0.0f);
                     auto start = CircleCenter - Contact.Normal.xy * Radius;
-                    Contact.Start = Shu::Vec3f(start, 0.0f);
-                    Contact.End = Shu::Vec3f(start + Contact.Normal.xy*Contact.Depth, 0.0f);
+                    Contact.ReferenceContactPointA = Shu::Vec3f(start, 0.0f);
+                    Contact.IncidentContactPointB = Shu::Vec3f(start + Contact.Normal.xy*Contact.Depth, 0.0f);
                 }
             }
         }
@@ -324,8 +324,8 @@ collision::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle, a
         // IMPORTANT: NOTE: Circle is inside the polygon
         Contact.Depth = Radius + ABSOLUTE(MaxProjection);
         Contact.Normal = Shu::Vec3f(ClosestEdge.Normal(), 0.0f);
-        Contact.Start = Shu::Vec3f(CircleCenter - Contact.Normal.xy*Radius, 0.0f);
-        Contact.End = Shu::Vec3f(CircleCenter - Contact.Normal.xy*(MaxProjection), 0.0f);
+        Contact.ReferenceContactPointA = Shu::Vec3f(CircleCenter - Contact.Normal.xy*Radius, 0.0f);
+        Contact.IncidentContactPointB = Shu::Vec3f(CircleCenter - Contact.Normal.xy*(MaxProjection), 0.0f);
         IsCollidingResult = true;
     }
 
@@ -334,17 +334,17 @@ collision::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle, a
         ASSERT(Contact.Depth >= 0.0f);
         if(!Invert)
         {
-            Contact.A = Polygon;
-            Contact.B = Circle;
+            Contact.ReferenceBodyA = Polygon;
+            Contact.IncidentBodyB = Circle;
         }
         else
         {
-            Contact.A = Circle;
-            Contact.B = Polygon;
+            Contact.ReferenceBodyA = Circle;
+            Contact.IncidentBodyB = Polygon;
 
-            auto temp = Contact.Start;
-            Contact.Start = Contact.End;
-            Contact.End = temp;
+            auto temp = Contact.ReferenceContactPointA;
+            Contact.ReferenceContactPointA = Contact.IncidentContactPointB;
+            Contact.IncidentContactPointB = temp;
 
             Contact.Normal = -Contact.Normal;
         }

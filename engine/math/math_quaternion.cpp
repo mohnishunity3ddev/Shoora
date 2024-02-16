@@ -355,7 +355,7 @@ namespace Shu
         Shu::vec3f Row1 = Shu::Vec3f(2*x*y - 2*w*z,           1.0f - 2*x*x - 2*z*z,     2*y*z + 2*w*x);
         Shu::vec3f Row2 = Shu::Vec3f(2*x*z + 2*w*y,           2*y*z - 2*w*x,            1.0f - 2*x*x - 2*y*y);
 
-        Shu::mat3f Result = Shu::Mat3f(Row0, Row1, Row2, matrix_type::ORTHOGONAL);
+        Shu::mat3f Result = Shu::Mat3f(Row0, Row1, Row2);
         return Result;
     }
 
@@ -373,7 +373,7 @@ namespace Shu
         Shu::vec4f Row2 = Shu::Vec4f(2.0f*x*z + 2.0f*w*y,           2.0f*y*z - 2.0f*w*x,            1.0f - 2.0f*x*x - 2.0f*y*y,     0.0f);
         Shu::vec4f Row3 = Shu::Vec4f(0.0f,                          0.0f,                           0.0f,                           1.0f);
 
-        Shu::mat4f Result = Shu::Mat4f(Row0, Row1, Row2, Row3, matrix_type::ORTHOGONAL);
+        Shu::mat4f Result = Shu::Mat4f(Row0, Row1, Row2, Row3);
         return Result;
     }
 

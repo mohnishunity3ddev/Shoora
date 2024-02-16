@@ -24,7 +24,13 @@ void
 main()
 {
     OutColor = PushConstant.Color;
-    OutUV = InUV*PushConstant.Model[0][0];
+    // OutUV = InUV*PushConstant.Model[0][0];
+    // TODO: Pass in the UV Scale using a uniform. Remove this!
+    if(PushConstant.Model[0][0] > 100.) {
+        OutUV = InUV * 500;
+    } else {
+        OutUV = InUV;
+    }
 
     mat4 MVP = PushConstant.Model*ubo.View*ubo.Projection;
     vec4 Pos = vec4(InPos, 1.)*MVP;

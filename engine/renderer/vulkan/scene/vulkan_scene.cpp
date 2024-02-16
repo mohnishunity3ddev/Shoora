@@ -195,8 +195,8 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
 
                     if(ShowContacts)
                     {
-                        shoora_graphics::DrawSphere(C->Start, .1f, colorU32::Cyan);
-                        shoora_graphics::DrawSphere(C->End, .1f, colorU32::Green);
+                        shoora_graphics::DrawSphere(C->ReferenceContactPointA, .1f, colorU32::Cyan);
+                        shoora_graphics::DrawSphere(C->IncidentContactPointB, .1f, colorU32::Green);
                     }
                 }
             }

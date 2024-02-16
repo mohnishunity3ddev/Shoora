@@ -3,41 +3,84 @@
 void
 contact::ResolvePenetration()
 {
-    if(this->A->IsStatic() && this->B->IsStatic()) {
+    if(this->ReferenceBodyA->IsStatic() && this->IncidentBodyB->IsStatic()) {
         return;
     }
 
-    f32 Elasticity = ClampToRange(A->CoeffRestitution*B->CoeffRestitution, 0.0f, 1.0f);
-
+    f32 Elasticity = ClampToRange(ReferenceBodyA->CoeffRestitution*IncidentBodyB->CoeffRestitution, 0.0f, 1.0f);
     const Shu::vec3f n = this->Normal;
-    const f32 VRelDotN = (B->LinearVelocity - A->LinearVelocity).Dot(n);
-    const f32 ImpulseMag = ((1.0f + Elasticity)*VRelDotN) / (A->InvMass + B->InvMass);
-    const Shu::vec3f Impulse = n * ImpulseMag;
 
-    A->ApplyImpulseLinear(Impulse);
-    B->ApplyImpulseLinear(-Impulse);
+    const Shu::mat3f invWorldInertiaA = ReferenceBodyA->GetInverseInertiaTensorWS();
+    const Shu::mat3f invWorldInertiaB = IncidentBodyB->GetInverseInertiaTensorWS();
+
+    Shu::vec3f rA = this->ReferenceContactPointA - ReferenceBodyA->GetCenterOfMassWS();
+    Shu::vec3f rB = this->IncidentContactPointB - IncidentBodyB->GetCenterOfMassWS();
+
+    const Shu::vec3f angularJA = (rA.Cross(n) * invWorldInertiaA).Cross(rA);
+    const Shu::vec3f angularJB = (rB.Cross(n) * invWorldInertiaB).Cross(rB);
+    f32 angularFactor = (angularJA + angularJB).Dot(n);
+
+    // NOTE: Calculating the collision impulse.
+
+    // NOTE: Velocities before the collision
+    const Shu::vec3f VA = ReferenceBodyA->LinearVelocity + ReferenceBodyA->AngularVelocity.Cross(rA);
+    const Shu::vec3f VB = IncidentBodyB->LinearVelocity + IncidentBodyB->AngularVelocity.Cross(rB);
+    Shu::vec3f VRel = VB - VA;
+    // Relative velocity component along the normal
+    f32 VRelDotN = VRel.Dot(n);
+
+    f32 numerator = (1.0f + Elasticity) * VRelDotN;
+    f32 denominator = ReferenceBodyA->InvMass + IncidentBodyB->InvMass + angularFactor;
+    ASSERT(denominator > 0.0f);
+    f32 ImpulseMagnitude = numerator / denominator;
+    const Shu::vec3f Impulse = n * ImpulseMagnitude;
+
+    ReferenceBodyA->ApplyImpulseAtPoint(Impulse, ReferenceContactPointA);
+    IncidentBodyB->ApplyImpulseAtPoint(-Impulse, IncidentContactPointB);
+
+    // NOTE: Impulse due to friction
+
+    const f32 frictionA = ReferenceBodyA->FrictionCoeff;
+    const f32 frictionB = IncidentBodyB->FrictionCoeff;
+    const f32 friction = frictionA * frictionB;
+    ASSERT(friction >= 0.0f && friction < 1.0f);
+
+    // NOTE: find the component of the velocity that is normal to the collision normal / Tangential to the
+    // collision point.
+    Shu::vec3f vN = VRelDotN * n;
+    Shu::vec3f vT = VRel - vN;
+    Shu::vec3f VRelTangential = Shu::Normalize(vT);
+
+    const Shu::vec3f angularFA = (rA.Cross(VRelTangential) * invWorldInertiaA).Cross(rA);
+    const Shu::vec3f angularFB = (rB.Cross(VRelTangential) * invWorldInertiaB).Cross(rB);
+    f32 angularFactorFriction = (angularFA + angularFB).Dot(VRelTangential);
+    Shu::vec3f ImpulseFriction = VRelTangential * (friction / angularFactorFriction);
+
+    ReferenceBodyA->ApplyImpulseAtPoint(ImpulseFriction, ReferenceContactPointA);
+    IncidentBodyB->ApplyImpulseAtPoint(-ImpulseFriction, IncidentContactPointB);
 
     // if B has infinity mass, B.invMass = 0, therefore, dB will be zero.
     // So, we will only move A by the collision depth if B has infinite mass.
-    f32 dA = (this->Depth * A->InvMass) / (A->InvMass + B->InvMass);
-    f32 dB = (this->Depth * B->InvMass) / (A->InvMass + B->InvMass);
+    f32 dA = (this->Depth * ReferenceBodyA->InvMass) / (ReferenceBodyA->InvMass + IncidentBodyB->InvMass);
+    f32 dB = (this->Depth * IncidentBodyB->InvMass) / (ReferenceBodyA->InvMass + IncidentBodyB->InvMass);
 
-    A->Position -= this->Normal*dA;
-    B->Position += this->Normal*dB;
+    ReferenceBodyA->Position -= this->Normal*dA;
+    IncidentBodyB->Position += this->Normal*dB;
 
-    A->UpdateWorldVertices();
-    B->UpdateWorldVertices();
+    ReferenceBodyA->UpdateWorldVertices();
+    IncidentBodyB->UpdateWorldVertices();
 }
 
 void
 contact::ResolveCollision()
 {
-    if (this->A->IsStatic() && this->B->IsStatic()) {
+    if (this->ReferenceBodyA->IsStatic() && this->IncidentBodyB->IsStatic()) {
         return;
     }
 
     // Separate out the bodies so that there is no penetration
     this->ResolvePenetration();
+
 
 
 

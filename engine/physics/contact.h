@@ -11,11 +11,11 @@
 // Depth: Penetration depth of the collision between the two bodies A and B.
 struct contact
 {
-    shoora_body *A;
-    shoora_body *B;
+    shoora_body *ReferenceBodyA;
+    shoora_body *IncidentBodyB;
 
-    Shu::vec3f Start;
-    Shu::vec3f End;
+    Shu::vec3f ReferenceContactPointA;
+    Shu::vec3f IncidentContactPointB;
 
     Shu::vec3f Normal;
     f32 Depth;

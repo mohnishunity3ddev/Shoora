@@ -93,7 +93,7 @@ namespace Shu
         inline T SqMagnitude() const;
         inline T Magnitude() const;
         inline void Normalize();
-        inline T Dot(const vec3<T> &A);
+        inline T Dot(const vec3<T> &A) const;
         inline vec3<T> Cross(const vec3<T> &A);
         inline vec3<T> Reciprocal() const;
         inline b32 IsValid() const;
@@ -614,7 +614,7 @@ namespace Shu
 
     template <typename T>
     T
-    vec3<T>::Dot(const vec3<T>& A)
+    vec3<T>::Dot(const vec3<T>& A) const
     {
         T Result = A.x*this->x + A.y*this->y + A.z*this->z;
         return Result;

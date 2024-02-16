@@ -13,7 +13,6 @@ namespace Shu
         Shu::Rotate(Model, Shu::QuatAngleAxis(-RotationAngleDegrees, RotationAxis));
         Shu::Scale(Model, Scale.Reciprocal());
 
-        Model.Type = MODEL_MATRIX;
         return Model;
     }
 
@@ -27,8 +26,6 @@ namespace Shu
         Shu::Rotate(Model, Shu::QuatAngleAxis(RotationAngleDegrees, RotationAxis));
         Shu::Translate(Model, Pos);
 
-        Model.Type = MODEL_MATRIX;
-
         return Model;
     }
 
@@ -36,12 +33,11 @@ namespace Shu
     TRS(const Shu::vec3f &Pos, const Shu::vec3f &Scale, const Shu::quat Rotation)
     {
         Shu::mat4f Model = Shu::Mat4f(1.0f);
-        
+
         Shu::Scale(Model, Scale);
         Shu::Rotate(Model, Rotation);
         Shu::Translate(Model, Pos);
 
-        Model.Type = MODEL_MATRIX;
         return Model;
     }
 

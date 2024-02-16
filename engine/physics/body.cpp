@@ -19,25 +19,26 @@ shoora_body::shoora_body(const Shu::vec3f &Color, const Shu::vec3f &InitPos, f32
     // Epsilon is an infinitesimally small value.
     this->InvMass = (this->Mass < FLT_EPSILON) ? 0.0f : (1.0f/this->Mass);
     this->InertiaTensor = (Shape->InertiaTensor() * Mass);
-    this->InertiaTensor.Type = Shu::matrix_type::IDENTITY;
     this->InverseInertiaTensor = this->InertiaTensor.IsZero() ? Shu::Mat3f(0.0f) : this->InertiaTensor.Inverse();
 
     this->Shape = std::move(Shape);
     this->Scale = (this->Shape)->GetDim();
 
-    this->SumForces = this->LinearVelocity = this->Acceleration = Shu::vec3f::Zero();
+    this->SumForces = this->LinearVelocity = this->Acceleration = this->AngularVelocity = Shu::vec3f::Zero();
+
     this->SumTorques = 0.0f;
 
     this->UpdateWorldVertices();
 }
 
 shoora_body::shoora_body(shoora_body &&other) noexcept
-    : IsColliding(other.IsColliding), Position(std::move(other.Position)), LinearVelocity(std::move(other.LinearVelocity)),
+    : IsColliding(other.IsColliding), Position(std::move(other.Position)),
+      LinearVelocity(std::move(other.LinearVelocity)), AngularVelocity(std::move(other.AngularVelocity)),
       Acceleration(std::move(other.Acceleration)), Rotation(std::move(other.Rotation)),
       CoeffRestitution(other.CoeffRestitution), SumForces(std::move(other.SumForces)),
       SumTorques(other.SumTorques), FrictionCoeff(other.FrictionCoeff), Mass(other.Mass), InvMass(other.InvMass),
-      InertiaTensor(other.InertiaTensor), InverseInertiaTensor(other.InverseInertiaTensor), Scale(std::move(other.Scale)), Color(std::move(other.Color)),
-      Shape(std::move(other.Shape))
+      InertiaTensor(other.InertiaTensor), InverseInertiaTensor(other.InverseInertiaTensor),
+      Scale(std::move(other.Scale)), Color(std::move(other.Color)), Shape(std::move(other.Shape))
 {
     other.IsColliding = false;
     other.Shape = nullptr;
@@ -51,6 +52,7 @@ shoora_body::operator=(shoora_body &&other) noexcept
         IsColliding = other.IsColliding;
         Position = std::move(other.Position);
         LinearVelocity = std::move(other.LinearVelocity);
+        AngularVelocity = std::move(other.AngularVelocity);
         Acceleration = std::move(other.Acceleration);
         Rotation = std::move(other.Rotation);
         CoeffRestitution = other.CoeffRestitution;
@@ -280,9 +282,10 @@ shoora_body::IntegrateVelocities(const f32 deltaTime)
     // NOTE: This is the internal torque caused by precession(The Tennis Racket Problem/Intermediate Axes theorem).
     // IMPORTANT: NOTE: Did not understand this. Research more on this.
     // T(Torque) = I*Alpha = w X (I*w)
-    Shu::mat3f InertiaTensorWS = GetInverseInertiaTensorWS();
+    Shu::mat3f RotationMatrix = Rotation.ToMat3f();
+    Shu::mat3f InertiaTensorWS = ((RotationMatrix * this->InertiaTensor) * RotationMatrix.Transposed());
     Shu::vec3f w = this->AngularVelocity;
-    Shu::vec3f InternalTorqueVector = (this->AngularVelocity.Cross(this->AngularVelocity * InertiaTensorWS));
+    Shu::vec3f InternalTorqueVector = (w.Cross(w * InertiaTensorWS));
     // IMPORTANT: NOTE: This torque formula is given here. The cross product gives this.
     // Taken from: https://en.wikipedia.org/wiki/Tennis_racket_theorem#Theory
 #if 0

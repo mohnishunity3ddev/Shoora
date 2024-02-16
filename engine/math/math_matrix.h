@@ -8,6 +8,7 @@
 
 namespace Shu
 {
+#if 0
     enum matrix_type
     {
         NONE,
@@ -17,6 +18,7 @@ namespace Shu
         ORTHOGONAL,
         MODEL_MATRIX,
     };
+#endif
 
     template <typename T>
     struct mat3
@@ -39,7 +41,6 @@ namespace Shu
             vec3<T> Rows[3];
             T E[9];
         };
-        matrix_type Type = matrix_type::NONE;
 
         inline mat3<T> operator+=(const mat3<T> &M);
         inline mat3<T> operator-=(const mat3<T> &M);
@@ -74,8 +75,8 @@ namespace Shu
     template <typename T>
     SHU_EXPORT mat3<T> Mat3(T m00, T m01, T m02,
                             T m10, T m11, T m12,
-                            T m20, T m21, T m22, matrix_type Type = NONE);
-    template <typename T> SHU_EXPORT mat3<T> Mat3(const vec3<T> &r0, const vec3<T> &r1, const vec3<T> &r2, matrix_type Type = NONE);
+                            T m20, T m21, T m22);
+    template <typename T> SHU_EXPORT mat3<T> Mat3(const vec3<T> &r0, const vec3<T> &r1, const vec3<T> &r2);
     template <typename T> SHU_EXPORT mat3<T> operator+(const mat3<T> &M1, const mat3<T> &M2);
     template <typename T> SHU_EXPORT mat3<T> operator-(const mat3<T> &M1, const mat3<T> &M2);
     template <typename T> SHU_EXPORT mat3<T> operator*(const mat3<T> &M1, T B);
@@ -88,9 +89,9 @@ namespace Shu
     typedef mat3<i32> mat3i;
     typedef mat3<u32> mat3u;
     typedef mat3<f32> mat3f;
-    #define Mat3f Mat3<f32>
-    #define Mat3u Mat3<u32>
-    #define Mat3i Mat3<i32>
+#define Mat3f Mat3<f32>
+#define Mat3u Mat3<u32>
+#define Mat3i Mat3<i32>
 
     template <typename T>
     struct mat4
@@ -116,7 +117,6 @@ namespace Shu
             T E[16];
         };
 
-        matrix_type Type = NONE;
         inline mat3<T> ToMat3();
         inline mat4<T> operator+=(const mat4<T> &M);
         inline mat4<T> operator-=(const mat4<T> &M);
@@ -147,9 +147,9 @@ namespace Shu
     typedef mat4<i32> mat4i;
     typedef mat4<u32> mat4u;
     typedef mat4<f32> mat4f;
-    #define Mat4f Mat4<f32>
-    #define Mat4u Mat4<u32>
-    #define Mat4i Mat4<i32>
+#define Mat4f Mat4<f32>
+#define Mat4u Mat4<u32>
+#define Mat4i Mat4<i32>
 
     template <typename T> SHU_EXPORT mat4<T> Mat4();
     template <typename T> SHU_EXPORT mat4<T> Mat4(T Val);
@@ -157,9 +157,9 @@ namespace Shu
     SHU_EXPORT mat4<T> Mat4(T m00, T m01, T m02, T m03,
                             T m10, T m11, T m12, T m13,
                             T m20, T m21, T m22, T m23,
-                            T m30, T m31, T m32, T m33, matrix_type Type = NONE);
+                            T m30, T m31, T m32, T m33);
     template <typename T> SHU_EXPORT mat4<T> Mat4(const vec4<T> &r0, const vec4<T> &r1,
-                                                  const vec4<T> &r2, const vec4<T> &r3, matrix_type Type = NONE);
+                                                  const vec4<T> &r2, const vec4<T> &r3);
     template <typename T> SHU_EXPORT mat4<T> operator+(const mat4<T> &M1, const mat4<T> &M2);
     template <typename T> SHU_EXPORT mat4<T> operator-(const mat4<T> &M1, const mat4<T> &M2);
     template <typename T> SHU_EXPORT mat4<T> operator*(const mat4<T> &M1, T B);
@@ -195,8 +195,6 @@ namespace Shu
             T E[36];
         };
 
-        matrix_type Type = NONE;
-
         inline mat6<T> ToMat6();
         inline mat6<T> operator+=(const mat6<T> &M);
         inline mat6<T> operator-=(const mat6<T> &M);
@@ -223,11 +221,11 @@ namespace Shu
                             T m20, T m21, T m22, T m23, T m24, T m25,
                             T m30, T m31, T m32, T m33, T m34, T m35,
                             T m40, T m41, T m42, T m43, T m44, T m45,
-                            T m50, T m51, T m52, T m53, T m54, T m55, matrix_type Type = NONE);
+                            T m50, T m51, T m52, T m53, T m54, T m55);
 
     template <typename T>
     SHU_EXPORT mat6<T> Mat6(const vec6<T> &r0, const vec6<T> &r1, const vec6<T> &r2,
-                            const vec6<T> &r3, const vec6<T> &r4, const vec6<T> &r5, matrix_type Type = NONE);
+                            const vec6<T> &r3, const vec6<T> &r4, const vec6<T> &r5);
 
     template <typename T> SHU_EXPORT mat6<T> operator+(const mat6<T> &M1, const mat6<T> &M2);
     template <typename T> SHU_EXPORT mat6<T> operator-(const mat6<T> &M1, const mat6<T> &M2);
@@ -242,12 +240,12 @@ namespace Shu
     typedef mat6<i32> mat6i;
     typedef mat6<u32> mat6u;
     typedef mat6<f32> mat6f;
-    #define Mat6f Mat6<f32>
-    #define Mat6u Mat6<u32>
-    #define Mat6i Mat6<i32>
+#define Mat6f Mat6<f32>
+#define Mat6u Mat6<u32>
+#define Mat6i Mat6<i32>
 
     // N X N Matrix
-    #include "math_vector.h"
+#include "math_vector.h"
 
     template<typename T, size_t N>
     struct matN
@@ -257,13 +255,12 @@ namespace Shu
             vecN<T, N> Rows[N];
             T Data[N][N];
         };
-        matrix_type Type = NONE;
 
         matN();
         matN(const matN &rhs);
 
         template <typename... Args>
-        matN(matrix_type Type = NONE, Args... args);
+        matN(Args... args);
 
         ~matN();
 
@@ -329,7 +326,6 @@ namespace Shu
     Mat3()
     {
         mat3<T> Result = {};
-        Result.Type = ZERO;
         return Result;
     }
 
@@ -343,7 +339,6 @@ namespace Shu
         Result.m11 = Val;
         Result.m22 = Val;
 
-        Result.Type = IDENTITY;
         return Result;
     }
 
@@ -351,8 +346,7 @@ namespace Shu
     mat3<T>
     Mat3(T m00, T m01, T m02,
          T m10, T m11, T m12,
-         T m20, T m21, T m22,
-         matrix_type Type)
+         T m20, T m21, T m22)
     {
         mat3<T> Result;
 
@@ -368,21 +362,18 @@ namespace Shu
         Result.m21 = m21;
         Result.m22 = m22;
 
-        Result.Type = Type;
         return Result;
     }
 
     template <typename T>
     mat3<T>
-    Mat3(const vec3<T> &r0, const vec3<T> &r1, const vec3<T> &r2, matrix_type Type)
+    Mat3(const vec3<T> &r0, const vec3<T> &r1, const vec3<T> &r2)
     {
         mat3<T> Result;
 
         Result.Rows[0] = r0;
         Result.Rows[1] = r1;
         Result.Rows[2] = r2;
-
-        Result.Type = Type;
 
         return Result;
     }
@@ -524,7 +515,6 @@ namespace Shu
         this->m00 = M.m00; this->m01 = M.m01; this->m02 = M.m02;
         this->m10 = M.m10; this->m11 = M.m11; this->m12 = M.m12;
         this->m20 = M.m20; this->m21 = M.m21; this->m22 = M.m22;
-        this->Type = M.Type;
         return *this;
     }
 
@@ -713,9 +703,14 @@ namespace Shu
     mat3<T>::Inverse() const
     {
         // NOTE: 3x3 matrices cannot be translational matrices.
-        ASSERT(this->Type != ZERO && this->Type != TRANSLATION);
+        // ASSERT(this->Type != ZERO && this->Type != TRANSLATION);
         mat3<T> Result{};
+        Result = this->Adjoint();
+        auto det = this->Determinant();
+        ASSERT(det != 0.0f);
+        Result /= det;
 
+#if 0
         switch(this->Type)
         {
             case matrix_type::IDENTITY:
@@ -742,6 +737,7 @@ namespace Shu
         }
         // TODO: Check if this is okay to do!
         Result.Type = this->Type;
+#endif
 
         return Result;
     }
@@ -750,9 +746,20 @@ namespace Shu
     mat3<T>
     mat3<T>::InverseTranspose() const
     {
-        ASSERT(this->Type != ZERO && this->Type != TRANSLATION);
         mat3<T> Result{};
+        for (i32 rowIndex = 0; rowIndex < 3; ++rowIndex)
+        {
+            for (i32 colIndex = 0; colIndex < 3; ++colIndex)
+            {
+                Result.m[rowIndex][colIndex] = this->CoFactor(rowIndex, colIndex);
+            }
+        }
 
+        auto det = this->Determinant();
+        ASSERT(!NearlyEqualUlps(det, 0.0f, 1));
+        Result /= det;
+
+#if 0
         switch (this->Type)
         {
             case matrix_type::IDENTITY:
@@ -784,6 +791,7 @@ namespace Shu
 
             SHU_INVALID_DEFAULT;
         }
+#endif
 
         return Result;
     }
@@ -898,7 +906,6 @@ namespace Shu
     Mat4()
     {
         mat4<T> Result = {};
-        Result.Type = ZERO;
         return Result;
     }
 
@@ -911,7 +918,6 @@ namespace Shu
         Result.m11 = Val;
         Result.m22 = Val;
         Result.m33 = Val;
-        Result.Type = IDENTITY;
         return Result;
     }
 
@@ -920,7 +926,7 @@ namespace Shu
     Mat4(T m00, T m01, T m02, T m03,
          T m10, T m11, T m12, T m13,
          T m20, T m21, T m22, T m23,
-         T m30, T m31, T m32, T m33, matrix_type Type)
+         T m30, T m31, T m32, T m33)
     {
         mat4<T> Result;
 
@@ -944,14 +950,12 @@ namespace Shu
         Result.m32 = m32;
         Result.m33 = m33;
 
-        Result.Type = Type;
-
         return Result;
     }
 
     template <typename T>
     mat4<T>
-    Mat4(const vec4<T> &r0, const vec4<T> &r1, const vec4<T> &r2, const vec4<T> &r3, matrix_type Type)
+    Mat4(const vec4<T> &r0, const vec4<T> &r1, const vec4<T> &r2, const vec4<T> &r3)
     {
         mat4<T> Result;
 
@@ -960,7 +964,6 @@ namespace Shu
         Result.Rows[2] = r2;
         Result.Rows[3] = r3;
 
-        Result.Type = Type;
         return Result;
     }
 
@@ -1339,9 +1342,13 @@ namespace Shu
     mat4<T>
     mat4<T>::Inverse() const
     {
-        ASSERT(this->Type != ZERO);
         mat4<T> Result;
+        Result = this->Adjoint();
+        auto det = this->Determinant();
+        ASSERT(det != 0.0f);
+        Result /= det;
 
+#if 0
         switch(this->Type)
         {
             case matrix_type::IDENTITY:
@@ -1374,6 +1381,7 @@ namespace Shu
 
             SHU_INVALID_DEFAULT;
         }
+#endif
 
         return Result;
     }
@@ -1382,9 +1390,18 @@ namespace Shu
     mat4<T>
     mat4<T>::InverseTranspose() const
     {
-        ASSERT(this->Type != ZERO);
         mat4<T> Result;
+        for (i32 x = 0; x < 4; ++x)
+        {
+            for (i32 y = 0; y < 4; ++y)
+            {
+                Result.m[x][y] = CoFactor(x, y);
+            }
+        }
 
+        auto det = this->Determinant();
+        Result /= det;
+#if 0
         switch (this->Type)
         {
             case matrix_type::IDENTITY:
@@ -1420,7 +1437,7 @@ namespace Shu
 
             SHU_INVALID_DEFAULT;
         }
-
+#endif
         return Result;
     }
 
@@ -1466,7 +1483,6 @@ namespace Shu
     Mat6()
     {
         mat6<T> Result = {};
-        Result.Type = ZERO;
         return Result;
     }
 
@@ -1482,7 +1498,6 @@ namespace Shu
         Result.m44 = Val;
         Result.m55 = Val;
 
-        Result.Type = IDENTITY;
         return Result;
     }
 
@@ -1493,7 +1508,7 @@ namespace Shu
          T m20, T m21, T m22, T m23, T m24, T m25,
          T m30, T m31, T m32, T m33, T m34, T m35,
          T m40, T m41, T m42, T m43, T m44, T m45,
-         T m50, T m51, T m52, T m53, T m54, T m55, matrix_type Type)
+         T m50, T m51, T m52, T m53, T m54, T m55)
     {
         mat6<T> Result;
 
@@ -1539,18 +1554,16 @@ namespace Shu
         Result.m54 = m54;
         Result.m55 = m55;
 
-        Result.Type = Type;
-
         return Result;
     }
 
     template <typename T>
     mat6<T>
     Mat6(const vec6<T> &r0, const vec6<T> &r1, const vec6<T> &r2,
-         const vec6<T> &r3, const vec6<T> &r4, const vec6<T> &r5, matrix_type Type)
+         const vec6<T> &r3, const vec6<T> &r4, const vec6<T> &r5)
     {
         mat6<T> Result;
-
+        
         Result.Rows[0] = r0;
         Result.Rows[1] = r1;
         Result.Rows[2] = r2;
@@ -1558,8 +1571,6 @@ namespace Shu
         Result.Rows[3] = r3;
         Result.Rows[4] = r4;
         Result.Rows[5] = r5;
-
-        Result.Type = Type;
 
         return Result;
     }
@@ -1908,7 +1919,6 @@ namespace Shu
     matN<T, N>::matN()
     {
         this->Zero();
-        this->Type = ZERO;
     }
 
     template <typename T, size_t N>
@@ -1919,7 +1929,7 @@ namespace Shu
 
     template <typename T, size_t N>
     template <typename... Args>
-    matN<T, N>::matN(matrix_type Type, Args... args)
+    matN<T, N>::matN(Args... args)
     {
         size_t numArgs = sizeof...(args);
         T tempArray[N*N] = {static_cast<T>(args)...};
@@ -1975,7 +1985,6 @@ namespace Shu
             this->Rows[i].Zero();
             this->Rows[i][i] = (T)1;
         }
-        this->Type = IDENTITY;
     }
 
     template <typename T, size_t N>
@@ -1986,8 +1995,6 @@ namespace Shu
         {
             this->Rows[i].Zero();
         }
-
-        this->Type = ZERO;
     }
 
     template <typename T, size_t N>

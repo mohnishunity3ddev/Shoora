@@ -257,8 +257,8 @@ InitScene()
     // Bottom Wall (Static Rigidbody)
     Shu::vec2f Window = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
-    Scene->AddSphereBody(Shu::Vec3f(10.0f, 0.0f, 10.0f), colorU32::Proto_Red, 1.0f, 1.0f, 1.0f);
-    Scene->AddSphereBody(Shu::Vec3f(0.0f, -510.0f, 10.0f), colorU32::Gray, 500.0f, 0.0f, 1.0f);
+    Scene->AddSphereBody(Shu::Vec3f(10.0f, 0.0f, 10.0f), colorU32::Proto_Red, 1.0f, 1.0f, 0.7f);
+    Scene->AddSphereBody(Shu::Vec3f(0.0f, -510.0f, 10.0f), colorU32::Gray, 500.0f, 0.0f, 0.5f);
 }
 
 void
