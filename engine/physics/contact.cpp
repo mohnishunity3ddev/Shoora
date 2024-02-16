@@ -7,15 +7,19 @@ contact::ResolvePenetration()
         return;
     }
 
+    // Bounciness
     f32 Elasticity = ClampToRange(ReferenceBodyA->CoeffRestitution*IncidentBodyB->CoeffRestitution, 0.0f, 1.0f);
     const Shu::vec3f n = this->Normal;
 
+    // I^-1
     const Shu::mat3f invWorldInertiaA = ReferenceBodyA->GetInverseInertiaTensorWS();
     const Shu::mat3f invWorldInertiaB = IncidentBodyB->GetInverseInertiaTensorWS();
 
+    // Useful in calculating torque/angular impulses.
     Shu::vec3f rA = this->ReferenceContactPointA - ReferenceBodyA->GetCenterOfMassWS();
     Shu::vec3f rB = this->IncidentContactPointB - IncidentBodyB->GetCenterOfMassWS();
 
+    // factors due to rotation.
     const Shu::vec3f angularJA = (rA.Cross(n) * invWorldInertiaA).Cross(rA);
     const Shu::vec3f angularJB = (rB.Cross(n) * invWorldInertiaB).Cross(rB);
     f32 angularFactor = (angularJA + angularJB).Dot(n);
@@ -31,14 +35,21 @@ contact::ResolvePenetration()
 
     f32 numerator = (1.0f + Elasticity) * VRelDotN;
     f32 denominator = ReferenceBodyA->InvMass + IncidentBodyB->InvMass + angularFactor;
-    ASSERT(denominator > 0.0f);
-    f32 ImpulseMagnitude = numerator / denominator;
-    const Shu::vec3f Impulse = n * ImpulseMagnitude;
+    ASSERT(!NearlyEqual(denominator, 0.0f));
+    f32 ImpulseNormalMagnitude = numerator / denominator;
+    const Shu::vec3f ImpulseNormal = n * ImpulseNormalMagnitude;
 
-    ReferenceBodyA->ApplyImpulseAtPoint(Impulse, ReferenceContactPointA);
-    IncidentBodyB->ApplyImpulseAtPoint(-Impulse, IncidentContactPointB);
+    // Applying Linear + Angular impulses to the contact points on the two bodies.
+    ReferenceBodyA->ApplyImpulseAtPoint(ImpulseNormal, ReferenceContactPointA);
+    IncidentBodyB->ApplyImpulseAtPoint(-ImpulseNormal, IncidentContactPointB);
 
     // NOTE: Impulse due to friction
+    // Check https://web.archive.org/web/20211022100604/http://myselph.de/gamePhysics/friction.html
+    // IMPORTANT: NOTE:
+    // The main idea here is that the relative velocity of these two touching bodies are decremented by a factor of
+    // Mu which is the coeff of restitution, so that the system keeps losing energy. And the direction of the
+    // friction impulse is along the tangent to the collision normal so that it is opposing the direction of the
+    // velocity. All the other impulse calculation is the same as we did for the collision impulse above.
 
     const f32 frictionA = ReferenceBodyA->FrictionCoeff;
     const f32 frictionB = IncidentBodyB->FrictionCoeff;
@@ -54,7 +65,8 @@ contact::ResolvePenetration()
     const Shu::vec3f angularFA = (rA.Cross(VRelTangential) * invWorldInertiaA).Cross(rA);
     const Shu::vec3f angularFB = (rB.Cross(VRelTangential) * invWorldInertiaB).Cross(rB);
     f32 angularFactorFriction = (angularFA + angularFB).Dot(VRelTangential);
-    Shu::vec3f ImpulseFriction = VRelTangential * (friction / angularFactorFriction);
+    f32 ImpulseFrictionMagnitude = (friction / angularFactorFriction);
+    const Shu::vec3f ImpulseFriction = VRelTangential * ImpulseFrictionMagnitude;
 
     ReferenceBodyA->ApplyImpulseAtPoint(ImpulseFriction, ReferenceContactPointA);
     IncidentBodyB->ApplyImpulseAtPoint(-ImpulseFriction, IncidentContactPointB);
