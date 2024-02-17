@@ -21,6 +21,12 @@ if (USE_DEBUG)
   add_definitions(-D_DEBUG)
 endif()
 
+# set stack size.
+# set(STACK_SIZE 8388608)
+# if (MSVC)
+#     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:${STACK_SIZE}")
+# endif()
+
 ###### Find OpenGL
 # find_package(OpenGL REQUIRED)
 

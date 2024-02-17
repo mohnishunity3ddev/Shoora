@@ -718,6 +718,20 @@ Win32SetOutOfBoundsCursor(HWND Handle)
     SetCursorPos(MousePos.x, MousePos.y);
 }
 
+void
+Win32GetStackLimits()
+{
+    LogInfo("Hello there! I am %s\n", "mani");
+    PULONG stackLimit{};
+    PULONG stackBase{};
+    GetCurrentThreadStackLimits((PULONG_PTR)&stackLimit, (PULONG_PTR)&stackBase);
+    // Calculate the available stack space
+    SIZE_T stackSpace, sL = (SIZE_T)stackLimit, sB = (SIZE_T)stackBase;
+    if(sL > sB) { stackSpace = (sL - sB); }
+    else { stackSpace = (sB - sL); }
+    LogInfo("Available stack space: %zu bytes.\n", stackSpace);
+}
+
 // TODO)): Right now this is the only entry point since win32 is the only platform right now.
 // TODO)): Have to implement multiple entrypoints for all platforms.
 i32 WINAPI
@@ -793,6 +807,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     Win32GlobalRunning = true;
     LARGE_INTEGER FrameMarkerStart = Win32GetWallClock();
     LARGE_INTEGER FrameMarkerEnd = Win32GetWallClock();
+
     while(Win32GlobalRunning)
     {
         GlobalInputState = NewInputState;
