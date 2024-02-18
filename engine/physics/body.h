@@ -81,7 +81,7 @@ struct shoora_body
     void ClearTorques();
 
     void IntegrateForces(const f32 deltaTime);
-    void IntegrateVelocities(const f32 deltaTime);
+    void Update(const f32 deltaTime);
 };
 
 #define BODY_H

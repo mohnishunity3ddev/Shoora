@@ -14,8 +14,10 @@ struct contact
     shoora_body *ReferenceBodyA;
     shoora_body *IncidentBodyB;
 
-    Shu::vec3f ReferenceContactPointA;
-    Shu::vec3f IncidentContactPointB;
+    Shu::vec3f ReferenceHitPointA;
+    Shu::vec3f ReferenceHitPointA_LocalSpace;
+    Shu::vec3f IncidentHitPointB;
+    Shu::vec3f IncidentHitPointB_LocalSpace;
 
     Shu::vec3f Normal;
     f32 Depth;
@@ -24,6 +26,8 @@ struct contact
     void ResolvePenetration();
     void ResolveCollision();
 };
+
+b32 CompareContacts(const contact &c1, const contact &c2);
 
 #define CONTACT_H
 #endif // CONTACT_H

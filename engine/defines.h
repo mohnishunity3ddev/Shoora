@@ -75,7 +75,7 @@ enum shoora_quality
     Quality_Count
 };
 
-#define ABSOLUTE(Val) (((Val) < 0) ? (-Val) : (Val))
+#define SHU_ABSOLUTE(Val) (((Val) < 0) ? -(Val) : (Val))
 #define SIGN(Val) (((Val) < 0) ? (-1) : (1))
 
 #if _SHU_DEBUG
@@ -400,7 +400,7 @@ DefaultGreaterEqualComparator(const T &a, const T &b)
 inline b32
 NearlyEqual(f32 n, f32 expected, f32 epsilon = 2.0f*SHU_EPSILON)
 {
-    auto t = ABSOLUTE(n - expected);
+    auto t = SHU_ABSOLUTE(n - expected);
     b32 Result = (t <= epsilon);
     return Result;
 }

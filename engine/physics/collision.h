@@ -5,16 +5,21 @@
 #include "body.h"
 #include "contact.h"
 
+#define MaxContactCountPerPair 2
+
 struct collision
 {
-    static b32 IsColliding(shoora_body *A, shoora_body *B, arr<contact> &Contacts);
+    static b32 IsColliding(shoora_body *A, shoora_body *B, const f32 DeltaTime, contact *Contacts,
+                           i32 &ContactCount);
 
   private:
-    static b32 IsCollidingCircleCircle(shoora_body *A, shoora_body *B,  arr<contact> &Contacts);
-    static b32 IsCollidingPolygonPolygon(shoora_body *A, shoora_body *B,  arr<contact> &Contacts);
-    static b32 IsCollidingPolygonCircle(shoora_body *A, shoora_body *B,  arr<contact> &Contacts, b32 Invert = false);
+    static b32 IsCollidingCircleCircle(shoora_body *A, shoora_body *B,  contact *Contacts, i32 &ContactCount);
+    static b32 IsCollidingPolygonPolygon(shoora_body *A, shoora_body *B, contact *Contacts, i32 &ContactCount);
+    static b32 IsCollidingPolygonCircle(shoora_body *A, shoora_body *B, contact *Contacts,
+                                        i32 &ContactCount, b32 Invert = false);
     // A is the reference body here, B is the one which is incident(colliding) with A.
-    static b32 IsCollidingSphereSphere(shoora_body *A, shoora_body *B, arr<contact> &Contacts);
+    static b32 IsCollidingSphereSphere(shoora_body *A, shoora_body *B, const f32 DeltaTime, contact *Contacts,
+                                       i32 &ContactCount);
 };
 
 #define COLLISION2D_H

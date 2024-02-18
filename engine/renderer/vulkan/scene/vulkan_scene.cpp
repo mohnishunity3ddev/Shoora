@@ -176,6 +176,13 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
         b->IntegrateForces(dt);
     }
 
+
+    i32 NumContacts = 0;
+    const int MaxContacts = BodyCount * BodyCount;
+
+    contact *Contacts = (contact *)_alloca(sizeof(contact) * MaxContacts);
+    memset(Contacts, 0, sizeof(contact) * MaxContacts);
+
     for(i32 i = 0; i < BodyCount; ++i)
     {
         for(i32 j = i+1; j < BodyCount; ++j)
@@ -183,31 +190,75 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
             shoora_body *BodyA = Bodies + i;
             shoora_body *BodyB = Bodies + j;
 
-            contact Contacts[4];
-            arr<contact> ContactsArr{Contacts, ARRAY_SIZE(Contacts)};
-            if(collision::IsColliding(BodyA, BodyB, ContactsArr))
+            if(BodyA->IsStatic() && BodyB->IsStatic()) { continue; }
+
+            contact _Contacts[MaxContactCountPerPair];
+            i32 ContactCount = 0;
+            if(collision::IsColliding(BodyA, BodyB, dt, _Contacts, ContactCount))
             {
-                for(i32 cI = 0; cI < ContactsArr.size; ++cI)
+                ASSERT(ContactCount > 0 && ContactCount <= MaxContactCountPerPair);
+                for(i32 i = 0; i < ContactCount; ++i)
                 {
-                    contact *C = ContactsArr.data + cI;
-
-                    C->ResolveCollision();
-
-                    if(ShowContacts)
+                    // TODO)): If this assert gets hit, maybe change MaxContacts to include MaxContactCountPerPair // there.
+                    ASSERT(NumContacts != (MaxContacts-1));
+                    Contacts[NumContacts++] = _Contacts[i];
+                    if (ShowContacts)
                     {
-                        shoora_graphics::DrawSphere(C->ReferenceContactPointA, .1f, colorU32::Cyan);
-                        shoora_graphics::DrawSphere(C->IncidentContactPointB, .1f, colorU32::Green);
+                        auto pA = Contacts[i].ReferenceHitPointA;
+                        auto cA = Contacts[i].ReferenceBodyA->Position;
+                        auto distA = (pA - cA).Magnitude();
+                        auto errorA = distA - ((shoora_shape_sphere *)(Contacts[i].ReferenceBodyA->Shape.get()))->Radius;
+
+                        auto pB = Contacts[i].IncidentHitPointB;
+                        auto cB = Contacts[i].IncidentBodyB->Position;
+                        auto distB = (pB - cB).Magnitude();
+                        auto errorB = distB - ((shoora_shape_sphere *)(Contacts[i].IncidentBodyB->Shape.get()))->Radius;
+
+                        shoora_graphics::DrawSphere(Contacts[i].ReferenceHitPointA, .1f, colorU32::Cyan);
+                        shoora_graphics::DrawSphere(Contacts[i].IncidentHitPointB, .1f, colorU32::Green);
                     }
                 }
             }
         }
     }
 
-    // Integrate the velocities to get the final position for the body.
-    for(i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
+    // NOTE: Sort the timeofImpacts from earliest to latest.
+    if(NumContacts > 1)
     {
-        auto *b = Bodies + BodyIndex;
-        b->IntegrateVelocities(dt);
+        QuicksortIterative(Contacts, NumContacts, CompareContacts);
+    }
+
+    f32 AccumulatedTime = 0.0f;
+    for (i32 i = 0; i < NumContacts; ++i)
+    {
+        contact &Contact = Contacts[i];
+        const f32 local_dt = Contact.TimeOfImpact - AccumulatedTime;
+
+        shoora_body *BodyA = Contact.ReferenceBodyA;
+        shoora_body *BodyB = Contact.IncidentBodyB;
+
+        if(BodyA->IsStatic() && BodyB->IsStatic()) { continue; }
+
+        // Velocity + Position Update.
+        for (i32 j = 0; j < BodyCount; ++j)
+        {
+            auto *b = Bodies + j;
+            b->Update(local_dt);
+            int x = 0;
+        }
+
+        Contact.ResolveCollision();
+        AccumulatedTime += local_dt;
+    }
+
+    const f32 TimeRemaining = dt - AccumulatedTime;
+    if(TimeRemaining > 0.0f)
+    {
+        for (i32 j = 0; j < BodyCount; ++j)
+        {
+            auto *b = Bodies + j;
+            b->Update(TimeRemaining);
+        }
     }
 }
 

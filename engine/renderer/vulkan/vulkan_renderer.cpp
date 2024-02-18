@@ -38,7 +38,8 @@ static shoora_vulkan_context *Context = nullptr;
 static b32 isDebug = false;
 static b32 WireframeMode = false;
 static f32 TestCameraScale = 0.5f;
-static b32 GlobalShowContacts = false;
+static b32 GlobalShowContacts = true;
+static b32 GlobalPausePhysics = false;
 
 // NOTE: ALso make the same changes to the lighting shader.
 // TODO)): Automate this so that changing this automatically makes changes to the shader using shader variation.
@@ -257,8 +258,8 @@ InitScene()
     // Bottom Wall (Static Rigidbody)
     Shu::vec2f Window = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
-    Scene->AddSphereBody(Shu::Vec3f(10.0f, 0.0f, 10.0f), colorU32::Proto_Red, 1.0f, 1.0f, 0.7f);
-    Scene->AddSphereBody(Shu::Vec3f(0.0f, -510.0f, 10.0f), colorU32::Gray, 500.0f, 0.0f, 0.5f);
+    Scene->AddSphereBody(Shu::Vec3f(10.0f, 10.0f, 10.0f), colorU32::Proto_Red, 1.0f, 1.0f, 0.5f);
+    Scene->AddSphereBody(Shu::Vec3f(0.0f, -50.0f, 10.0f), colorU32::Gray, 50.0f, 0.0f, 0.01f);
 }
 
 void
@@ -541,10 +542,12 @@ GetMousePosDelta(f32 CurrentMouseDeltaX, f32 CurrentMouseDeltaY, f32 *outMouseDe
 void
 DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 {
+#if 0
     if(Platform_GetKeyInputState(VirtualKeyCodes::SU_LEFTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
     {
         int x = 0;
     }
+#endif
 
     // VK_CHECK(vkQueueWaitIdle(Context->Device.GraphicsQueue));
     Shu::vec2f CurrentMousePos = Shu::Vec2f(FramePacket->MouseXPos, FramePacket->MouseYPos);
@@ -553,7 +556,7 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     Context->Camera.UpdateWindowSize(Shu::Vec2f(GlobalWindowSize.x, GlobalWindowSize.y));
 
     ASSERT(Context != nullptr);
-    ASSERT(FramePacket->DeltaTime > 0.0f);
+    // ASSERT(FramePacket->DeltaTime > 0.0f);
     if(!Context->IsInitialized || Context->CurrentFrame >= SHU_MAX_FRAMES_IN_FLIGHT)
     {
         Platform_ExitApplication("[RENDERER]: Either the render is not initialized or there was some "
@@ -584,6 +587,10 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     if(Platform_GetKeyInputState(SU_SPACE, KeyState::SHU_KEYSTATE_PRESS))
     {
         GlobalShowContacts = !GlobalShowContacts;
+    }
+    if(Platform_GetKeyInputState('P', KeyState::SHU_KEYSTATE_PRESS))
+    {
+        GlobalPausePhysics = !GlobalPausePhysics;
     }
 
     if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
@@ -715,7 +722,8 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         vkCmdBindIndexBuffer(DrawCmdBuffer, shoora_mesh_database::GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
 
         Scene->UpdateInput(CurrentMouseWorldPos);
-        Scene->PhysicsUpdate(GlobalDeltaTime, GlobalShowContacts);
+        f32 pDt = GlobalPausePhysics ? 0.0f : GlobalDeltaTime;
+        Scene->PhysicsUpdate(pDt, GlobalShowContacts);
         DrawScene(DrawCmdBuffer);
 #endif
 

@@ -160,7 +160,7 @@ shoora_body::~shoora_body()
 b32
 shoora_body::IsStatic() const
 {
-    b32 Result = (ABSOLUTE(this->InvMass - 0.0f) < FLT_EPSILON);
+    b32 Result = (SHU_ABSOLUTE(this->InvMass - 0.0f) < FLT_EPSILON);
     return Result;
 }
 
@@ -194,7 +194,7 @@ shoora_body::ApplyImpulseAngular(const Shu::vec3f &AngularImpulse)
     if(this->IsStatic()) {
         return;
     }
-
+    
     // NOTE: This Impulse is in WS, so we need the inertia tensor also in WS.
     this->AngularVelocity += AngularImpulse * this->GetInverseInertiaTensorWS();
 
@@ -255,6 +255,7 @@ shoora_body::IntegrateForces(const f32 deltaTime)
     }
 
     this->Acceleration = this->SumForces * this->InvMass;
+    this->LinearVelocity += this->Acceleration * deltaTime;
 
     // alpha = Tau / Moment of Inertia
 #if 0
@@ -266,13 +267,12 @@ shoora_body::IntegrateForces(const f32 deltaTime)
 }
 
 void
-shoora_body::IntegrateVelocities(const f32 deltaTime)
+shoora_body::Update(const f32 deltaTime)
 {
     if(IsStatic()) {
         return;
     }
 
-    this->LinearVelocity += this->Acceleration * deltaTime;
     this->Position += this->LinearVelocity * deltaTime;
 
     // NOTE: The Angular Velocity stored in this body is around its center of mass which may not be its Position.
@@ -305,7 +305,13 @@ shoora_body::IntegrateVelocities(const f32 deltaTime)
     // NOTE: We are doing this because the quaternion(rotation) is around the center of mass not the position of
     // the body. This will handle cases where the center of mass of the body is not the same as its position.
     // Also, we are multiplying the change in orientation dq not the whole orientation Q(this->Rotation).
-    this->Position = CenterOfMassWS + Shu::QuatRotateVec(dq, CMToPos);
+    auto OldPosition = this->Position;
+    auto dP = CenterOfMassWS + Shu::QuatRotateVec(dq, CMToPos);
+    this->Position = dP;
+    if (this->Position.y < -10)
+    {
+        int x = 0;
+    }
 }
 
 void

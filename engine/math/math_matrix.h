@@ -1563,7 +1563,7 @@ namespace Shu
          const vec6<T> &r3, const vec6<T> &r4, const vec6<T> &r5)
     {
         mat6<T> Result;
-        
+
         Result.Rows[0] = r0;
         Result.Rows[1] = r1;
         Result.Rows[2] = r2;
@@ -2037,14 +2037,14 @@ namespace Shu
 
         for(i32 rowIndex = 0; rowIndex < N; ++rowIndex)
         {
-            T diagVal = ABSOLUTE(this->Data[rowIndex][rowIndex]);
+            T diagVal = SHU_ABSOLUTE(this->Data[rowIndex][rowIndex]);
 
             T sum = (T)0;
             for (i32 colIndex = 0; colIndex < N; ++colIndex)
             {
                 if(colIndex == rowIndex) continue;
 
-                sum += ABSOLUTE(this->Data[rowIndex][colIndex]);
+                sum += SHU_ABSOLUTE(this->Data[rowIndex][colIndex]);
             }
 
             if(diagVal < sum) {
