@@ -305,13 +305,7 @@ shoora_body::Update(const f32 deltaTime)
     // NOTE: We are doing this because the quaternion(rotation) is around the center of mass not the position of
     // the body. This will handle cases where the center of mass of the body is not the same as its position.
     // Also, we are multiplying the change in orientation dq not the whole orientation Q(this->Rotation).
-    auto OldPosition = this->Position;
-    auto dP = CenterOfMassWS + Shu::QuatRotateVec(dq, CMToPos);
-    this->Position = dP;
-    if (this->Position.y < -10)
-    {
-        int x = 0;
-    }
+    this->Position = CenterOfMassWS + Shu::QuatRotateVec(dq, CMToPos);
 }
 
 void

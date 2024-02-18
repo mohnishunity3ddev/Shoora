@@ -76,8 +76,15 @@ contact::ResolvePenetration()
         IncidentBodyB->ApplyImpulseAtPoint(-ImpulseFriction, IncidentHitPointB);
     }
 
-    // Manually Move out bodies so that they are not colliding using the projection method ONLY when the
+    // NOTE: Manually Move out bodies so that they are not colliding using the projection method ONLY when the
     // timeOfImpact is zero.
+    // IMPORTANT: Explanation of above statement:
+    // toi = 0 means CCD(Continuous Collision Detection) did not need to advance time ahead by the fraction of
+    // deltaTime. if toi is non-zero, that means the bodies in the CCD Routine were moved JUST enough so that they
+    // are just touching each other - meaning the penetration depth is zero. If the penetration depth is zero, then
+    // we do not need to manually move the objects to remove the penetration since there is none in the first
+    // place. If However, the toi is zero, then that means that there might be some penetration existing between
+    // the bodies. Only in this case, we need to move the objects manually which is what we are doing here.
     if(NearlyEqual(this->TimeOfImpact, 0.0f))
     {
         // if B has infinity mass, B.invMass = 0, therefore, dB will be zero.

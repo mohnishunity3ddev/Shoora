@@ -204,16 +204,6 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
                     Contacts[NumContacts++] = _Contacts[i];
                     if (ShowContacts)
                     {
-                        auto pA = Contacts[i].ReferenceHitPointA;
-                        auto cA = Contacts[i].ReferenceBodyA->Position;
-                        auto distA = (pA - cA).Magnitude();
-                        auto errorA = distA - ((shoora_shape_sphere *)(Contacts[i].ReferenceBodyA->Shape.get()))->Radius;
-
-                        auto pB = Contacts[i].IncidentHitPointB;
-                        auto cB = Contacts[i].IncidentBodyB->Position;
-                        auto distB = (pB - cB).Magnitude();
-                        auto errorB = distB - ((shoora_shape_sphere *)(Contacts[i].IncidentBodyB->Shape.get()))->Radius;
-
                         shoora_graphics::DrawSphere(Contacts[i].ReferenceHitPointA, .1f, colorU32::Cyan);
                         shoora_graphics::DrawSphere(Contacts[i].IncidentHitPointB, .1f, colorU32::Green);
                     }
@@ -228,6 +218,20 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
         QuicksortIterative(Contacts, NumContacts, CompareContacts);
     }
 
+    // NOTE: This is where we breakup the update routine for resolving the contacts.
+    // The toi's have been sorted above from earliest to latest. So the first contact in "Contacts" will have the
+    // shortest toi out of all of them. Whatever it is, we advance the bodies by that time(which is really the
+    // fraction of the current frame's deltaTime). so we advance all bodies by the first contact's toi. add that to
+    // the accumulatedTime. The next iteration, we have the next bigger toi. Since we already moved by the first
+    // toi, we subtract the first toi from the second toi and advance all the bodies in the contacts list by
+    // this difference amount. In the end, if there was "TimeRemaining" we advance all the bodies by that amount.
+    // IMPORTANT: NOTE: Why are we doing this?
+    // let's say there are three bodies that are colliding - A, B, C. A-B contact has the least toi, so it advances
+    // by that time. Since A and B collided, their post-collision velocities were such that B now should collide
+    // with C, which originally was colliding with A. We can potentially call IsColliding again to generate new
+    // contacts, but we are not doing that since that will be very expensive. But we atleast do the first collision
+    // handling correctly using Continuous Collision Detection data that we did earlier by only advancing the frame
+    // by toi instead of advancing by its Full DeltaTime which is in the dt variable passed to this function.
     f32 AccumulatedTime = 0.0f;
     for (i32 i = 0; i < NumContacts; ++i)
     {
@@ -244,13 +248,14 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
         {
             auto *b = Bodies + j;
             b->Update(local_dt);
-            int x = 0;
         }
 
         Contact.ResolveCollision();
         AccumulatedTime += local_dt;
     }
 
+    // NOTE: Making sure that we advance all the bodies by the full dt time passed in here. They have already
+    // advanced by the "AccumulatedTime" amount, doing the remaining time here.
     const f32 TimeRemaining = dt - AccumulatedTime;
     if(TimeRemaining > 0.0f)
     {
