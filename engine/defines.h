@@ -101,207 +101,51 @@ enum shoora_quality
         ASSERT(Call == VK_SUCCESS);                                                                               \
     }
 
-#define VK_CHECK_RESULT(Call)                                                                                     \
-    {                                                                                                             \
-        VkResult Result = Call;                                                                                   \
-        switch (Result)                                                                                           \
-        {                                                                                                         \
-        case VK_SUCCESS:                                                                                          \
-        {                                                                                                         \
-            LogInfoUnformatted("VK_SUCCESS:\n");                                                                  \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_NOT_READY:                                                                                        \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_NOT_READY:\n");                                                               \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_TIMEOUT:                                                                                          \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_TIMEOUT:\n");                                                                 \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_EVENT_SET:                                                                                        \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_EVENT_SET:\n");                                                               \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_EVENT_RESET:                                                                                      \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_EVENT_RESET:\n");                                                             \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_INCOMPLETE:                                                                                       \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_INCOMPLETE:\n");                                                              \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_OUT_OF_HOST_MEMORY:                                                                         \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_OUT_OF_HOST_MEMORY\n");                                                 \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY:                                                                       \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_OUT_OF_DEVICE_MEMORY\n");                                               \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_INITIALIZATION_FAILED:                                                                      \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_INITIALIZATION_FAILED\n");                                              \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_DEVICE_LOST:                                                                                \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_DEVICE_LOST\n");                                                        \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_MEMORY_MAP_FAILED:                                                                          \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_MEMORY_MAP_FAILED\n");                                                  \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_LAYER_NOT_PRESENT:                                                                          \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_LAYER_NOT_PRESENT\n");                                                  \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_EXTENSION_NOT_PRESENT:                                                                      \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_EXTENSION_NOT_PRESENT\n");                                              \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_FEATURE_NOT_PRESENT:                                                                        \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_FEATURE_NOT_PRESENT\n");                                                \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_INCOMPATIBLE_DRIVER:                                                                        \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_INCOMPATIBLE_DRIVER\n");                                                \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_TOO_MANY_OBJECTS:                                                                           \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_TOO_MANY_OBJECTS\n");                                                   \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_FORMAT_NOT_SUPPORTED:                                                                       \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_FORMAT_NOT_SUPPORTED\n");                                               \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_FRAGMENTED_POOL:                                                                            \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_FRAGMENTED_POOL\n");                                                    \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_UNKNOWN:                                                                                    \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_UNKNOWN:\n");                                                           \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_OUT_OF_POOL_MEMORY:                                                                         \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_OUT_OF_POOL_MEMORY\n");                                                 \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_INVALID_EXTERNAL_HANDLE:                                                                    \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_INVALID_EXTERNAL_HANDLE\n");                                            \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_FRAGMENTATION:                                                                              \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_FRAGMENTATION\n");                                                      \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS:                                                             \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS\n");                                     \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_PIPELINE_COMPILE_REQUIRED:                                                                        \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_PIPELINE_COMPILE_REQUIRED\n");                                                \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_SURFACE_LOST_KHR:                                                                           \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_SURFACE_LOST_KHR\n");                                                   \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR:                                                                   \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_NATIVE_WINDOW_IN_USE_KHR\n");                                           \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_SUBOPTIMAL_KHR:                                                                                   \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_SUBOPTIMAL_KHR:\n");                                                          \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_OUT_OF_DATE_KHR:                                                                            \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_OUT_OF_DATE_KHR\n");                                                    \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_INCOMPATIBLE_DISPLAY_KHR:                                                                   \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_INCOMPATIBLE_DISPLAY_KHR\n");                                           \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_VALIDATION_FAILED_EXT:                                                                      \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_VALIDATION_FAILED_EXT\n");                                              \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_INVALID_SHADER_NV:                                                                          \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_INVALID_SHADER_NV\n");                                                  \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT:                                               \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT\n");                       \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_NOT_PERMITTED_KHR:                                                                          \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_NOT_PERMITTED_KHR\n");                                                  \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT:                                                        \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT\n");                                \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_THREAD_IDLE_KHR:                                                                                  \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_THREAD_IDLE_KHR:\n");                                                         \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_THREAD_DONE_KHR:                                                                                  \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_THREAD_DONE_KHR:\n");                                                         \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_OPERATION_DEFERRED_KHR:                                                                           \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_OPERATION_DEFERRED_KHR\n");                                                   \
-        }                                                                                                         \
-        break;                                                                                                    \
-        case VK_OPERATION_NOT_DEFERRED_KHR:                                                                       \
-        {                                                                                                         \
-            LogErrorUnformatted("VK_OPERATION_NOT_DEFERRED_KHR\n");                                               \
-        }                                                                                                         \
-        break;                                                                                                    \
-        default:                                                                                                  \
-        {                                                                                                         \
-            LogError("Unknown Result: %u\n", Result);                                                             \
-        }                                                                                                         \
-        break;                                                                                                    \
-        }                                                                                                         \
+#define VK_CHECK_RESULT(Call)                                                                                                                                       \
+    {                                                                                                                                                               \
+        VkResult Result = Call;                                                                                                                                     \
+        switch (Result)                                                                                                                                             \
+        {                                                                                                                                                           \
+            case VK_SUCCESS: { LogInfoUnformatted("VK_SUCCESS:\n"); } break;                                                                                        \
+            case VK_NOT_READY: { LogErrorUnformatted("VK_NOT_READY:\n"); } break;                                                                                   \
+            case VK_TIMEOUT: { LogErrorUnformatted("VK_TIMEOUT:\n"); } break;                                                                                       \
+            case VK_EVENT_SET: { LogErrorUnformatted("VK_EVENT_SET:\n"); } break;                                                                                   \
+            case VK_EVENT_RESET: { LogErrorUnformatted("VK_EVENT_RESET:\n"); } break;                                                                               \
+            case VK_INCOMPLETE: { LogErrorUnformatted("VK_INCOMPLETE:\n"); } break;                                                                                 \
+            case VK_ERROR_OUT_OF_HOST_MEMORY: { LogErrorUnformatted("VK_ERROR_OUT_OF_HOST_MEMORY\n"); } break;                                                      \
+            case VK_ERROR_OUT_OF_DEVICE_MEMORY: { LogErrorUnformatted("VK_ERROR_OUT_OF_DEVICE_MEMORY\n"); } break;                                                  \
+            case VK_ERROR_INITIALIZATION_FAILED: { LogErrorUnformatted("VK_ERROR_INITIALIZATION_FAILED\n"); } break;                                                \
+            case VK_ERROR_DEVICE_LOST: { LogErrorUnformatted("VK_ERROR_DEVICE_LOST\n"); } break;                                                                    \
+            case VK_ERROR_MEMORY_MAP_FAILED: { LogErrorUnformatted("VK_ERROR_MEMORY_MAP_FAILED\n"); } break;                                                        \
+            case VK_ERROR_LAYER_NOT_PRESENT: { LogErrorUnformatted("VK_ERROR_LAYER_NOT_PRESENT\n"); } break;                                                        \
+            case VK_ERROR_EXTENSION_NOT_PRESENT: { LogErrorUnformatted("VK_ERROR_EXTENSION_NOT_PRESENT\n"); } break;                                                \
+            case VK_ERROR_FEATURE_NOT_PRESENT: { LogErrorUnformatted("VK_ERROR_FEATURE_NOT_PRESENT\n"); } break;                                                    \
+            case VK_ERROR_INCOMPATIBLE_DRIVER: { LogErrorUnformatted("VK_ERROR_INCOMPATIBLE_DRIVER\n"); } break;                                                    \
+            case VK_ERROR_TOO_MANY_OBJECTS: { LogErrorUnformatted("VK_ERROR_TOO_MANY_OBJECTS\n"); } break;                                                          \
+            case VK_ERROR_FORMAT_NOT_SUPPORTED: { LogErrorUnformatted("VK_ERROR_FORMAT_NOT_SUPPORTED\n"); } break;                                                  \
+            case VK_ERROR_FRAGMENTED_POOL: { LogErrorUnformatted("VK_ERROR_FRAGMENTED_POOL\n"); } break;                                                            \
+            case VK_ERROR_UNKNOWN: { LogErrorUnformatted("VK_ERROR_UNKNOWN:\n"); } break;                                                                           \
+            case VK_ERROR_OUT_OF_POOL_MEMORY: { LogErrorUnformatted("VK_ERROR_OUT_OF_POOL_MEMORY\n"); } break;                                                      \
+            case VK_ERROR_INVALID_EXTERNAL_HANDLE: { LogErrorUnformatted("VK_ERROR_INVALID_EXTERNAL_HANDLE\n"); } break;                                            \
+            case VK_ERROR_FRAGMENTATION: { LogErrorUnformatted("VK_ERROR_FRAGMENTATION\n"); } break;                                                                \
+            case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS: { LogErrorUnformatted("VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS\n"); } break;                              \
+            case VK_PIPELINE_COMPILE_REQUIRED: { LogErrorUnformatted("VK_PIPELINE_COMPILE_REQUIRED\n"); } break;                                                    \
+            case VK_ERROR_SURFACE_LOST_KHR: { LogErrorUnformatted("VK_ERROR_SURFACE_LOST_KHR\n"); } break;                                                          \
+            case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR: { LogErrorUnformatted("VK_ERROR_NATIVE_WINDOW_IN_USE_KHR\n"); } break;                                          \
+            case VK_SUBOPTIMAL_KHR: { LogErrorUnformatted("VK_SUBOPTIMAL_KHR:\n"); } break;                                                                         \
+            case VK_ERROR_OUT_OF_DATE_KHR: { LogErrorUnformatted("VK_ERROR_OUT_OF_DATE_KHR\n"); } break;                                                            \
+            case VK_ERROR_INCOMPATIBLE_DISPLAY_KHR: { LogErrorUnformatted("VK_ERROR_INCOMPATIBLE_DISPLAY_KHR\n"); } break;                                          \
+            case VK_ERROR_VALIDATION_FAILED_EXT: { LogErrorUnformatted("VK_ERROR_VALIDATION_FAILED_EXT\n"); } break;                                                \
+            case VK_ERROR_INVALID_SHADER_NV: { LogErrorUnformatted("VK_ERROR_INVALID_SHADER_NV\n"); } break;                                                        \
+            case VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT: { LogErrorUnformatted("VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT\n"); } break;  \
+            case VK_ERROR_NOT_PERMITTED_KHR: { LogErrorUnformatted("VK_ERROR_NOT_PERMITTED_KHR\n"); } break;                                                        \
+            case VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT: { LogErrorUnformatted("VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT\n"); } break;                    \
+            case VK_THREAD_IDLE_KHR: { LogErrorUnformatted("VK_THREAD_IDLE_KHR:\n"); } break;                                                                       \
+            case VK_THREAD_DONE_KHR: { LogErrorUnformatted("VK_THREAD_DONE_KHR:\n"); } break;                                                                       \
+            case VK_OPERATION_DEFERRED_KHR: { LogErrorUnformatted("VK_OPERATION_DEFERRED_KHR\n"); } break;                                                          \
+            case VK_OPERATION_NOT_DEFERRED_KHR: { LogErrorUnformatted("VK_OPERATION_NOT_DEFERRED_KHR\n"); } break;                                                  \
+            default: { LogError("Unknown Result: %u\n", Result); } break;                                                                                           \
+        }                                                                                                                                                           \
     }
 
 #define MEMZERO(MemPtr, Size)                                                                                     \

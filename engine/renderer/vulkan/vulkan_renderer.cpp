@@ -245,7 +245,7 @@ WorldToMouse(const Shu::vec2f &WorldPos)
     Shu::vec2f Result;
     Result.x = x;
     Result.y = y;
-
+    
     return Result;
 }
 #endif
@@ -259,7 +259,7 @@ InitScene()
     Shu::vec2f Window = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
     Scene->AddSphereBody(Shu::Vec3f(10.0f, 10.0f, 10.0f), colorU32::Proto_Red, 1.0f, 1.0f, 0.5f);
-    Scene->AddSphereBody(Shu::Vec3f(0.0f, -50.0f, 10.0f), colorU32::Gray, 50.0f, 0.0f, 0.01f);
+    Scene->AddSphereBody(Shu::Vec3f(0.0f, -501.0f, 10.0f), colorU32::Gray, 500.0f, 0.0f, 0.01f);
 }
 
 void
