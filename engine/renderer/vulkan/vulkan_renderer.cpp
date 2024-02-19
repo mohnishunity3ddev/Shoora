@@ -18,6 +18,7 @@
 #include <physics/constraint.h>
 #include <physics/force.h>
 #include <physics/collision.h>
+#include <physics/bounds.h>
 #include <utils/utils.h>
 
 #ifdef WIN32
@@ -245,7 +246,7 @@ WorldToMouse(const Shu::vec2f &WorldPos)
     Shu::vec2f Result;
     Result.x = x;
     Result.y = y;
-    
+
     return Result;
 }
 #endif

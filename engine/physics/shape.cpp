@@ -214,6 +214,22 @@ shoora_shape_polygon::FindMinSeparation(shoora_shape_polygon *Other, i32 &Refere
     return BestSeparation;
 }
 
+shoora_bounds
+shoora_shape_polygon::GetBounds(const Shu::vec3f &Pos, const Shu::quat &Orientation) const
+{
+    // TODO)): Not implemented yet.
+    shoora_bounds Result;
+    return Result;
+}
+
+shoora_bounds
+shoora_shape_polygon::GetBounds() const
+{
+    // TODO)): Not implemented yet.
+    shoora_bounds Result;
+    return Result;
+}
+
 // NOTE: Circle
 shoora_shape_circle::shoora_shape_circle(f32 Radius)
     : shoora_shape(shoora_mesh_type::CIRCLE)
@@ -247,6 +263,24 @@ shoora_shape_circle::GetType() const
     return shoora_mesh_type::CIRCLE;
 }
 
+shoora_bounds
+shoora_shape_circle::GetBounds(const Shu::vec3f &Pos, const Shu::quat &Orientation) const
+{
+    // TODO)): Not implemented yet.
+    shoora_bounds Result;
+    return Result;
+}
+
+shoora_bounds
+shoora_shape_circle::GetBounds() const
+{
+    // TODO)): Not implemented yet.
+    shoora_bounds Result;
+    return Result;
+}
+
+
+
 // NOTE: Sphere
 shoora_shape_sphere::shoora_shape_sphere(f32 Radius)
     : shoora_shape(shoora_mesh_type::SPHERE)
@@ -278,6 +312,24 @@ shoora_mesh_type
 shoora_shape_sphere::GetType() const
 {
     return shoora_mesh_type::SPHERE;
+}
+
+shoora_bounds
+shoora_shape_sphere::GetBounds(const Shu::vec3f &Pos, const Shu::quat &Orientation) const
+{
+    shoora_bounds Result;
+    Result.Mins = Pos - Shu::Vec3f(this->Radius);
+    Result.Maxs = Pos + Shu::Vec3f(this->Radius);
+    return Result;
+}
+
+shoora_bounds
+shoora_shape_sphere::GetBounds() const
+{
+    shoora_bounds Result;
+    Result.Mins = Shu::Vec3f(-this->Radius);
+    Result.Maxs = Shu::Vec3f(this->Radius);
+    return Result;
 }
 
 
@@ -314,6 +366,22 @@ shoora_shape_box::GetType() const
     return shoora_mesh_type::RECT_2D;
 }
 
+shoora_bounds
+shoora_shape_box::GetBounds(const Shu::vec3f &Pos, const Shu::quat &Orientation) const
+{
+    // TODO)): Not implemented yet.
+    shoora_bounds Result;
+    return Result;
+}
+
+shoora_bounds
+shoora_shape_box::GetBounds() const
+{
+    // TODO)): Not implemented yet.
+    shoora_bounds Result;
+    return Result;
+}
+
 // NOTE: Cube Stuff
 shoora_shape_cube::shoora_shape_cube(u32 Width, u32 Height, u32 Depth)
     : shoora_shape(shoora_mesh_type::CUBE)
@@ -348,4 +416,20 @@ shoora_mesh_type
 shoora_shape_cube::GetType() const
 {
     return shoora_mesh_type::CUBE;
+}
+
+shoora_bounds
+shoora_shape_cube::GetBounds(const Shu::vec3f &Pos, const Shu::quat &Orientation) const
+{
+    // TODO)): Not implemented yet.
+    shoora_bounds Result;
+    return Result;
+}
+
+shoora_bounds
+shoora_shape_cube::GetBounds() const
+{
+    // TODO)): Not implemented yet.
+    shoora_bounds Result;
+    return Result;
 }

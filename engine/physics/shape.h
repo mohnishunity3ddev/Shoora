@@ -3,6 +3,7 @@
 #include <defines.h>
 #include <mesh/database/mesh_database.h>
 #include <math/math.h>
+#include "bounds.h"
 
 #define MOMENT_OF_INTERTIA_FUNC(name) f32 name()
 typedef f32 getInertiaFunc();
@@ -23,6 +24,9 @@ struct shoora_shape
     virtual Shu::vec3f GetDim() const = 0;
     virtual shoora_mesh_type GetType() const = 0;
     virtual Shu::vec3f GetCenterOfMass() { return CenterOfMass; }
+
+    virtual shoora_bounds GetBounds(const Shu::vec3f &Pos, const Shu::quat &Orientation) const = 0;
+    virtual shoora_bounds GetBounds() const = 0;
 
     shoora_mesh_filter *GetMeshFilter();
 
@@ -48,6 +52,9 @@ struct shoora_shape_polygon : shoora_shape
     virtual Shu::mat3f InertiaTensor() const override;
     virtual Shu::vec3f GetDim() const override;
     virtual shoora_mesh_type GetType() const override;
+    virtual shoora_bounds GetBounds(const Shu::vec3f &Pos, const Shu::quat &Orientation) const override;
+    virtual shoora_bounds GetBounds() const override;
+
 
     f32 FindMinSeparation(shoora_shape_polygon *Other, i32 &ReferenceEdgeIndex, Shu::vec2f &SupportPoint);
 
@@ -71,6 +78,8 @@ struct shoora_shape_circle : shoora_shape
     virtual Shu::mat3f InertiaTensor() const override;
     virtual Shu::vec3f GetDim() const override;
     virtual shoora_mesh_type GetType() const override;
+    virtual shoora_bounds GetBounds(const Shu::vec3f &Pos, const Shu::quat &Orientation) const override;
+    virtual shoora_bounds GetBounds() const override;
 };
 
 struct shoora_shape_sphere : shoora_shape
@@ -78,11 +87,13 @@ struct shoora_shape_sphere : shoora_shape
     // shoora_shape_circle() = delete;
     shoora_shape_sphere(f32 Radius);
     virtual ~shoora_shape_sphere();
-    
+
     f32 Radius;
     virtual Shu::mat3f InertiaTensor() const override;
     virtual Shu::vec3f GetDim() const override;
     virtual shoora_mesh_type GetType() const override;
+    virtual shoora_bounds GetBounds(const Shu::vec3f &Pos, const Shu::quat &Orientation) const override;
+    virtual shoora_bounds GetBounds() const override;
 };
 
 struct shoora_shape_box : shoora_shape_polygon
@@ -95,6 +106,8 @@ struct shoora_shape_box : shoora_shape_polygon
     virtual Shu::mat3f InertiaTensor() const override;
     virtual Shu::vec3f GetDim() const override;
     virtual shoora_mesh_type GetType() const override;
+    virtual shoora_bounds GetBounds(const Shu::vec3f &Pos, const Shu::quat &Orientation) const override;
+    virtual shoora_bounds GetBounds() const override;
 };
 
 struct shoora_shape_cube : shoora_shape
@@ -106,6 +119,8 @@ struct shoora_shape_cube : shoora_shape
     virtual Shu::mat3f InertiaTensor() const override;
     virtual Shu::vec3f GetDim() const override;
     virtual shoora_mesh_type GetType() const override;
+    virtual shoora_bounds GetBounds(const Shu::vec3f &Pos, const Shu::quat &Orientation) const override;
+    virtual shoora_bounds GetBounds() const override;
 };
 
 #define SHAPE_H

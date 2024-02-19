@@ -1,0 +1,28 @@
+#if !defined(BOUNDS_H)
+
+#include <defines.h>
+#include <math/math.h>
+
+struct shoora_bounds
+{
+    shoora_bounds() { this->Clear(); }
+    shoora_bounds(const shoora_bounds &other) : Mins(other.Mins), Maxs(other.Maxs) {}
+    const shoora_bounds &operator=(const shoora_bounds &other);
+    ~shoora_bounds() = default;
+
+    void Clear();
+    b32 DoesIntersect(const shoora_bounds &other) const;
+    void Expand(const Shu::vec3f *Pts, const i32 Num);
+    void Expand(const Shu::vec3f &V);
+    void Expand(const shoora_bounds &Bounds);
+
+    f32 WidthX() const { f32 Result = Maxs.x - Mins.x; return Result; }
+    f32 WidthY() const { f32 Result = Maxs.y - Mins.y; return Result; }
+    f32 WidthZ() const { f32 Result = Maxs.z - Mins.z; return Result; }
+
+    Shu::vec3f Mins;
+    Shu::vec3f Maxs;
+};
+
+#define BOUNDS_H
+#endif // BOUNDS_H
