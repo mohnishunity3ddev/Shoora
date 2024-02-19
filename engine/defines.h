@@ -28,7 +28,6 @@ typedef double f64;
 #define GLM_FORCE_LEFT_HANDED
 #endif
 
-#define SHU_CRASH_DUMP_ENABLE 0
 // NOTE: To make sure NSight is able to launch the app.
 #define SHU_ENGINE_NAME "Shoora Game Engine"
 #define SHU_RENDERER_BACKEND_VULKAN
@@ -50,8 +49,10 @@ typedef double f64;
 #define SHU_EPSILON FLT_EPSILON
 #if _DEBUG
     #define _SHU_DEBUG 1
+    #define SHU_CRASH_DUMP_ENABLE 0
 #else
     #define _SHU_RELEASE 1
+    #define SHU_CRASH_DUMP_ENABLE 1
 #endif
 #elif defined(__clang__)
 #define SHU_FLOAT_MIN -__FLT_MAX__
@@ -78,15 +79,15 @@ enum shoora_quality
 #define SHU_ABSOLUTE(Val) (((Val) < 0) ? -(Val) : (Val))
 #define SIGN(Val) (((Val) < 0) ? (-1) : (1))
 
-#if _SHU_DEBUG
+// #if _SHU_DEBUG
 #define ASSERT(Expression)                                                                                        \
     if (!(Expression))                                                                                            \
     {                                                                                                             \
         *((int volatile *)0) = 0;                                                                                 \
     }
-#else
-#define ASSERT(Expression)
-#endif
+// #else
+// #define ASSERT(Expression)
+// #endif
 
 #define OFFSET_OF(Var, Member) (u64)(&(((Var *)0)->Member))
 #define SHU_INVALID_DEFAULT                                                                                       \

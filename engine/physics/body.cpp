@@ -194,7 +194,7 @@ shoora_body::ApplyImpulseAngular(const Shu::vec3f &AngularImpulse)
     if(this->IsStatic()) {
         return;
     }
-    
+
     // NOTE: This Impulse is in WS, so we need the inertia tensor also in WS.
     this->AngularVelocity += AngularImpulse * this->GetInverseInertiaTensorWS();
 

@@ -4,6 +4,7 @@
 #include <physics/collision.h>
 #include <physics/contact.h>
 #include <renderer/vulkan/graphics/vulkan_graphics.h>
+#include <physics/broadphase.h>
 
 #ifdef WIN32
 #include "platform/windows/win_platform.h"
@@ -42,6 +43,17 @@ void
 shoora_scene::AddMeshToScene(const Shu::vec3f *vPositions, u32 vCount)
 {
 }
+
+#if 0
+shoora_body *
+shoora_scene::AddBody(const shoora_body &Body)
+{
+    Bodies.emplace_back(std::move(Body));
+
+    shoora_body *b = Bodies.get(Bodies.size() - 1);
+    return b;
+}
+#endif
 
 shoora_body *
 shoora_scene::AddCubeBody(const Shu::vec3f &Pos, const Shu::vec3f &Scale, u32 ColorU32, f32 Mass,
@@ -176,46 +188,50 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
         b->IntegrateForces(dt);
     }
 
+    // Broadphase
+    shoora_dynamic_array<collision_pair> CollisionPairs;
+    CollisionPairs.reserve(BodyCount*BodyCount);
+    broad_phase::BroadPhase(Bodies, BodyCount, CollisionPairs, dt);
 
     i32 NumContacts = 0;
     const int MaxContacts = BodyCount * BodyCount;
 
-    contact *Contacts = (contact *)_alloca(sizeof(contact) * MaxContacts);
-    memset(Contacts, 0, sizeof(contact) * MaxContacts);
+    size_t contactsMemSize = sizeof(contact) * CollisionPairs.size();
+    contact *Contacts = (contact *)_alloca(contactsMemSize);
+    memset(Contacts, 0, contactsMemSize);
 
-    for(i32 i = 0; i < BodyCount; ++i)
+    for(i32 i = 0; i < CollisionPairs.size(); ++i)
     {
-        for(i32 j = i+1; j < BodyCount; ++j)
+        const collision_pair &Pair = CollisionPairs[i];
+        shoora_body *BodyA = &Bodies[Pair.A];
+        shoora_body *BodyB = &Bodies[Pair.B];
+
+        if(BodyA->IsStatic() && BodyB->IsStatic()) { continue; }
+
+        contact _Contacts[MaxContactCountPerPair];
+        i32 ContactCount = 0;
+        if(collision::IsColliding(BodyA, BodyB, dt, _Contacts, ContactCount))
         {
-            shoora_body *BodyA = Bodies + i;
-            shoora_body *BodyB = Bodies + j;
-
-            if(BodyA->IsStatic() && BodyB->IsStatic()) { continue; }
-
-            contact _Contacts[MaxContactCountPerPair];
-            i32 ContactCount = 0;
-            if(collision::IsColliding(BodyA, BodyB, dt, _Contacts, ContactCount))
+            ASSERT(ContactCount > 0 && ContactCount <= MaxContactCountPerPair);
+            for(i32 i = 0; i < ContactCount; ++i)
             {
-                ASSERT(ContactCount > 0 && ContactCount <= MaxContactCountPerPair);
-                for(i32 i = 0; i < ContactCount; ++i)
+                // TODO)): If this assert gets hit, maybe change MaxContacts to include MaxContactCountPerPair // there.
+                ASSERT(NumContacts != (MaxContacts-1));
+                Contacts[NumContacts++] = _Contacts[i];
+                if (ShowContacts)
                 {
-                    // TODO)): If this assert gets hit, maybe change MaxContacts to include MaxContactCountPerPair // there.
-                    ASSERT(NumContacts != (MaxContacts-1));
-                    Contacts[NumContacts++] = _Contacts[i];
-                    if (ShowContacts)
-                    {
-                        shoora_graphics::DrawSphere(Contacts[i].ReferenceHitPointA, .1f, colorU32::Cyan);
-                        shoora_graphics::DrawSphere(Contacts[i].IncidentHitPointB, .1f, colorU32::Green);
-                    }
+                    shoora_graphics::DrawSphere(Contacts[i].ReferenceHitPointA, .1f, colorU32::Cyan);
+                    shoora_graphics::DrawSphere(Contacts[i].IncidentHitPointB, .1f, colorU32::Green);
                 }
             }
         }
+
     }
 
     // NOTE: Sort the timeofImpacts from earliest to latest.
     if(NumContacts > 1)
     {
-        QuicksortIterative(Contacts, NumContacts, CompareContacts);
+        QuicksortRecursive(Contacts, 0, NumContacts, CompareContacts);
     }
 
     // NOTE: This is where we breakup the update routine for resolving the contacts.

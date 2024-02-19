@@ -24,7 +24,8 @@ struct shoora_scene
 
     void AddConstraint2D(constraint_2d *Constraint);
     i32 GetConstraints2DCount();
-
+    
+    // shoora_body *AddBody(const shoora_body &Body);
     shoora_body *AddCubeBody(const Shu::vec3f &Pos, const Shu::vec3f &Scale, u32 ColorU32, f32 Mass,
                              f32 Restitution, const Shu::vec3f &EulerAngles = Shu::Vec3f(0.0f));
     shoora_body *AddSphereBody(const Shu::vec3f &Pos, u32 ColorU32, f32 Radius, f32 Mass, f32 Restitution,

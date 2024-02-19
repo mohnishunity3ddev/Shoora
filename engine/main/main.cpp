@@ -408,8 +408,6 @@ OutputToConsole(LogType LogType, const char *Message)
     fprintf(WriteFp, "%s", Message);
     fclose(WriteFp);
     WriteFp = nullptr;
-#else
-    fprintf(WriteFp, "%s", Message);
 #endif
 
     HANDLE Console = GlobalWin32WindowContext.ConsoleHandle;
@@ -746,12 +744,12 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
 {
     if (WriteFp == nullptr)
     {
-        WriteFp = fopen("app_dump.txt", "w");
 #if SHU_CRASH_DUMP_ENABLE
+        WriteFp = fopen("app_dump.txt", "w");
         fclose(WriteFp);
 #endif
     }
-    OutputToConsole(LogType_Info, "Inside WinMain\n");
+    // OutputToConsole(LogType_Info, "Inside WinMain\n");
 
     LARGE_INTEGER Frequency;
     QueryPerformanceFrequency(&Frequency);

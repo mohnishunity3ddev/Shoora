@@ -2,6 +2,8 @@
 
 #include <defines.h>
 #include <memory.h>
+#include <platform/platform.h>
+#include <utility>
 
 template<typename T>
 struct shoora_dynamic_array
@@ -21,7 +23,7 @@ struct shoora_dynamic_array
     shoora_dynamic_array(i32 ReserveCapacity) { reserve(ReserveCapacity); }
     ~shoora_dynamic_array()
     {
-        LogFatalUnformatted("Dynamic array destructor called!\n");
+        // LogFatalUnformatted("Dynamic array destructor called!\n");
         ASSERT(arr != nullptr);
         delete[] arr;
     }
@@ -64,6 +66,17 @@ struct shoora_dynamic_array
         arr[Size++] = std::forward<T>(item);
     }
 
+    inline void
+    push_back(T &item)
+    {
+        if((Size + 1) >= Capacity)
+        {
+            Resize();
+        }
+
+        arr[Size++] = std::forward<T>(item);
+    }
+
     template <typename... Args>
     inline void
     emplace_back(Args &&...args)
@@ -94,7 +107,7 @@ struct shoora_dynamic_array
         T *Result = arr + Index;
         return Result;
     }
-    
+
     inline T*
     data()
     {

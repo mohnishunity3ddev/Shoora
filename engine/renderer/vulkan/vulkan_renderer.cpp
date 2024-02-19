@@ -259,8 +259,43 @@ InitScene()
     // Bottom Wall (Static Rigidbody)
     Shu::vec2f Window = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
-    Scene->AddSphereBody(Shu::Vec3f(10.0f, 10.0f, 10.0f), colorU32::Proto_Red, 1.0f, 1.0f, 0.5f);
-    Scene->AddSphereBody(Shu::Vec3f(0.0f, -501.0f, 10.0f), colorU32::Gray, 500.0f, 0.0f, 0.01f);
+    // Dynamic Bodies
+    shoora_body Body;
+    for(i32 x = 0; x < 6; x++)
+    {
+        for(i32 y = 0; y < 6; y++)
+        {
+            f32 Radius = 0.5f;
+            f32 xx = (f32)(x - 1) * Radius * 1.5f;
+            f32 zz = (f32)(y - 1) * Radius * 1.5f;
+
+            f32 Mass = 1.0f;
+            f32 Restitution = 0.5f;
+
+            auto *b = Scene->AddSphereBody(Shu::Vec3f(xx, 100.0f, zz), colorU32::Proto_Orange, Radius, Mass, Restitution);
+            b->FrictionCoeff = 0.5f;
+            b->LinearVelocity = Shu::Vec3f(0.0f);
+        }
+    }
+
+    // Static "floor"
+    for (i32 x = 0; x < 3; x++)
+    {
+        for (i32 y = 0; y < 3; y++)
+        {
+            f32 Radius = 80.0f;
+            f32 xx = (f32)(x - 1) * Radius * 0.25f;
+            f32 zz = (f32)(y - 1) * Radius * 0.25f;
+
+            f32 Mass = 0.0f;
+            f32 Restitution = 0.99f;
+
+            auto *b = Scene->AddSphereBody(Shu::Vec3f(xx, 10.0f, zz), colorU32::Gray, Radius, Mass,
+                                           Restitution);
+            b->FrictionCoeff = 0.5f;
+            b->LinearVelocity = Shu::Vec3f(0.0f);
+        }
+    }
 }
 
 void
@@ -417,8 +452,14 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     CreateRenderPass(RenderDevice, Swapchain, &VulkanContext->GraphicsRenderPass);
     CreateSwapchainFramebuffers(RenderDevice, Swapchain, VulkanContext->GraphicsRenderPass);
 
-    SetupCamera(&VulkanContext->Camera, shoora_projection::PROJECTION_PERSPECTIVE, 0.1f, 1000.0f, 16.0f / 9.0f,
-                GlobalWindowSize.y, 45.0f, Shu::Vec3f(0, 0, -20));
+    shoora_camera *pCamera = &VulkanContext->Camera;
+    SetupCamera(pCamera, shoora_projection::PROJECTION_PERSPECTIVE, 0.1f, 1000.0f, 16.0f / 9.0f,
+                GlobalWindowSize.y, 45.0f, Shu::Vec3f(14.1368380f, 106.438675f, -40.9848938f));
+    pCamera->Front = Shu::Vec3f(-0.332412988f, -0.475319535f, -0.814599872f);
+    pCamera->Right = Shu::Vec3f(-0.925878108f , 0.0f, 0.377822191f);
+    pCamera->Up = Shu::Vec3f(-0.179586262, 0.879813194, -0.440087944f);
+    pCamera->Yaw = 247.801147f;
+    pCamera->Pitch = -28.3801575f;
 
     // NOTE: Mesh Database setup
     shoora_mesh_database::MeshDbBegin(RenderDevice);

@@ -27,7 +27,7 @@ main()
     // OutUV = InUV*PushConstant.Model[0][0];
     // TODO: Pass in the UV Scale using a uniform. Remove this!
     if(PushConstant.Model[0][0] > 5.) {
-        OutUV = InUV * 200;
+        OutUV = InUV * 10;
     } else {
         OutUV = InUV;
     }

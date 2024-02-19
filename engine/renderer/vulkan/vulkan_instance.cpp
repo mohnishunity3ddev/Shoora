@@ -10,7 +10,9 @@ b32
 CheckAvailableInstanceExtensions(const char **ppRequiredInstanceExtensions, u32 RequiredInstanceExtensionCount)
 {
     u32 AvailableExtensionCount = 0;
+
     VK_CHECK(vkEnumerateInstanceExtensionProperties(0, &AvailableExtensionCount, 0));
+    // LogInfo("Available Extensions Count: %d\n", AvailableExtensionCount);
     // VK_CHECK(vkEnumerateInstanceExtensionProperties(0, &AvailableExtensionCount, 0));
 
     ASSERT((AvailableExtensionCount > 0) && (AvailableExtensionCount <= 32) &&
@@ -27,6 +29,7 @@ CheckAvailableInstanceExtensions(const char **ppRequiredInstanceExtensions, u32 
         ++RequiredExtensionIndex)
     {
         const char *RequiredExtensionName = *(ppRequiredInstanceExtensions + RequiredExtensionIndex);
+        // LogInfo("Looking for Extension: %s.\n", RequiredExtensionName);
 
         for(i32 AvailableExtensionIndex = 0;
             AvailableExtensionIndex < AvailableExtensionCount;
@@ -38,6 +41,7 @@ CheckAvailableInstanceExtensions(const char **ppRequiredInstanceExtensions, u32 
             if (!strcmp(Extension.extensionName, RequiredExtensionName))
             {
                 ++FoundExtensionCount;
+                // LogInfo("Found Extension: %s.\n", RequiredExtensionName);
                 break;
             }
         }
