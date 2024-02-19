@@ -9,7 +9,10 @@ ComparePseudoBodies(const pseudo_body &A, const pseudo_body &B)
     return Result;
 }
 
-// Sort the bodies based on their bounds along a given axis.
+// NOTE: Sort the bodies based on their bounds along a given axis.
+// WE can't for example, choose the z-axis since that will not be of any use. every rigidbody in the same zPos, not
+// colliding, will still be considered as colliding, and we will get the worst case and not limit the number of
+// collisions in the broadphase which defeats the purpose of doing broadphase collision detection.
 void
 SortBodiesBounds(const shoora_body *Bodies, const i32 BodyCount, pseudo_body *SortedArray, const f32 DeltaTime)
 {
@@ -21,10 +24,16 @@ SortBodiesBounds(const shoora_body *Bodies, const i32 BodyCount, pseudo_body *So
         const shoora_body &Body = Bodies[i];
         shoora_bounds Bounds = Body.Shape->GetBounds(Body.Position, Body.Rotation);
 
-        // Expand the bounds by the body's Linear Velocity.
+        // Expand the bounds by the body's Linear Velocity otherwise the work on continuous collision detection
+        // will be of no use.
+        // We are doing this since CCD involves detecting collision inside the frame itself, so the bounds have to
+        // take into account how much the bodies will move in the current frame. We cant consider they being at
+        // rest for the current physics frame(tick). The movement of the body is its velocity multiplied by
+        // deltaTime.
         Bounds.Expand(Bounds.Mins + Body.LinearVelocity*DeltaTime);
         Bounds.Expand(Bounds.Maxs + Body.LinearVelocity*DeltaTime);
 
+        // Adding some kind of epsilon/small value to account for rounding errors in floats.
         f32 Epsilon = 0.01f;
         Bounds.Expand(Bounds.Mins - Axis*Epsilon);
         Bounds.Expand(Bounds.Mins + Axis*Epsilon);
@@ -42,23 +51,28 @@ SortBodiesBounds(const shoora_body *Bodies, const i32 BodyCount, pseudo_body *So
 }
 
 void
-BuildPairs(shoora_dynamic_array<collision_pair> &CollisionPairs, const pseudo_body *SortedBodies,
-           const i32 SortedBodyCount)
+BuildPairs(shoora_dynamic_array<collision_pair> &CollisionPairs, const pseudo_body *SortedPseudoBodies,
+           const i32 SortedPseudoBodyCount)
 {
     CollisionPairs.Clear();
 
     // At this point, the bodies should be sorted. We build collision Pairs now.
-    for(i32 i = 0; i < (SortedBodyCount*2); ++i)
+    for(i32 i = 0; i < SortedPseudoBodyCount; ++i)
     {
-        const pseudo_body &A = SortedBodies[i];
+        const pseudo_body &A = SortedPseudoBodies[i];
         if(!A.IsMin) { continue; }
 
         collision_pair Pair;
         Pair.A = A.Id;
 
-        for (i32 j = (i+1); j < (SortedBodyCount*2); ++j)
+        // NOTE:
+        // What we are doing here is - we add a pair to collisionPairs if for the current body A, we go through
+        // the list again, adding bodies to it in a separate pair till we see it again(its maxs). all the bodies
+        // that we added to a pair with A(the current body) came before A's max, meaning they are inside A's bound,
+        // so it is a potential collision since their bounds are overlapping.
+        for (i32 j = (i+1); j < SortedPseudoBodyCount; ++j)
         {
-            const pseudo_body &B = SortedBodies[j];
+            const pseudo_body &B = SortedPseudoBodies[j];
             // If we have hit the end of the a element,then we are done creating pairs with a.
             if (B.Id == A.Id) { break; }
             if (!B.IsMin) { continue; }
@@ -73,10 +87,15 @@ void
 SweepAndPrune1D(const shoora_body *Bodies, const i32 BodyCount, shoora_dynamic_array<collision_pair> &FinalPairs,
                 const f32 DeltaTime)
 {
-    pseudo_body *SortedBodies = (pseudo_body *)_alloca(sizeof(pseudo_body) * BodyCount * 2);
+    pseudo_body *SortedPseudoBodies = (pseudo_body *)_alloca(sizeof(pseudo_body) * BodyCount * 2);
 
-    SortBodiesBounds(Bodies, BodyCount, SortedBodies, DeltaTime);
-    BuildPairs(FinalPairs, SortedBodies, BodyCount);
+    SortBodiesBounds(Bodies, BodyCount, SortedPseudoBodies, DeltaTime);
+
+    // SortedArray of Pseudobodies is twice the number of bodies passed in here. Since, you have two entries for
+    // each body. One is the dot product of its Bounds.Min with Axis, the other is the dot product of its
+    // Bounds.Max with chosen Axis.
+    i32 SortedPseudoBodyCount = BodyCount * 2;
+    BuildPairs(FinalPairs, SortedPseudoBodies, SortedPseudoBodyCount);
 }
 
 void
