@@ -253,7 +253,7 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
     {
         contact &Contact = Contacts[i];
         const f32 local_dt = Contact.TimeOfImpact - AccumulatedTime;
-
+        
         shoora_body *BodyA = Contact.ReferenceBodyA;
         shoora_body *BodyB = Contact.IncidentBodyB;
 

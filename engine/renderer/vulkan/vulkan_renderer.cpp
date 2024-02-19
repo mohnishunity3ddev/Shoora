@@ -39,7 +39,7 @@ static shoora_vulkan_context *Context = nullptr;
 static b32 isDebug = false;
 static b32 WireframeMode = false;
 static f32 TestCameraScale = 0.5f;
-static b32 GlobalShowContacts = true;
+static b32 GlobalDebugMode = true;
 static b32 GlobalPausePhysics = false;
 
 // NOTE: ALso make the same changes to the lighting shader.
@@ -635,7 +635,7 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 #endif
     if(Platform_GetKeyInputState(SU_SPACE, KeyState::SHU_KEYSTATE_PRESS))
     {
-        GlobalShowContacts = !GlobalShowContacts;
+        GlobalDebugMode = !GlobalDebugMode;
     }
     if(Platform_GetKeyInputState('P', KeyState::SHU_KEYSTATE_PRESS))
     {
@@ -772,7 +772,7 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 
         Scene->UpdateInput(CurrentMouseWorldPos);
         f32 pDt = GlobalPausePhysics ? 0.0f : GlobalDeltaTime;
-        Scene->PhysicsUpdate(pDt, GlobalShowContacts);
+        Scene->PhysicsUpdate(pDt, GlobalDebugMode);
         DrawScene(DrawCmdBuffer);
 #endif
         ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
