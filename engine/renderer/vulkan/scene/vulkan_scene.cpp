@@ -159,7 +159,7 @@ shoora_scene::UpdateInput(const Shu::vec2f &CurrentMouseWorldPos)
 }
 
 void
-shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
+shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
 {
     // NOTE: If I am debugging, the frametime is going to be huge. So hence, clamping here.
 #if _SHU_DEBUG
@@ -218,7 +218,7 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
                 // TODO)): If this assert gets hit, maybe change MaxContacts to include MaxContactCountPerPair // there.
                 ASSERT(NumContacts != (MaxContacts-1));
                 Contacts[NumContacts++] = _Contacts[i];
-                if (ShowContacts)
+                if (DebugMode)
                 {
                     shoora_graphics::DrawSphere(Contacts[i].ReferenceHitPointA, .1f, colorU32::Cyan);
                     shoora_graphics::DrawSphere(Contacts[i].IncidentHitPointB, .1f, colorU32::Green);
@@ -281,6 +281,16 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 ShowContacts)
             b->Update(TimeRemaining);
         }
     }
+
+    if(DebugMode)
+    {
+        for (i32 i = 0; i < BodyCount; ++i)
+        {
+            auto *b = Bodies + i;
+            auto bounds = b->Shape->GetBounds(b->Position, b->Rotation);
+            bounds.Draw();
+        }
+    }
 }
 
 void
@@ -340,10 +350,10 @@ shoora_scene::DrawAxes(Shu::rect2d &Rect)
 {
     auto left = Shu::Vec2f(Rect.x - (Rect.width / 2), Rect.y);
     auto right = Shu::Vec2f(Rect.x + (Rect.width / 2), Rect.y);
-    shoora_graphics::DrawLine(left, right, 0xff313131, 1.0f);
+    shoora_graphics::DrawLine2D(left, right, 0xff313131, 1.0f);
     auto top = Shu::Vec2f(Rect.x, Rect.y + (Rect.height / 2));
     auto bottom = Shu::Vec2f(Rect.x, Rect.y - (Rect.height / 2));
-    shoora_graphics::DrawLine(top, bottom, 0xff313131, 1.0f);
+    shoora_graphics::DrawLine2D(top, bottom, 0xff313131, 1.0f);
 }
 
 void

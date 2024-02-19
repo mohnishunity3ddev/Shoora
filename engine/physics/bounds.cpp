@@ -1,4 +1,6 @@
 #include "bounds.h"
+#include <renderer/vulkan/graphics/vulkan_graphics.h>
+#include <utils/utils.h>
 
 const shoora_bounds &
 shoora_bounds::operator=(const shoora_bounds &other)
@@ -36,6 +38,20 @@ shoora_bounds::Expand(const Shu::vec3f *Pts, const i32 Num)
     {
         this->Expand(Pts[i]);
     }
+}
+
+void
+shoora_bounds::Draw()
+{
+    Shu::vec3f v000 = Shu::Vec3f(Mins.x, Mins.y, Mins.z);
+    Shu::vec3f v100 = Shu::Vec3f(Mins.x + WidthX(), Mins.y, Mins.z);
+    Shu::vec3f v110 = Shu::Vec3f(Mins.x + WidthX(), Mins.y + WidthY(), Mins.z);
+    Shu::vec3f v010 = Shu::Vec3f(Mins.x, Mins.y + WidthY(), Mins.z);
+    Shu::vec3f v001 = Shu::Vec3f(Mins.x, Mins.y, Maxs.z);
+    Shu::vec3f v101 = Shu::Vec3f(Maxs.x, Mins.y, Maxs.z);
+    Shu::vec3f v111 = Shu::Vec3f(Maxs.x, Maxs.y, Maxs.z);
+    Shu::vec3f v011 = Shu::Vec3f(Mins.x, Maxs.y, Maxs.z);
+    shoora_graphics::DrawCubeWireframe(v000, v100, v110, v010, v001, v101, v111, v011);
 }
 
 void

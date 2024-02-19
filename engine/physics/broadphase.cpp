@@ -28,7 +28,7 @@ SortBodiesBounds(const shoora_body *Bodies, const i32 BodyCount, pseudo_body *So
         f32 Epsilon = 0.01f;
         Bounds.Expand(Bounds.Mins - Axis*Epsilon);
         Bounds.Expand(Bounds.Mins + Axis*Epsilon);
-        
+
         SortedArray[i*2 + 0].Id = i;
         SortedArray[i*2 + 0].Value = Axis.Dot(Bounds.Mins);
         SortedArray[i*2 + 0].IsMin = true;

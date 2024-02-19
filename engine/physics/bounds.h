@@ -20,6 +20,8 @@ struct shoora_bounds
     f32 WidthY() const { f32 Result = Maxs.y - Mins.y; return Result; }
     f32 WidthZ() const { f32 Result = Maxs.z - Mins.z; return Result; }
 
+    void Draw();
+
     Shu::vec3f Mins;
     Shu::vec3f Maxs;
 };

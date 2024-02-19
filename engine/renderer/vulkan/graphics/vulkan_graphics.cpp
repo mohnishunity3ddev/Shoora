@@ -1,6 +1,6 @@
 #include "vulkan_graphics.h"
 #include <mesh/database/mesh_database.h>
-#include <utils/utils.h>
+#include <math/math_trig.h>
 
 static VkCommandBuffer GlobalCommandBuffer;
 static VkPipelineLayout GlobalPipelineLayout;
@@ -35,9 +35,8 @@ shoora_graphics::GetPipelineLayout()
     return GlobalPipelineLayout;
 }
 
-
 void
-shoora_graphics::DrawLine(const Shu::vec2f P0, const Shu::vec2f P1, u32 ColorU32, f32 Thickness)
+shoora_graphics::DrawLine2D(const Shu::vec2f P0, const Shu::vec2f P1, u32 ColorU32, f32 Thickness)
 {
 #if 0
     Shu::vec2f p0 = MouseToScreenSpace(P0);
@@ -56,6 +55,58 @@ shoora_graphics::DrawLine(const Shu::vec2f P0, const Shu::vec2f P1, u32 ColorU32
     vkCmdPushConstants(GlobalCommandBuffer, GlobalPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                        sizeof(data), &Value);
     vkCmdDrawIndexed(GlobalCommandBuffer, Line->MeshFilter.IndexCount, 1, Line->IndexOffset, Line->VertexOffset, 0);
+}
+
+void
+shoora_graphics::DrawCubeWireframe(const Shu::vec3f &v000, const Shu::vec3f &v100, const Shu::vec3f &v110, const Shu::vec3f &v010,
+                                   const Shu::vec3f &v001, const Shu::vec3f &v101, const Shu::vec3f &v111, const Shu::vec3f &v011,
+                                   u32 ColorU32, f32 Thickness)
+{
+    // Front Face
+    DrawLine3D(v000, v100, ColorU32, Thickness);
+    DrawLine3D(v100, v110, ColorU32, Thickness);
+    DrawLine3D(v110, v010, ColorU32, Thickness);
+    DrawLine3D(v010, v000, ColorU32, Thickness);
+
+    // Front-Back Connecting Edges.
+    DrawLine3D(v000, v001, ColorU32, Thickness);
+    DrawLine3D(v100, v101, ColorU32, Thickness);
+    DrawLine3D(v110, v111, ColorU32, Thickness);
+    DrawLine3D(v010, v011, ColorU32, Thickness);
+
+    // Back Face
+    DrawLine3D(v001, v101, ColorU32, Thickness);
+    DrawLine3D(v101, v111, ColorU32, Thickness);
+    DrawLine3D(v111, v011, ColorU32, Thickness);
+    DrawLine3D(v011, v001, ColorU32, Thickness);
+}
+
+void
+shoora_graphics::DrawLine3D(const Shu::vec3f &P0, const Shu::vec3f &P1, u32 ColorU32, f32 Thickness)
+{
+    Shu::vec3f Diff = P1 - P0;
+    Shu::vec3f Direction = Shu::Normalize(Diff);
+
+    // NOTE: The problem is to align the cube mesh's local right vector to the direction given by the two points.
+    // That means we need a quaternion which rotates the right vector so that it becomes the direction vector given
+    // by the passed in two points. Axis of the rotation is always perpendicular to the two vectors. Angle to
+    // rotate by is the angle between the two vectors.
+    Shu::vec3f RightVector = Shu::Vec3f(1, 0, 0);
+    f32 Angle = Shu::CosInverse(RightVector.Dot(Direction)) * RAD_TO_DEG;
+    Shu::vec3f Axis = RightVector.Cross(Direction);
+    Shu::quat Rotation = Shu::QuatAngleAxis(Angle, Axis);
+
+    Shu::vec3f Pos = (P0 + P1) * 0.5f;
+    Shu::vec3f Scale = Shu::Vec3f(Diff.Magnitude(), Thickness, Thickness);
+
+    shoora_mesh *Cube = shoora_mesh_database::GetMesh(shoora_mesh_type::CUBE);
+    Shu::mat4f Model = Shu::TRS(Pos, Scale, Rotation);
+
+    data Value = {.Model = Model, .Color = GetColor(ColorU32)};
+
+    vkCmdPushConstants(GlobalCommandBuffer, GlobalPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+                       sizeof(data), &Value);
+    vkCmdDrawIndexed(GlobalCommandBuffer, Cube->MeshFilter.IndexCount, 1, Cube->IndexOffset, Cube->VertexOffset, 0);
 }
 
 void
@@ -126,7 +177,7 @@ shoora_graphics::DrawSpring(const Shu::vec2f &startPos, const Shu::vec2f &endPos
         Shu::vec2f t = startPos + unitVector * (offset * (DivIndex + 1.0f));
         Shu::vec2f p1 = t + perp * (thickness * 0.5f * sign);
 
-        DrawLine(p0, p1, Color, 3.0f);
+        DrawLine2D(p0, p1, Color, 3.0f);
 
         p0 = p1;
         sign *= -1;

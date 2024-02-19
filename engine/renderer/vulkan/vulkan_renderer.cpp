@@ -256,6 +256,7 @@ static b32 msgShown = false;
 void
 InitScene()
 {
+#if 1
     // Bottom Wall (Static Rigidbody)
     Shu::vec2f Window = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
@@ -296,6 +297,7 @@ InitScene()
             b->LinearVelocity = Shu::Vec3f(0.0f);
         }
     }
+#endif
 }
 
 void
@@ -454,13 +456,15 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
 
     shoora_camera *pCamera = &VulkanContext->Camera;
     SetupCamera(pCamera, shoora_projection::PROJECTION_PERSPECTIVE, 0.1f, 1000.0f, 16.0f / 9.0f,
-                GlobalWindowSize.y, 45.0f, Shu::Vec3f(14.1368380f, 106.438675f, -40.9848938f));
+                GlobalWindowSize.y, 45.0f, Shu::Vec3f(0, 0, -10));
+#if 1
+    pCamera->Pos = Shu::Vec3f(14.1368380f, 106.438675f, -40.9848938f);
     pCamera->Front = Shu::Vec3f(-0.332412988f, -0.475319535f, -0.814599872f);
     pCamera->Right = Shu::Vec3f(-0.925878108f , 0.0f, 0.377822191f);
     pCamera->Up = Shu::Vec3f(-0.179586262, 0.879813194, -0.440087944f);
     pCamera->Yaw = 247.801147f;
     pCamera->Pitch = -28.3801575f;
-
+#endif
     // NOTE: Mesh Database setup
     shoora_mesh_database::MeshDbBegin(RenderDevice);
     Shu::vec3f Poly1[] = {{0, 10, 1}, {10, 3, 1}, {10, -5, 1}, {-10, -5, 1}, {-10, 3, 1}};
@@ -590,6 +594,9 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         int x = 0;
     }
 #endif
+
+    auto *b = Scene->GetBody(0);
+    auto bounds = b->Shape->GetBounds(b->Position, b->Rotation);
 
     // VK_CHECK(vkQueueWaitIdle(Context->Device.GraphicsQueue));
     Shu::vec2f CurrentMousePos = Shu::Vec2f(FramePacket->MouseXPos, FramePacket->MouseYPos);
@@ -768,7 +775,6 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         Scene->PhysicsUpdate(pDt, GlobalShowContacts);
         DrawScene(DrawCmdBuffer);
 #endif
-
         ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
     vkCmdEndRenderPass(DrawCmdBuffer);
 

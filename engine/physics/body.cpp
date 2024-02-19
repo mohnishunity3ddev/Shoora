@@ -362,12 +362,12 @@ shoora_body::DrawWireframe(const Shu::mat4f &model, f32 thickness, u32 color)
 
             Shu::vec2f p0 = (model * pos0).xy;
             Shu::vec2f p1 = (model * pos1).xy;
-            shoora_graphics::DrawLine(p0, p1, color, 2.5f);
+            shoora_graphics::DrawLine2D(p0, p1, color, 2.5f);
         }
 
         Shu::vec2f p0 = (model * mesh->Vertices[mesh->VertexCount - 1].Pos).xy;
         Shu::vec2f p1 = (model * mesh->Vertices[1].Pos).xy;
-        shoora_graphics::DrawLine(p0, p1, color, thickness);
+        shoora_graphics::DrawLine2D(p0, p1, color, thickness);
     }
     else if (Type == shoora_mesh_type::POLYGON_2D || Type == shoora_mesh_type::RECT_2D)
     {
@@ -380,7 +380,7 @@ shoora_body::DrawWireframe(const Shu::mat4f &model, f32 thickness, u32 color)
         {
             Shu::vec2f p0 = WorldVertices[i].xy;
             Shu::vec2f p1 = WorldVertices[(i+1) % mesh->VertexCount].xy;
-            shoora_graphics::DrawLine(p0, p1, color, thickness);
+            shoora_graphics::DrawLine2D(p0, p1, color, thickness);
         }
     }
 }

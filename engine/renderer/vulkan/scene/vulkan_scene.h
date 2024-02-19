@@ -24,7 +24,7 @@ struct shoora_scene
 
     void AddConstraint2D(constraint_2d *Constraint);
     i32 GetConstraints2DCount();
-    
+
     // shoora_body *AddBody(const shoora_body &Body);
     shoora_body *AddCubeBody(const Shu::vec3f &Pos, const Shu::vec3f &Scale, u32 ColorU32, f32 Mass,
                              f32 Restitution, const Shu::vec3f &EulerAngles = Shu::Vec3f(0.0f));
@@ -43,7 +43,7 @@ struct shoora_scene
 
     void UpdateInput(const Shu::vec2f &CurrentMouseWorldPos);
 
-    void PhysicsUpdate(f32 dt, b32 ShowContacts);
+    void PhysicsUpdate(f32 dt, b32 DebugMode);
 
     void Draw(b32 Wireframe);
     void DrawAxes(Shu::rect2d &Rect);
