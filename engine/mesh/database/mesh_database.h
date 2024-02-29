@@ -18,6 +18,7 @@ enum shoora_mesh_type
     CIRCLE,
     CUBE,
     SPHERE,
+    CONVEX,
     MAX_COUNT
 };
 
@@ -33,7 +34,7 @@ struct shoora_mesh
     shoora_mesh_filter MeshFilter;
     i32 VertexOffset, IndexOffset;
     shoora_mesh_type Type;
-
+    
     shoora_mesh_info GetInfo()
     {
         shoora_mesh_info Result;

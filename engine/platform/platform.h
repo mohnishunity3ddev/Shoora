@@ -51,6 +51,7 @@ typedef b8 check_keyboard_input_state(u8 KeyCode, KeyState State);
 void FillVulkanWin32SurfaceCreateInfo(shoora_platform_presentation_surface *Surface);
 #endif
 
+struct platform_work_queue;
 struct shoora_app_info
 {
     const char *AppName;
@@ -59,6 +60,7 @@ struct shoora_app_info
     u32 WindowHeight;
 
     func_window_resize *WindowResizeCallback;
+    platform_work_queue *JobQueue;
 };
 
 struct shoora_platform_frame_packet
@@ -67,9 +69,23 @@ struct shoora_platform_frame_packet
     // b32 IsLeftMouseDown;
     f32 MouseXPos;
     f32 MouseYPos;
-    
+
     f32 DeltaTime;
     u32 Fps;
+};
+
+struct platform_mutex
+{
+  private:
+#if WIN32
+    HANDLE MutexHandle;
+#endif
+
+  public:
+    platform_mutex();
+    ~platform_mutex();
+    void Lock();
+    void Unlock();
 };
 
 SHU_EXPORT void LogOutput(LogType LogType, const char *Format, ...);
@@ -91,9 +107,16 @@ SHU_EXPORT void LogTraceUnformatted(const char *Message);
 SHU_EXPORT void LogString(const char *String);
 
 SHU_EXPORT void Platform_ExitApplication(const char *Reason);
+SHU_EXPORT void Platform_Sleep(u32 ms);
 SHU_EXPORT b8 Platform_GetKeyInputState(u8 KeyCode, KeyState State);
 SHU_EXPORT void Platform_ToggleFPSCap();
 SHU_EXPORT void Platform_SetFPS(i32 FPS);
+
+#define PLATFORM_WORK_QUEUE_CALLBACK(name) void name(platform_work_queue *Queue, void *Args)
+typedef PLATFORM_WORK_QUEUE_CALLBACK(platform_work_queue_callback);
+
+SHU_EXPORT void Platform_CompleteAllWork(platform_work_queue *Queue);
+SHU_EXPORT void Platform_AddWorkEntry(platform_work_queue *Queue, platform_work_queue_callback *Callback, void *Data);
 
 #ifdef __cplusplus
 }

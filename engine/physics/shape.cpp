@@ -5,7 +5,10 @@ shoora_shape::shoora_shape(shoora_mesh_type Type)
 {
     this->Type = Type;
     this->isPrimitive = true;
-    this->MeshFilter = shoora_mesh_database::GetMeshFilter(Type);
+    this->MeshFilter = nullptr;
+    if(Type != CONVEX) {
+        this->MeshFilter = shoora_mesh_database::GetMeshFilter(Type);
+    }
 }
 
 shoora_shape::shoora_shape(shoora_mesh_type Type, shoora_mesh_filter *MeshFilter)
@@ -39,7 +42,7 @@ shoora_shape_polygon::shoora_shape_polygon(i32 MeshId, f32 Scale)
     this->WorldVertices = new Shu::vec3f[this->VertexCount];
 
     // TODO: Change this. Arbitrary polygons may not have their center of mass in their center.
-    this->CenterOfMass = Shu::Vec3f(0.0f);
+    this->mCenterOfMass = Shu::Vec3f(0.0f);
 }
 
 shoora_shape_polygon::~shoora_shape_polygon()
@@ -230,12 +233,23 @@ shoora_shape_polygon::GetBounds() const
     return Result;
 }
 
+Shu::vec3f
+shoora_shape_polygon::Support(const Shu::vec3f &Direction, const Shu::vec3f &Position,
+                              const Shu::quat &Orientation, const f32 Bias) const
+{
+    // TODO): TO BE IMPLEMENTED
+    Shu::vec3f Result;
+    return Result;
+}
+
+
+
 // NOTE: Circle
 shoora_shape_circle::shoora_shape_circle(f32 Radius)
     : shoora_shape(shoora_mesh_type::CIRCLE)
 {
     this->Radius = Radius;
-    this->CenterOfMass = Shu::Vec3f(0.0f);
+    this->mCenterOfMass = Shu::Vec3f(0.0f);
 }
 
 shoora_shape_circle::~shoora_shape_circle()
@@ -279,6 +293,15 @@ shoora_shape_circle::GetBounds() const
     return Result;
 }
 
+Shu::vec3f
+shoora_shape_circle::Support(const Shu::vec3f &Direction, const Shu::vec3f &Position, const Shu::quat &Orientation,
+                             const f32 Bias) const
+{
+    // TODO): TO BE IMPLEMENTED
+    Shu::vec3f Result;
+    return Result;
+}
+
 
 
 // NOTE: Sphere
@@ -286,7 +309,7 @@ shoora_shape_sphere::shoora_shape_sphere(f32 Radius)
     : shoora_shape(shoora_mesh_type::SPHERE)
 {
     this->Radius = Radius;
-    this->CenterOfMass = Shu::Vec3f(0.0f);
+    this->mCenterOfMass = Shu::Vec3f(0.0f);
 }
 
 shoora_shape_sphere::~shoora_shape_sphere()
@@ -332,13 +355,22 @@ shoora_shape_sphere::GetBounds() const
     return Result;
 }
 
+Shu::vec3f
+shoora_shape_sphere::Support(const Shu::vec3f &DirectionNormalized, const Shu::vec3f &Position,
+                             const Shu::quat &Orientation, const f32 Bias) const
+{
+    Shu::vec3f SupportPoint = Position + DirectionNormalized*(this->Radius + Bias);
+    return SupportPoint;
+}
+
+
 
 // NOTE: Box Stuff
 shoora_shape_box::shoora_shape_box(u32 Width, u32 Height) : shoora_shape_polygon(shoora_mesh_type::RECT_2D)
 {
     this->Width = Width;
     this->Height = Height;
-    this->CenterOfMass = Shu::Vec3f(0.0f);
+    this->mCenterOfMass = Shu::Vec3f(0.0f);
 }
 
 shoora_shape_box::~shoora_shape_box()
@@ -382,54 +414,11 @@ shoora_shape_box::GetBounds() const
     return Result;
 }
 
-// NOTE: Cube Stuff
-shoora_shape_cube::shoora_shape_cube(u32 Width, u32 Height, u32 Depth)
-    : shoora_shape(shoora_mesh_type::CUBE)
-{
-    this->Width = Width;
-    this->Height = Height;
-    this->Depth = Depth;
-    this->CenterOfMass = Shu::Vec3f(0.0f);
-}
-
-shoora_shape_cube::~shoora_shape_cube()
-{
-    LogUnformatted("shoora_shape_cube destructor called!\n");
-}
-
-Shu::mat3f
-shoora_shape_cube::InertiaTensor() const
-{
-    // TODO: Return an Inertia tensor.
-    Shu::mat3f Result = Shu::Mat3f(5000.0f);
-    return Result;
-}
-
 Shu::vec3f
-shoora_shape_cube::GetDim() const
+shoora_shape_box::Support(const Shu::vec3f &Direction, const Shu::vec3f &Position, const Shu::quat &Orientation,
+                          const f32 Bias) const
 {
-    Shu::vec3f Result = Shu::Vec3f(this->Width, this->Height, this->Depth);
-    return Result;
-}
-
-shoora_mesh_type
-shoora_shape_cube::GetType() const
-{
-    return shoora_mesh_type::CUBE;
-}
-
-shoora_bounds
-shoora_shape_cube::GetBounds(const Shu::vec3f &Pos, const Shu::quat &Orientation) const
-{
-    // TODO)): Not implemented yet.
-    shoora_bounds Result;
-    return Result;
-}
-
-shoora_bounds
-shoora_shape_cube::GetBounds() const
-{
-    // TODO)): Not implemented yet.
-    shoora_bounds Result;
+    // TODO): TO BE IMPLEMENTED
+    Shu::vec3f Result;
     return Result;
 }

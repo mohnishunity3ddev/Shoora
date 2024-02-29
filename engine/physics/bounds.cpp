@@ -70,5 +70,5 @@ shoora_bounds::Draw()
     Shu::vec3f v101 = Shu::Vec3f(Maxs.x, Mins.y, Maxs.z);
     Shu::vec3f v111 = Shu::Vec3f(Maxs.x, Maxs.y, Maxs.z);
     Shu::vec3f v011 = Shu::Vec3f(Mins.x, Maxs.y, Maxs.z);
-    shoora_graphics::DrawCubeWireframe(v000, v100, v110, v010, v001, v101, v111, v011);
+    shoora_graphics::DrawCubeWireframe(v000, v100, v110, v010, v001, v101, v111, v011, colorU32::Green, .05f);
 }

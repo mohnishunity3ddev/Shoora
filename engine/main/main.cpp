@@ -737,11 +737,210 @@ Win32GetStackLimits()
     LogInfo("Available stack space: %zu bytes.\n", stackSpace);
 }
 
+void Platform_Sleep(u32 ms)
+{
+    Sleep(ms);
+}
+
+struct platform_work_queue_entry
+{
+    platform_work_queue_callback *Callback;
+    void *Args;
+};
+
+struct platform_work_queue
+{
+    u32 volatile CompletionGoal;
+    u32 volatile CompletionCount;
+    u32 volatile NextEntryToWrite;
+    u32 volatile NextEntryToRead;
+    HANDLE SemaphoreHandle;
+
+    // Queue Size.
+    platform_work_queue_entry Entries[256];
+};
+
+static b32
+Win32DoNextWorkQueueEntry(platform_work_queue *Queue)
+{
+    b32 WeShouldSleep = false;
+
+    // Circular buffer.
+    u32 OriginalNextEntryToRead = Queue->NextEntryToRead;
+    u32 NewNextEntryToRead = ((OriginalNextEntryToRead + 1) % ARRAY_SIZE(Queue->Entries));
+
+    // NOTE: We want to read an entry which has not already been written or is in the process of writing to. In
+    // this case, we want to sleep the thread so that there are entries which have been written already that we can
+    // read.
+    if (OriginalNextEntryToRead != Queue->NextEntryToWrite)
+    {
+        u32 Index = InterlockedCompareExchange((LONG volatile *)&Queue->NextEntryToRead, NewNextEntryToRead,
+                                               OriginalNextEntryToRead);
+        // above returned the original value meaning this is the entry to read. And so we read it.
+        // If its not, then that means our expected was not the case, meaning some other thread beat us to it. in
+        // which case, we do nothing.
+        if (Index == OriginalNextEntryToRead)
+        {
+            platform_work_queue_entry Entry = Queue->Entries[Index];
+            Entry.Callback(Queue, Entry.Args);
+            InterlockedIncrement((LONG volatile *)&Queue->CompletionCount);
+        }
+    }
+    else
+    {
+        WeShouldSleep = true;
+    }
+
+    return WeShouldSleep;
+}
+
+DWORD WINAPI
+ThreadProc(LPVOID lpParameter)
+{
+    platform_work_queue *Queue = (platform_work_queue *)lpParameter;
+
+#if __MS10
+    // NOTE: Setting thread name for debugging later in vs2022
+    // wchar_t Buffer[256];
+    // ConstructWideString(Buffer, ArrayCount(Buffer), L"Thread %d", ThreadInfo->LogicalThreadIndex);
+    // HRESULT r = SetThreadDescription(GetCurrentThread(), (PCWSTR)Buffer);
+#endif
+
+    for (;;)
+    {
+        if (Win32DoNextWorkQueueEntry(Queue))
+        {
+            WaitForSingleObjectEx(Queue->SemaphoreHandle, INFINITE, FALSE);
+        }
+    }
+}
+
+static void
+Win32MakeWorkQueue(platform_work_queue *Queue, u32 ThreadCount)
+{
+    Queue->CompletionGoal = 0;
+    Queue->CompletionCount = 0;
+    Queue->NextEntryToWrite = 0;
+    Queue->NextEntryToRead = 0;
+
+    u32 InitialCount = 0;
+    Queue->SemaphoreHandle = CreateSemaphoreExA(0, InitialCount, ThreadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
+
+    for(u32 ThreadIndex = 0; ThreadIndex < ThreadCount; ++ThreadIndex)
+    {
+        DWORD ThreadID;
+        HANDLE ThreadHandle = CreateThread(0, 0, ThreadProc, Queue, 0, &ThreadID);
+        CloseHandle(ThreadHandle);
+    }
+}
+
+void
+Platform_AddWorkEntry(platform_work_queue *Queue, platform_work_queue_callback *Callback, void *Data)
+{
+    // The Thread Work Queue is a circular buffer. Write pointer can get
+    // ahead of the read as it wraps areound the entries array.
+    u32 NewNextEntryToWrite = ((Queue->NextEntryToWrite + 1) % ARRAY_SIZE(Queue->Entries));
+    ASSERT(NewNextEntryToWrite != Queue->NextEntryToRead);
+
+    platform_work_queue_entry *Entry = Queue->Entries + Queue->NextEntryToWrite;
+
+    Entry->Args = Data;
+    Entry->Callback = Callback;
+
+    InterlockedIncrement(&Queue->CompletionGoal);
+
+    CompletePastWritesBeforeFutureWrites;
+
+    // Circular buffer.
+    Queue->NextEntryToWrite = NewNextEntryToWrite;
+    ReleaseSemaphore(Queue->SemaphoreHandle, 1, 0);
+}
+
+void
+Platform_CompleteAllWork(platform_work_queue *Queue)
+{
+    while (Queue->CompletionGoal != Queue->CompletionCount)
+    {
+        Win32DoNextWorkQueueEntry(Queue);
+    }
+
+    // NOTE: Reset the Queue.
+    Queue->CompletionCount = 0;
+    Queue->CompletionGoal = 0;
+}
+
+static
+PLATFORM_WORK_QUEUE_CALLBACK(DoWorkerWork)
+{
+    LogInfo("Thread: %u, Data: %s\n", GetCurrentThreadId(), (char *)Args);
+}
+
+platform_mutex::platform_mutex()
+    : MutexHandle(CreateMutex(0, FALSE, 0))
+{
+    if(MutexHandle == NULL)
+    {
+        LogFatalUnformatted("Mutex Handle could not be created!\n");
+    }
+}
+
+platform_mutex::~platform_mutex() { CloseHandle(MutexHandle); }
+
+void
+platform_mutex::Lock()
+{
+    DWORD Result = WaitForSingleObject(MutexHandle, INFINITE);
+    if(Result != WAIT_OBJECT_0)
+    {
+        LogFatalUnformatted("Problem while Locking\n");
+    }
+}
+
+void platform_mutex::Unlock()
+{
+    if(!ReleaseMutex(MutexHandle))
+    {
+        LogFatalUnformatted("Trouble releasing mutex!\n");
+    }
+}
+
 // TODO)): Right now this is the only entry point since win32 is the only platform right now.
 // TODO)): Have to implement multiple entrypoints for all platforms.
 i32 WINAPI
 wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdShow)
 {
+    platform_work_queue HighPriorityQueue = {};
+    Win32MakeWorkQueue(&HighPriorityQueue, 7);
+
+    platform_work_queue LowPriorityQueue = {};
+    Win32MakeWorkQueue(&LowPriorityQueue, 3);
+
+#if 0
+    Platform_AddWorkEntry(&HighPriorityQueue, DoWorkerWork, (void *)"String A0.");
+    Platform_AddWorkEntry(&HighPriorityQueue, DoWorkerWork, (void *)"String A1.");
+    Platform_AddWorkEntry(&HighPriorityQueue, DoWorkerWork, (void *)"String A2.");
+    Platform_AddWorkEntry(&HighPriorityQueue, DoWorkerWork, (void *)"String A3.");
+    Platform_AddWorkEntry(&HighPriorityQueue, DoWorkerWork, (void *)"String A4.");
+    Platform_AddWorkEntry(&HighPriorityQueue, DoWorkerWork, (void *)"String A5.");
+    Platform_AddWorkEntry(&HighPriorityQueue, DoWorkerWork, (void *)"String A6.");
+    Platform_AddWorkEntry(&HighPriorityQueue, DoWorkerWork, (void *)"String A7.");
+    Platform_AddWorkEntry(&HighPriorityQueue, DoWorkerWork, (void *)"String A8.");
+    Platform_AddWorkEntry(&HighPriorityQueue, DoWorkerWork, (void *)"String A9.");
+    Sleep(5000);
+    Platform_AddWorkEntry(&HighPriorityQueue, DoWorkerWork, (void *)"String B0.");
+    Platform_AddWorkEntry(&HighPriorityQueue, DoWorkerWork, (void *)"String B1.");
+    Platform_AddWorkEntry(&HighPriorityQueue, DoWorkerWork, (void *)"String B2.");
+    Platform_AddWorkEntry(&HighPriorityQueue, DoWorkerWork, (void *)"String B3.");
+    Platform_AddWorkEntry(&HighPriorityQueue, DoWorkerWork, (void *)"String B4.");
+    Platform_AddWorkEntry(&HighPriorityQueue, DoWorkerWork, (void *)"String B5.");
+    Platform_AddWorkEntry(&HighPriorityQueue, DoWorkerWork, (void *)"String B6.");
+    Platform_AddWorkEntry(&HighPriorityQueue, DoWorkerWork, (void *)"String B7.");
+    Platform_AddWorkEntry(&HighPriorityQueue, DoWorkerWork, (void *)"String B8.");
+    Platform_AddWorkEntry(&HighPriorityQueue, DoWorkerWork, (void *)"String B9.");
+
+    Platform_CompleteAllWork(&HighPriorityQueue);
+#endif
+
     if (WriteFp == nullptr)
     {
 #if SHU_CRASH_DUMP_ENABLE
@@ -795,6 +994,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     RECT WindowRect = Win32GetWindowRect(WindowHandle);
     AppInfo.WindowWidth = WindowRect.right - WindowRect.left;
     AppInfo.WindowHeight = WindowRect.bottom - WindowRect.top;
+    AppInfo.JobQueue = &HighPriorityQueue;
 
     GlobalWin32WindowContext.Handle = WindowHandle;
     GlobalWin32WindowContext.ClearColor = CreateSolidBrush(RGB(48, 10, 36));

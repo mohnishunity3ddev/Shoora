@@ -94,7 +94,7 @@ shoora_graphics::DrawLine3D(const Shu::vec3f &P0, const Shu::vec3f &P1, u32 Colo
     Shu::vec3f RightVector = Shu::Vec3f(1, 0, 0);
     f32 Angle = Shu::CosInverse(RightVector.Dot(Direction)) * RAD_TO_DEG;
     Shu::vec3f Axis = RightVector.Cross(Direction);
-    Shu::quat Rotation = Shu::QuatAngleAxis(Angle, Axis);
+    Shu::quat Rotation = Shu::QuatAngleAxisDeg(Angle, Axis);
 
     Shu::vec3f Pos = (P0 + P1) * 0.5f;
     Shu::vec3f Scale = Shu::Vec3f(Diff.Magnitude(), Thickness, Thickness);

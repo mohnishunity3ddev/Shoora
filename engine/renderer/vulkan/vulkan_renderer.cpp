@@ -41,6 +41,7 @@ static b32 WireframeMode = false;
 static f32 TestCameraScale = 0.5f;
 static b32 GlobalDebugMode = true;
 static b32 GlobalPausePhysics = false;
+static platform_work_queue *GlobalJobQueue;
 
 // NOTE: ALso make the same changes to the lighting shader.
 // TODO)): Automate this so that changing this automatically makes changes to the shader using shader variation.
@@ -108,8 +109,8 @@ struct shoora_render_state
 {
     b8 WireframeMode = false;
     f32 WireLineWidth = 10.0f;
-    // Shu::vec3f ClearColor = Shu::vec3f{0.043f, 0.259f, 0.259f};
-    Shu::vec3f ClearColor = Shu::Vec3f(0.0f);
+    Shu::vec3f ClearColor = Shu::vec3f{0.043f, 0.259f, 0.259f};
+    // Shu::vec3f ClearColor = Shu::Vec3f(0.0f);
     Shu::vec3f MeshColorUniform = Shu::vec3f{1.0f, 1.0f, 1.0f};
 };
 
@@ -126,7 +127,7 @@ static const f32 GlobalUiUpdateWaitTime = 1.0f;
 static const Shu::mat4f GlobalMat4Identity = Shu::Mat4f(1.0f);
 static Shu::vec2f GlobalLastFrameMousePos = Shu::Vec2f(FLT_MAX, FLT_MAX);
 static b32 GlobalSetFPSCap = true;
-static i32 GlobalSelectedFPSOption = 2;
+static i32 GlobalSelectedFPSOption = 1;
 static vert_uniform_data GlobalVertUniformData = {};
 static lighting_shader_uniform_data GlobalFragUniformData = {};
 static light_shader_vert_data GlobalLightShaderData;
@@ -252,14 +253,271 @@ WorldToMouse(const Shu::vec2f &WorldPos)
 #endif
 
 static b32 msgShown = false;
+static const f32 width = 50;
+static const f32 depth = 25;
+
+Shu::vec3f g_boxGround[] =
+{
+    Shu::Vec3f(-width,  0.5f, -depth),
+    Shu::Vec3f( width,  0.5f, -depth),
+    Shu::Vec3f(-width,  0.5f,  depth),
+    Shu::Vec3f( width,  0.5f,  depth),
+    Shu::Vec3f(-width, -0.5f, -depth),
+    Shu::Vec3f( width, -0.5f, -depth),
+    Shu::Vec3f(-width, -0.5f,  depth),
+    Shu::Vec3f( width, -0.5f,  depth)
+};
+
+Shu::vec3f g_boxWall0[] =
+{
+    Shu::Vec3f(-1,  -2.5f, -depth),
+    Shu::Vec3f( 1,  -2.5f, -depth),
+    Shu::Vec3f(-1,  -2.5f,  depth),
+    Shu::Vec3f( 1,  -2.5f,  depth),
+    Shu::Vec3f(-1,   2.5f, -depth),
+    Shu::Vec3f( 1,   2.5f, -depth),
+    Shu::Vec3f(-1,   2.5f,  depth),
+    Shu::Vec3f( 1,   2.5f,  depth)
+};
+
+Shu::vec3f g_boxWall1[] =
+{
+    Shu::Vec3f(-width,  -2.5f, -1),
+    Shu::Vec3f( width,  -2.5f, -1),
+    Shu::Vec3f(-width,  -2.5f,  1),
+    Shu::Vec3f( width,  -2.5f,  1),
+    Shu::Vec3f(-width,   2.5f, -1),
+    Shu::Vec3f( width,   2.5f, -1),
+    Shu::Vec3f(-width,   2.5f,  1),
+    Shu::Vec3f( width,   2.5f,  1)
+};
+
+Shu::vec3f g_boxUnit[] =
+{
+    Shu::Vec3f(-1, -1, -1),
+    Shu::Vec3f( 1, -1, -1),
+    Shu::Vec3f(-1,  1, -1),
+    Shu::Vec3f( 1,  1, -1),
+    Shu::Vec3f(-1, -1,  1),
+    Shu::Vec3f( 1, -1,  1),
+    Shu::Vec3f(-1,  1,  1),
+    Shu::Vec3f( 1,  1,  1)
+};
+
+static const float t = 0.25f;
+Shu::vec3f g_boxSmall[] =
+{
+
+    Shu::Vec3f(-t, -t, -t),
+    Shu::Vec3f( t, -t, -t),
+    Shu::Vec3f(-t,  t, -t),
+    Shu::Vec3f( t,  t, -t),
+    Shu::Vec3f(-t, -t,  t),
+    Shu::Vec3f( t, -t,  t),
+    Shu::Vec3f(-t,  t,  t),
+    Shu::Vec3f( t,  t,  t)
+};
+
+static const float l = 3.0f;
+Shu::vec3f g_boxBeam[] =
+{
+    Shu::Vec3f(-l, -t, -t),
+    Shu::Vec3f( l, -t, -t),
+    Shu::Vec3f(-l,  t, -t),
+    Shu::Vec3f( l,  t, -t),
+    Shu::Vec3f(-l, -t,  t),
+    Shu::Vec3f( l, -t,  t),
+    Shu::Vec3f(-l,  t,  t),
+    Shu::Vec3f( l,  t,  t)
+};
+
+Shu::vec3f g_diamond[7*8];
+
+void
+DrawDebugDiamond()
+{
+
+#if 1
+    shoora_graphics::DrawSphere(g_diamond[0], .025f, colorU32::Red);
+    for (i32 i = 1; i < ARRAY_SIZE(g_diamond); ++i)
+    {
+        u32 col = colorU32::Red;
+        shoora_graphics::DrawSphere(g_diamond[i], .025f, col);
+        shoora_graphics::DrawLine3D(g_diamond[i - 1], g_diamond[i], colorU32::Proto_Yellow, .01f);
+    }
+    shoora_graphics::DrawLine3D(g_diamond[ARRAY_SIZE(g_diamond) - 1], g_diamond[0], colorU32::Proto_Yellow, .01f);
+#else
+    auto o = Shu::Vec3f(0.0f);
+    shoora_graphics::DrawLine3D(o, Shu::Vec3f(1, 0, 0), colorU32::Red, .01f);
+    shoora_graphics::DrawLine3D(o, Shu::Vec3f(0, 1, 0), colorU32::Green, .01f);
+    shoora_graphics::DrawLine3D(o, Shu::Vec3f(0, 0, 1), colorU32::Blue, .01f);
+    shoora_graphics::DrawSphere(o, .025f, 0);
+    i32 s = 0;
+    for (i32 i = s; i < s+7; ++i)
+    {
+        u32 col = colorU32::Proto_Red;
+        if(i == s+1) col = colorU32::Proto_Blue;
+        else if(i == s+2) col = colorU32::Proto_Green;
+        else if(i == s+3) col = colorU32::Yellow;
+        else if(i == s+4) col = colorU32::White;
+        else if(i == s+5) col = colorU32::Proto_Yellow;
+        else if(i == s+6) col = colorU32::Magenta;
+        shoora_graphics::DrawSphere(g_diamond[i], .025f, col);
+    }
+    for (i32 j = 0; j < 7; ++j)
+    {
+        s += 7;
+        for (i32 i = s; i < s+7; ++i)
+        {
+            u32 col = colorU32::Proto_Red;
+            if(i == s+1) col = colorU32::Proto_Blue;
+            else if(i == s+2) col = colorU32::Proto_Green;
+            else if(i == s+3) col = colorU32::Yellow;
+            else if(i == s+4) col = colorU32::White;
+            else if(i == s+5) col = colorU32::Proto_Yellow;
+            else if(i == s+6) col = colorU32::Magenta;
+            shoora_graphics::DrawSphere(g_diamond[i], .025f, col);
+        }
+    }
+#endif
+}
+
+void
+FillDiamond()
+{
+    Shu::vec3f pts[4 + 4];
+    pts[0] = Shu::Vec3f( 0.1f,  0.0f, -1.0f);
+    pts[1] = Shu::Vec3f( 1.0f,  0.0f,  0.0f);
+    pts[2] = Shu::Vec3f( 1.0f,  0.0f,  0.1f);
+    pts[3] = Shu::Vec3f( 0.4f,  0.0f,  0.4f);
+
+    // 22.5 degree rotation around the z-axis.
+    const Shu::quat quatHalf = Shu::QuatAngleAxisRad(2.0f * SHU_PI_BY_2 * 0.125f, Shu::Vec3f(0, 0, 1));
+
+    pts[4] = Shu::Vec3f(0.8f, 0.0f, 0.3f);
+    pts[4] = Shu::QuatRotateVec(quatHalf, pts[4]);
+    pts[5] = Shu::QuatRotateVec(quatHalf, pts[1]);
+    pts[6] = Shu::QuatRotateVec(quatHalf, pts[2]);
+
+    // 45 degree rotation around the z-axis.
+    const Shu::quat quat = Shu::QuatAngleAxisRad(2.0f * SHU_PI * 0.125f, Shu::Vec3f(0, 0, 1));
+
+    int idx = 0;
+    for (int i = 0; i < 7; i++)
+    {
+        g_diamond[idx] = pts[i];
+        idx++;
+    }
+
+    Shu::quat quatAccumulator;
+    for (int i = 1; i < 8; i++)
+    {
+        quatAccumulator = quatAccumulator * quat;
+        for (int pt = 0; pt < 7; pt++)
+        {
+            g_diamond[idx] = Shu::QuatRotateVec(quatAccumulator, pts[pt]);
+            idx++;
+        }
+    }
+}
+
+void
+AddStandardSandBox()
+{
+    shoora_body body = {};
+
+    // Adding ground
+    body.Position = Shu::Vec3f(0, 0, 0);
+    body.Rotation = Shu::Quat(0, 0, 0, 1);
+    body.LinearVelocity = Shu::Vec3f(0.0f);
+    body.AngularVelocity = Shu::Vec3f(0.0f);
+    body.InvMass = 0.0f;
+    body.CoeffRestitution = 0.5f;
+    body.FrictionCoeff = 0.5f;
+    body.Shape = std::make_unique<shoora_shape_cube>(g_boxGround, ARRAY_SIZE(g_boxGround));
+    body.Scale = body.Shape->GetDim();
+    body.Color = GetColor(colorU32::Proto_Green);
+    Scene->AddBody(std::move(body));
+
+    // Adding wall at (50, 0, 0)
+    body.Position = Shu::Vec3f(50, 0, 0);
+    body.Rotation = Shu::Quat(0, 0, 0, 1);
+    body.LinearVelocity = Shu::Vec3f(0.0f);
+    body.AngularVelocity = Shu::Vec3f(0.0f);
+    body.InvMass = 0.0f;
+    body.CoeffRestitution = 0.5f;
+    body.FrictionCoeff = 0.0f;
+    body.Shape = std::make_unique<shoora_shape_cube>(g_boxWall0, ARRAY_SIZE(g_boxWall0));
+    body.Scale = body.Shape->GetDim();
+    body.Color = GetColor(colorU32::Proto_Blue);
+    Scene->AddBody(std::move(body));
+
+    // Adding wall at (-50, 0, 0)
+    body.Position = Shu::Vec3f(-50, 0, 0);
+    body.Rotation = Shu::Quat(0, 0, 0, 1);
+    body.LinearVelocity = Shu::Vec3f(0.0f);
+    body.AngularVelocity = Shu::Vec3f(0.0f);
+    body.InvMass = 0.0f;
+    body.CoeffRestitution = 0.5f;
+    body.FrictionCoeff = 0.0f;
+    body.Shape = std::make_unique<shoora_shape_cube>(g_boxWall0, ARRAY_SIZE(g_boxWall0));
+    body.Scale = body.Shape->GetDim();
+    body.Color = GetColor(colorU32::Proto_Orange);
+    Scene->AddBody(std::move(body));
+
+    // Adding wall at (0, 0, 25)
+    body.Position = Shu::Vec3f(0, 0, 25);
+    body.Rotation = Shu::Quat(0, 0, 0, 1);
+    body.LinearVelocity = Shu::Vec3f(0.0f);
+    body.AngularVelocity = Shu::Vec3f(0.0f);
+    body.InvMass = 0.0f;
+    body.CoeffRestitution = 0.5f;
+    body.FrictionCoeff = 0.0f;
+    body.Shape = std::make_unique<shoora_shape_cube>(g_boxWall1, ARRAY_SIZE(g_boxWall1));
+    body.Scale = body.Shape->GetDim();
+    body.Color = GetColor(colorU32::Proto_Red);
+    Scene->AddBody(std::move(body));
+
+    // Adding wall at (0, 0, -25)
+    body.Position = Shu::Vec3f(0, 0, -25);
+    body.Rotation = Shu::Quat(0, 0, 0, 1);
+    body.LinearVelocity = Shu::Vec3f(0.0f);
+    body.AngularVelocity = Shu::Vec3f(0.0f);
+    body.InvMass = 0.0f;
+    body.CoeffRestitution = 0.5f;
+    body.FrictionCoeff = 0.0f;
+    body.Shape = std::make_unique<shoora_shape_cube>(g_boxWall1, ARRAY_SIZE(g_boxWall1));
+    body.Scale = body.Shape->GetDim();
+    body.Color = GetColor(colorU32::Proto_Yellow);
+    Scene->AddBody(std::move(body));
+}
 
 void
 InitScene()
 {
-#if 1
     // Bottom Wall (Static Rigidbody)
     Shu::vec2f Window = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
+    FillDiamond();
+#if 1
+    shoora_body body = {};
+    body.Position = Shu::Vec3f(0, 0, 10);
+    body.Rotation = Shu::Quat(0, 0, 0, 1);
+    body.LinearVelocity = Shu::Vec3f(0, 0, 0);
+    body.InvMass = 1.0f;
+    body.Mass = 1.0f;
+    body.CoeffRestitution = 0.5f;
+    body.FrictionCoeff = 0.5f;
+    // body.Shape = std::make_unique<shoora_shape_convex>(g_diamond, ARRAY_SIZE(g_diamond));
+    body.Shape = std::make_unique<shoora_shape_convex>(GlobalJobQueue, g_diamond, ARRAY_SIZE(g_diamond));
+
+
+    // Scene->AddBody(std::move(body));
+
+    // AddStandardSandBox();
+#endif
+
+#if 0
     // Dynamic Bodies
     shoora_body Body;
     for(i32 x = 0; x < 6; x++)
@@ -419,6 +677,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
 #endif
 
     GlobalWindowSize = {AppInfo->WindowWidth, AppInfo->WindowHeight};
+    GlobalJobQueue = AppInfo->JobQueue;
     InitializeLightData();
 
     VK_CHECK(volkInitialize());
@@ -457,7 +716,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     shoora_camera *pCamera = &VulkanContext->Camera;
     SetupCamera(pCamera, shoora_projection::PROJECTION_PERSPECTIVE, 0.1f, 1000.0f, 16.0f / 9.0f,
                 GlobalWindowSize.y, 45.0f, Shu::Vec3f(0, 0, -10));
-#if 1
+#if 0
     pCamera->Pos = Shu::Vec3f(14.1368380f, 106.438675f, -40.9848938f);
     pCamera->Front = Shu::Vec3f(-0.332412988f, -0.475319535f, -0.814599872f);
     pCamera->Right = Shu::Vec3f(-0.925878108f , 0.0f, 0.377822191f);
@@ -594,9 +853,6 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         int x = 0;
     }
 #endif
-
-    auto *b = Scene->GetBody(0);
-    auto bounds = b->Shape->GetBounds(b->Position, b->Rotation);
 
     // VK_CHECK(vkQueueWaitIdle(Context->Device.GraphicsQueue));
     Shu::vec2f CurrentMousePos = Shu::Vec2f(FramePacket->MouseXPos, FramePacket->MouseYPos);

@@ -16,27 +16,87 @@ struct shoora_dynamic_array
   public:
     shoora_dynamic_array()
     {
-        this->Capacity = 1;
-        arr = new T[this->Capacity];
+        this->Capacity = 0;
         Size = 0;
+        this->arr = nullptr;
     }
+
+    shoora_dynamic_array(const shoora_dynamic_array<T> &Rhs)
+    {
+        this->Capacity = Rhs.Capacity;
+        Size = Rhs.Size;
+        this->arr = new T[this->Capacity];
+        for(i32 i = 0; i < Size; ++i)
+        {
+            this->arr[i] = Rhs[i];
+        }
+    }
+
+    shoora_dynamic_array(shoora_dynamic_array<T> &&Rhs)
+    {
+        this->Capacity = Rhs.Capacity;
+        this->Size = Rhs.Size;
+        this->arr = Rhs.arr;
+
+        Rhs.Capacity = 0;
+        Rhs.Size = 0;
+        Rhs.arr = nullptr;
+    }
+
+    shoora_dynamic_array &
+    operator=(const shoora_dynamic_array<T> &Rhs)
+    {
+        if(this->arr) { delete[] this->arr; }
+
+        this->Capacity = Rhs.Capacity;
+        Size = Rhs.Size;
+        this->arr = new T[this->Capacity];
+        for(i32 i = 0; i < Size; ++i)
+        {
+            this->arr[i] = Rhs[i];
+        }
+        return *this;
+    }
+
+    shoora_dynamic_array &
+    operator=(shoora_dynamic_array<T> &&Rhs)
+    {
+        this->Capacity = Rhs.Capacity;
+        Size = Rhs.Size;
+        this->arr = Rhs.arr;
+
+        Rhs.Capacity = 0;
+        Rhs.Size = 0;
+        Rhs.arr = nullptr;
+
+        return *this;
+    }
+
     shoora_dynamic_array(i32 ReserveCapacity) { reserve(ReserveCapacity); }
     ~shoora_dynamic_array()
     {
         // LogFatalUnformatted("Dynamic array destructor called!\n");
-        ASSERT(arr != nullptr);
-        delete[] arr;
+        if(arr != nullptr)
+        {
+            delete[] arr;
+        }
+        this->Capacity = 0;
+        this->Size = 0;
     }
 
     inline void
     reserve(i32 capacity)
     {
-        arr = new T[capacity];
-        Size = 0;
+        ASSERT(this->Capacity == 0 && this->Size == 0);
+
         this->Capacity = capacity;
+        arr = new T[this->Capacity];
+        Size = 0;
+
+        this->Clear();
     }
 
-    inline i32 size() { return Size; }
+    inline i32 size() const { return Size; }
     inline i32 capacity() { return Capacity; }
 
     inline void
@@ -52,7 +112,7 @@ struct shoora_dynamic_array
         arr = NewArr;
         Capacity = NewCapacity;
 
-        LogWarn("Array has been resized to capacity: %d!\n", Capacity);
+        // LogWarn("Array has been resized to capacity: %d!\n", Capacity);
     }
 
     inline void
@@ -81,7 +141,7 @@ struct shoora_dynamic_array
     inline void
     emplace_back(Args &&...args)
     {
-        if ((Size + 1) >= Capacity)
+        if ((Size + 1) > Capacity)
         {
             Resize();
         }
@@ -94,7 +154,7 @@ struct shoora_dynamic_array
     }
 
     inline T&
-    operator[](i32 Index)
+    operator[](i32 Index) const
     {
         ASSERT(Index < Size);
         return arr[Index];
@@ -108,8 +168,19 @@ struct shoora_dynamic_array
         return Result;
     }
 
+    inline void
+    erase(i32 Index)
+    {
+        ASSERT(Index < Size);
+        for(i32 i = Index; i < (Size-1); ++i)
+        {
+            SWAP(arr[i], arr[i + 1]);
+        }
+        --Size;
+    }
+
     inline T*
-    data()
+    data() const
     {
         return arr;
     }
@@ -117,7 +188,8 @@ struct shoora_dynamic_array
     inline void
     Clear()
     {
-        memset(arr, 0, sizeof(T) * Size);
+        ASSERT(Capacity >= Size);
+        memset(arr, 0, sizeof(T) * Capacity);
     }
 };
 

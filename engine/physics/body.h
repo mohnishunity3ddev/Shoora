@@ -57,7 +57,7 @@ struct shoora_body
 
     // NOTE: returns true if the body is static. Meaning it has infinite mass.
     b32 IsStatic() const;
-
+    
     void UpdateWorldVertices();
 
     Shu::vec3f WorldToLocalSpace(const Shu::vec3f &PointWS) const;

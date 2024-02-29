@@ -10,7 +10,7 @@ namespace Shu
         Shu::mat4f Model = Shu::Mat4f(1.0f);
 
         Shu::Translate(Model, -Pos);
-        Shu::Rotate(Model, Shu::QuatAngleAxis(-RotationAngleDegrees, RotationAxis));
+        Shu::Rotate(Model, Shu::QuatAngleAxisDeg(-RotationAngleDegrees, RotationAxis));
         Shu::Scale(Model, Scale.Reciprocal());
 
         return Model;
@@ -23,7 +23,7 @@ namespace Shu
         Shu::mat4f Model = Shu::Mat4f(1.0f);
 
         Shu::Scale(Model, Scale);
-        Shu::Rotate(Model, Shu::QuatAngleAxis(RotationAngleDegrees, RotationAxis));
+        Shu::Rotate(Model, Shu::QuatAngleAxisDeg(RotationAngleDegrees, RotationAxis));
         Shu::Translate(Model, Pos);
 
         return Model;

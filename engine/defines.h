@@ -34,12 +34,28 @@ typedef double f64;
 #define SHU_USE_STB 1
 #define SHU_VULKAN_EXAMPLE 1
 #define SHU_DEFAULT_FENCE_TIMEOUT 100000000000
-#define ARRAY_SIZE(Arr) sizeof(Arr) / sizeof(Arr[0])
+#define ARRAY_SIZE(Arr) (sizeof((Arr)) / sizeof(Arr[0]))
 #define SHU_VK_ENABLE_MSAA 1
 #define SHU_PIXELS_PER_METER 100.0f
 #define FPS_CAPPING_ENABLED 0
 
 #define SHU_INT_MIN (i32)1 << 31
+
+#define USE_CPP_ATOMIC 0
+#if USE_CPP_ATOMIC
+#include <atomic>
+// NOTE: This is to stop the compiler from rearranging stuff for optimization. Since this is multithreaded
+// code, we have to do this! This prevents any writes that are below it to be moved above it by the compiler during
+// optimization phase.
+#define CompletePastWritesBeforeFutureWrites std::atomic_thread_fence(std::memory_order_release)
+#define CompletePastReadsBeforeFutureReads std::atomic_thread_fence(std::memory_order_acquire)
+#else
+#include <intrin.h>
+// NOTE: sFence makes sure the writes complete at the CPU level. WriteBarrier works at the compiler level so that
+// it does not reorder stores/writes during its optimization phase.
+#define CompletePastWritesBeforeFutureWrites _WriteBarrier(); _mm_sfence()
+#define CompletePastReadsBeforeFutureReads _ReadBarrier()
+#endif
 
 #ifdef _MSC_VER
 #define SHU_ALIGN_16 __declspec(align(16))
@@ -358,8 +374,29 @@ struct arr
     inline void
     add(const T &item)
     {
-        ASSERT((size + 1) < maxSize);
+        ASSERT((size + 1) <= maxSize);
         data[size++] = item;
+    }
+
+    inline void
+    erase(i32 index)
+    {
+        ASSERT(index < size);
+        if(index != size - 1)
+        {
+            for(i32 i = index; (i < size); ++i)
+            {
+                data[i] = data[i + 1];
+            }
+        }
+
+        size--;
+    }
+
+    inline void
+    clear()
+    {
+        memset(data, 0, maxSize*sizeof(T));
     }
 };
 

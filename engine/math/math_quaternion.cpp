@@ -4,6 +4,19 @@
 namespace Shu
 {
     quat
+    Quat()
+    {
+        quat Result;
+
+        Result.w = 1;
+        Result.vx = 0;
+        Result.vy = 0;
+        Result.vz = 0;
+        
+        return Result;
+    }
+
+    quat
     Quat(f32 w, f32 vx, f32 vy, f32 vz)
     {
         quat Result;
@@ -27,7 +40,7 @@ namespace Shu
     }
 
     quat
-    QuatAngleAxis(f32 AngleInDegrees, const vec3f &Axis)
+    QuatAngleAxisDeg(f32 AngleInDegrees, const vec3f &Axis)
     {
         quat Result;
 
@@ -35,6 +48,19 @@ namespace Shu
 
         Shu::vec3f axis = Normalize(Axis);
         Result.complex = axis*Shu::Sin(AngleInDegrees*0.5f);
+
+        return Result;
+    }
+
+    quat
+    QuatAngleAxisRad(f32 AngleInRadians, const vec3f &Axis)
+    {
+        quat Result;
+
+        Result.real = Shu::CosRad(AngleInRadians*0.5f);
+
+        Shu::vec3f axis = Normalize(Axis);
+        Result.complex = axis*Shu::SinRad(AngleInRadians*0.5f);
 
         return Result;
     }
@@ -415,12 +441,12 @@ namespace Shu
         Shu::vec3f Axis = Shu::Normalize(Shu::Vec3f(0.235f, 0.235f, -0.942f));
         Shu::vec3f PT = Shu::QuatRotateVec(54.74f, Axis, P);
 
-        Shu::quat Quat = Shu::QuatAngleAxis(54.74f, Shu::Vec3f(0.235f, 0.235f, -0.942f));
+        Shu::quat Quat = Shu::QuatAngleAxisDeg(54.74f, Shu::Vec3f(0.235f, 0.235f, -0.942f));
         f32 AngleInDegrees = Quat.AngleDegrees();
         Shu::vec3f At = Quat.AxisNormalized();
 
-        Shu::quat SQ0 = Shu::QuatAngleAxis(90, Shu::Vec3f( 0, 0, 1));
-        Shu::quat SQ1 = Shu::QuatAngleAxis(90, Shu::Vec3f( 0, 1, 0));
+        Shu::quat SQ0 = Shu::QuatAngleAxisDeg(90, Shu::Vec3f( 0, 0, 1));
+        Shu::quat SQ1 = Shu::QuatAngleAxisDeg(90, Shu::Vec3f( 0, 1, 0));
         Shu::quat SQ01 = Shu::QuatSlerp(SQ0, SQ1, 0.5f);
         Shu::vec3f sqEuler0 = SQ0.ToEuler();
         Shu::vec3f sqEuler1 = SQ1.ToEuler();
@@ -455,9 +481,9 @@ namespace Shu
             SlerpedQuatAxiss[Index] = Slerped.AxisNormalized();
         }
 
-        Shu::quat qX = Shu::QuatAngleAxis(30, Shu::Vec3f(1, 0, 0)); // X-Axis
-        Shu::quat qY = Shu::QuatAngleAxis(30, Shu::Vec3f(0, 1, 0)); // Y-Axis
-        Shu::quat qZ = Shu::QuatAngleAxis(30, Shu::Vec3f(0, 0, 1)); // Z-Axis
+        Shu::quat qX = Shu::QuatAngleAxisDeg(30, Shu::Vec3f(1, 0, 0)); // X-Axis
+        Shu::quat qY = Shu::QuatAngleAxisDeg(30, Shu::Vec3f(0, 1, 0)); // Y-Axis
+        Shu::quat qZ = Shu::QuatAngleAxisDeg(30, Shu::Vec3f(0, 0, 1)); // Z-Axis
         // NOTE: How Unity rotates a point. First around Y then X then Z
         Shu::quat FinalQuat = qY*qX*qZ;
         Shu::quat FinalQuat1 = Shu::QuatFromEuler(30, 30, 30);

@@ -65,7 +65,7 @@ namespace Shu
     template <typename T> SHU_EXPORT vec2f Normalize(const vec2<T> &A);
 
     // ----------------------------------------------------------------------------------------------------------------
-
+    
     template<typename T>
     struct vec3
     {
@@ -95,7 +95,7 @@ namespace Shu
         inline T Magnitude() const;
         inline void Normalize();
         inline T Dot(const vec3<T> &A) const;
-        inline vec3<T> Cross(const vec3<T> &A);
+        inline vec3<T> Cross(const vec3<T> &A) const;
         inline vec3<T> Reciprocal() const;
         inline b32 IsValid() const;
         static vec3<T> Zero()
@@ -634,7 +634,7 @@ namespace Shu
 
     template <typename T>
     vec3<T>
-    vec3<T>::Cross(const vec3<T> &A)
+    vec3<T>::Cross(const vec3<T> &A) const
     {
         vec3<T> Result = Shu::Cross(*this, A);
         return Result;

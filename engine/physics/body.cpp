@@ -298,7 +298,7 @@ shoora_body::Update(const f32 deltaTime)
 
     // Update Rotation Quaternion
     Shu::vec3f dAngle = this->AngularVelocity * deltaTime;
-    Shu::quat dq = Shu::QuatAngleAxis(dAngle.Magnitude()*RAD_TO_DEG, this->AngularVelocity);
+    Shu::quat dq = Shu::QuatAngleAxisDeg(dAngle.Magnitude()*RAD_TO_DEG, this->AngularVelocity);
     this->Rotation = (dq * Rotation);
     Shu::QuatNormalize(this->Rotation);
 

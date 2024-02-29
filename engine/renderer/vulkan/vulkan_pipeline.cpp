@@ -325,7 +325,7 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
     RasterizerInfo.depthBiasConstantFactor = 0.0f;
     RasterizerInfo.depthBiasClamp = 0.0f;
     RasterizerInfo.depthBiasSlopeFactor = 0.0f;
-    RasterizerInfo.lineWidth = 5.0f;
+    RasterizerInfo.lineWidth = 1.0f;
 
     //? Multisample Info
     VkPipelineMultisampleStateCreateInfo MultisampleInfo;

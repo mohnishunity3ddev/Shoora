@@ -56,6 +56,15 @@ shoora_scene::AddBody(const shoora_body &Body)
 #endif
 
 shoora_body *
+shoora_scene::AddBody(shoora_body &&Body)
+{
+    Bodies.emplace_back((shoora_body &&)Body);
+
+    shoora_body *b = Bodies.get(Bodies.size() - 1);
+    return b;
+}
+
+shoora_body *
 shoora_scene::AddCubeBody(const Shu::vec3f &Pos, const Shu::vec3f &Scale, u32 ColorU32, f32 Mass,
                           f32 Restitution, const Shu::vec3f &EulerAngles)
 {
@@ -225,7 +234,6 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
                 }
             }
         }
-
     }
 
     // NOTE: Sort the timeofImpacts from earliest to latest.
@@ -253,7 +261,7 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
     {
         contact &Contact = Contacts[i];
         const f32 local_dt = Contact.TimeOfImpact - AccumulatedTime;
-        
+
         shoora_body *BodyA = Contact.ReferenceBodyA;
         shoora_body *BodyB = Contact.IncidentBodyB;
 

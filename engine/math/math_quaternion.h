@@ -27,6 +27,8 @@ namespace Shu
             f32 E[4];
         };
 
+        quat() : w(1), vx(0), vy(0), vz(0) {}
+        
         f32 AngleDegrees() const;
         f32 AngleRadians() const;
         vec3f AxisNormalized() const;
@@ -35,9 +37,11 @@ namespace Shu
         mat4f ToMat4f() const;
     };
 
+    SHU_EXPORT quat Quat();
     SHU_EXPORT quat Quat(f32 w, f32 vx, f32 vy, f32 vz);
     SHU_EXPORT quat Quat(f32 Real, vec3f Complex);
-    SHU_EXPORT quat QuatAngleAxis(f32 AngleInDegrees, const vec3f &Axis);
+    SHU_EXPORT quat QuatAngleAxisDeg(f32 AngleInDegrees, const vec3f &Axis);
+    SHU_EXPORT quat QuatAngleAxisRad(f32 AngleInRadians, const vec3f &Axis);
     SHU_EXPORT quat operator-(const quat &A, const quat &B);
     SHU_EXPORT quat operator+(const quat &A, const quat &B);
     SHU_EXPORT quat operator*(const quat &A, const quat &B);
