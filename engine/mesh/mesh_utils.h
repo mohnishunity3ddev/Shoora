@@ -6,14 +6,14 @@
 struct convex_hull_2d
 {
   private:
-    Shu::vec2f *Vertices;
+    shu::vec2f *Vertices;
     i32 VertexCount;
 
   public:
     convex_hull_2d() = delete;
-    convex_hull_2d(Shu::vec3f *VertexPositions, i32 VertexCount);
+    convex_hull_2d(shu::vec3f *VertexPositions, i32 VertexCount);
 
-    Shu::vec2f *GetVertices() { return Vertices; }
+    shu::vec2f *GetVertices() { return Vertices; }
     i32 GetVertexCount() { return VertexCount; }
 
     ~convex_hull_2d()

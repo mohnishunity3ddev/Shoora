@@ -16,9 +16,9 @@
 #define SHU_DEFAULT_SENSITIVITY 0.33f
 #define SHU_DEFAULT_ZOOM 45.0f
 
-#define SHU_DEFAULT_FRONT Shu::Vec3f(0, 0, 1)
-#define SHU_DEFAULT_RIGHT Shu::Vec3f(1, 0, 0)
-#define SHU_DEFAULT_UP Shu::Vec3f(0, 1, 0)
+#define SHU_DEFAULT_FRONT shu::Vec3f(0, 0, 1)
+#define SHU_DEFAULT_RIGHT shu::Vec3f(1, 0, 0)
+#define SHU_DEFAULT_UP shu::Vec3f(0, 1, 0)
 
 enum shoora_projection
 {
@@ -43,11 +43,11 @@ struct shoora_camera_input
 
 struct shoora_camera
 {
-    Shu::vec3f Pos;
-    Shu::vec3f Front;
-    Shu::vec3f Right;
-    Shu::vec3f Up;
-    Shu::vec3f GlobalUp;
+    shu::vec3f Pos;
+    shu::vec3f Front;
+    shu::vec3f Right;
+    shu::vec3f Up;
+    shu::vec3f GlobalUp;
 
     f32 halfFOV;
     shoora_projection Type;
@@ -63,11 +63,11 @@ struct shoora_camera
 
     void UpdateCameraVectors();
 
-    Shu::mat4f GetViewMatrix(Shu::mat4f &M);
-    Shu::mat4f GetProjectionMatrix();
-    Shu::vec2f GetBounds();
-    void UpdateWindowSize(const Shu::vec2f &windowSize);
-    Shu::rect2d GetRect();
+    shu::mat4f GetViewMatrix(shu::mat4f &M);
+    shu::mat4f GetProjectionMatrix();
+    shu::vec2f GetBounds();
+    void UpdateWindowSize(const shu::vec2f &windowSize);
+    shu::rect2d GetRect();
 
 #if SHU_USE_GLM
     glm::mat4 GetViewMatrix(glm::mat4 &M);
@@ -76,8 +76,8 @@ struct shoora_camera
 };
 
 SHU_EXPORT void SetupCamera(shoora_camera *Camera, shoora_projection Type, f32 Near, f32 Far, f32 Aspect,
-                            f32 Height, f32 halfFOV, Shu::vec3f Pos = Shu::Vec3f(0.0f),
-                            Shu::vec3f GlobalUp = Shu::Vec3f(0.0f, 1.0f, 0.0f));
+                            f32 Height, f32 halfFOV, shu::vec3f Pos = shu::Vec3f(0.0f),
+                            shu::vec3f GlobalUp = shu::Vec3f(0.0f, 1.0f, 0.0f));
 
 #define CAMERA_H
 #endif // CAMERA_H

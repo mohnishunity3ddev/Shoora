@@ -1,9 +1,9 @@
 #include "jpeg_loader.h"
 
-Shu::vec3f
-RGBToYCbCr(Shu::vec3f Rgb)
+shu::vec3f
+RGBToYCbCr(shu::vec3f Rgb)
 {
-    Shu::vec3f Result = {};
+    shu::vec3f Result = {};
 
     f32 Red = Rgb.r*255.0f;
     f32 Green = Rgb.g*255.0f;

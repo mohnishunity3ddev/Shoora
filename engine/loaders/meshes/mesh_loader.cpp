@@ -206,10 +206,10 @@ LoadGLTFNode(cgltf_node *InputNode, cgltf_material *glTFMaterials, shoora_model 
     CurrentNode->Name = InputNode->name;
     CurrentNode->ParentNode = Parent;
 
-    CurrentNode->ModelMatrix = Shu::Mat4(1.0f);
+    CurrentNode->ModelMatrix = shu::Mat4(1.0f);
     if(InputNode->has_scale)
     {
-        CurrentNode->ModelMatrix = Shu::Scale(CurrentNode->ModelMatrix, Shu::MakeVec3(InputNode->scale));
+        CurrentNode->ModelMatrix = shu::Scale(CurrentNode->ModelMatrix, shu::MakeVec3(InputNode->scale));
     }
     if(InputNode->has_rotation)
     {
@@ -218,7 +218,7 @@ LoadGLTFNode(cgltf_node *InputNode, cgltf_material *glTFMaterials, shoora_model 
     }
     if(InputNode->has_translation)
     {
-        CurrentNode->ModelMatrix = Shu::Translate(CurrentNode->ModelMatrix, Shu::MakeVec3(InputNode->translation));
+        CurrentNode->ModelMatrix = shu::Translate(CurrentNode->ModelMatrix, shu::MakeVec3(InputNode->translation));
     }
     if(InputNode->has_matrix)
     {
@@ -327,11 +327,11 @@ LoadGLTFNode(cgltf_node *InputNode, cgltf_material *glTFMaterials, shoora_model 
                 ++VertexIndex)
             {
                 shoora_vertex_info Vert = {};
-                Vert.Pos        = Shu::MakeVec3(&PositionBuffer[VertexIndex*3]);
-                Vert.Normal     = Shu::MakeVec3(&NormalsBuffer[VertexIndex*3]);
-                Vert.Color      = ColorsBuffer ? Shu::MakeVec3(&ColorsBuffer[VertexIndex*3]) : Shu::Vec3(1.0f);
-                Vert.UV         = TexCoordsBuffer ? Shu::MakeVec2(&TexCoordsBuffer[VertexIndex*2]) : Shu::Vec2(0.0f);
-                Vert.Tangent    = TangentsBuffer ? Shu::MakeVec4(&TangentsBuffer[VertexIndex*4]) : Shu::Vec4(0.0f);
+                Vert.Pos        = shu::MakeVec3(&PositionBuffer[VertexIndex*3]);
+                Vert.Normal     = shu::MakeVec3(&NormalsBuffer[VertexIndex*3]);
+                Vert.Color      = ColorsBuffer ? shu::MakeVec3(&ColorsBuffer[VertexIndex*3]) : shu::Vec3(1.0f);
+                Vert.UV         = TexCoordsBuffer ? shu::MakeVec2(&TexCoordsBuffer[VertexIndex*2]) : shu::Vec2(0.0f);
+                Vert.Tangent    = TangentsBuffer ? shu::MakeVec4(&TangentsBuffer[VertexIndex*4]) : shu::Vec4(0.0f);
 
                 MeshFilter->Vertices[MeshFilter->VertexCount++] = Vert;
             }

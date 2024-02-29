@@ -50,17 +50,17 @@ static platform_work_queue *GlobalJobQueue;
 struct vert_uniform_data
 {
     // Shu::mat4f Model;
-    Shu::mat4f View;
-    Shu::mat4f Projection;
+    shu::mat4f View;
+    shu::mat4f Projection;
 };
 
 struct spotlight_data
 {
     b32 IsOn;
 
-    SHU_ALIGN_16 Shu::vec3f Pos;
-    SHU_ALIGN_16 Shu::vec3f Color = Shu::Vec3f(1.0f);
-    SHU_ALIGN_16 Shu::vec3f Direction;
+    SHU_ALIGN_16 shu::vec3f Pos;
+    SHU_ALIGN_16 shu::vec3f Color = shu::Vec3f(1.0f);
+    SHU_ALIGN_16 shu::vec3f Direction;
 
     float InnerCutoffAngles = 12.5f;
     float OuterCutoffAngles = 15.5f;
@@ -69,8 +69,8 @@ struct spotlight_data
 
 struct point_light_data
 {
-    SHU_ALIGN_16 Shu::vec3f Pos = Shu::Vec3f(3, 0, 0);
-    SHU_ALIGN_16 Shu::vec3f Color = Shu::Vec3f(1, 1, 0);
+    SHU_ALIGN_16 shu::vec3f Pos = shu::Vec3f(3, 0, 0);
+    SHU_ALIGN_16 shu::vec3f Color = shu::Vec3f(1, 1, 0);
     float Intensity = 5.0f;
 };
 
@@ -79,8 +79,8 @@ struct lighting_shader_uniform_data
     SHU_ALIGN_16 point_light_data PointLightData[4];
     SHU_ALIGN_16 spotlight_data SpotlightData;
 
-    SHU_ALIGN_16 Shu::vec3f CamPos = Shu::Vec3f(0, 0, -10);
-    SHU_ALIGN_16 Shu::vec3f ObjectColor;
+    SHU_ALIGN_16 shu::vec3f CamPos = shu::Vec3f(0, 0, -10);
+    SHU_ALIGN_16 shu::vec3f ObjectColor;
 
 #if MATERIAL_VIEWER
     shoora_material Material;
@@ -89,29 +89,29 @@ struct lighting_shader_uniform_data
 
 struct push_const_block
 {
-    Shu::mat4f Model;
+    shu::mat4f Model;
 };
 
 struct light_shader_vert_data
 {
-    Shu::mat4f View;
-    Shu::mat4f Projection;
+    shu::mat4f View;
+    shu::mat4f Projection;
     // Fragment Shader
 };
 
 struct light_shader_push_constant_data
 {
-    Shu::mat4f Model;
-    Shu::vec3f Color = {1, 1, 1};
+    shu::mat4f Model;
+    shu::vec3f Color = {1, 1, 1};
 };
 
 struct shoora_render_state
 {
     b8 WireframeMode = false;
     f32 WireLineWidth = 10.0f;
-    Shu::vec3f ClearColor = Shu::vec3f{0.043f, 0.259f, 0.259f};
+    shu::vec3f ClearColor = shu::vec3f{0.043f, 0.259f, 0.259f};
     // Shu::vec3f ClearColor = Shu::Vec3f(0.0f);
-    Shu::vec3f MeshColorUniform = Shu::vec3f{1.0f, 1.0f, 1.0f};
+    shu::vec3f MeshColorUniform = shu::vec3f{1.0f, 1.0f, 1.0f};
 };
 
 struct shoora_debug_overlay
@@ -124,8 +124,8 @@ static f32 GlobalDeltaTime = 0.0f;
 static shoora_render_state GlobalRenderState;
 static f32 GlobalUiUpdateTimer = 0.0f;
 static const f32 GlobalUiUpdateWaitTime = 1.0f;
-static const Shu::mat4f GlobalMat4Identity = Shu::Mat4f(1.0f);
-static Shu::vec2f GlobalLastFrameMousePos = Shu::Vec2f(FLT_MAX, FLT_MAX);
+static const shu::mat4f GlobalMat4Identity = shu::Mat4f(1.0f);
+static shu::vec2f GlobalLastFrameMousePos = shu::Vec2f(FLT_MAX, FLT_MAX);
 static b32 GlobalSetFPSCap = true;
 static i32 GlobalSelectedFPSOption = 1;
 static vert_uniform_data GlobalVertUniformData = {};
@@ -134,7 +134,7 @@ static light_shader_vert_data GlobalLightShaderData;
 static light_shader_push_constant_data GlobalLightPushConstantData[4];
 static push_const_block GlobalPushConstBlock = {};
 static f32 GlobalImGuiDragFloatStep = 0.005f;
-static Shu::vec2u GlobalWindowSize = {};
+static shu::vec2u GlobalWindowSize = {};
 
 static shoora_scene *Scene;
 
@@ -147,8 +147,8 @@ WindowResizedCallback(u32 Width, u32 Height)
     {
         ASSERT(Context->IsInitialized);
         WindowResized(&Context->Device, &Context->Swapchain, Context->GraphicsRenderPass,
-                      Shu::vec2u{Width, Height});
-        ImGuiUpdateWindowSize(Shu::vec2u{Width, Height});
+                      shu::vec2u{Width, Height});
+        ImGuiUpdateWindowSize(shu::vec2u{Width, Height});
         GlobalWindowSize = {Width, Height};
     }
 }
@@ -223,12 +223,12 @@ ImGuiNewFrame()
     ImGui::Render();
 }
 
-Shu::vec2f
-MouseToWorld(const Shu::vec2f &MousePos)
+shu::vec2f
+MouseToWorld(const shu::vec2f &MousePos)
 {
     // NOTE: This is the position where the y position is flipped since windows's mouse pos (0,0) starts from the
     // top left and y increases in the downward direction.
-    Shu::vec2f worldPos = Shu::Vec2f(MousePos.x, ((f32)GlobalWindowSize.y) - MousePos.y);
+    shu::vec2f worldPos = shu::Vec2f(MousePos.x, ((f32)GlobalWindowSize.y) - MousePos.y);
 
     worldPos += Context->Camera.Pos.xy;
     worldPos -= (0.5f*Context->Camera.GetBounds());
@@ -256,82 +256,82 @@ static b32 msgShown = false;
 static const f32 width = 50;
 static const f32 depth = 25;
 
-Shu::vec3f g_boxGround[] =
+shu::vec3f g_boxGround[] =
 {
-    Shu::Vec3f(-width,  0.5f, -depth),
-    Shu::Vec3f( width,  0.5f, -depth),
-    Shu::Vec3f(-width,  0.5f,  depth),
-    Shu::Vec3f( width,  0.5f,  depth),
-    Shu::Vec3f(-width, -0.5f, -depth),
-    Shu::Vec3f( width, -0.5f, -depth),
-    Shu::Vec3f(-width, -0.5f,  depth),
-    Shu::Vec3f( width, -0.5f,  depth)
+    shu::Vec3f(-width,  0.5f, -depth),
+    shu::Vec3f( width,  0.5f, -depth),
+    shu::Vec3f(-width,  0.5f,  depth),
+    shu::Vec3f( width,  0.5f,  depth),
+    shu::Vec3f(-width, -0.5f, -depth),
+    shu::Vec3f( width, -0.5f, -depth),
+    shu::Vec3f(-width, -0.5f,  depth),
+    shu::Vec3f( width, -0.5f,  depth)
 };
 
-Shu::vec3f g_boxWall0[] =
+shu::vec3f g_boxWall0[] =
 {
-    Shu::Vec3f(-1,  -2.5f, -depth),
-    Shu::Vec3f( 1,  -2.5f, -depth),
-    Shu::Vec3f(-1,  -2.5f,  depth),
-    Shu::Vec3f( 1,  -2.5f,  depth),
-    Shu::Vec3f(-1,   2.5f, -depth),
-    Shu::Vec3f( 1,   2.5f, -depth),
-    Shu::Vec3f(-1,   2.5f,  depth),
-    Shu::Vec3f( 1,   2.5f,  depth)
+    shu::Vec3f(-1,  -2.5f, -depth),
+    shu::Vec3f( 1,  -2.5f, -depth),
+    shu::Vec3f(-1,  -2.5f,  depth),
+    shu::Vec3f( 1,  -2.5f,  depth),
+    shu::Vec3f(-1,   2.5f, -depth),
+    shu::Vec3f( 1,   2.5f, -depth),
+    shu::Vec3f(-1,   2.5f,  depth),
+    shu::Vec3f( 1,   2.5f,  depth)
 };
 
-Shu::vec3f g_boxWall1[] =
+shu::vec3f g_boxWall1[] =
 {
-    Shu::Vec3f(-width,  -2.5f, -1),
-    Shu::Vec3f( width,  -2.5f, -1),
-    Shu::Vec3f(-width,  -2.5f,  1),
-    Shu::Vec3f( width,  -2.5f,  1),
-    Shu::Vec3f(-width,   2.5f, -1),
-    Shu::Vec3f( width,   2.5f, -1),
-    Shu::Vec3f(-width,   2.5f,  1),
-    Shu::Vec3f( width,   2.5f,  1)
+    shu::Vec3f(-width,  -2.5f, -1),
+    shu::Vec3f( width,  -2.5f, -1),
+    shu::Vec3f(-width,  -2.5f,  1),
+    shu::Vec3f( width,  -2.5f,  1),
+    shu::Vec3f(-width,   2.5f, -1),
+    shu::Vec3f( width,   2.5f, -1),
+    shu::Vec3f(-width,   2.5f,  1),
+    shu::Vec3f( width,   2.5f,  1)
 };
 
-Shu::vec3f g_boxUnit[] =
+shu::vec3f g_boxUnit[] =
 {
-    Shu::Vec3f(-1, -1, -1),
-    Shu::Vec3f( 1, -1, -1),
-    Shu::Vec3f(-1,  1, -1),
-    Shu::Vec3f( 1,  1, -1),
-    Shu::Vec3f(-1, -1,  1),
-    Shu::Vec3f( 1, -1,  1),
-    Shu::Vec3f(-1,  1,  1),
-    Shu::Vec3f( 1,  1,  1)
+    shu::Vec3f(-1, -1, -1),
+    shu::Vec3f( 1, -1, -1),
+    shu::Vec3f(-1,  1, -1),
+    shu::Vec3f( 1,  1, -1),
+    shu::Vec3f(-1, -1,  1),
+    shu::Vec3f( 1, -1,  1),
+    shu::Vec3f(-1,  1,  1),
+    shu::Vec3f( 1,  1,  1)
 };
 
 static const float t = 0.25f;
-Shu::vec3f g_boxSmall[] =
+shu::vec3f g_boxSmall[] =
 {
 
-    Shu::Vec3f(-t, -t, -t),
-    Shu::Vec3f( t, -t, -t),
-    Shu::Vec3f(-t,  t, -t),
-    Shu::Vec3f( t,  t, -t),
-    Shu::Vec3f(-t, -t,  t),
-    Shu::Vec3f( t, -t,  t),
-    Shu::Vec3f(-t,  t,  t),
-    Shu::Vec3f( t,  t,  t)
+    shu::Vec3f(-t, -t, -t),
+    shu::Vec3f( t, -t, -t),
+    shu::Vec3f(-t,  t, -t),
+    shu::Vec3f( t,  t, -t),
+    shu::Vec3f(-t, -t,  t),
+    shu::Vec3f( t, -t,  t),
+    shu::Vec3f(-t,  t,  t),
+    shu::Vec3f( t,  t,  t)
 };
 
 static const float l = 3.0f;
-Shu::vec3f g_boxBeam[] =
+shu::vec3f g_boxBeam[] =
 {
-    Shu::Vec3f(-l, -t, -t),
-    Shu::Vec3f( l, -t, -t),
-    Shu::Vec3f(-l,  t, -t),
-    Shu::Vec3f( l,  t, -t),
-    Shu::Vec3f(-l, -t,  t),
-    Shu::Vec3f( l, -t,  t),
-    Shu::Vec3f(-l,  t,  t),
-    Shu::Vec3f( l,  t,  t)
+    shu::Vec3f(-l, -t, -t),
+    shu::Vec3f( l, -t, -t),
+    shu::Vec3f(-l,  t, -t),
+    shu::Vec3f( l,  t, -t),
+    shu::Vec3f(-l, -t,  t),
+    shu::Vec3f( l, -t,  t),
+    shu::Vec3f(-l,  t,  t),
+    shu::Vec3f( l,  t,  t)
 };
 
-Shu::vec3f g_diamond[7*8];
+shu::vec3f g_diamond[7*8];
 
 void
 DrawDebugDiamond()
@@ -385,22 +385,22 @@ DrawDebugDiamond()
 void
 FillDiamond()
 {
-    Shu::vec3f pts[4 + 4];
-    pts[0] = Shu::Vec3f( 0.1f,  0.0f, -1.0f);
-    pts[1] = Shu::Vec3f( 1.0f,  0.0f,  0.0f);
-    pts[2] = Shu::Vec3f( 1.0f,  0.0f,  0.1f);
-    pts[3] = Shu::Vec3f( 0.4f,  0.0f,  0.4f);
+    shu::vec3f pts[4 + 4];
+    pts[0] = shu::Vec3f( 0.1f,  0.0f, -1.0f);
+    pts[1] = shu::Vec3f( 1.0f,  0.0f,  0.0f);
+    pts[2] = shu::Vec3f( 1.0f,  0.0f,  0.1f);
+    pts[3] = shu::Vec3f( 0.4f,  0.0f,  0.4f);
 
     // 22.5 degree rotation around the z-axis.
-    const Shu::quat quatHalf = Shu::QuatAngleAxisRad(2.0f * SHU_PI_BY_2 * 0.125f, Shu::Vec3f(0, 0, 1));
+    const shu::quat quatHalf = shu::QuatAngleAxisRad(2.0f * SHU_PI_BY_2 * 0.125f, shu::Vec3f(0, 0, 1));
 
-    pts[4] = Shu::Vec3f(0.8f, 0.0f, 0.3f);
-    pts[4] = Shu::QuatRotateVec(quatHalf, pts[4]);
-    pts[5] = Shu::QuatRotateVec(quatHalf, pts[1]);
-    pts[6] = Shu::QuatRotateVec(quatHalf, pts[2]);
+    pts[4] = shu::Vec3f(0.8f, 0.0f, 0.3f);
+    pts[4] = shu::QuatRotateVec(quatHalf, pts[4]);
+    pts[5] = shu::QuatRotateVec(quatHalf, pts[1]);
+    pts[6] = shu::QuatRotateVec(quatHalf, pts[2]);
 
     // 45 degree rotation around the z-axis.
-    const Shu::quat quat = Shu::QuatAngleAxisRad(2.0f * SHU_PI * 0.125f, Shu::Vec3f(0, 0, 1));
+    const shu::quat quat = shu::QuatAngleAxisRad(2.0f * SHU_PI * 0.125f, shu::Vec3f(0, 0, 1));
 
     int idx = 0;
     for (int i = 0; i < 7; i++)
@@ -409,13 +409,13 @@ FillDiamond()
         idx++;
     }
 
-    Shu::quat quatAccumulator;
+    shu::quat quatAccumulator;
     for (int i = 1; i < 8; i++)
     {
         quatAccumulator = quatAccumulator * quat;
         for (int pt = 0; pt < 7; pt++)
         {
-            g_diamond[idx] = Shu::QuatRotateVec(quatAccumulator, pts[pt]);
+            g_diamond[idx] = shu::QuatRotateVec(quatAccumulator, pts[pt]);
             idx++;
         }
     }
@@ -427,10 +427,10 @@ AddStandardSandBox()
     shoora_body body = {};
 
     // Adding ground
-    body.Position = Shu::Vec3f(0, 0, 0);
-    body.Rotation = Shu::Quat(0, 0, 0, 1);
-    body.LinearVelocity = Shu::Vec3f(0.0f);
-    body.AngularVelocity = Shu::Vec3f(0.0f);
+    body.Position = shu::Vec3f(0, 0, 0);
+    body.Rotation = shu::Quat(0, 0, 0, 1);
+    body.LinearVelocity = shu::Vec3f(0.0f);
+    body.AngularVelocity = shu::Vec3f(0.0f);
     body.InvMass = 0.0f;
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.5f;
@@ -440,10 +440,10 @@ AddStandardSandBox()
     Scene->AddBody(std::move(body));
 
     // Adding wall at (50, 0, 0)
-    body.Position = Shu::Vec3f(50, 0, 0);
-    body.Rotation = Shu::Quat(0, 0, 0, 1);
-    body.LinearVelocity = Shu::Vec3f(0.0f);
-    body.AngularVelocity = Shu::Vec3f(0.0f);
+    body.Position = shu::Vec3f(50, 0, 0);
+    body.Rotation = shu::Quat(0, 0, 0, 1);
+    body.LinearVelocity = shu::Vec3f(0.0f);
+    body.AngularVelocity = shu::Vec3f(0.0f);
     body.InvMass = 0.0f;
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.0f;
@@ -453,10 +453,10 @@ AddStandardSandBox()
     Scene->AddBody(std::move(body));
 
     // Adding wall at (-50, 0, 0)
-    body.Position = Shu::Vec3f(-50, 0, 0);
-    body.Rotation = Shu::Quat(0, 0, 0, 1);
-    body.LinearVelocity = Shu::Vec3f(0.0f);
-    body.AngularVelocity = Shu::Vec3f(0.0f);
+    body.Position = shu::Vec3f(-50, 0, 0);
+    body.Rotation = shu::Quat(0, 0, 0, 1);
+    body.LinearVelocity = shu::Vec3f(0.0f);
+    body.AngularVelocity = shu::Vec3f(0.0f);
     body.InvMass = 0.0f;
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.0f;
@@ -466,10 +466,10 @@ AddStandardSandBox()
     Scene->AddBody(std::move(body));
 
     // Adding wall at (0, 0, 25)
-    body.Position = Shu::Vec3f(0, 0, 25);
-    body.Rotation = Shu::Quat(0, 0, 0, 1);
-    body.LinearVelocity = Shu::Vec3f(0.0f);
-    body.AngularVelocity = Shu::Vec3f(0.0f);
+    body.Position = shu::Vec3f(0, 0, 25);
+    body.Rotation = shu::Quat(0, 0, 0, 1);
+    body.LinearVelocity = shu::Vec3f(0.0f);
+    body.AngularVelocity = shu::Vec3f(0.0f);
     body.InvMass = 0.0f;
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.0f;
@@ -479,10 +479,10 @@ AddStandardSandBox()
     Scene->AddBody(std::move(body));
 
     // Adding wall at (0, 0, -25)
-    body.Position = Shu::Vec3f(0, 0, -25);
-    body.Rotation = Shu::Quat(0, 0, 0, 1);
-    body.LinearVelocity = Shu::Vec3f(0.0f);
-    body.AngularVelocity = Shu::Vec3f(0.0f);
+    body.Position = shu::Vec3f(0, 0, -25);
+    body.Rotation = shu::Quat(0, 0, 0, 1);
+    body.LinearVelocity = shu::Vec3f(0.0f);
+    body.AngularVelocity = shu::Vec3f(0.0f);
     body.InvMass = 0.0f;
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.0f;
@@ -496,20 +496,20 @@ void
 InitScene()
 {
     // Bottom Wall (Static Rigidbody)
-    Shu::vec2f Window = Shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
+    shu::vec2f Window = shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
     FillDiamond();
 #if 1
     shoora_body body = {};
-    body.Position = Shu::Vec3f(0, 0, 10);
-    body.Rotation = Shu::Quat(0, 0, 0, 1);
-    body.LinearVelocity = Shu::Vec3f(0, 0, 0);
+    body.Position = shu::Vec3f(0, 0, 10);
+    body.Rotation = shu::Quat(0, 0, 0, 1);
+    body.LinearVelocity = shu::Vec3f(0, 0, 0);
     body.InvMass = 1.0f;
     body.Mass = 1.0f;
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.5f;
-    // body.Shape = std::make_unique<shoora_shape_convex>(g_diamond, ARRAY_SIZE(g_diamond));
-    body.Shape = std::make_unique<shoora_shape_convex>(GlobalJobQueue, g_diamond, ARRAY_SIZE(g_diamond));
+    body.Shape = std::make_unique<shoora_shape_convex>(g_diamond, ARRAY_SIZE(g_diamond));
+    // body.Shape = std::make_unique<shoora_shape_convex>(GlobalJobQueue, g_diamond, ARRAY_SIZE(g_diamond));
 
 
     // Scene->AddBody(std::move(body));
@@ -593,7 +593,7 @@ CreateUnlitPipeline(shoora_vulkan_context *Context)
         AllocateDescriptorSets(RenderDevice, Context->UnlitDescriptorPool, 1, &Context->UnlitSetLayouts[0],
                                &Context->UnlitSets[Index]);
         UpdateBufferDescriptorSet(RenderDevice, Context->UnlitSets[Index], 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                  Context->FragUnlitBuffers[Index].Handle, 2*sizeof(Shu::mat4f), 0);
+                                  Context->FragUnlitBuffers[Index].Handle, 2*sizeof(shu::mat4f), 0);
     }
 
     CreateCombinedImageSampler(RenderDevice, "images/proto/Grid_02.png", VK_SAMPLE_COUNT_1_BIT,
@@ -647,25 +647,25 @@ DestroyUnlitPipelineResources()
 void
 InitializeLightData()
 {
-    GlobalFragUniformData.PointLightData[0].Pos = Shu::Vec3f(1.62f, 3.2f, -1.65f);
-    GlobalFragUniformData.PointLightData[0].Color = Shu::Vec3f(1.0f, 0.0f, 0.0f);
+    GlobalFragUniformData.PointLightData[0].Pos = shu::Vec3f(1.62f, 3.2f, -1.65f);
+    GlobalFragUniformData.PointLightData[0].Color = shu::Vec3f(1.0f, 0.0f, 0.0f);
     GlobalFragUniformData.PointLightData[0].Intensity = 2.575f;
 
-    GlobalFragUniformData.PointLightData[1].Pos = Shu::Vec3f(1.615f, 0.0f, -5.105f);
-    GlobalFragUniformData.PointLightData[1].Color = Shu::Vec3f(0.0f, 1.0f, 0.0f);
+    GlobalFragUniformData.PointLightData[1].Pos = shu::Vec3f(1.615f, 0.0f, -5.105f);
+    GlobalFragUniformData.PointLightData[1].Color = shu::Vec3f(0.0f, 1.0f, 0.0f);
     GlobalFragUniformData.PointLightData[1].Intensity = 3.535f;
 
-    GlobalFragUniformData.PointLightData[2].Pos = Shu::Vec3f(2.47f, 3.27f, -13.645f);
-    GlobalFragUniformData.PointLightData[2].Color = Shu::Vec3f(0.0f, 0.0f, 1.0f);
+    GlobalFragUniformData.PointLightData[2].Pos = shu::Vec3f(2.47f, 3.27f, -13.645f);
+    GlobalFragUniformData.PointLightData[2].Color = shu::Vec3f(0.0f, 0.0f, 1.0f);
     GlobalFragUniformData.PointLightData[2].Intensity = 2.575f;
 
-    GlobalFragUniformData.PointLightData[3].Pos = Shu::Vec3f(-2.575f, 0.785f, -11.24f);
-    GlobalFragUniformData.PointLightData[3].Color = Shu::Vec3f(1.0f, 0.0f, 1.0f);
+    GlobalFragUniformData.PointLightData[3].Pos = shu::Vec3f(-2.575f, 0.785f, -11.24f);
+    GlobalFragUniformData.PointLightData[3].Color = shu::Vec3f(1.0f, 0.0f, 1.0f);
     GlobalFragUniformData.PointLightData[3].Intensity = 2.575f;
 
     GlobalFragUniformData.SpotlightData.InnerCutoffAngles = 10.0f;
     GlobalFragUniformData.SpotlightData.OuterCutoffAngles = 14.367f;
-    GlobalFragUniformData.SpotlightData.Color = Shu::Vec3f(30.0f / 255.0f, 194.0 / 255.0f, 165.0 / 255.0f);
+    GlobalFragUniformData.SpotlightData.Color = shu::Vec3f(30.0f / 255.0f, 194.0 / 255.0f, 165.0 / 255.0f);
     GlobalFragUniformData.SpotlightData.Intensity = 5.0f;
 }
 
@@ -708,14 +708,14 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     GenerateTangentInformation(CubeVertices, CubeIndices, ARRAY_SIZE(CubeIndices));
 #endif
 
-    Shu::vec2u ScreenDim = Shu::vec2u{AppInfo->WindowWidth, AppInfo->WindowHeight};
+    shu::vec2u ScreenDim = shu::vec2u{AppInfo->WindowWidth, AppInfo->WindowHeight};
     CreateSwapchain(&VulkanContext->Device, &VulkanContext->Swapchain, ScreenDim, &SwapchainInfo);
     CreateRenderPass(RenderDevice, Swapchain, &VulkanContext->GraphicsRenderPass);
     CreateSwapchainFramebuffers(RenderDevice, Swapchain, VulkanContext->GraphicsRenderPass);
 
     shoora_camera *pCamera = &VulkanContext->Camera;
     SetupCamera(pCamera, shoora_projection::PROJECTION_PERSPECTIVE, 0.1f, 1000.0f, 16.0f / 9.0f,
-                GlobalWindowSize.y, 45.0f, Shu::Vec3f(0, 0, -10));
+                GlobalWindowSize.y, 45.0f, shu::Vec3f(0, 0, -10));
 #if 0
     pCamera->Pos = Shu::Vec3f(14.1368380f, 106.438675f, -40.9848938f);
     pCamera->Front = Shu::Vec3f(-0.332412988f, -0.475319535f, -0.814599872f);
@@ -726,9 +726,9 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
 #endif
     // NOTE: Mesh Database setup
     shoora_mesh_database::MeshDbBegin(RenderDevice);
-    Shu::vec3f Poly1[] = {{0, 10, 1}, {10, 3, 1}, {10, -5, 1}, {-10, -5, 1}, {-10, 3, 1}};
+    shu::vec3f Poly1[] = {{0, 10, 1}, {10, 3, 1}, {10, -5, 1}, {-10, -5, 1}, {-10, 3, 1}};
     shoora_mesh_database::AddPolygonMeshToDb(Poly1, ARRAY_SIZE(Poly1));
-    Shu::vec3f Poly2[] = {{20, 60, 1}, {40, 20, 1}, {20, -60, 1}, {-20, -60, 1}, {-40, 20, 1}};
+    shu::vec3f Poly2[] = {{20, 60, 1}, {40, 20, 1}, {20, -60, 1}, {-20, -60, 1}, {-40, 20, 1}};
     shoora_mesh_database::AddPolygonMeshToDb(Poly2, ARRAY_SIZE(Poly2));
     shoora_mesh_database::MeshDbEnd();
 
@@ -811,17 +811,17 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
     {
         Angle = 0.0f;
     }
-    Shu::mat4f Model = GlobalMat4Identity;
-    Shu::Scale(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f));
-    Shu::RotateGimbalLock(Model, Shu::Vec3f(1.0f, 1.0f, 1.0f), Angle*AngleSpeed);
-    Shu::Translate(Model, Shu::Vec3f(0.0f, 0.0f, 0.0f));
+    shu::mat4f Model = GlobalMat4Identity;
+    shu::Scale(Model, shu::Vec3f(1.0f, 1.0f, 1.0f));
+    shu::RotateGimbalLock(Model, shu::Vec3f(1.0f, 1.0f, 1.0f), Angle*AngleSpeed);
+    shu::Translate(Model, shu::Vec3f(0.0f, 0.0f, 0.0f));
     GlobalPushConstBlock.Model = Model;
 
-    Shu::mat4f View = GlobalMat4Identity;
+    shu::mat4f View = GlobalMat4Identity;
     View = Context->Camera.GetViewMatrix(View);
     GlobalVertUniformData.View = View;
 
-    Shu::mat4f Projection = Context->Camera.GetProjectionMatrix();
+    shu::mat4f Projection = Context->Camera.GetProjectionMatrix();
     GlobalVertUniformData.Projection = Projection;
 
     GlobalLightShaderData.View = View;
@@ -831,7 +831,7 @@ WriteUniformData(u32 ImageIndex, f32 Delta)
     GlobalFragUniformData.ObjectColor = GlobalRenderState.MeshColorUniform;
     GlobalFragUniformData.CamPos = Context->Camera.Pos;
 
-    GlobalFragUniformData.SpotlightData.Direction = Shu::Normalize(Context->Camera.Front);
+    GlobalFragUniformData.SpotlightData.Direction = shu::Normalize(Context->Camera.Front);
     GlobalFragUniformData.SpotlightData.Pos = Context->Camera.Pos;
 }
 
@@ -855,10 +855,10 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 #endif
 
     // VK_CHECK(vkQueueWaitIdle(Context->Device.GraphicsQueue));
-    Shu::vec2f CurrentMousePos = Shu::Vec2f(FramePacket->MouseXPos, FramePacket->MouseYPos);
-    Shu::vec2f CurrentMouseWorldPos = MouseToWorld(CurrentMousePos);
+    shu::vec2f CurrentMousePos = shu::Vec2f(FramePacket->MouseXPos, FramePacket->MouseYPos);
+    shu::vec2f CurrentMouseWorldPos = MouseToWorld(CurrentMousePos);
 
-    Context->Camera.UpdateWindowSize(Shu::Vec2f(GlobalWindowSize.x, GlobalWindowSize.y));
+    Context->Camera.UpdateWindowSize(shu::Vec2f(GlobalWindowSize.x, GlobalWindowSize.y));
 
     ASSERT(Context != nullptr);
     // ASSERT(FramePacket->DeltaTime > 0.0f);

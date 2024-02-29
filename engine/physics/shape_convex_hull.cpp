@@ -1,6 +1,6 @@
 #include "shape.h"
 
-shoora_shape_convex::shoora_shape_convex(const Shu::vec3f *Points, const i32 Num)
+shoora_shape_convex::shoora_shape_convex(const shu::vec3f *Points, const i32 Num)
     : shoora_shape(shoora_mesh_type::CONVEX)
 {
     this->Build(Points, Num);
@@ -9,7 +9,7 @@ shoora_shape_convex::shoora_shape_convex(const Shu::vec3f *Points, const i32 Num
 struct build_work_data
 {
     shoora_shape_convex *ConvexShape;
-    Shu::vec3f *Points;
+    shu::vec3f *Points;
     i32 Num;
 };
 
@@ -21,12 +21,12 @@ PLATFORM_WORK_QUEUE_CALLBACK(BuildWork)
     LogInfoUnformatted("Convex Shape Built!!\n");
 }
 
-shoora_shape_convex::shoora_shape_convex(platform_work_queue *Queue, const Shu::vec3f *Points, const i32 Num)
+shoora_shape_convex::shoora_shape_convex(platform_work_queue *Queue, const shu::vec3f *Points, const i32 Num)
     : shoora_shape(shoora_mesh_type::CONVEX)
 {
     build_work_data *Args = new build_work_data();
     Args->ConvexShape = this;
-    Args->Points = (Shu::vec3f *)Points;
+    Args->Points = (shu::vec3f *)Points;
     Args->Num = Num;
 
     Platform_AddWorkEntry(Queue, BuildWork, Args);
@@ -38,7 +38,7 @@ shoora_shape_convex::~shoora_shape_convex()
 }
 
 void
-shoora_shape_convex::Build(const Shu::vec3f *Points, const i32 Num)
+shoora_shape_convex::Build(const shu::vec3f *Points, const i32 Num)
 {
     this->mPoints.Clear();
     ASSERT(this->mPoints.capacity() == 0);
@@ -49,10 +49,10 @@ shoora_shape_convex::Build(const Shu::vec3f *Points, const i32 Num)
         this->mPoints.emplace_back(Points[i]);
     }
 
-    Shu::vec3f *HullPointsArr = (Shu::vec3f *) _alloca(sizeof(Shu::vec3f) * Num);
-    arr<Shu::vec3f> HullPoints(HullPointsArr, Num);
+    shu::vec3f *HullPointsArr = (shu::vec3f *) _alloca(sizeof(shu::vec3f) * Num);
+    stack_array<shu::vec3f> HullPoints(HullPointsArr, Num);
     tri_t *HullTrianglesArr = (tri_t *) _alloca(sizeof(tri_t) * Num * 3);
-    arr<tri_t> HullTriangles(HullTrianglesArr, Num*3);
+    stack_array<tri_t> HullTriangles(HullTrianglesArr, Num*3);
     BuildConvexHull(this->mPoints, HullPoints, HullTriangles);
 
     for (i32 i = 0; i < HullPoints.size; ++i)
@@ -69,10 +69,10 @@ shoora_shape_convex::Build(const Shu::vec3f *Points, const i32 Num)
     int x = 0;
 }
 
-Shu::mat3f
+shu::mat3f
 shoora_shape_convex::InertiaTensor() const
 {
-    Shu::mat3f Result = this->mInertiaTensor;
+    shu::mat3f Result = this->mInertiaTensor;
     return Result;
 }
 
@@ -83,23 +83,23 @@ shoora_shape_convex::GetType() const
 }
 
 shoora_bounds
-shoora_shape_convex::GetBounds(const Shu::vec3f &Pos, const Shu::quat &Orientation) const
+shoora_shape_convex::GetBounds(const shu::vec3f &Pos, const shu::quat &Orientation) const
 {
-    Shu::vec3f Corners[8];
-    Corners[0] = Shu::Vec3f(this->mBounds.Mins.x, this->mBounds.Mins.y, this->mBounds.Mins.z);
-    Corners[1] = Shu::Vec3f(this->mBounds.Mins.x, this->mBounds.Mins.y, this->mBounds.Maxs.z);
-    Corners[2] = Shu::Vec3f(this->mBounds.Mins.x, this->mBounds.Maxs.y, this->mBounds.Mins.z);
-    Corners[3] = Shu::Vec3f(this->mBounds.Maxs.x, this->mBounds.Mins.y, this->mBounds.Mins.z);
+    shu::vec3f Corners[8];
+    Corners[0] = shu::Vec3f(this->mBounds.Mins.x, this->mBounds.Mins.y, this->mBounds.Mins.z);
+    Corners[1] = shu::Vec3f(this->mBounds.Mins.x, this->mBounds.Mins.y, this->mBounds.Maxs.z);
+    Corners[2] = shu::Vec3f(this->mBounds.Mins.x, this->mBounds.Maxs.y, this->mBounds.Mins.z);
+    Corners[3] = shu::Vec3f(this->mBounds.Maxs.x, this->mBounds.Mins.y, this->mBounds.Mins.z);
 
-    Corners[4] = Shu::Vec3f(this->mBounds.Maxs.x, this->mBounds.Maxs.y, this->mBounds.Maxs.z);
-    Corners[5] = Shu::Vec3f(this->mBounds.Maxs.x, this->mBounds.Maxs.y, this->mBounds.Mins.z);
-    Corners[6] = Shu::Vec3f(this->mBounds.Maxs.x, this->mBounds.Mins.y, this->mBounds.Maxs.z);
-    Corners[7] = Shu::Vec3f(this->mBounds.Mins.x, this->mBounds.Maxs.y, this->mBounds.Maxs.z);
+    Corners[4] = shu::Vec3f(this->mBounds.Maxs.x, this->mBounds.Maxs.y, this->mBounds.Maxs.z);
+    Corners[5] = shu::Vec3f(this->mBounds.Maxs.x, this->mBounds.Maxs.y, this->mBounds.Mins.z);
+    Corners[6] = shu::Vec3f(this->mBounds.Maxs.x, this->mBounds.Mins.y, this->mBounds.Maxs.z);
+    Corners[7] = shu::Vec3f(this->mBounds.Mins.x, this->mBounds.Maxs.y, this->mBounds.Maxs.z);
 
     shoora_bounds Bounds;
     for (i32 i = 0; i < 8; ++i)
     {
-        Corners[i] = Shu::QuatRotateVec(Orientation, Corners[i]) + Pos;
+        Corners[i] = shu::QuatRotateVec(Orientation, Corners[i]) + Pos;
         Bounds.Expand(Corners[i]);
     }
 
@@ -113,23 +113,23 @@ shoora_shape_convex::GetBounds() const
     return Result;
 }
 
-Shu::vec3f
-shoora_shape_convex::Support(const Shu::vec3f &Direction, const Shu::vec3f &Position, const Shu::quat &Orientation,
+shu::vec3f
+shoora_shape_convex::Support(const shu::vec3f &Direction, const shu::vec3f &Position, const shu::quat &Orientation,
                              const f32 Bias) const
 {
     // TODO: To Be Implemented
-    Shu::vec3f Support;
+    shu::vec3f Support;
     return Support;
 }
 
 f32
-shoora_shape_convex::FastestLinearSpeed(const Shu::vec3f &AngularVelocity, const Shu::vec3f &Direction) const
+shoora_shape_convex::FastestLinearSpeed(const shu::vec3f &AngularVelocity, const shu::vec3f &Direction) const
 {
     f32 MaxSpeed = -SHU_FLOAT_MIN;
     for(i32 i = 0; i < mPoints.size(); ++i)
     {
-        const Shu::vec3f r = this->mPoints[i] - this->mCenterOfMass;
-        Shu::vec3f LinearVelocity = AngularVelocity.Cross(r);
+        const shu::vec3f r = this->mPoints[i] - this->mCenterOfMass;
+        shu::vec3f LinearVelocity = AngularVelocity.Cross(r);
 
         f32 speed = LinearVelocity.Dot(Direction);
         if(speed > MaxSpeed)
@@ -143,8 +143,8 @@ shoora_shape_convex::FastestLinearSpeed(const Shu::vec3f &AngularVelocity, const
 
 // Private stuff
 i32
-shoora_shape_convex::FindPointFurthestInDirection(const Shu::vec3f *Points, const i32 Num,
-                                                  const Shu::vec3f &Direction)
+shoora_shape_convex::FindPointFurthestInDirection(const shu::vec3f *Points, const i32 Num,
+                                                  const shu::vec3f &Direction)
 {
     i32 MaxId = 0;
     f32 MaxDist = Direction.Dot(Points[0]);
@@ -162,21 +162,21 @@ shoora_shape_convex::FindPointFurthestInDirection(const Shu::vec3f *Points, cons
 }
 
 f32
-shoora_shape_convex::DistanceFromLine(const Shu::vec3f &A, const Shu::vec3f &B, const Shu::vec3f &Point)
+shoora_shape_convex::DistanceFromLine(const shu::vec3f &A, const shu::vec3f &B, const shu::vec3f &Point)
 {
-    Shu::vec3f LineDirection = Shu::Normalize(B - A);
+    shu::vec3f LineDirection = shu::Normalize(B - A);
 
-    Shu::vec3f RayToPoint = Point - A;
-    Shu::vec3f ParallelComp = RayToPoint.Dot(LineDirection) * LineDirection;
-    Shu::vec3f PerpendicularComp = RayToPoint - ParallelComp;
+    shu::vec3f RayToPoint = Point - A;
+    shu::vec3f ParallelComp = RayToPoint.Dot(LineDirection) * LineDirection;
+    shu::vec3f PerpendicularComp = RayToPoint - ParallelComp;
 
     f32 DistanceFromLine = PerpendicularComp.Magnitude();
     return DistanceFromLine;
 }
 
-Shu::vec3f
-shoora_shape_convex::FindPointFurthestFromLine(const Shu::vec3f *Points, const i32 Num, const Shu::vec3f &PointA,
-                                               const Shu::vec3f &PointB)
+shu::vec3f
+shoora_shape_convex::FindPointFurthestFromLine(const shu::vec3f *Points, const i32 Num, const shu::vec3f &PointA,
+                                               const shu::vec3f &PointB)
 {
     f32 MaxDistance = this->DistanceFromLine(PointA, PointB, Points[0]);
     i32 MaxId = 0;
@@ -195,25 +195,25 @@ shoora_shape_convex::FindPointFurthestFromLine(const Shu::vec3f *Points, const i
 }
 
 f32
-shoora_shape_convex::DistanceFromTriangle(const Shu::vec3f &TriPointA, const Shu::vec3f &TriPointB,
-                                          const Shu::vec3f &TriPointC, const Shu::vec3f &Point)
+shoora_shape_convex::DistanceFromTriangle(const shu::vec3f &TriPointA, const shu::vec3f &TriPointB,
+                                          const shu::vec3f &TriPointC, const shu::vec3f &Point)
 {
-    Shu::vec3f AB = TriPointB - TriPointA;
-    Shu::vec3f AC = TriPointC - TriPointA;
+    shu::vec3f AB = TriPointB - TriPointA;
+    shu::vec3f AC = TriPointC - TriPointA;
 
-    Shu::vec3f Normal = AB.Cross(AC);
-    Normal = Shu::Normalize(Normal);
+    shu::vec3f Normal = AB.Cross(AC);
+    Normal = shu::Normalize(Normal);
 
-    Shu::vec3f Ray = Point - TriPointA;
+    shu::vec3f Ray = Point - TriPointA;
 
     f32 Distance = Ray.Dot(Normal);
     return Distance;
 }
 
-Shu::vec3f
-shoora_shape_convex::FindPointFurthestFromTriangle(const Shu::vec3f *Points, const i32 Num,
-                                                   const Shu::vec3f &TriPointA, const Shu::vec3f &TriPointB,
-                                                   const Shu::vec3f &TriPointC)
+shu::vec3f
+shoora_shape_convex::FindPointFurthestFromTriangle(const shu::vec3f *Points, const i32 Num,
+                                                   const shu::vec3f &TriPointA, const shu::vec3f &TriPointB,
+                                                   const shu::vec3f &TriPointC)
 {
     i32 MaxId = 0;
     f32 MaxDistance = this->DistanceFromTriangle(TriPointA, TriPointB, TriPointC, Points[0]);
@@ -232,15 +232,15 @@ shoora_shape_convex::FindPointFurthestFromTriangle(const Shu::vec3f *Points, con
 }
 
 void
-shoora_shape_convex::BuildTetrahedron(const Shu::vec3f *Vertices, const i32 VertexCount,
-                                      arr<Shu::vec3f> &HullPoints, arr<tri_t> &HullTris)
+shoora_shape_convex::BuildTetrahedron(const shu::vec3f *Vertices, const i32 VertexCount,
+                                      stack_array<shu::vec3f> &HullPoints, stack_array<tri_t> &HullTris)
 {
     HullPoints.clear();
     HullTris.clear();
 
-    Shu::vec3f Points[4];
+    shu::vec3f Points[4];
 
-    i32 IdX = FindPointFurthestInDirection(Vertices, VertexCount, Shu::Vec3f(1, 0, 0));
+    i32 IdX = FindPointFurthestInDirection(Vertices, VertexCount, shu::Vec3f(1, 0, 0));
     Points[0] = Vertices[IdX];
 
     IdX = FindPointFurthestInDirection(Vertices, VertexCount, Points[0]*-1.0f);
@@ -286,11 +286,11 @@ shoora_shape_convex::BuildTetrahedron(const Shu::vec3f *Vertices, const i32 Vert
 }
 
 void
-shoora_shape_convex::ExpandConvexHull(arr<Shu::vec3f> &HullPoints, arr<tri_t> &HullTris,
-                                      const shoora_dynamic_array<Shu::vec3f> &Vertices)
+shoora_shape_convex::ExpandConvexHull(stack_array<shu::vec3f> &HullPoints, stack_array<tri_t> &HullTris,
+                                      const shoora_dynamic_array<shu::vec3f> &Vertices)
 {
-    Shu::vec3f *ExternalVertsArr = (Shu::vec3f *)_alloca(sizeof(Shu::vec3f) * Vertices.size());
-    arr<Shu::vec3f> ExternalVerts(ExternalVertsArr, Vertices.size());
+    shu::vec3f *ExternalVertsArr = (shu::vec3f *)_alloca(sizeof(shu::vec3f) * Vertices.size());
+    stack_array<shu::vec3f> ExternalVerts(ExternalVertsArr, Vertices.size());
 
     for(i32 i = 0; i < Vertices.size(); ++i)
     {
@@ -304,7 +304,7 @@ shoora_shape_convex::ExpandConvexHull(arr<Shu::vec3f> &HullPoints, arr<tri_t> &H
         i32 PointIdX = this->FindPointFurthestInDirection(ExternalVerts.data, (i32)ExternalVerts.size,
                                                           ExternalVerts.data[0]);
 
-        Shu::vec3f Point = ExternalVerts.data[PointIdX];
+        shu::vec3f Point = ExternalVerts.data[PointIdX];
 
         ExternalVerts.erase(PointIdX);
 
@@ -316,20 +316,20 @@ shoora_shape_convex::ExpandConvexHull(arr<Shu::vec3f> &HullPoints, arr<tri_t> &H
 }
 
 void
-shoora_shape_convex::RemoveInternalVertices(const arr<Shu::vec3f> &HullPoints, const arr<tri_t> &HullTris,
-                                            arr<Shu::vec3f> &CheckVertices)
+shoora_shape_convex::RemoveInternalVertices(const stack_array<shu::vec3f> &HullPoints, const stack_array<tri_t> &HullTris,
+                                            stack_array<shu::vec3f> &CheckVertices)
 {
     for (i32 i = 0; i < CheckVertices.size; ++i)
     {
-        const Shu::vec3f &Point = CheckVertices.data[i];
+        const shu::vec3f &Point = CheckVertices.data[i];
 
         b32 IsExternal = false;
         for (i32 t = 0; t < HullTris.size; ++t)
         {
             const tri_t &Tri = HullTris.data[t];
-            const Shu::vec3f &A = HullPoints.data[Tri.A];
-            const Shu::vec3f &B = HullPoints.data[Tri.B];
-            const Shu::vec3f &C = HullPoints.data[Tri.C];
+            const shu::vec3f &A = HullPoints.data[Tri.A];
+            const shu::vec3f &B = HullPoints.data[Tri.B];
+            const shu::vec3f &C = HullPoints.data[Tri.C];
 
             // NOTE: If the Point is in front of any triangle, it is external
             f32 Distance = DistanceFromTriangle(A, B, C, Point);
@@ -351,13 +351,13 @@ shoora_shape_convex::RemoveInternalVertices(const arr<Shu::vec3f> &HullPoints, c
     // Remove any points that are a little too close to the Hull Points.
     for (i32 i = 0; i < CheckVertices.size; ++i)
     {
-        const Shu::vec3f &Point = CheckVertices.data[i];
+        const shu::vec3f &Point = CheckVertices.data[i];
 
         b32 IsTooClose = false;
         for (i32 j = 0; j < HullPoints.size; ++j)
         {
-            Shu::vec3f HullPoint = HullPoints.data[j];
-            Shu::vec3f Ray = HullPoint - Point;
+            shu::vec3f HullPoint = HullPoints.data[j];
+            shu::vec3f Ray = HullPoint - Point;
             if(Ray.SqMagnitude() < 0.001f * .001f)
             {
                 IsTooClose = true;
@@ -374,7 +374,7 @@ shoora_shape_convex::RemoveInternalVertices(const arr<Shu::vec3f> &HullPoints, c
 }
 
 b32
-shoora_shape_convex::IsEdgeUnique(const tri_t *Tris, const arr<i32> &FacingTris, const i32 IgnoreTri,
+shoora_shape_convex::IsEdgeUnique(const tri_t *Tris, const stack_array<i32> &FacingTris, const i32 IgnoreTri,
                                   const edge_t &Edge)
 {
     for (i32 i = 0; i < FacingTris.size; ++i)
@@ -410,21 +410,21 @@ shoora_shape_convex::IsEdgeUnique(const tri_t *Tris, const arr<i32> &FacingTris,
 }
 
 void
-shoora_shape_convex::AddPoint(arr<Shu::vec3f> &HullPoints, arr<tri_t> &HullTris, const Shu::vec3f &Point)
+shoora_shape_convex::AddPoint(stack_array<shu::vec3f> &HullPoints, stack_array<tri_t> &HullTris, const shu::vec3f &Point)
 {
     // This Point is outsid.
     // Now we need to remove old triangles and build new ones.
 
     // Find all the triangles that face this point.
     i32 *FacingTrisArr = (i32 *) _alloca(HullTris.size * sizeof(i32));
-    arr<i32> FacingTris(FacingTrisArr, HullTris.size);
+    stack_array<i32> FacingTris(FacingTrisArr, HullTris.size);
     for(i32 i = (i32)(HullTris.size - 1); i >= 0; --i)
     {
         const tri_t &Tri = HullTris.data[i];
 
-        const Shu::vec3f &A = HullPoints.data[Tri.A];
-        const Shu::vec3f &B = HullPoints.data[Tri.B];
-        const Shu::vec3f &C = HullPoints.data[Tri.C];
+        const shu::vec3f &A = HullPoints.data[Tri.A];
+        const shu::vec3f &B = HullPoints.data[Tri.B];
+        const shu::vec3f &C = HullPoints.data[Tri.C];
 
         const f32 Distance = DistanceFromTriangle(A, B, C, Point);
         if(Distance > 0.0f)
@@ -435,7 +435,7 @@ shoora_shape_convex::AddPoint(arr<Shu::vec3f> &HullPoints, arr<tri_t> &HullTris,
 
     // NOTE: Now find all the edges that areunique to the tris, these will be the new edges that will form triangles
     edge_t *UniqueEdgesArr = (edge_t *) _alloca(sizeof(edge_t) * 3 * FacingTris.size);
-    arr<edge_t> UniqueEdges(UniqueEdgesArr, 3 * FacingTris.size);
+    stack_array<edge_t> UniqueEdges(UniqueEdgesArr, 3 * FacingTris.size);
     for (i32 i = 0; i < FacingTris.size; i++)
     {
         const i32 TriIdX = FacingTris.data[i];
@@ -483,7 +483,7 @@ shoora_shape_convex::AddPoint(arr<Shu::vec3f> &HullPoints, arr<tri_t> &HullTris,
 }
 
 void
-shoora_shape_convex::RemoveUnreferencedVertices(arr<Shu::vec3f> &HullPoints, arr<tri_t> &HullTris)
+shoora_shape_convex::RemoveUnreferencedVertices(stack_array<shu::vec3f> &HullPoints, stack_array<tri_t> &HullTris)
 {
     for (i32 i = 0; i < HullPoints.size; ++i)
     {
@@ -518,8 +518,8 @@ shoora_shape_convex::RemoveUnreferencedVertices(arr<Shu::vec3f> &HullPoints, arr
 }
 
 void
-shoora_shape_convex::BuildConvexHull(const shoora_dynamic_array<Shu::vec3f> &Vertices, arr<Shu::vec3f> &HullPoints,
-                                     arr<tri_t> &HullTris)
+shoora_shape_convex::BuildConvexHull(const shoora_dynamic_array<shu::vec3f> &Vertices, stack_array<shu::vec3f> &HullPoints,
+                                     stack_array<tri_t> &HullTris)
 {
     if(Vertices.size() < 4)
     {
@@ -532,15 +532,15 @@ shoora_shape_convex::BuildConvexHull(const shoora_dynamic_array<Shu::vec3f> &Ver
 }
 
 b32
-shoora_shape_convex::IsExternal(const arr<Shu::vec3f> &Points, const arr<tri_t> &Tris, const Shu::vec3f &Point)
+shoora_shape_convex::IsExternal(const stack_array<shu::vec3f> &Points, const stack_array<tri_t> &Tris, const shu::vec3f &Point)
 {
     b32 IsExternal = false;
     for (i32 t = 0; t < Tris.size; ++t)
     {
         const tri_t &tri = Tris.data[t];
-        const Shu::vec3f &A = Points.data[tri.A];
-        const Shu::vec3f &B = Points.data[tri.B];
-        const Shu::vec3f &C = Points.data[tri.C];
+        const shu::vec3f &A = Points.data[tri.A];
+        const shu::vec3f &B = Points.data[tri.B];
+        const shu::vec3f &C = Points.data[tri.C];
 
         // If the point is in front of any triangle, then its external.
         f32 Distance = DistanceFromTriangle(A, B, C, Point);
@@ -554,14 +554,14 @@ shoora_shape_convex::IsExternal(const arr<Shu::vec3f> &Points, const arr<tri_t> 
     return IsExternal;
 }
 
-Shu::vec3f
-shoora_shape_convex::CalculateCenterOfMass(const arr<Shu::vec3f> &Points, const arr<tri_t> &Tris)
+shu::vec3f
+shoora_shape_convex::CalculateCenterOfMass(const stack_array<shu::vec3f> &Points, const stack_array<tri_t> &Tris)
 {
     const i32 NumSamples = 100;
     shoora_bounds Bounds;
     Bounds.Expand(Points.data, Points.size);
 
-    Shu::vec3f CenterOfMass{};
+    shu::vec3f CenterOfMass{};
     const f32 dx = Bounds.WidthX() / (f32)NumSamples;
     const f32 dy = Bounds.WidthY() / (f32)NumSamples;
     const f32 dz = Bounds.WidthZ() / (f32)NumSamples;
@@ -573,7 +573,7 @@ shoora_shape_convex::CalculateCenterOfMass(const arr<Shu::vec3f> &Points, const 
         {
             for(f32 z = Bounds.Mins.z; z < Bounds.Maxs.z; z += dz)
             {
-                Shu::vec3f Point = Shu::Vec3f(x, y, z);
+                shu::vec3f Point = shu::Vec3f(x, y, z);
                 if(IsExternal(Points, Tris, Point))
                 {
                     continue;
@@ -589,15 +589,15 @@ shoora_shape_convex::CalculateCenterOfMass(const arr<Shu::vec3f> &Points, const 
     return CenterOfMass;
 }
 
-Shu::mat3f
-shoora_shape_convex::CalculateInertiaTensor(const arr<Shu::vec3f> &Points, const arr<tri_t> &Tris)
+shu::mat3f
+shoora_shape_convex::CalculateInertiaTensor(const stack_array<shu::vec3f> &Points, const stack_array<tri_t> &Tris)
 {
     const i32 NumSamples = 100;
 
     shoora_bounds Bounds;
     Bounds.Expand(Points.data, (i32)Points.size);
 
-    Shu::mat3f Tensor{};
+    shu::mat3f Tensor{};
     const f32 dx = Bounds.WidthX() / (f32)NumSamples;
     const f32 dy = Bounds.WidthY() / (f32)NumSamples;
     const f32 dz = Bounds.WidthZ() / (f32)NumSamples;
@@ -609,7 +609,7 @@ shoora_shape_convex::CalculateInertiaTensor(const arr<Shu::vec3f> &Points, const
         {
             for (f32 z = Bounds.Mins.z; z < Bounds.Maxs.z; z += dz)
             {
-                Shu::vec3f Point = Shu::Vec3f(x, y, z);
+                shu::vec3f Point = shu::Vec3f(x, y, z);
                 if(IsExternal(Points, Tris, Point))
                 {
                     continue;

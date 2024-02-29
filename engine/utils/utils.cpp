@@ -1,6 +1,6 @@
 #include "utils.h"
 
-Shu::vec3f
+shu::vec3f
 GetColor(u32 Col)
 {
     f32 m = 1.0f / 255.0f;
@@ -9,12 +9,12 @@ GetColor(u32 Col)
     u32 g = (Col & 0x0000ff00) >> 8;
     u32 b = (Col & 0x000000ff) >> 0;
 
-    Shu::vec3f Result = Shu::Vec3f(r, g, b) * m;
+    shu::vec3f Result = shu::Vec3f(r, g, b) * m;
     return Result;
 }
 
 u32
-GetColorU32(const Shu::vec3f &Color)
+GetColorU32(const shu::vec3f &Color)
 {
     u32 ColorU32 = 0xff000000;
 

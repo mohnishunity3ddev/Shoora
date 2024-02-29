@@ -362,14 +362,14 @@ NearlyEqualUlps(T n, T expected, i64 maxUlps = 2)
 #define ALIGN64(Number) AlignAs((Number), 64)
 
 template<typename T>
-struct arr
+struct stack_array
 {
     T *data;
     i32 size;
     i32 maxSize;
 
-    arr() = delete;
-    arr(T *d, i32 max) : data(d), size(0), maxSize(max) {}
+    stack_array() = delete;
+    stack_array(T *d, i32 max) : data(d), size(0), maxSize(max) {}
 
     inline void
     add(const T &item)

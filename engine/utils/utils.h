@@ -33,8 +33,8 @@ u32 StringFindLastOf(const char *String, char Separator);
 void StringSubString(const char *SrcString, u32 StartIndex, u32 EndIndex, char *OutString);
 b32 StringsEqual(const char *A, const char *B);
 
-Shu::vec3f GetColor(u32 Col);
-u32 GetColorU32(const Shu::vec3f &Color);
+shu::vec3f GetColor(u32 Col);
+u32 GetColorU32(const shu::vec3f &Color);
 
 #define UTILS_H
 #endif // UTILS_H

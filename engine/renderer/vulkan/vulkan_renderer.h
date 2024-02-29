@@ -174,13 +174,13 @@ struct shoora_vulkan_graphics_pipeline
 
 struct shoora_imgui_push_constant_block
 {
-    Shu::vec2f Scale;
-    Shu::vec2f Translate;
+    shu::vec2f Scale;
+    shu::vec2f Translate;
 };
 
 struct shoora_vulkan_imgui
 {
-    Shu::vec2u WindowDim;
+    shu::vec2u WindowDim;
     shoora_vulkan_device *RenderDevice;
     ImGuiStyle UIStyle;
 
@@ -215,10 +215,10 @@ struct shader_data
     shoora_vulkan_buffer Buffer;
     struct values
     {
-        Shu::mat4f Projection;
-        Shu::mat4f View;
-        Shu::vec4f LightPosition;
-        Shu::vec4f ViewPosition;
+        shu::mat4f Projection;
+        shu::mat4f View;
+        shu::vec4f LightPosition;
+        shu::vec4f ViewPosition;
     } Values;
 };
 

@@ -1,10 +1,10 @@
 #include "constraint.h"
 #include <math/linear_equations_solver.h>
 
-Shu::matN<f32, 6>
+shu::matN<f32, 6>
 constraint_2d::GetInverseMassMatrix() const
 {
-    Shu::matN<f32, 6> Result;
+    shu::matN<f32, 6> Result;
 #if 0
     Result.Zero();
 
@@ -18,10 +18,10 @@ constraint_2d::GetInverseMassMatrix() const
     return Result;
 }
 
-Shu::vecN<f32, 6>
+shu::vecN<f32, 6>
 constraint_2d::GetVelocities() const
 {
-    Shu::vecN<f32, 6> Result;
+    shu::vecN<f32, 6> Result;
 
 #if 0
     ASSERT(A != nullptr && B != nullptr);

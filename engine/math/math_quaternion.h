@@ -5,7 +5,7 @@
 #include "math_vector.h"
 #include "math_matrix.h"
 
-namespace Shu
+namespace shu
 {
     struct quat
     {
@@ -28,7 +28,7 @@ namespace Shu
         };
 
         quat() : w(1), vx(0), vy(0), vz(0) {}
-        
+
         f32 AngleDegrees() const;
         f32 AngleRadians() const;
         vec3f AxisNormalized() const;

@@ -12,14 +12,14 @@ struct constraint_2d
 
     // NOTE: The anchor point where the bodies are to be fixed at in the local space of the corresponding rigid
     // bodies.
-    Shu::vec2f AnchorPointLS_A; // The anchor point in A's Local Space
-    Shu::vec2f AnchorPointLS_B; // The anchor point in B's Local Space
+    shu::vec2f AnchorPointLS_A; // The anchor point in A's Local Space
+    shu::vec2f AnchorPointLS_B; // The anchor point in B's Local Space
 
     constraint_2d() = default;
     virtual ~constraint_2d() = default;
 
-    Shu::matN<f32, 6> GetInverseMassMatrix() const;
-    Shu::vecN<f32, 6> GetVelocities() const;
+    shu::matN<f32, 6> GetInverseMassMatrix() const;
+    shu::vecN<f32, 6> GetVelocities() const;
 
     virtual void PreSolve(const f32 dt) {}
     virtual void Solve() {}
@@ -29,14 +29,14 @@ struct constraint_2d
 struct joint_constraint_2d : public constraint_2d
 {
   private:
-    Shu::matMN<f32, 6, 1> Jacobian;
-    Shu::vecN<f32, 1> CachedLambda;
+    shu::matMN<f32, 6, 1> Jacobian;
+    shu::vecN<f32, 1> CachedLambda;
     // NOTE: Baumgarte Stabilization Factor.
     f32 Bias;
 
   public:
     joint_constraint_2d();
-    joint_constraint_2d(shoora_body *a, shoora_body *b, const Shu::vec2f &anchorPointWS);
+    joint_constraint_2d(shoora_body *a, shoora_body *b, const shu::vec2f &anchorPointWS);
 
     // NOTE: This is where the Warm starting takes place to limit the number of solver iterations in the Solve()
     // method.
@@ -52,15 +52,15 @@ struct penetration_constraint_2d : public constraint_2d
   private:
     // There are two columns here since we have two sets. One for the collision resolution along the normal.
     // And the other for Friction.
-    Shu::matMN<f32, 6, 2> Jacobian;
+    shu::matMN<f32, 6, 2> Jacobian;
 
-    Shu::vecN<f32, 2> CachedLambda;
+    shu::vecN<f32, 2> CachedLambda;
 
     // Baumgarte Syabilization Factor.
     f32 Bias;
 
     // Normal direction of the penetration in A's local Space.
-    Shu::vec2f Normal;
+    shu::vec2f Normal;
 
     // Friction Coefficient between the two penetrating bodies.
     f32 Friction;

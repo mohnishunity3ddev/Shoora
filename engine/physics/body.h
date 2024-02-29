@@ -13,13 +13,13 @@ struct shoora_body
     b32 IsColliding = false;
 
     // linear motion
-    Shu::vec3f Position;
-    Shu::quat Rotation;
+    shu::vec3f Position;
+    shu::quat Rotation;
 
-    Shu::vec3f LinearVelocity;
-    Shu::vec3f Acceleration;
+    shu::vec3f LinearVelocity;
+    shu::vec3f Acceleration;
 
-    Shu::vec3f AngularVelocity;
+    shu::vec3f AngularVelocity;
 
     // Angular motion
     // f32 RotationRadians;
@@ -28,53 +28,53 @@ struct shoora_body
 
     f32 CoeffRestitution;
 
-    Shu::vec3f SumForces;
+    shu::vec3f SumForces;
     f32 SumTorques;
 
     f32 FrictionCoeff;
     f32 Mass;
     f32 InvMass;
 
-    Shu::mat3f InertiaTensor; // Moment of inertia.
-    Shu::mat3f InverseInertiaTensor; // Inverse of moment of inertia.
+    shu::mat3f InertiaTensor; // Moment of inertia.
+    shu::mat3f InverseInertiaTensor; // Inverse of moment of inertia.
 
-    Shu::vec3f Scale;
-    Shu::vec3f Color;
+    shu::vec3f Scale;
+    shu::vec3f Color;
 
     std::unique_ptr<shoora_shape> Shape;
 
     shoora_body() = default;
     shoora_body(const shoora_body &other) = delete;
     shoora_body &operator=(const shoora_body &other) = delete;
-    shoora_body(const Shu::vec3f &Color, const Shu::vec3f &InitPos, f32 Mass, f32 Restitution,
-                std::unique_ptr<shoora_shape> Shape, Shu::vec3f eulerAngles = Shu::Vec3f(0.0f));
+    shoora_body(const shu::vec3f &Color, const shu::vec3f &InitPos, f32 Mass, f32 Restitution,
+                std::unique_ptr<shoora_shape> Shape, shu::vec3f eulerAngles = shu::Vec3f(0.0f));
     shoora_body(shoora_body &&other) noexcept;
     shoora_body &operator=(shoora_body &&other) noexcept;
     ~shoora_body();
 
-    b32 CheckIfClicked(const Shu::vec2f &ClickedWorldPos);
-    void KeepInView(const Shu::rect2d &ViewBounds, f32 DampFactor);
+    b32 CheckIfClicked(const shu::vec2f &ClickedWorldPos);
+    void KeepInView(const shu::rect2d &ViewBounds, f32 DampFactor);
 
     // NOTE: returns true if the body is static. Meaning it has infinite mass.
     b32 IsStatic() const;
-    
+
     void UpdateWorldVertices();
 
-    Shu::vec3f WorldToLocalSpace(const Shu::vec3f &PointWS) const;
-    Shu::vec3f LocalToWorldSpace(const Shu::vec3f &PointLS) const;
-    Shu::mat3f GetInverseInertiaTensorWS() const;
+    shu::vec3f WorldToLocalSpace(const shu::vec3f &PointWS) const;
+    shu::vec3f LocalToWorldSpace(const shu::vec3f &PointLS) const;
+    shu::mat3f GetInverseInertiaTensorWS() const;
 
-    Shu::vec3f GetCenterOfMassLS() const;
-    Shu::vec3f GetCenterOfMassWS() const;
+    shu::vec3f GetCenterOfMassLS() const;
+    shu::vec3f GetCenterOfMassWS() const;
 
     void Draw();
-    void DrawWireframe(const Shu::mat4f &model, f32 thickness, u32 color);
+    void DrawWireframe(const shu::mat4f &model, f32 thickness, u32 color);
 
-    void ApplyImpulseLinear(const Shu::vec3f &LinearImpulse);
-    void ApplyImpulseAngular(const Shu::vec3f &AngularImpulse);
-    void ApplyImpulseAtPoint(const Shu::vec3f &Impulse, const Shu::vec3f &ImpulsePointWS);
+    void ApplyImpulseLinear(const shu::vec3f &LinearImpulse);
+    void ApplyImpulseAngular(const shu::vec3f &AngularImpulse);
+    void ApplyImpulseAtPoint(const shu::vec3f &Impulse, const shu::vec3f &ImpulsePointWS);
 
-    void AddForce(const Shu::vec3f &Force);
+    void AddForce(const shu::vec3f &Force);
     void AddTorque(f32 Torque);
 
     void ClearForces();

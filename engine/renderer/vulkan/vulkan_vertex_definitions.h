@@ -7,11 +7,11 @@
 
 struct shoora_vertex_info
 {
-    Shu::vec3f Pos;
-    Shu::vec3f Normal;
-    Shu::vec2f UV;
-    Shu::vec3f Color;
-    Shu::vec4f Tangent;
+    shu::vec3f Pos;
+    shu::vec3f Normal;
+    shu::vec2f UV;
+    shu::vec3f Color;
+    shu::vec4f Tangent;
 #if CALCULATE_BITANGENT
     Shu::vec3f BiTangent;
 #endif

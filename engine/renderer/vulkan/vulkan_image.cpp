@@ -62,7 +62,7 @@ CreateImageView2D(shoora_vulkan_device *RenderDevice, VkImage Image, VkFormat Fo
 }
 
 void
-CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, Shu::vec2u Dim, VkSampleCountFlagBits NumSamples,
+CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, shu::vec2u Dim, VkSampleCountFlagBits NumSamples,
                     VkFormat Format, VkImageUsageFlags Usage, VkImageAspectFlags Aspect, VkImage *pImage,
                     VkDeviceMemory *pMemory, VkImageView *pView)
 {
@@ -98,7 +98,7 @@ CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, Shu::vec2u Dim, VkSample
 }
 
 void
-CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, Shu::vec2u Dim, VkSampleCountFlagBits NumSamples,
+CreateSimpleImage2D(shoora_vulkan_device *RenderDevice, shu::vec2u Dim, VkSampleCountFlagBits NumSamples,
                     VkFormat Format, VkImageUsageFlags Usage, VkImageAspectFlags Aspect,
                     shoora_vulkan_image *pImage)
 {
@@ -321,7 +321,7 @@ CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, shoora_image_data
                                                   VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT,
                                                   DesiredImageFormat);
 
-    CreateSimpleImage2D(RenderDevice, Shu::vec2u{(u32)ImageData.Dim.w, (u32)ImageData.Dim.h}, NumSamples,
+    CreateSimpleImage2D(RenderDevice, shu::vec2u{(u32)ImageData.Dim.w, (u32)ImageData.Dim.h}, NumSamples,
                         ImageFormat, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                         VK_IMAGE_ASPECT_COLOR_BIT, &pImageSampler->Image);
 
@@ -394,7 +394,7 @@ CreateCombinedImageSampler(shoora_vulkan_device *RenderDevice, shoora_image_data
                                                   VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT,
                                                   DesiredImageFormat);
 
-    CreateSimpleImage2D(RenderDevice, Shu::vec2u{(u32)ImageData->Dim.w, (u32)ImageData->Dim.h}, NumSamples,
+    CreateSimpleImage2D(RenderDevice, shu::vec2u{(u32)ImageData->Dim.w, (u32)ImageData->Dim.h}, NumSamples,
                         ImageFormat, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                         VK_IMAGE_ASPECT_COLOR_BIT, &pImageSampler->Image);
 
@@ -502,7 +502,7 @@ CreatePlaceholderTextureSampler(shoora_vulkan_device *RenderDevice, shoora_vulka
     }
 
     shoora_image_data ImageData = {};
-    ImageData.Dim = Shu::vec2i{1, 1};
+    ImageData.Dim = shu::vec2i{1, 1};
     ImageData.NumChannels = 4;
     ImageData.TotalSize = 4*sizeof(u8);
     ImageData.Data = (u8 *)&PixelColor;

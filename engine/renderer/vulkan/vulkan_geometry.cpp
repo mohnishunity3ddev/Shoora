@@ -21,18 +21,18 @@ CreateImageBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_geometry *G
 }
 
 void
-UpdateGeometryUniformBuffers(shoora_vulkan_geometry *Geometry, shoora_camera *Camera, const Shu::mat4f &Projection)
+UpdateGeometryUniformBuffers(shoora_vulkan_geometry *Geometry, shoora_camera *Camera, const shu::mat4f &Projection)
 {
     shader_data *ShaderData = &Geometry->ShaderData;
     ShaderData->Values.Projection = Projection;
     ShaderData->Values.View = Camera->GetViewMatrix(ShaderData->Values.View);
-    ShaderData->Values.ViewPosition = Shu::Vec4f(Camera->Pos.x, Camera->Pos.y, Camera->Pos.z, 1.0f);
-    ShaderData->Values.LightPosition = Shu::Vec4f(0.0f, 5.0f, 0.0f, 1.0f);
+    ShaderData->Values.ViewPosition = shu::Vec4f(Camera->Pos.x, Camera->Pos.y, Camera->Pos.z, 1.0f);
+    ShaderData->Values.LightPosition = shu::Vec4f(0.0f, 5.0f, 0.0f, 1.0f);
     memcpy(Geometry->ShaderData.Buffer.pMapped, &Geometry->ShaderData.Values, sizeof(shader_data));
 }
 
 void
-CreateUniformBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_geometry *Geometry, shoora_camera *Camera, const Shu::mat4f &Projection)
+CreateUniformBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_geometry *Geometry, shoora_camera *Camera, const shu::mat4f &Projection)
 {
     Geometry->ShaderData.Buffer = CreateBuffer(RenderDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                              VK_SHARING_MODE_EXCLUSIVE,
@@ -72,7 +72,7 @@ SetupDescriptors(shoora_vulkan_device *RenderDevice, shoora_vulkan_geometry *Geo
     VkPushConstantRange PushConstantRange = {};
     PushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     PushConstantRange.offset = 0;
-    PushConstantRange.size = sizeof(Shu::mat4f);
+    PushConstantRange.size = sizeof(shu::mat4f);
     CreatePipelineLayout(RenderDevice, 2, SetLayouts, 1, &PushConstantRange, &Geometry->PipelineLayout);
 
     // Descritpro Set for matrices.
@@ -218,7 +218,7 @@ DrawGeometryNode(VkCommandBuffer CommandBuffer, VkPipelineLayout PipelineLayout,
 {
     if(Node->PrimitiveCount > 0)
     {
-        Shu::mat4f NodeMatrix = Node->ModelMatrix;
+        shu::mat4f NodeMatrix = Node->ModelMatrix;
         shoora_mesh_cgltf_node *ParentNode = Node->ParentNode;
 
         while(ParentNode)
@@ -227,7 +227,7 @@ DrawGeometryNode(VkCommandBuffer CommandBuffer, VkPipelineLayout PipelineLayout,
             ParentNode = ParentNode->ParentNode;
         }
 
-        vkCmdPushConstants(CommandBuffer, PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Shu::mat4f),
+        vkCmdPushConstants(CommandBuffer, PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(shu::mat4f),
                            &NodeMatrix);
         for(u32 PrimitiveIndex = 0;
             PrimitiveIndex < Node->PrimitiveCount;
@@ -295,7 +295,7 @@ CleanupGeometry(shoora_vulkan_device *RenderDevice, shoora_vulkan_geometry *Geom
 
 void
 SetupGeometry(shoora_vulkan_device *RenderDevice, shoora_vulkan_geometry *Geometry, shoora_camera *Camera,
-              const Shu::mat4f &Projection, VkRenderPass RenderPass, const char *MeshFile,
+              const shu::mat4f &Projection, VkRenderPass RenderPass, const char *MeshFile,
               const char *VertexShaderFile, const char *FragmentShaderFile)
 {
     shoora_model *Model = &Geometry->Model;

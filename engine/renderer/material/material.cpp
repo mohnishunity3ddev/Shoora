@@ -3,9 +3,9 @@
 struct shoora_material_internal
 {
     const char *Name;
-    Shu::vec3f Ambient;
-    Shu::vec3f Diffuse;
-    Shu::vec3f Specular;
+    shu::vec3f Ambient;
+    shu::vec3f Diffuse;
+    shu::vec3f Specular;
     f32 Shininess;
 };
 
@@ -13,9 +13,9 @@ static const shoora_material_internal Materials[] =
 {
     {
         .Name = "Emerald",
-        .Ambient   = Shu::vec3f{ 0.0215f, 0.1745f, 0.0215f },
-        .Diffuse   = Shu::vec3f{ 0.07568f, 0.61424f, 0.07568f },
-        .Specular  = Shu::vec3f{ 0.633f, 0.727811f, 0.633f },
+        .Ambient   = shu::vec3f{ 0.0215f, 0.1745f, 0.0215f },
+        .Diffuse   = shu::vec3f{ 0.07568f, 0.61424f, 0.07568f },
+        .Specular  = shu::vec3f{ 0.633f, 0.727811f, 0.633f },
         .Shininess =  0.6f
     },
     {

@@ -1,7 +1,7 @@
 #include "math_quaternion.h"
 #include "math_trig.h"
 
-namespace Shu
+namespace shu
 {
     quat
     Quat()
@@ -12,7 +12,7 @@ namespace Shu
         Result.vx = 0;
         Result.vy = 0;
         Result.vz = 0;
-        
+
         return Result;
     }
 
@@ -44,10 +44,10 @@ namespace Shu
     {
         quat Result;
 
-        Result.real = Shu::Cos(AngleInDegrees*0.5f);
+        Result.real = shu::Cos(AngleInDegrees*0.5f);
 
-        Shu::vec3f axis = Normalize(Axis);
-        Result.complex = axis*Shu::Sin(AngleInDegrees*0.5f);
+        shu::vec3f axis = Normalize(Axis);
+        Result.complex = axis*shu::Sin(AngleInDegrees*0.5f);
 
         return Result;
     }
@@ -57,10 +57,10 @@ namespace Shu
     {
         quat Result;
 
-        Result.real = Shu::CosRad(AngleInRadians*0.5f);
+        Result.real = shu::CosRad(AngleInRadians*0.5f);
 
-        Shu::vec3f axis = Normalize(Axis);
-        Result.complex = axis*Shu::SinRad(AngleInRadians*0.5f);
+        shu::vec3f axis = Normalize(Axis);
+        Result.complex = axis*shu::SinRad(AngleInRadians*0.5f);
 
         return Result;
     }
@@ -95,14 +95,14 @@ namespace Shu
     {
         quat Result;
 
-        vec3f P = Shu::Vec3f(A.vx, A.vy, A.vz);
-        vec3f Q = Shu::Vec3f(B.vx, B.vy, B.vz);
+        vec3f P = shu::Vec3f(A.vx, A.vy, A.vz);
+        vec3f Q = shu::Vec3f(B.vx, B.vy, B.vz);
 
-        f32 Dot = Shu::Dot(P, Q);
-        vec3f Cross = Shu::Cross(P, Q);
+        f32 Dot = shu::Dot(P, Q);
+        vec3f Cross = shu::Cross(P, Q);
 
         Result.w = A.w * B.w - Dot;
-        vec3f T = Q*A.w + P*B.w + Shu::Cross(P, Q);
+        vec3f T = Q*A.w + P*B.w + shu::Cross(P, Q);
 
         Result.vx = T.x;
         Result.vy = T.y;
@@ -364,7 +364,7 @@ namespace Shu
             zAngle = atan2f(vx*vy + w*vz, .5f - vx*vx - vz*vz);
         }
 
-        vec3f Euler = Shu::Vec3f(xAngle, yAngle, zAngle) * RAD_TO_DEG;
+        vec3f Euler = shu::Vec3f(xAngle, yAngle, zAngle) * RAD_TO_DEG;
         return Euler;
     }
 
@@ -377,11 +377,11 @@ namespace Shu
         f32 y = this->complex.y; // ny*sin(theta / 2)
         f32 z = this->complex.z; // nz*sin(theta / 2)
 
-        Shu::vec3f Row0 = Shu::Vec3f(1.0f - 2*y*y - 2*z*z,    2*x*y + 2*w*z,            2*x*z - 2*w*y);
-        Shu::vec3f Row1 = Shu::Vec3f(2*x*y - 2*w*z,           1.0f - 2*x*x - 2*z*z,     2*y*z + 2*w*x);
-        Shu::vec3f Row2 = Shu::Vec3f(2*x*z + 2*w*y,           2*y*z - 2*w*x,            1.0f - 2*x*x - 2*y*y);
+        shu::vec3f Row0 = shu::Vec3f(1.0f - 2*y*y - 2*z*z,    2*x*y + 2*w*z,            2*x*z - 2*w*y);
+        shu::vec3f Row1 = shu::Vec3f(2*x*y - 2*w*z,           1.0f - 2*x*x - 2*z*z,     2*y*z + 2*w*x);
+        shu::vec3f Row2 = shu::Vec3f(2*x*z + 2*w*y,           2*y*z - 2*w*x,            1.0f - 2*x*x - 2*y*y);
 
-        Shu::mat3f Result = Shu::Mat3f(Row0, Row1, Row2);
+        shu::mat3f Result = shu::Mat3f(Row0, Row1, Row2);
         return Result;
     }
 
@@ -394,12 +394,12 @@ namespace Shu
         f32 y = this->complex.y; // ny*sin(theta / 2)
         f32 z = this->complex.z; // nz*sin(theta / 2)
 
-        Shu::vec4f Row0 = Shu::Vec4f(1.0f - 2.0f*y*y - 2.0f*z*z,    2.0f*x*y + 2.0f*w*z,            2.0f*x*z - 2.0f*w*y,            0.0f);
-        Shu::vec4f Row1 = Shu::Vec4f(2.0f*x*y - 2.0f*w*z,           1.0f - 2.0f*x*x - 2.0f*z*z,     2.0f*y*z + 2.0f*w*x,            0.0f);
-        Shu::vec4f Row2 = Shu::Vec4f(2.0f*x*z + 2.0f*w*y,           2.0f*y*z - 2.0f*w*x,            1.0f - 2.0f*x*x - 2.0f*y*y,     0.0f);
-        Shu::vec4f Row3 = Shu::Vec4f(0.0f,                          0.0f,                           0.0f,                           1.0f);
+        shu::vec4f Row0 = shu::Vec4f(1.0f - 2.0f*y*y - 2.0f*z*z,    2.0f*x*y + 2.0f*w*z,            2.0f*x*z - 2.0f*w*y,            0.0f);
+        shu::vec4f Row1 = shu::Vec4f(2.0f*x*y - 2.0f*w*z,           1.0f - 2.0f*x*x - 2.0f*z*z,     2.0f*y*z + 2.0f*w*x,            0.0f);
+        shu::vec4f Row2 = shu::Vec4f(2.0f*x*z + 2.0f*w*y,           2.0f*y*z - 2.0f*w*x,            1.0f - 2.0f*x*x - 2.0f*y*y,     0.0f);
+        shu::vec4f Row3 = shu::Vec4f(0.0f,                          0.0f,                           0.0f,                           1.0f);
 
-        Shu::mat4f Result = Shu::Mat4f(Row0, Row1, Row2, Row3);
+        shu::mat4f Result = shu::Mat4f(Row0, Row1, Row2, Row3);
         return Result;
     }
 
@@ -407,7 +407,7 @@ namespace Shu
     quat
     QuatFromEuler(f32 xDegrees, f32 yDegrees, f32 zDegrees)
     {
-        Shu::vec3f HalfAngles = Shu::Vec3f(xDegrees*0.5f, yDegrees*0.5f, zDegrees*0.5f);
+        shu::vec3f HalfAngles = shu::Vec3f(xDegrees*0.5f, yDegrees*0.5f, zDegrees*0.5f);
 
         f32 CosXBy2 = Cos(HalfAngles.x); f32 SinXBy2 = Sin(HalfAngles.x);
         f32 CosYBy2 = Cos(HalfAngles.y); f32 SinYBy2 = Sin(HalfAngles.y);
@@ -429,30 +429,30 @@ namespace Shu
         // A = 3 + i − 2j + k,
         // B = 2 − i + 2j + 3k.
         // Result = 8 − 9i − 2j + 11k.
-        Shu::quat A = Shu::Quat(1, 2, 3, 4);
-        Shu::quat B = Shu::Quat(2, 3, 4, 5);
-        Shu::quat R = Shu::QuatConjugate(B);
-        Shu::QuatNormalize(A);
-        f32 AMag = Shu::QuatMagnitude(A);
-        f32 AMag2 = Shu::QuatSqMagnitude(A);
+        shu::quat A = shu::Quat(1, 2, 3, 4);
+        shu::quat B = shu::Quat(2, 3, 4, 5);
+        shu::quat R = shu::QuatConjugate(B);
+        shu::QuatNormalize(A);
+        f32 AMag = shu::QuatMagnitude(A);
+        f32 AMag2 = shu::QuatSqMagnitude(A);
 
         // Shu::vec3f P = Shu::Vec3f(0.7f, -0.3f, 0.649f);
-        Shu::vec3f P = Shu::Vec3f(1, 0, 0);
-        Shu::vec3f Axis = Shu::Normalize(Shu::Vec3f(0.235f, 0.235f, -0.942f));
-        Shu::vec3f PT = Shu::QuatRotateVec(54.74f, Axis, P);
+        shu::vec3f P = shu::Vec3f(1, 0, 0);
+        shu::vec3f Axis = shu::Normalize(shu::Vec3f(0.235f, 0.235f, -0.942f));
+        shu::vec3f PT = shu::QuatRotateVec(54.74f, Axis, P);
 
-        Shu::quat Quat = Shu::QuatAngleAxisDeg(54.74f, Shu::Vec3f(0.235f, 0.235f, -0.942f));
+        shu::quat Quat = shu::QuatAngleAxisDeg(54.74f, shu::Vec3f(0.235f, 0.235f, -0.942f));
         f32 AngleInDegrees = Quat.AngleDegrees();
-        Shu::vec3f At = Quat.AxisNormalized();
+        shu::vec3f At = Quat.AxisNormalized();
 
-        Shu::quat SQ0 = Shu::QuatAngleAxisDeg(90, Shu::Vec3f( 0, 0, 1));
-        Shu::quat SQ1 = Shu::QuatAngleAxisDeg(90, Shu::Vec3f( 0, 1, 0));
-        Shu::quat SQ01 = Shu::QuatSlerp(SQ0, SQ1, 0.5f);
-        Shu::vec3f sqEuler0 = SQ0.ToEuler();
-        Shu::vec3f sqEuler1 = SQ1.ToEuler();
-        Shu::vec3f SlerpedAxis = SQ01.AxisNormalized();
+        shu::quat SQ0 = shu::QuatAngleAxisDeg(90, shu::Vec3f( 0, 0, 1));
+        shu::quat SQ1 = shu::QuatAngleAxisDeg(90, shu::Vec3f( 0, 1, 0));
+        shu::quat SQ01 = shu::QuatSlerp(SQ0, SQ1, 0.5f);
+        shu::vec3f sqEuler0 = SQ0.ToEuler();
+        shu::vec3f sqEuler1 = SQ1.ToEuler();
+        shu::vec3f SlerpedAxis = SQ01.AxisNormalized();
         f32 SlerpedAngle = SQ01.AngleDegrees();
-        Shu::vec3f RotatedVec0 = Shu::QuatRotateVec(SQ01, Shu::Vec3f(1, 0, 0));
+        shu::vec3f RotatedVec0 = shu::QuatRotateVec(SQ01, shu::Vec3f(1, 0, 0));
 
 #if 0
         Shu::mat4f Identity = Shu::Mat4f(1.0f);
@@ -462,10 +462,10 @@ namespace Shu
 #endif
 
 #if 1
-        Shu::vec3f RotatedVec3s[20];
-        Shu::quat SlerpedQuats[20];
+        shu::vec3f RotatedVec3s[20];
+        shu::quat SlerpedQuats[20];
         f32 SlerpedQuatAngles[20];
-        Shu::vec3f SlerpedQuatAxiss[20];
+        shu::vec3f SlerpedQuatAxiss[20];
 
         u32 TestQuatCount = ARRAY_SIZE(SlerpedQuats);
         for(u32 Index = 0;
@@ -473,24 +473,24 @@ namespace Shu
             ++Index)
         {
             f32 T = (f32)(Index + 1) / (f32)TestQuatCount;
-            Shu::quat Slerped = Shu::QuatSlerp(SQ0, SQ1, T);
+            shu::quat Slerped = shu::QuatSlerp(SQ0, SQ1, T);
             SlerpedQuats[Index] = Slerped;
-            Shu::vec3f R0 = Shu::QuatRotateVec(Slerped, Shu::Vec3f(1, 0, 0));
+            shu::vec3f R0 = shu::QuatRotateVec(Slerped, shu::Vec3f(1, 0, 0));
             RotatedVec3s[Index] = R0;
             SlerpedQuatAngles[Index] = Slerped.AngleDegrees();
             SlerpedQuatAxiss[Index] = Slerped.AxisNormalized();
         }
 
-        Shu::quat qX = Shu::QuatAngleAxisDeg(30, Shu::Vec3f(1, 0, 0)); // X-Axis
-        Shu::quat qY = Shu::QuatAngleAxisDeg(30, Shu::Vec3f(0, 1, 0)); // Y-Axis
-        Shu::quat qZ = Shu::QuatAngleAxisDeg(30, Shu::Vec3f(0, 0, 1)); // Z-Axis
+        shu::quat qX = shu::QuatAngleAxisDeg(30, shu::Vec3f(1, 0, 0)); // X-Axis
+        shu::quat qY = shu::QuatAngleAxisDeg(30, shu::Vec3f(0, 1, 0)); // Y-Axis
+        shu::quat qZ = shu::QuatAngleAxisDeg(30, shu::Vec3f(0, 0, 1)); // Z-Axis
         // NOTE: How Unity rotates a point. First around Y then X then Z
-        Shu::quat FinalQuat = qY*qX*qZ;
-        Shu::quat FinalQuat1 = Shu::QuatFromEuler(30, 30, 30);
-        Shu::vec3f RotateVec = Shu::QuatRotateVec(FinalQuat, Shu::Vec3f(1, 0, 0));
-        Shu::vec3f Euler = FinalQuat.ToEuler();
+        shu::quat FinalQuat = qY*qX*qZ;
+        shu::quat FinalQuat1 = shu::QuatFromEuler(30, 30, 30);
+        shu::vec3f RotateVec = shu::QuatRotateVec(FinalQuat, shu::Vec3f(1, 0, 0));
+        shu::vec3f Euler = FinalQuat.ToEuler();
         f32 FinalAngle = FinalQuat.AngleDegrees();
-        Shu::vec3f FinalAxis = FinalQuat.AxisNormalized();
+        shu::vec3f FinalAxis = FinalQuat.AxisNormalized();
 #endif
     }
 }

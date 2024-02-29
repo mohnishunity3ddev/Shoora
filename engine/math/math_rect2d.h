@@ -3,7 +3,7 @@
 #include <defines.h>
 #include "math_vector.h"
 
-namespace Shu
+namespace shu
 {
     struct rect2d
     {

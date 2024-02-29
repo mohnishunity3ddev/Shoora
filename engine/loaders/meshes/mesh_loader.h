@@ -19,7 +19,7 @@ enum shoora_mesh_alpha_mode
 
 struct shoora_mesh_material
 {
-    Shu::vec4f BaseColorFactor;
+    shu::vec4f BaseColorFactor;
     i32 BaseColorTextureIndex = -1;
     i32 NormalTextureIndex = -1;
     i32 MetallicTextureIndex = -1;
@@ -54,7 +54,7 @@ struct shoora_mesh_cgltf_node
     shoora_mesh_cgltf_node **ChildNodes;
     u32 ChildrenCount;
 
-    Shu::mat4f ModelMatrix;
+    shu::mat4f ModelMatrix;
     shoora_mesh_primitive *Primitives;
     u32 PrimitiveCount;
 };

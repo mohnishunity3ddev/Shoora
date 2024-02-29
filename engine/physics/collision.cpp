@@ -45,12 +45,12 @@ collision::IsColliding(shoora_body *A, shoora_body *B, const f32 DeltaTime, cont
 }
 
 b32
-RaySphereHit(const Shu::vec3f &RayStart, const Shu::vec3f &RayDir, const Shu::vec3f SphereCenter,
+RaySphereHit(const shu::vec3f &RayStart, const shu::vec3f &RayDir, const shu::vec3f SphereCenter,
              const f32 SphereRadius, f32 &t0, f32 &t1)
 {
     b32 Result = false;
 
-    Shu::vec3f CA = SphereCenter - RayStart;
+    shu::vec3f CA = SphereCenter - RayStart;
     f32 a = RayDir.Dot(RayDir);
     f32 b = -2.0f * CA.Dot(RayDir);
     f32 c = CA.Dot(CA) - SphereRadius * SphereRadius;
@@ -78,13 +78,13 @@ RaySphereHit(const Shu::vec3f &RayStart, const Shu::vec3f &RayDir, const Shu::ve
 // *sphereA in the direction of its velocity and check if its colliding with a sphere whose radius is the sum of the
 // *radii of both the spheres(Minkowski Sum)
 b32
-SphereSphereCCD(const shoora_shape_sphere *SphereA, const shoora_shape_sphere *SphereB, const Shu::vec3f &PosA,
-                const Shu::vec3f &PosB, const Shu::vec3f &VelA, const Shu::vec3f &VelB, const f32 deltaTime,
-                Shu::vec3f &ReferenceHitPointA, Shu::vec3f &IncidentHitPointB, f32 &TimeOfImpact)
+SphereSphereCCD(const shoora_shape_sphere *SphereA, const shoora_shape_sphere *SphereB, const shu::vec3f &PosA,
+                const shu::vec3f &PosB, const shu::vec3f &VelA, const shu::vec3f &VelB, const f32 deltaTime,
+                shu::vec3f &ReferenceHitPointA, shu::vec3f &IncidentHitPointB, f32 &TimeOfImpact)
 {
-    Shu::vec3f RayStart = PosA;
-    Shu::vec3f RayEnd = PosA + VelA*deltaTime;
-    Shu::vec3f RayDir = RayEnd - RayStart;
+    shu::vec3f RayStart = PosA;
+    shu::vec3f RayEnd = PosA + VelA*deltaTime;
+    shu::vec3f RayDir = RayEnd - RayStart;
 
     // NOTE: If the ray is too short, sphere ray collision will be unreliable. Do a simpler check whether ray and
     // sphere are colliding already.
@@ -93,7 +93,7 @@ SphereSphereCCD(const shoora_shape_sphere *SphereA, const shoora_shape_sphere *S
     const f32 lEpsilon = 0.001f;
     if(RayDir.SqMagnitude() < lEpsilon*lEpsilon)
     {
-        const Shu::vec3f AB = PosB - PosA;
+        const shu::vec3f AB = PosB - PosA;
         const f32 TotalRadius = SphereA->Radius + SphereB->Radius + lEpsilon;
         // The sphere centers are too far. distance is more than the sum of their radii. if true, then we are sure
         // that they are not colliding.
@@ -135,9 +135,9 @@ SphereSphereCCD(const shoora_shape_sphere *SphereA, const shoora_shape_sphere *S
 
     // NOTE: Here, toi says after this fraction of the deltaTime has passed in the current frame, the sphere's
     // touch each other. What is the position of the two spheres at this point?
-    Shu::vec3f newPosA = PosA + VelA*TimeOfImpact;
-    Shu::vec3f newPosB = PosB + VelB*TimeOfImpact;
-    Shu::vec3f collisionNormal = Shu::Normalize(newPosB - newPosA);
+    shu::vec3f newPosA = PosA + VelA*TimeOfImpact;
+    shu::vec3f newPosB = PosB + VelB*TimeOfImpact;
+    shu::vec3f collisionNormal = shu::Normalize(newPosB - newPosA);
 
     // NOTE: The Collision Contact Points.
     ReferenceHitPointA = newPosA + collisionNormal*SphereA->Radius;
@@ -159,11 +159,11 @@ collision::IsCollidingSphereSphere(shoora_body *A, shoora_body *B, const f32 Del
     *Contact = {};
 
 #if SHU_CCD_ON
-    Shu::vec3f PosA = A->Position;
-    Shu::vec3f PosB = B->Position;
+    shu::vec3f PosA = A->Position;
+    shu::vec3f PosB = B->Position;
 
-    Shu::vec3f VelA = A->LinearVelocity;
-    Shu::vec3f VelB = B->LinearVelocity;
+    shu::vec3f VelA = A->LinearVelocity;
+    shu::vec3f VelB = B->LinearVelocity;
 
     if(SphereSphereCCD(SphereA, SphereB, A->Position, B->Position, A->LinearVelocity, B->LinearVelocity,
                        DeltaTime, Contact->ReferenceHitPointA, Contact->IncidentHitPointB, Contact->TimeOfImpact))
@@ -181,14 +181,14 @@ collision::IsCollidingSphereSphere(shoora_body *A, shoora_body *B, const f32 Del
         Contact->ReferenceHitPointA_LocalSpace = A->WorldToLocalSpace(Contact->ReferenceHitPointA);
         Contact->IncidentHitPointB_LocalSpace = B->WorldToLocalSpace(Contact->IncidentHitPointB);
 
-        Contact->Normal = Shu::Normalize(B->Position - A->Position);
+        Contact->Normal = shu::Normalize(B->Position - A->Position);
 
         // Rewind the time back to the start of the frame.
         A->Update(-Contact->TimeOfImpact);
         B->Update(-Contact->TimeOfImpact);
 
         // Get the collision depth.
-        Shu::vec3f ab = B->Position - A->Position;
+        shu::vec3f ab = B->Position - A->Position;
         Contact->Depth = SHU_ABSOLUTE(ab.Magnitude() - (SphereA->Radius + SphereB->Radius));
         ++ContactCount;
         Result = true;
@@ -223,7 +223,7 @@ collision::IsCollidingCircleCircle(shoora_body *A, shoora_body *B, contact *Cont
     shoora_shape_circle *CircleA = (shoora_shape_circle *)A->Shape.get();
     shoora_shape_circle *CircleB = (shoora_shape_circle *)B->Shape.get();
 
-    Shu::vec3f DistanceAB = B->Position - A->Position;
+    shu::vec3f DistanceAB = B->Position - A->Position;
     const f32 RadiusSum = CircleA->Radius + CircleB->Radius;
 
     b32 IsColliding = (DistanceAB.SqMagnitude() <= (RadiusSum*RadiusSum));
@@ -234,7 +234,7 @@ collision::IsCollidingCircleCircle(shoora_body *A, shoora_body *B, contact *Cont
         Contact->ReferenceBodyA = A;
         Contact->IncidentBodyB = B;
 
-        Contact->Normal = Shu::Normalize(DistanceAB);
+        Contact->Normal = shu::Normalize(DistanceAB);
 
         Contact->ReferenceHitPointA = B->Position - (Contact->Normal * CircleB->Radius);
         Contact->IncidentHitPointB = A->Position + (Contact->Normal * CircleA->Radius);
@@ -256,7 +256,7 @@ collision::IsCollidingPolygonPolygon(shoora_body *A, shoora_body *B, contact *Co
 
     i32 ReferenceEdgeIndexA = -1, ReferenceEdgeIndexB = -1;
     // NOTE: Support points are the corresponding vertex on the bodies which has the best penetration.
-    Shu::vec2f SupportPointA, SupportPointB;
+    shu::vec2f SupportPointA, SupportPointB;
     // NOTE: This one is taking the body A as a reference body and b as the body that is incident on it.
     f32 abSeparation = PolyA->FindMinSeparation(PolyB, ReferenceEdgeIndexA, SupportPointB);
     ASSERT(ReferenceEdgeIndexA != -1);
@@ -293,7 +293,7 @@ collision::IsCollidingPolygonPolygon(shoora_body *A, shoora_body *B, contact *Co
         ReferenceEdgeIndex = ReferenceEdgeIndexB;
     }
     ASSERT(ReferenceEdgeIndex != -1);
-    Shu::vec2f ReferenceEdge = ReferenceShape->GetEdgeAt(ReferenceEdgeIndex).xy;
+    shu::vec2f ReferenceEdge = ReferenceShape->GetEdgeAt(ReferenceEdgeIndex).xy;
 
     // NOTE: Perform Clipping(Erin Catto)
 
@@ -302,16 +302,16 @@ collision::IsCollidingPolygonPolygon(shoora_body *A, shoora_body *B, contact *Co
     ASSERT(IncidentVertexIndex != -1);
     i32 NextIncidentVertexIndex = IncidentShape->GetNextVertexIndex(IncidentVertexIndex);
 
-    Shu::vec2f i0 = IncidentShape->WorldVertices[IncidentVertexIndex].xy;
-    Shu::vec2f i1 = IncidentShape->WorldVertices[NextIncidentVertexIndex].xy;
-    Shu::vec2f ContactPoints[2] = {i0, i1};
-    Shu::vec2f ClippedPoints[2] = {i0, i1};
+    shu::vec2f i0 = IncidentShape->WorldVertices[IncidentVertexIndex].xy;
+    shu::vec2f i1 = IncidentShape->WorldVertices[NextIncidentVertexIndex].xy;
+    shu::vec2f ContactPoints[2] = {i0, i1};
+    shu::vec2f ClippedPoints[2] = {i0, i1};
     for(i32 i = 0; i < ReferenceShape->VertexCount; ++i)
     {
         if(i == ReferenceEdgeIndex) continue;
 
-        Shu::vec2f r0 = ReferenceShape->WorldVertices[i].xy;
-        Shu::vec2f r1 = ReferenceShape->WorldVertices[((i + 1) % ReferenceShape->VertexCount)].xy;
+        shu::vec2f r0 = ReferenceShape->WorldVertices[i].xy;
+        shu::vec2f r1 = ReferenceShape->WorldVertices[((i + 1) % ReferenceShape->VertexCount)].xy;
 
         i32 NumClipped = ReferenceShape->ClipSegmentToLine(ContactPoints, ClippedPoints, r0, r1);
         if(NumClipped < 2)
@@ -323,21 +323,21 @@ collision::IsCollidingPolygonPolygon(shoora_body *A, shoora_body *B, contact *Co
         ContactPoints[1] = ClippedPoints[1];
     }
 
-    Shu::vec2f ReferenceVertex = ReferenceShape->WorldVertices[ReferenceEdgeIndex].xy;
-    Shu::vec2f ReferenceFaceNormal = ReferenceEdge.Normal();
+    shu::vec2f ReferenceVertex = ReferenceShape->WorldVertices[ReferenceEdgeIndex].xy;
+    shu::vec2f ReferenceFaceNormal = ReferenceEdge.Normal();
 
     for (i32 i = 0; i < 2; ++i)
     {
         contact *Contact = Contacts + i;
         *Contact = {};
-        Shu::vec2f ClippedVertex = ClippedPoints[i];
+        shu::vec2f ClippedVertex = ClippedPoints[i];
         f32 Proj = (ClippedVertex - ReferenceVertex).Dot(ReferenceFaceNormal);
         if(Proj <= 0)
         {
             Contact->ReferenceBodyA = A;
             Contact->IncidentBodyB = B;
-            Contact->Normal = Shu::Vec3f(ReferenceFaceNormal, 0.0f);
-            Contact->ReferenceHitPointA = Shu::Vec3f(ClippedVertex, 0.0f);
+            Contact->Normal = shu::Vec3f(ReferenceFaceNormal, 0.0f);
+            Contact->ReferenceHitPointA = shu::Vec3f(ClippedVertex, 0.0f);
             Contact->IncidentHitPointB = Contact->ReferenceHitPointA + Contact->Normal * (-Proj);
             if(baSeparation >= abSeparation)
             {
@@ -364,14 +364,14 @@ collision::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle, c
     shoora_shape_polygon *Poly  = (shoora_shape_polygon *)Polygon->Shape.get();
     shoora_shape_circle *Circ = (shoora_shape_circle *)Circle->Shape.get();
     f32 Radius = Circ->GetDim().x;
-    Shu::vec2f CircleCenter = Circle->Position.xy;
-    Shu::vec2f PolyCenter = Polygon->Position.xy;
+    shu::vec2f CircleCenter = Circle->Position.xy;
+    shu::vec2f PolyCenter = Polygon->Position.xy;
 
     // NOTE: Check for the edge which is closest to the center of the circle.
-    Shu::vec3f MinVertex;
-    Shu::vec3f MinNextVertex;
+    shu::vec3f MinVertex;
+    shu::vec3f MinNextVertex;
     b32 isInside = true;
-    Shu::vec2f ClosestEdge;
+    shu::vec2f ClosestEdge;
     f32 MaxProjection = SHU_FLOAT_MIN;
 
     contact *Contact = &Contacts[0];
@@ -385,7 +385,7 @@ collision::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle, c
 
         auto VertexToCircleCenter = Circle->Position - CurrentVertex;
 
-        auto Projection = Shu::Dot(VertexToCircleCenter.xy, EdgeNormal);
+        auto Projection = shu::Dot(VertexToCircleCenter.xy, EdgeNormal);
         // NOTE: There is only one vertexToCircleCenter in the polygon whose dot product will be positive(which
         // will be the closest, everyone else will give negative projections). It would also mean that the circle
         // center is outside the circle.
@@ -417,8 +417,8 @@ collision::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle, c
     {
         auto EdgeNormal = ClosestEdge.Normal();
 
-        auto CurrCenter = Shu::Normalize(CircleCenter - MinVertex.xy);
-        auto CurrDot = Shu::Dot(CurrCenter, ClosestEdge);
+        auto CurrCenter = shu::Normalize(CircleCenter - MinVertex.xy);
+        auto CurrDot = shu::Dot(CurrCenter, ClosestEdge);
 
         if(CurrDot < 0.0f)
         {
@@ -428,15 +428,15 @@ collision::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle, c
             {
                 IsCollidingResult = true;
                 Contact->Depth = Radius - CenterToVertDistance;
-                Contact->IncidentHitPointB = Shu::Vec3f(MinVertex.xy, 0.0f);
-                Contact->Normal = Shu::Vec3f(Shu::Normalize(CircleCenter - MinVertex.xy), 0.0f);
+                Contact->IncidentHitPointB = shu::Vec3f(MinVertex.xy, 0.0f);
+                Contact->Normal = shu::Vec3f(shu::Normalize(CircleCenter - MinVertex.xy), 0.0f);
                 Contact->ReferenceHitPointA = Contact->IncidentHitPointB - Contact->Normal*Contact->Depth;
             }
         }
         else
         {
-            auto NextCenter = Shu::Normalize(CircleCenter - MinNextVertex.xy);
-            auto NextDot = Shu::Dot(NextCenter, -ClosestEdge);
+            auto NextCenter = shu::Normalize(CircleCenter - MinNextVertex.xy);
+            auto NextDot = shu::Dot(NextCenter, -ClosestEdge);
 
             if(NextDot < 0.0f)
             {
@@ -446,23 +446,23 @@ collision::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle, c
                 {
                     IsCollidingResult = true;
                     Contact->Depth = Radius - CenterToNextVertDistance;
-                    Contact->IncidentHitPointB = Shu::Vec3f(MinNextVertex.xy, 0.0f);
-                    Contact->Normal = Shu::Vec3f(Shu::Normalize(CircleCenter - MinNextVertex.xy), 0.0f);
+                    Contact->IncidentHitPointB = shu::Vec3f(MinNextVertex.xy, 0.0f);
+                    Contact->Normal = shu::Vec3f(shu::Normalize(CircleCenter - MinNextVertex.xy), 0.0f);
                     Contact->ReferenceHitPointA = Contact->IncidentHitPointB - Contact->Normal*Contact->Depth;
                 }
             }
             else
             {
                 // IMPORTANT: NOTE: In the Middle region between MinVertex and MinNextVertex!
-                auto DistanceFromClosestEdge = Shu::Dot((CircleCenter - MinVertex.xy), EdgeNormal);
+                auto DistanceFromClosestEdge = shu::Dot((CircleCenter - MinVertex.xy), EdgeNormal);
                 if(DistanceFromClosestEdge < Radius)
                 {
                     IsCollidingResult = true;
                     Contact->Depth = Radius - DistanceFromClosestEdge;
-                    Contact->Normal = Shu::Vec3f(EdgeNormal, 0.0f);
+                    Contact->Normal = shu::Vec3f(EdgeNormal, 0.0f);
                     auto start = CircleCenter - Contact->Normal.xy * Radius;
-                    Contact->ReferenceHitPointA = Shu::Vec3f(start, 0.0f);
-                    Contact->IncidentHitPointB = Shu::Vec3f(start + Contact->Normal.xy*Contact->Depth, 0.0f);
+                    Contact->ReferenceHitPointA = shu::Vec3f(start, 0.0f);
+                    Contact->IncidentHitPointB = shu::Vec3f(start + Contact->Normal.xy*Contact->Depth, 0.0f);
                 }
             }
         }
@@ -471,9 +471,9 @@ collision::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle, c
     {
         // IMPORTANT: NOTE: Circle is inside the polygon
         Contact->Depth = Radius + SHU_ABSOLUTE(MaxProjection);
-        Contact->Normal = Shu::Vec3f(ClosestEdge.Normal(), 0.0f);
-        Contact->ReferenceHitPointA = Shu::Vec3f(CircleCenter - Contact->Normal.xy*Radius, 0.0f);
-        Contact->IncidentHitPointB = Shu::Vec3f(CircleCenter - Contact->Normal.xy*(MaxProjection), 0.0f);
+        Contact->Normal = shu::Vec3f(ClosestEdge.Normal(), 0.0f);
+        Contact->ReferenceHitPointA = shu::Vec3f(CircleCenter - Contact->Normal.xy*Radius, 0.0f);
+        Contact->IncidentHitPointB = shu::Vec3f(CircleCenter - Contact->Normal.xy*(MaxProjection), 0.0f);
         IsCollidingResult = true;
     }
 

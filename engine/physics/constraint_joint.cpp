@@ -7,7 +7,7 @@ joint_constraint_2d::joint_constraint_2d() : constraint_2d(), Bias(0.0f)
     CachedLambda.Zero();
 }
 
-joint_constraint_2d::joint_constraint_2d(shoora_body *a, shoora_body *b, const Shu::vec2f &anchorPointWS)
+joint_constraint_2d::joint_constraint_2d(shoora_body *a, shoora_body *b, const shu::vec2f &anchorPointWS)
     : constraint_2d(), Bias(0.0f)
 {
 #if 0

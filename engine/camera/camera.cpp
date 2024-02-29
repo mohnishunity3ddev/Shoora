@@ -3,7 +3,7 @@
 
 void
 SetupCamera(shoora_camera *Camera, shoora_projection Type, f32 Near, f32 Far, f32 Aspect, f32 Height, f32 halfFOV,
-            Shu::vec3f Pos, Shu::vec3f GlobalUp)
+            shu::vec3f Pos, shu::vec3f GlobalUp)
 {
     Camera->Pos = Pos;
     Camera->GlobalUp = GlobalUp;
@@ -27,18 +27,18 @@ SetupCamera(shoora_camera *Camera, shoora_projection Type, f32 Near, f32 Far, f3
     Camera->UpdateCameraVectors();
 }
 
-Shu::vec2f
+shu::vec2f
 shoora_camera::GetBounds()
 {
-    Shu::vec2f bounds = {this->Aspect*this->Height, this->Height};
+    shu::vec2f bounds = {this->Aspect*this->Height, this->Height};
 
     return bounds;
 }
 
-Shu::rect2d
+shu::rect2d
 shoora_camera::GetRect()
 {
-    Shu::rect2d Result;
+    shu::rect2d Result;
 
     Result.x = this->Pos.x;
     Result.y = this->Pos.y;
@@ -51,15 +51,15 @@ shoora_camera::GetRect()
 void shoora_camera::
 UpdateCameraVectors()
 {
-    Shu::vec3f Front;
-    Front.x = Shu::Cos(Yaw) * Shu::Cos(Pitch);
-    Front.y = Shu::Sin(Pitch);
-    Front.z = Shu::Sin(Yaw) * Shu::Cos(Pitch);
+    shu::vec3f Front;
+    Front.x = shu::Cos(Yaw) * shu::Cos(Pitch);
+    Front.y = shu::Sin(Pitch);
+    Front.z = shu::Sin(Yaw) * shu::Cos(Pitch);
 
-    this->Front = Shu::Normalize(Front);
+    this->Front = shu::Normalize(Front);
 
-    this->Right = Shu::Normalize(Shu::Cross(this->GlobalUp, this->Front));
-    this->Up = Shu::Cross(this->Front, this->Right);
+    this->Right = shu::Normalize(shu::Cross(this->GlobalUp, this->Front));
+    this->Up = shu::Cross(this->Front, this->Right);
 }
 
 void shoora_camera::
@@ -90,7 +90,7 @@ HandleInput(const shoora_camera_input *CameraInput)
         this->Pitch = Pitch;
         this->UpdateCameraVectors();
 
-        Shu::vec3f MoveDirection = Shu::Vec3f(0.0f);
+        shu::vec3f MoveDirection = shu::Vec3f(0.0f);
         b32 Move = false;
         if(CameraInput->MoveForwards)
         {
@@ -121,7 +121,7 @@ HandleInput(const shoora_camera_input *CameraInput)
                 MovementSpeed *= 10.0f;
             }
 
-            MoveDirection = Shu::Normalize(MoveDirection);
+            MoveDirection = shu::Normalize(MoveDirection);
             if(MoveDirection.SqMagnitude() - FLT_EPSILON > 0.0f)
             {
                 this->Pos += MoveDirection*MovementSpeed*CameraInput->DeltaTime;
@@ -130,7 +130,7 @@ HandleInput(const shoora_camera_input *CameraInput)
     }
     else if(this->Type == PROJECTION_ORTHOGRAPHIC)
     {
-        Shu::vec3f MoveDirection = Shu::Vec3f(0.0f);
+        shu::vec3f MoveDirection = shu::Vec3f(0.0f);
         if(CameraInput->MoveForwards) { MoveDirection.y = 1.0f; }
         if(CameraInput->MoveBackwards) { MoveDirection.y = -1.0f; }
         if(CameraInput->MoveLeft) { MoveDirection.x = -1.0f; }
@@ -150,40 +150,40 @@ HandleInput(const shoora_camera_input *CameraInput)
     }
 }
 
-Shu::mat4f shoora_camera::
-GetViewMatrix(Shu::mat4f &M)
+shu::mat4f shoora_camera::
+GetViewMatrix(shu::mat4f &M)
 {
     if(this->Type == PROJECTION_PERSPECTIVE)
     {
-        M = Shu::LookAt(this->Pos, this->Pos + this->Front, this->GlobalUp, M);
+        M = shu::LookAt(this->Pos, this->Pos + this->Front, this->GlobalUp, M);
     }
     else if(this->Type == PROJECTION_ORTHOGRAPHIC)
     {
-        M = Shu::Translate(M, Shu::Vec3f(-this->Pos.x, -this->Pos.y, 0.0f));
+        M = shu::Translate(M, shu::Vec3f(-this->Pos.x, -this->Pos.y, 0.0f));
     }
     return M;
 }
 
-Shu::mat4f
+shu::mat4f
 shoora_camera::GetProjectionMatrix()
 {
-    Shu::mat4f projection;
+    shu::mat4f projection;
 
     if(this->Type == PROJECTION_ORTHOGRAPHIC)
     {
         f32 Width = this->Aspect * this->Height;
-        projection = Shu::Orthographic(Width, this->Height, this->Near, this->Far);
+        projection = shu::Orthographic(Width, this->Height, this->Near, this->Far);
     }
     else if (this->Type == PROJECTION_PERSPECTIVE)
     {
-        projection = Shu::Perspective(this->halfFOV, this->Aspect, this->Near, this->Far);
+        projection = shu::Perspective(this->halfFOV, this->Aspect, this->Near, this->Far);
     }
 
     return projection;
 }
 
 void
-shoora_camera::UpdateWindowSize(const Shu::vec2f &windowSize)
+shoora_camera::UpdateWindowSize(const shu::vec2f &windowSize)
 {
     this->Height = windowSize.y;
     this->Aspect = windowSize.x / windowSize.y;

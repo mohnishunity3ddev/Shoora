@@ -16,7 +16,7 @@ ComparePseudoBodies(const pseudo_body &A, const pseudo_body &B)
 void
 SortBodiesBounds(const shoora_body *Bodies, const i32 BodyCount, pseudo_body *SortedArray, const f32 DeltaTime)
 {
-    Shu::vec3f Axis = Shu::Vec3f(1, 1, 1);
+    shu::vec3f Axis = shu::Vec3f(1, 1, 1);
     Axis.Normalize();
 
     for (i32 i = 0; i < BodyCount; ++i)

@@ -14,12 +14,12 @@ struct contact
     shoora_body *ReferenceBodyA;
     shoora_body *IncidentBodyB;
 
-    Shu::vec3f ReferenceHitPointA;
-    Shu::vec3f ReferenceHitPointA_LocalSpace;
-    Shu::vec3f IncidentHitPointB;
-    Shu::vec3f IncidentHitPointB_LocalSpace;
+    shu::vec3f ReferenceHitPointA;
+    shu::vec3f ReferenceHitPointA_LocalSpace;
+    shu::vec3f IncidentHitPointB;
+    shu::vec3f IncidentHitPointB_LocalSpace;
 
-    Shu::vec3f Normal;
+    shu::vec3f Normal;
     f32 Depth;
     f32 TimeOfImpact;
 

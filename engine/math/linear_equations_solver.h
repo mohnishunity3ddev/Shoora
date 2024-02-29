@@ -4,7 +4,7 @@
 #include "math_vector.h"
 #include "math_matrix.h"
 
-namespace Shu
+namespace shu
 {
     template<typename T>
     vec3<T>
@@ -142,23 +142,23 @@ namespace Shu
     void test_LinearEqSolver()
     {
     #if 0
-    Shu::matN<f32, 3> Mat33{1, 3, -1,
+    shu::matN<f32, 3> Mat33{1, 3, -1,
                             4, -1, 1,
                             2, 4, 3};
-    Shu::vecN<f32, 3> Vector3 = {13, 9, 6};
-    auto Soln = Shu::LCP_GaussElimination(Mat33, Vector3);
+    shu::vecN<f32, 3> Vector3 = {13, 9, 6};
+    auto Soln = shu::LCP_GaussElimination(Mat33, Vector3);
     #else
-        Shu::matN<f32, 5> Mat55{3, 2, -1, 4, -2, 1, -3, 2, -3, 2, 2, 1, -4, 2, 1, 1, 4, 1, 1, -1, -2, 3, -2, 3, 1};
-        Shu::vecN<f32, 5> Vector4 = {12, -5, 8, 3, 6};
-        auto Soln = Shu::LCP_GaussElimination(Mat55, Vector4);
+        shu::matN<f32, 5> Mat55{3, 2, -1, 4, -2, 1, -3, 2, -3, 2, 2, 1, -4, 2, 1, 1, 4, 1, 1, -1, -2, 3, -2, 3, 1};
+        shu::vecN<f32, 5> Vector4 = {12, -5, 8, 3, 6};
+        auto Soln = shu::LCP_GaussElimination(Mat55, Vector4);
 
-        Shu::matN<f32, 3> Mat33{ 2,  -1,   0,
+        shu::matN<f32, 3> Mat33{ 2,  -1,   0,
                                 -1,   2,  -1,
                                  0,  -1,   2};
-        Shu::vecN<f32, 3> Vector3 = {7, 1, 1};
+        shu::vecN<f32, 3> Vector3 = {7, 1, 1};
 
-        auto Soln2 = Shu::LCP_GaussElimination(Mat33, Vector3);
-        auto Soln1 = Shu::LCP_GaussSeidel(Mat33, Vector3);
+        auto Soln2 = shu::LCP_GaussElimination(Mat33, Vector3);
+        auto Soln1 = shu::LCP_GaussSeidel(Mat33, Vector3);
 
     #endif
     }

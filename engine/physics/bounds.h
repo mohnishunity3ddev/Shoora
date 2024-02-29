@@ -12,8 +12,8 @@ struct shoora_bounds
 
     void Clear();
     b32 DoesIntersect(const shoora_bounds &other) const;
-    void Expand(const Shu::vec3f *Pts, const i32 Num);
-    void Expand(const Shu::vec3f &V);
+    void Expand(const shu::vec3f *Pts, const i32 Num);
+    void Expand(const shu::vec3f &V);
     void Expand(const shoora_bounds &Bounds);
 
     f32 WidthX() const { f32 Result = Maxs.x - Mins.x; return Result; }
@@ -22,8 +22,8 @@ struct shoora_bounds
 
     void Draw();
 
-    Shu::vec3f Mins;
-    Shu::vec3f Maxs;
+    shu::vec3f Mins;
+    shu::vec3f Maxs;
 };
 
 #define BOUNDS_H

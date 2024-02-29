@@ -11,13 +11,13 @@
 #endif
 
 static b32 MouseTracking = false;
-static Shu::vec2f MouseInitialDownPos = Shu::Vec2f(0);
+static shu::vec2f MouseInitialDownPos = shu::Vec2f(0);
 static shoora_body *BodyToMove = nullptr;
 
 struct scene_shader_data
 {
-    Shu::mat4f Mat;
-    Shu::vec3f Col = {1, 1, 1};
+    shu::mat4f Mat;
+    shu::vec3f Col = {1, 1, 1};
 };
 
 shoora_scene::shoora_scene()
@@ -40,7 +40,7 @@ shoora_scene::~shoora_scene()
 }
 
 void
-shoora_scene::AddMeshToScene(const Shu::vec3f *vPositions, u32 vCount)
+shoora_scene::AddMeshToScene(const shu::vec3f *vPositions, u32 vCount)
 {
 }
 
@@ -65,8 +65,8 @@ shoora_scene::AddBody(shoora_body &&Body)
 }
 
 shoora_body *
-shoora_scene::AddCubeBody(const Shu::vec3f &Pos, const Shu::vec3f &Scale, u32 ColorU32, f32 Mass,
-                          f32 Restitution, const Shu::vec3f &EulerAngles)
+shoora_scene::AddCubeBody(const shu::vec3f &Pos, const shu::vec3f &Scale, u32 ColorU32, f32 Mass,
+                          f32 Restitution, const shu::vec3f &EulerAngles)
 {
     shoora_body body{GetColor(ColorU32), Pos, Mass, Restitution,
                      std::make_unique<shoora_shape_cube>(Scale.x, Scale.y, Scale.z), EulerAngles};
@@ -77,8 +77,8 @@ shoora_scene::AddCubeBody(const Shu::vec3f &Pos, const Shu::vec3f &Scale, u32 Co
 }
 
 shoora_body *
-shoora_scene::AddSphereBody(const Shu::vec3f &Pos, u32 ColorU32, f32 Radius, f32 Mass, f32 Restitution,
-                            const Shu::vec3f &EulerAngles)
+shoora_scene::AddSphereBody(const shu::vec3f &Pos, u32 ColorU32, f32 Radius, f32 Mass, f32 Restitution,
+                            const shu::vec3f &EulerAngles)
 {
     shoora_body body{GetColor(ColorU32), Pos, Mass, Restitution, std::make_unique<shoora_shape_sphere>(Radius),
                      EulerAngles};
@@ -89,10 +89,10 @@ shoora_scene::AddSphereBody(const Shu::vec3f &Pos, u32 ColorU32, f32 Radius, f32
 }
 
 shoora_body *
-shoora_scene::AddCircleBody(const Shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 Mass, f32 Restitution,
-                            const Shu::vec3f &EulerAngles)
+shoora_scene::AddCircleBody(const shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 Mass, f32 Restitution,
+                            const shu::vec3f &EulerAngles)
 {
-    shoora_body body{GetColor(ColorU32), Shu::Vec3f(Pos, 1.0f), Mass, Restitution,
+    shoora_body body{GetColor(ColorU32), shu::Vec3f(Pos, 1.0f), Mass, Restitution,
                      std::make_unique<shoora_shape_circle>(Radius), EulerAngles};
     Bodies.emplace_back(std::move(body));
     shoora_body *b = Bodies.get(Bodies.size() - 1);
@@ -100,10 +100,10 @@ shoora_scene::AddCircleBody(const Shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 
 }
 
 shoora_body *
-shoora_scene::AddBoxBody(const Shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Height, f32 Mass, f32 Restitution,
-                         const Shu::vec3f &EulerAngles)
+shoora_scene::AddBoxBody(const shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Height, f32 Mass, f32 Restitution,
+                         const shu::vec3f &EulerAngles)
 {
-    shoora_body body{GetColor(ColorU32), Shu::Vec3f(Pos, 1.0f), Mass, Restitution,
+    shoora_body body{GetColor(ColorU32), shu::Vec3f(Pos, 1.0f), Mass, Restitution,
                      std::make_unique<shoora_shape_box>(Width, Height), EulerAngles};
     Bodies.emplace_back(std::move(body));
 
@@ -112,10 +112,10 @@ shoora_scene::AddBoxBody(const Shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Heig
 }
 
 shoora_body *
-shoora_scene::AddPolygonBody(const u32 MeshId, const Shu::vec2f Pos, u32 ColorU32, f32 Mass, f32 Restitution,
-                             const Shu::vec3f &EulerAngles, f32 Scale)
+shoora_scene::AddPolygonBody(const u32 MeshId, const shu::vec2f Pos, u32 ColorU32, f32 Mass, f32 Restitution,
+                             const shu::vec3f &EulerAngles, f32 Scale)
 {
-    shoora_body body{GetColor(ColorU32), Shu::Vec3f(Pos, 1.0f), Mass, Restitution,
+    shoora_body body{GetColor(ColorU32), shu::Vec3f(Pos, 1.0f), Mass, Restitution,
                      std::make_unique<shoora_shape_polygon>(MeshId, Scale), EulerAngles};
     Bodies.emplace_back(std::move(body));
 
@@ -124,7 +124,7 @@ shoora_scene::AddPolygonBody(const u32 MeshId, const Shu::vec2f Pos, u32 ColorU3
 }
 
 void
-shoora_scene::UpdateInput(const Shu::vec2f &CurrentMouseWorldPos)
+shoora_scene::UpdateInput(const shu::vec2f &CurrentMouseWorldPos)
 {
     b32 LmbDown = Platform_GetKeyInputState(SU_LEFTMOUSEBUTTON, SHU_KEYSTATE_DOWN);
 
@@ -139,13 +139,13 @@ shoora_scene::UpdateInput(const Shu::vec2f &CurrentMouseWorldPos)
                 if (Body->CheckIfClicked(CurrentMouseWorldPos))
                 {
                     MouseTracking = true;
-                    MouseInitialDownPos = Shu::ToVec2(Body->Position);
+                    MouseInitialDownPos = shu::ToVec2(Body->Position);
                     BodyToMove = Body;
                 }
             }
             else if (BodyToMove != nullptr)
             {
-                BodyToMove->Position = Shu::Vec3f(CurrentMouseWorldPos, BodyToMove->Position.z);
+                BodyToMove->Position = shu::Vec3f(CurrentMouseWorldPos, BodyToMove->Position.z);
                 BodyToMove->UpdateWorldVertices();
             }
         }
@@ -186,7 +186,7 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
         ASSERT(BodyIndex < BodyCount);
         shoora_body *Body = Bodies + BodyIndex;
 
-        Shu::vec3f WeightForce = Shu::Vec3f(0.0f, -9.8f*Body->Mass, 0.0f);
+        shu::vec3f WeightForce = shu::Vec3f(0.0f, -9.8f*Body->Mass, 0.0f);
         Body->AddForce(WeightForce);
     }
 
@@ -320,9 +320,9 @@ shoora_scene::Draw(b32 Wireframe)
 
         u32 ColorU32 = Body->IsColliding ? colorU32::Red : colorU32::Green;
         // Shu::vec3f Color = GetColor(ColorU32);
-        Shu::vec3f Color = Body->Color;
+        shu::vec3f Color = Body->Color;
 
-        Shu::mat4f Model = Shu::TRS(Body->Position, Body->Scale, Body->Rotation);
+        shu::mat4f Model = shu::TRS(Body->Position, Body->Scale, Body->Rotation);
         scene_shader_data Value = {.Mat = Model, .Col = Color};
 
 #if 1
@@ -348,19 +348,19 @@ shoora_scene::Draw(b32 Wireframe)
     for (i32 cIndex = 0; cIndex < Constraints2D.size(); ++cIndex)
     {
         auto *c = Constraints2D[cIndex];
-        auto pos = c->A->LocalToWorldSpace(Shu::Vec3f(c->AnchorPointLS_A));
+        auto pos = c->A->LocalToWorldSpace(shu::Vec3f(c->AnchorPointLS_A));
         shoora_graphics::DrawCircle(pos.xy, 5, colorU32::Red);
     }
 }
 
 void
-shoora_scene::DrawAxes(Shu::rect2d &Rect)
+shoora_scene::DrawAxes(shu::rect2d &Rect)
 {
-    auto left = Shu::Vec2f(Rect.x - (Rect.width / 2), Rect.y);
-    auto right = Shu::Vec2f(Rect.x + (Rect.width / 2), Rect.y);
+    auto left = shu::Vec2f(Rect.x - (Rect.width / 2), Rect.y);
+    auto right = shu::Vec2f(Rect.x + (Rect.width / 2), Rect.y);
     shoora_graphics::DrawLine2D(left, right, 0xff313131, 1.0f);
-    auto top = Shu::Vec2f(Rect.x, Rect.y + (Rect.height / 2));
-    auto bottom = Shu::Vec2f(Rect.x, Rect.y - (Rect.height / 2));
+    auto top = shu::Vec2f(Rect.x, Rect.y + (Rect.height / 2));
+    auto bottom = shu::Vec2f(Rect.x, Rect.y - (Rect.height / 2));
     shoora_graphics::DrawLine2D(top, bottom, 0xff313131, 1.0f);
 }
 

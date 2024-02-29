@@ -9,27 +9,27 @@ contact::ResolvePenetration()
 
     // Bounciness
     f32 Elasticity = ClampToRange(ReferenceBodyA->CoeffRestitution*IncidentBodyB->CoeffRestitution, 0.0f, 1.0f);
-    const Shu::vec3f n = this->Normal;
+    const shu::vec3f n = this->Normal;
 
     // I^-1
-    const Shu::mat3f invWorldInertiaA = ReferenceBodyA->GetInverseInertiaTensorWS();
-    const Shu::mat3f invWorldInertiaB = IncidentBodyB->GetInverseInertiaTensorWS();
+    const shu::mat3f invWorldInertiaA = ReferenceBodyA->GetInverseInertiaTensorWS();
+    const shu::mat3f invWorldInertiaB = IncidentBodyB->GetInverseInertiaTensorWS();
 
     // Useful in calculating torque/angular impulses.
-    Shu::vec3f rA = this->ReferenceHitPointA - ReferenceBodyA->GetCenterOfMassWS();
-    Shu::vec3f rB = this->IncidentHitPointB - IncidentBodyB->GetCenterOfMassWS();
+    shu::vec3f rA = this->ReferenceHitPointA - ReferenceBodyA->GetCenterOfMassWS();
+    shu::vec3f rB = this->IncidentHitPointB - IncidentBodyB->GetCenterOfMassWS();
 
     // factors due to rotation.
-    const Shu::vec3f angularJA = (rA.Cross(n) * invWorldInertiaA).Cross(rA);
-    const Shu::vec3f angularJB = (rB.Cross(n) * invWorldInertiaB).Cross(rB);
+    const shu::vec3f angularJA = (rA.Cross(n) * invWorldInertiaA).Cross(rA);
+    const shu::vec3f angularJB = (rB.Cross(n) * invWorldInertiaB).Cross(rB);
     f32 angularFactor = (angularJA + angularJB).Dot(n);
 
     // NOTE: Calculating the collision impulse.
 
     // NOTE: Velocities before the collision
-    const Shu::vec3f VA = ReferenceBodyA->LinearVelocity + ReferenceBodyA->AngularVelocity.Cross(rA);
-    const Shu::vec3f VB = IncidentBodyB->LinearVelocity + IncidentBodyB->AngularVelocity.Cross(rB);
-    Shu::vec3f VRel = VB - VA;
+    const shu::vec3f VA = ReferenceBodyA->LinearVelocity + ReferenceBodyA->AngularVelocity.Cross(rA);
+    const shu::vec3f VB = IncidentBodyB->LinearVelocity + IncidentBodyB->AngularVelocity.Cross(rB);
+    shu::vec3f VRel = VB - VA;
     // Relative velocity component along the normal
     f32 VRelDotN = VRel.Dot(n);
 
@@ -38,7 +38,7 @@ contact::ResolvePenetration()
     if(!NearlyEqual(denominator, 0.0f))
     {
         f32 ImpulseNormalMagnitude = numerator / denominator;
-        const Shu::vec3f ImpulseNormal = n * ImpulseNormalMagnitude;
+        const shu::vec3f ImpulseNormal = n * ImpulseNormalMagnitude;
 
         // Applying Linear + Angular impulses to the contact points on the two bodies.
         ReferenceBodyA->ApplyImpulseAtPoint(ImpulseNormal, ReferenceHitPointA);
@@ -59,18 +59,18 @@ contact::ResolvePenetration()
 
     // NOTE: find the component of the velocity that is normal to the collision normal / Tangential to the
     // collision point.
-    Shu::vec3f vN = VRelDotN * n;
-    Shu::vec3f vT = VRel - vN;
-    Shu::vec3f VRelTangential = Shu::Normalize(vT);
+    shu::vec3f vN = VRelDotN * n;
+    shu::vec3f vT = VRel - vN;
+    shu::vec3f VRelTangential = shu::Normalize(vT);
 
-    const Shu::vec3f angularFA = (rA.Cross(VRelTangential) * invWorldInertiaA).Cross(rA);
-    const Shu::vec3f angularFB = (rB.Cross(VRelTangential) * invWorldInertiaB).Cross(rB);
+    const shu::vec3f angularFA = (rA.Cross(VRelTangential) * invWorldInertiaA).Cross(rA);
+    const shu::vec3f angularFB = (rB.Cross(VRelTangential) * invWorldInertiaB).Cross(rB);
     f32 angularFactorFriction = (angularFA + angularFB).Dot(VRelTangential);
 
     if(!NearlyEqual(angularFactorFriction, 0.0f))
     {
         f32 ImpulseFrictionMagnitude = (friction / angularFactorFriction);
-        const Shu::vec3f ImpulseFriction = VRelTangential * ImpulseFrictionMagnitude;
+        const shu::vec3f ImpulseFriction = VRelTangential * ImpulseFrictionMagnitude;
 
         ReferenceBodyA->ApplyImpulseAtPoint(ImpulseFriction, ReferenceHitPointA);
         IncidentBodyB->ApplyImpulseAtPoint(-ImpulseFriction, IncidentHitPointB);

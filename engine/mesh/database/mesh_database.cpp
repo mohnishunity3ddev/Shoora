@@ -3,7 +3,7 @@
 #include <mesh/primitive/geometry_primitive.h>
 #include <renderer/vulkan/vulkan_debug.h>
 
-static const Shu::vec3f *RunningPolygonVertexPositions[MAX_MESH_COUNT];
+static const shu::vec3f *RunningPolygonVertexPositions[MAX_MESH_COUNT];
 static u32 RunningPolygonVertexCounts[MAX_MESH_COUNT];
 static u32 RunningVertexCount = 0, RunningIndexCount = 0;
 static void *Memory;
@@ -41,7 +41,7 @@ shoora_mesh_database::MeshDbBegin(shoora_vulkan_device *Device)
 }
 
 void
-shoora_mesh_database::AddPolygonMeshToDb(const Shu::vec3f *vPositions, i32 vCount)
+shoora_mesh_database::AddPolygonMeshToDb(const shu::vec3f *vPositions, i32 vCount)
 {
     ASSERT(vCount >= 3 && "Polygons must have a minimum of three vertices");
     ASSERT(Begin && (TotalMeshCount + 1) <= MAX_MESH_COUNT);

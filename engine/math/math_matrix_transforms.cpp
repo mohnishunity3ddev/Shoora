@@ -1,42 +1,42 @@
 #include "math_matrix_transforms.h"
 
 
-namespace Shu
+namespace shu
 {
     mat4f
-    TRSInverse(const Shu::vec3f &Pos, const Shu::vec3f &Scale,
-               const f32 RotationAngleDegrees, const Shu::vec3f &RotationAxis)
+    TRSInverse(const shu::vec3f &Pos, const shu::vec3f &Scale,
+               const f32 RotationAngleDegrees, const shu::vec3f &RotationAxis)
     {
-        Shu::mat4f Model = Shu::Mat4f(1.0f);
+        shu::mat4f Model = shu::Mat4f(1.0f);
 
-        Shu::Translate(Model, -Pos);
-        Shu::Rotate(Model, Shu::QuatAngleAxisDeg(-RotationAngleDegrees, RotationAxis));
-        Shu::Scale(Model, Scale.Reciprocal());
+        shu::Translate(Model, -Pos);
+        shu::Rotate(Model, shu::QuatAngleAxisDeg(-RotationAngleDegrees, RotationAxis));
+        shu::Scale(Model, Scale.Reciprocal());
 
         return Model;
     }
 
     mat4f
-    TRS(const Shu::vec3f &Pos, const Shu::vec3f &Scale,
-        const f32 RotationAngleDegrees, const Shu::vec3f &RotationAxis)
+    TRS(const shu::vec3f &Pos, const shu::vec3f &Scale,
+        const f32 RotationAngleDegrees, const shu::vec3f &RotationAxis)
     {
-        Shu::mat4f Model = Shu::Mat4f(1.0f);
+        shu::mat4f Model = shu::Mat4f(1.0f);
 
-        Shu::Scale(Model, Scale);
-        Shu::Rotate(Model, Shu::QuatAngleAxisDeg(RotationAngleDegrees, RotationAxis));
-        Shu::Translate(Model, Pos);
+        shu::Scale(Model, Scale);
+        shu::Rotate(Model, shu::QuatAngleAxisDeg(RotationAngleDegrees, RotationAxis));
+        shu::Translate(Model, Pos);
 
         return Model;
     }
 
     mat4f
-    TRS(const Shu::vec3f &Pos, const Shu::vec3f &Scale, const Shu::quat Rotation)
+    TRS(const shu::vec3f &Pos, const shu::vec3f &Scale, const shu::quat Rotation)
     {
-        Shu::mat4f Model = Shu::Mat4f(1.0f);
+        shu::mat4f Model = shu::Mat4f(1.0f);
 
-        Shu::Scale(Model, Scale);
-        Shu::Rotate(Model, Rotation);
-        Shu::Translate(Model, Pos);
+        shu::Scale(Model, Scale);
+        shu::Rotate(Model, Rotation);
+        shu::Translate(Model, Pos);
 
         return Model;
     }
@@ -50,12 +50,12 @@ namespace Shu
         f32 y = Q.complex.y; // ny*sin(theta / 2)
         f32 z = Q.complex.z; // nz*sin(theta / 2)
 
-        Shu::vec4f Row0 = Shu::Vec4f(1.0f - 2.0f*y*y - 2.0f*z*z,    2.0f*x*y + 2.0f*w*z,            2.0f*x*z - 2.0f*w*y,            0.0f);
-        Shu::vec4f Row1 = Shu::Vec4f(2.0f*x*y - 2.0f*w*z,           1.0f - 2.0f*x*x - 2.0f*z*z,     2.0f*y*z + 2.0f*w*x,            0.0f);
-        Shu::vec4f Row2 = Shu::Vec4f(2.0f*x*z + 2.0f*w*y,           2.0f*y*z - 2.0f*w*x,            1.0f - 2.0f*x*x - 2.0f*y*y,     0.0f);
-        Shu::vec4f Row3 = Shu::Vec4f(0.0f,                          0.0f,                           0.0f,                           1.0f);
+        shu::vec4f Row0 = shu::Vec4f(1.0f - 2.0f*y*y - 2.0f*z*z,    2.0f*x*y + 2.0f*w*z,            2.0f*x*z - 2.0f*w*y,            0.0f);
+        shu::vec4f Row1 = shu::Vec4f(2.0f*x*y - 2.0f*w*z,           1.0f - 2.0f*x*x - 2.0f*z*z,     2.0f*y*z + 2.0f*w*x,            0.0f);
+        shu::vec4f Row2 = shu::Vec4f(2.0f*x*z + 2.0f*w*y,           2.0f*y*z - 2.0f*w*x,            1.0f - 2.0f*x*x - 2.0f*y*y,     0.0f);
+        shu::vec4f Row3 = shu::Vec4f(0.0f,                          0.0f,                           0.0f,                           1.0f);
 
-        Shu::mat4f RotateMat = Shu::Mat4f(Row0, Row1, Row2, Row3);
+        shu::mat4f RotateMat = shu::Mat4f(Row0, Row1, Row2, Row3);
 
         Mat *= RotateMat;
         return Mat;
@@ -64,9 +64,9 @@ namespace Shu
     mat4f
     RotateGimbalLock(mat4f &Mat, const vec3f &Axis, f32 AngleInDegrees)
     {
-        f32 Cos = Shu::Cos(AngleInDegrees);
+        f32 Cos = shu::Cos(AngleInDegrees);
         f32 InvCos = 1.0f - Cos;
-        f32 Sin = Shu::Sin(AngleInDegrees);
+        f32 Sin = shu::Sin(AngleInDegrees);
         f32 InvSin = 1.0f - Sin;
 
         vec3f AxisNorm = Normalize(Axis);
@@ -110,7 +110,7 @@ namespace Shu
     {
         ASSERT(Aspect > 0.0f);
 
-        f32 const TanHalfFov = Shu::Tan(FOV / 2);
+        f32 const TanHalfFov = shu::Tan(FOV / 2);
 
         mat4f Result = Mat4f(0.0f);
         Result.m00 = 1.0f / (Aspect*TanHalfFov);

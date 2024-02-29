@@ -3,15 +3,15 @@
 
 // Sorted in ascending order of angle the vectors make with the reference point for convex hull.
 b32
-AngleComparator(const Shu::vec2f &a, const Shu::vec2f &b)
+AngleComparator(const shu::vec2f &a, const shu::vec2f &b)
 {
-    f32 angleA = Shu::TanInverse(a.y, a.x);
-    f32 angleB = Shu::TanInverse(b.y, b.x);
+    f32 angleA = shu::TanInverse(a.y, a.x);
+    f32 angleB = shu::TanInverse(b.y, b.x);
     b32 Result = angleA <= angleB;
     return Result;
 }
 
-convex_hull_2d::convex_hull_2d(Shu::vec3f *VertexPositions, i32 VertexCount)
+convex_hull_2d::convex_hull_2d(shu::vec3f *VertexPositions, i32 VertexCount)
 {
     f32 min = SHU_FLOAT_MAX;
 
@@ -34,7 +34,7 @@ convex_hull_2d::convex_hull_2d(Shu::vec3f *VertexPositions, i32 VertexCount)
         ReferenceIndex = 0;
     }
 
-    Shu::vec2f *SortedPoints = new Shu::vec2f[VertexCount];
+    shu::vec2f *SortedPoints = new shu::vec2f[VertexCount];
     SortedPoints[0] = VertexPositions[ReferenceIndex].xy;
     for (i32 i = 1; i < VertexCount; ++i)
     {
@@ -53,7 +53,7 @@ convex_hull_2d::convex_hull_2d(Shu::vec3f *VertexPositions, i32 VertexCount)
     // IMPORTANT: NOTE:
     // Graham's Algorithm/Scan to get the Convex Hull of the provided vertices. This will return a shape than
     // encloses all the points.
-    stack<Shu::vec2f> Stack{VertexCount, Shu::Vec2f(SHU_FLOAT_MIN, SHU_FLOAT_MIN)};
+    stack<shu::vec2f> Stack{VertexCount, shu::Vec2f(SHU_FLOAT_MIN, SHU_FLOAT_MIN)};
     Stack.push(SortedPoints[0]);
     Stack.push(SortedPoints[1]);
     Stack.push(SortedPoints[2]);
@@ -81,7 +81,7 @@ convex_hull_2d::convex_hull_2d(Shu::vec3f *VertexPositions, i32 VertexCount)
     }
 
     this->VertexCount = Stack.getSize();
-    this->Vertices = new Shu::vec2f[this->VertexCount];
+    this->Vertices = new shu::vec2f[this->VertexCount];
     for (int i = 0; i < this->VertexCount; ++i)
     {
         this->Vertices[i] = Stack.pop();

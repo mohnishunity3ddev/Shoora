@@ -30,7 +30,7 @@ shoora_shape_polygon::shoora_shape_polygon(shoora_mesh_type Type)
     : shoora_shape(Type)
 {
     this->VertexCount = MeshFilter->VertexCount;
-    this->WorldVertices = new Shu::vec3f[this->VertexCount];
+    this->WorldVertices = new shu::vec3f[this->VertexCount];
 }
 
 shoora_shape_polygon::shoora_shape_polygon(i32 MeshId, f32 Scale)
@@ -39,10 +39,10 @@ shoora_shape_polygon::shoora_shape_polygon(i32 MeshId, f32 Scale)
     this->Scale = Scale;
     this->VertexCount = MeshFilter->VertexCount;
     ASSERT(this->VertexCount != 0);
-    this->WorldVertices = new Shu::vec3f[this->VertexCount];
+    this->WorldVertices = new shu::vec3f[this->VertexCount];
 
     // TODO: Change this. Arbitrary polygons may not have their center of mass in their center.
-    this->mCenterOfMass = Shu::Vec3f(0.0f);
+    this->mCenterOfMass = shu::Vec3f(0.0f);
 }
 
 shoora_shape_polygon::~shoora_shape_polygon()
@@ -52,23 +52,23 @@ shoora_shape_polygon::~shoora_shape_polygon()
     this->WorldVertices = nullptr;
 }
 
-Shu::mat3f
+shu::mat3f
 shoora_shape_polygon::InertiaTensor() const
 {
     // TODO: Calculate real inertia tensor.
-    Shu::mat3f Result = Shu::Mat3f(5000.0f);
+    shu::mat3f Result = shu::Mat3f(5000.0f);
     return Result;
 }
 
-Shu::vec3f
+shu::vec3f
 shoora_shape_polygon::GetDim() const
 {
-    auto Result = Shu::Vec3f(Scale, Scale, 1.0f);
+    auto Result = shu::Vec3f(Scale, Scale, 1.0f);
     return Result;
 }
 
 void
-shoora_shape_polygon::UpdateWorldVertices(Shu::mat4f &ModelMatrix)
+shoora_shape_polygon::UpdateWorldVertices(shu::mat4f &ModelMatrix)
 {
     const auto *LocalVertices = MeshFilter->Vertices;
     for (u32 i = 0; i < this->VertexCount; ++i)
@@ -77,19 +77,19 @@ shoora_shape_polygon::UpdateWorldVertices(Shu::mat4f &ModelMatrix)
     }
 }
 
-Shu::vec3f
+shu::vec3f
 shoora_shape_polygon::GetEdgeAt(i32 Index)
 {
     ASSERT(Index < this->VertexCount);
     auto currentVertex = this->WorldVertices[Index];
     auto nextVertex = this->WorldVertices[(Index + 1) % this->VertexCount];
 
-    Shu::vec3f Result = nextVertex - currentVertex;
+    shu::vec3f Result = nextVertex - currentVertex;
     return Result;
 }
 
 i32
-shoora_shape_polygon::GetIncidentEdgeIndex(const Shu::vec2f &ReferenceEdgeNormal)
+shoora_shape_polygon::GetIncidentEdgeIndex(const shu::vec2f &ReferenceEdgeNormal)
 {
     i32 IncidentEdgeIndex = -1;
 
@@ -120,12 +120,12 @@ shoora_shape_polygon::GetNextVertexIndex(i32 EdgeIndex)
 }
 
 i32
-shoora_shape_polygon::ClipSegmentToLine(Shu::vec2f Contacts[2], Shu::vec2f Clipped[2], Shu::vec2f r0,
-                                        Shu::vec2f r1)
+shoora_shape_polygon::ClipSegmentToLine(shu::vec2f Contacts[2], shu::vec2f Clipped[2], shu::vec2f r0,
+                                        shu::vec2f r1)
 {
     i32 NumVertices = 0;
 
-    Shu::vec2f Normal = (r1 - r0).Normal();
+    shu::vec2f Normal = (r1 - r0).Normal();
     f32 Distance0 = (Contacts[0] - r0).Dot(Normal);
     f32 Distance1 = (Contacts[1] - r0).Dot(Normal);
 
@@ -143,7 +143,7 @@ shoora_shape_polygon::ClipSegmentToLine(Shu::vec2f Contacts[2], Shu::vec2f Clipp
         f32 TotalDistance = Distance0 - Distance1;
         f32 t = Distance0 / TotalDistance;
 
-        Shu::vec2f Clip = Contacts[0] + (Contacts[1] - Contacts[0]) * t;
+        shu::vec2f Clip = Contacts[0] + (Contacts[1] - Contacts[0]) * t;
         Clipped[NumVertices++] = Clip;
     }
 
@@ -172,7 +172,7 @@ shoora_shape_polygon::GetType() const
 // 4-> And we take the maximum of all these "minimums" when other normals are also tested for all vertices of b.
 // IMPORTANT: NOTE: if the separation is negative, then there was collision otherwise no collision.
 f32
-shoora_shape_polygon::FindMinSeparation(shoora_shape_polygon *Other, i32 &ReferenceEdgeIndex, Shu::vec2f &SupportPoint)
+shoora_shape_polygon::FindMinSeparation(shoora_shape_polygon *Other, i32 &ReferenceEdgeIndex, shu::vec2f &SupportPoint)
 {
     auto *MeshFilterA = this->GetMeshFilter();
     ASSERT(MeshFilterA != nullptr);
@@ -191,7 +191,7 @@ shoora_shape_polygon::FindMinSeparation(shoora_shape_polygon *Other, i32 &Refere
         auto Normal = EdgeA.Normal();
 
         f32 MinSeparation = SHU_FLOAT_MAX;
-        Shu::vec2f MinVertex;
+        shu::vec2f MinVertex;
         for (i32 j = 0; j < VertexCountB; ++j)
         {
             auto vB = Other->WorldVertices[j].xy;
@@ -218,7 +218,7 @@ shoora_shape_polygon::FindMinSeparation(shoora_shape_polygon *Other, i32 &Refere
 }
 
 shoora_bounds
-shoora_shape_polygon::GetBounds(const Shu::vec3f &Pos, const Shu::quat &Orientation) const
+shoora_shape_polygon::GetBounds(const shu::vec3f &Pos, const shu::quat &Orientation) const
 {
     // TODO)): Not implemented yet.
     shoora_bounds Result;
@@ -233,12 +233,12 @@ shoora_shape_polygon::GetBounds() const
     return Result;
 }
 
-Shu::vec3f
-shoora_shape_polygon::Support(const Shu::vec3f &Direction, const Shu::vec3f &Position,
-                              const Shu::quat &Orientation, const f32 Bias) const
+shu::vec3f
+shoora_shape_polygon::Support(const shu::vec3f &Direction, const shu::vec3f &Position,
+                              const shu::quat &Orientation, const f32 Bias) const
 {
     // TODO): TO BE IMPLEMENTED
-    Shu::vec3f Result;
+    shu::vec3f Result;
     return Result;
 }
 
@@ -249,7 +249,7 @@ shoora_shape_circle::shoora_shape_circle(f32 Radius)
     : shoora_shape(shoora_mesh_type::CIRCLE)
 {
     this->Radius = Radius;
-    this->mCenterOfMass = Shu::Vec3f(0.0f);
+    this->mCenterOfMass = shu::Vec3f(0.0f);
 }
 
 shoora_shape_circle::~shoora_shape_circle()
@@ -257,17 +257,17 @@ shoora_shape_circle::~shoora_shape_circle()
     LogUnformatted("shoora_shape_circle destructor called!\n");
 }
 
-Shu::mat3f
+shu::mat3f
 shoora_shape_circle::InertiaTensor() const
 {
-    Shu::mat3f Result = Shu::Mat3f(0.5f*this->Radius*this->Radius);
+    shu::mat3f Result = shu::Mat3f(0.5f*this->Radius*this->Radius);
     return Result;
 }
 
-Shu::vec3f
+shu::vec3f
 shoora_shape_circle::GetDim() const
 {
-    Shu::vec3f Result = Shu::Vec3f(this->Radius, this->Radius, 1.0f);
+    shu::vec3f Result = shu::Vec3f(this->Radius, this->Radius, 1.0f);
     return Result;
 }
 
@@ -278,7 +278,7 @@ shoora_shape_circle::GetType() const
 }
 
 shoora_bounds
-shoora_shape_circle::GetBounds(const Shu::vec3f &Pos, const Shu::quat &Orientation) const
+shoora_shape_circle::GetBounds(const shu::vec3f &Pos, const shu::quat &Orientation) const
 {
     // TODO)): Not implemented yet.
     shoora_bounds Result;
@@ -293,12 +293,12 @@ shoora_shape_circle::GetBounds() const
     return Result;
 }
 
-Shu::vec3f
-shoora_shape_circle::Support(const Shu::vec3f &Direction, const Shu::vec3f &Position, const Shu::quat &Orientation,
+shu::vec3f
+shoora_shape_circle::Support(const shu::vec3f &Direction, const shu::vec3f &Position, const shu::quat &Orientation,
                              const f32 Bias) const
 {
     // TODO): TO BE IMPLEMENTED
-    Shu::vec3f Result;
+    shu::vec3f Result;
     return Result;
 }
 
@@ -309,7 +309,7 @@ shoora_shape_sphere::shoora_shape_sphere(f32 Radius)
     : shoora_shape(shoora_mesh_type::SPHERE)
 {
     this->Radius = Radius;
-    this->mCenterOfMass = Shu::Vec3f(0.0f);
+    this->mCenterOfMass = shu::Vec3f(0.0f);
 }
 
 shoora_shape_sphere::~shoora_shape_sphere()
@@ -317,17 +317,17 @@ shoora_shape_sphere::~shoora_shape_sphere()
     LogUnformatted("shoora_shape_sphere destructor called!\n");
 }
 
-Shu::mat3f
+shu::mat3f
 shoora_shape_sphere::InertiaTensor() const
 {
-    Shu::mat3f Result = Shu::Mat3f(0.4f*this->Radius*this->Radius);
+    shu::mat3f Result = shu::Mat3f(0.4f*this->Radius*this->Radius);
     return Result;
 }
 
-Shu::vec3f
+shu::vec3f
 shoora_shape_sphere::GetDim() const
 {
-    Shu::vec3f Result = Shu::Vec3f(this->Radius, this->Radius, this->Radius);
+    shu::vec3f Result = shu::Vec3f(this->Radius, this->Radius, this->Radius);
     return Result;
 }
 
@@ -338,11 +338,11 @@ shoora_shape_sphere::GetType() const
 }
 
 shoora_bounds
-shoora_shape_sphere::GetBounds(const Shu::vec3f &Pos, const Shu::quat &Orientation) const
+shoora_shape_sphere::GetBounds(const shu::vec3f &Pos, const shu::quat &Orientation) const
 {
     shoora_bounds Result;
-    Result.Mins = Pos - Shu::Vec3f(this->Radius);
-    Result.Maxs = Pos + Shu::Vec3f(this->Radius);
+    Result.Mins = Pos - shu::Vec3f(this->Radius);
+    Result.Maxs = Pos + shu::Vec3f(this->Radius);
     return Result;
 }
 
@@ -350,16 +350,16 @@ shoora_bounds
 shoora_shape_sphere::GetBounds() const
 {
     shoora_bounds Result;
-    Result.Mins = Shu::Vec3f(-this->Radius);
-    Result.Maxs = Shu::Vec3f(this->Radius);
+    Result.Mins = shu::Vec3f(-this->Radius);
+    Result.Maxs = shu::Vec3f(this->Radius);
     return Result;
 }
 
-Shu::vec3f
-shoora_shape_sphere::Support(const Shu::vec3f &DirectionNormalized, const Shu::vec3f &Position,
-                             const Shu::quat &Orientation, const f32 Bias) const
+shu::vec3f
+shoora_shape_sphere::Support(const shu::vec3f &DirectionNormalized, const shu::vec3f &Position,
+                             const shu::quat &Orientation, const f32 Bias) const
 {
-    Shu::vec3f SupportPoint = Position + DirectionNormalized*(this->Radius + Bias);
+    shu::vec3f SupportPoint = Position + DirectionNormalized*(this->Radius + Bias);
     return SupportPoint;
 }
 
@@ -370,7 +370,7 @@ shoora_shape_box::shoora_shape_box(u32 Width, u32 Height) : shoora_shape_polygon
 {
     this->Width = Width;
     this->Height = Height;
-    this->mCenterOfMass = Shu::Vec3f(0.0f);
+    this->mCenterOfMass = shu::Vec3f(0.0f);
 }
 
 shoora_shape_box::~shoora_shape_box()
@@ -378,17 +378,17 @@ shoora_shape_box::~shoora_shape_box()
     LogUnformatted("shoora_shape_box destructor called!\n");
 }
 
-Shu::mat3f
+shu::mat3f
 shoora_shape_box::InertiaTensor() const
 {
-    Shu::mat3f Result = Shu::Mat3f((this->Width*this->Width + this->Height*this->Height) / 12.0f);
+    shu::mat3f Result = shu::Mat3f((this->Width*this->Width + this->Height*this->Height) / 12.0f);
     return Result;
 }
 
-Shu::vec3f
+shu::vec3f
 shoora_shape_box::GetDim() const
 {
-    Shu::vec3f Result = Shu::Vec3f(this->Width, this->Height, 1.0f);
+    shu::vec3f Result = shu::Vec3f(this->Width, this->Height, 1.0f);
     return Result;
 }
 
@@ -399,7 +399,7 @@ shoora_shape_box::GetType() const
 }
 
 shoora_bounds
-shoora_shape_box::GetBounds(const Shu::vec3f &Pos, const Shu::quat &Orientation) const
+shoora_shape_box::GetBounds(const shu::vec3f &Pos, const shu::quat &Orientation) const
 {
     // TODO)): Not implemented yet.
     shoora_bounds Result;
@@ -414,11 +414,11 @@ shoora_shape_box::GetBounds() const
     return Result;
 }
 
-Shu::vec3f
-shoora_shape_box::Support(const Shu::vec3f &Direction, const Shu::vec3f &Position, const Shu::quat &Orientation,
+shu::vec3f
+shoora_shape_box::Support(const shu::vec3f &Direction, const shu::vec3f &Position, const shu::quat &Orientation,
                           const f32 Bias) const
 {
     // TODO): TO BE IMPLEMENTED
-    Shu::vec3f Result;
+    shu::vec3f Result;
     return Result;
 }

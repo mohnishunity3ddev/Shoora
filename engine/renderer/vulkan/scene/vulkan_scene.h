@@ -20,7 +20,7 @@ struct shoora_scene
     shoora_scene();
     ~shoora_scene();
 
-    void AddMeshToScene(const Shu::vec3f *vPositions, u32 vCount);
+    void AddMeshToScene(const shu::vec3f *vPositions, u32 vCount);
 
     void AddConstraint2D(constraint_2d *Constraint);
     i32 GetConstraints2DCount();
@@ -28,27 +28,27 @@ struct shoora_scene
     // shoora_body *AddBody(const shoora_body &Body);
     shoora_body *AddBody(shoora_body &&Body);
 
-    shoora_body *AddCubeBody(const Shu::vec3f &Pos, const Shu::vec3f &Scale, u32 ColorU32, f32 Mass,
-                             f32 Restitution, const Shu::vec3f &EulerAngles = Shu::Vec3f(0.0f));
-    shoora_body *AddSphereBody(const Shu::vec3f &Pos, u32 ColorU32, f32 Radius, f32 Mass, f32 Restitution,
-                               const Shu::vec3f &EulerAngles = Shu::Vec3f(0.0f));
-    shoora_body *AddBoxBody(const Shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Height, f32 Mass, f32 Restitution,
-                            const Shu::vec3f &EulerAngles = Shu::Vec3f(0.0f));
-    shoora_body *AddCircleBody(const Shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 Mass, f32 Restitution,
-                               const Shu::vec3f &EulerAngles = Shu::Vec3f(0.0f));
-    shoora_body *AddPolygonBody(const u32 MeshId, const Shu::vec2f Pos, u32 ColorU32, f32 Mass, f32 Restitution,
-                                const Shu::vec3f &EulerAngles = Shu::Vec3f(0.0f), f32 Scale = 1.0f);
+    shoora_body *AddCubeBody(const shu::vec3f &Pos, const shu::vec3f &Scale, u32 ColorU32, f32 Mass,
+                             f32 Restitution, const shu::vec3f &EulerAngles = shu::Vec3f(0.0f));
+    shoora_body *AddSphereBody(const shu::vec3f &Pos, u32 ColorU32, f32 Radius, f32 Mass, f32 Restitution,
+                               const shu::vec3f &EulerAngles = shu::Vec3f(0.0f));
+    shoora_body *AddBoxBody(const shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Height, f32 Mass, f32 Restitution,
+                            const shu::vec3f &EulerAngles = shu::Vec3f(0.0f));
+    shoora_body *AddCircleBody(const shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 Mass, f32 Restitution,
+                               const shu::vec3f &EulerAngles = shu::Vec3f(0.0f));
+    shoora_body *AddPolygonBody(const u32 MeshId, const shu::vec2f Pos, u32 ColorU32, f32 Mass, f32 Restitution,
+                                const shu::vec3f &EulerAngles = shu::Vec3f(0.0f), f32 Scale = 1.0f);
 
     i32 GetBodyCount();
     shoora_body *GetBodies();
     shoora_body *GetBody(i32 Index);
 
-    void UpdateInput(const Shu::vec2f &CurrentMouseWorldPos);
+    void UpdateInput(const shu::vec2f &CurrentMouseWorldPos);
 
     void PhysicsUpdate(f32 dt, b32 DebugMode);
 
     void Draw(b32 Wireframe);
-    void DrawAxes(Shu::rect2d &Rect);
+    void DrawAxes(shu::rect2d &Rect);
 };
 
 #define VULKAN_SCENE_H

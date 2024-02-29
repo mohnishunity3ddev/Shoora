@@ -289,7 +289,7 @@ CreateSwapchainImageViews(shoora_vulkan_device *RenderDevice, shoora_vulkan_swap
 void
 SetupMultisampledColorResources(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain)
 {
-    Shu::vec2u ImageDim = Shu::Vec2u(Swapchain->ImageDimensions.width, Swapchain->ImageDimensions.height);
+    shu::vec2u ImageDim = shu::Vec2u(Swapchain->ImageDimensions.width, Swapchain->ImageDimensions.height);
     VkImageUsageFlags Usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
                               VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     VkFormat Format = Swapchain->SurfaceFormat.format;
@@ -303,7 +303,7 @@ SetupDepthStencil(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *S
 {
     shoora_vulkan_image *pImage = &Swapchain->DepthStencilImage;
 
-    Shu::vec2u Dim = Shu::vec2u{Swapchain->ImageDimensions.width, Swapchain->ImageDimensions.height};
+    shu::vec2u Dim = shu::vec2u{Swapchain->ImageDimensions.width, Swapchain->ImageDimensions.height};
 
     VkImageAspectFlags Aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
     if(Swapchain->DepthFormat >= VK_FORMAT_D16_UNORM_S8_UINT)
@@ -448,7 +448,7 @@ FreeDrawCommandBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapcha
 
 void
 WindowResized(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, VkRenderPass RenderPass,
-              Shu::vec2u ScreenDim)
+              shu::vec2u ScreenDim)
 {
     // TODO)): Will it be better to wait for all device operations to finish? or queue wait will suffice?
     VK_CHECK(vkQueueWaitIdle(GetQueueHandle(RenderDevice, QueueType_Graphics)));
@@ -517,7 +517,7 @@ WindowResized(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapc
 }
 
 void
-CreateSwapchain(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, Shu::vec2u ScreenDim,
+CreateSwapchain(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, shu::vec2u ScreenDim,
                 shoora_vulkan_swapchain_create_info *ShooraSwapchainInfo)
 {
     PrepareForSwapchainCreation(RenderDevice, Swapchain, ShooraSwapchainInfo);
@@ -727,7 +727,7 @@ CreateSwapchainUniformResources(shoora_vulkan_device *RenderDevice, shoora_vulka
     CreateDescriptorSetLayout(RenderDevice, &FragSamplerBinding, 1, &Swapchain->FragSamplersSetLayout);
     AllocateDescriptorSets(RenderDevice, Swapchain->UniformDescriptorPool, 1,
                            &Swapchain->FragSamplersSetLayout, &Swapchain->FragSamplersDescriptorSet);
-    
+
     VkDescriptorImageInfo ImageInfos[ARRAY_SIZE(Swapchain->FragImageSamplers)];
     for(u32 Index = 0;
         Index < ARRAY_SIZE(Swapchain->FragImageSamplers);

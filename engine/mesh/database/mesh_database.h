@@ -34,7 +34,7 @@ struct shoora_mesh
     shoora_mesh_filter MeshFilter;
     i32 VertexOffset, IndexOffset;
     shoora_mesh_type Type;
-    
+
     shoora_mesh_info GetInfo()
     {
         shoora_mesh_info Result;
@@ -50,7 +50,7 @@ struct shoora_mesh_database
     static void Destroy();
 
     static void MeshDbBegin(shoora_vulkan_device *RenderDevice);
-    static void AddPolygonMeshToDb(const Shu::vec3f *vPositions, i32 vCount);
+    static void AddPolygonMeshToDb(const shu::vec3f *vPositions, i32 vCount);
     static void MeshDbEnd();
 
     static shoora_mesh *GetMesh(shoora_mesh_type Type);

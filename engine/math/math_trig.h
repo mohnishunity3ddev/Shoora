@@ -3,7 +3,7 @@
 
 #include "defines.h"
 
-namespace Shu
+namespace shu
 {
     inline f32
     Sin(f32 Degrees)

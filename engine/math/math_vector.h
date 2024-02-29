@@ -4,7 +4,7 @@
 #include "math_trig.h"
 #include <cmath>
 
-namespace Shu
+namespace shu
 {
     template <typename T> struct vec3;
 
@@ -65,7 +65,7 @@ namespace Shu
     template <typename T> SHU_EXPORT vec2f Normalize(const vec2<T> &A);
 
     // ----------------------------------------------------------------------------------------------------------------
-    
+
     template<typename T>
     struct vec3
     {
@@ -414,7 +414,7 @@ namespace Shu
     vec2<T>
     vec2<T>::Normal() const
     {
-        vec2<T> Result = Shu::Normalize(Shu::Vec2<T>(-this->y, this->x));
+        vec2<T> Result = shu::Normalize(shu::Vec2<T>(-this->y, this->x));
         return Result;
     }
 
@@ -636,7 +636,7 @@ namespace Shu
     vec3<T>
     vec3<T>::Cross(const vec3<T> &A) const
     {
-        vec3<T> Result = Shu::Cross(*this, A);
+        vec3<T> Result = shu::Cross(*this, A);
         return Result;
     }
 
@@ -863,7 +863,7 @@ namespace Shu
     vec3<T>::Normalize()
     {
         // NOTE: Change this to use ouw own Square Root function
-        *this = Shu::Normalize(*this);
+        *this = shu::Normalize(*this);
     }
 
     template <typename T>

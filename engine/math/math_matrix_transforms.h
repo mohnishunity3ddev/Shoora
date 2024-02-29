@@ -5,22 +5,22 @@
 #include "math_matrix.h"
 #include "math_quaternion.h"
 
-namespace Shu
+namespace shu
 {
     template <typename T> SHU_EXPORT mat4<T> Translate(mat4<T> &Mat, const vec3<T> &Tv);
     template <typename T> SHU_EXPORT mat4<T> Scale(mat4<T> &Mat, const vec3<T> &Sv);
 
-    SHU_EXPORT mat4f TRSInverse(const Shu::vec3f &Pos, const Shu::vec3f &Scale,
-                                const f32 RotationAngleDegrees, const Shu::vec3f &RotationAxis);
-    SHU_EXPORT mat4f TRS(const Shu::vec3f &Pos, const Shu::vec3f &Scale, const f32 RotationAngle,
-                         const Shu::vec3f &RotationAxis);
-    SHU_EXPORT mat4f TRS(const Shu::vec3f &Pos, const Shu::vec3f &Scale, const Shu::quat Rotation);
+    SHU_EXPORT mat4f TRSInverse(const shu::vec3f &Pos, const shu::vec3f &Scale,
+                                const f32 RotationAngleDegrees, const shu::vec3f &RotationAxis);
+    SHU_EXPORT mat4f TRS(const shu::vec3f &Pos, const shu::vec3f &Scale, const f32 RotationAngle,
+                         const shu::vec3f &RotationAxis);
+    SHU_EXPORT mat4f TRS(const shu::vec3f &Pos, const shu::vec3f &Scale, const shu::quat Rotation);
     SHU_EXPORT mat4f RotateGimbalLock(mat4f &Mat, const vec3f &Axis, f32 AngleInDegrees);
     SHU_EXPORT mat4f Rotate(mat4f &Mat, const quat &Q);
     SHU_EXPORT mat4f LookAt(const vec3f &CamPos, const vec3f &LookingTowards, const vec3f WorldUp, mat4f &M);
     SHU_EXPORT mat4f Perspective(f32 FOVy, f32 Aspect, f32 ZNear, f32 ZFar);
     SHU_EXPORT mat4f Orthographic(f32 Width, f32 Height, f32 Near, f32 Far);
-    
+
     template <typename T>
     mat4<T>
     Translate(mat4<T> &Mat, const vec3<T> &Tv)

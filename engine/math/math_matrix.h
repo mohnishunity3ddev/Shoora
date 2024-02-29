@@ -6,7 +6,7 @@
 #include "math_trig.h"
 #include "platform/platform.h"
 
-namespace Shu
+namespace shu
 {
 #if 0
     enum matrix_type
