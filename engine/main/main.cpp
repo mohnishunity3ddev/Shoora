@@ -447,6 +447,17 @@ LogOutput(LogType LogType, const char *Format, ...)
 }
 
 void
+Platform_GenerateString(char *Buffer, u32 BufferSize, const char *Format, ...)
+{
+    va_list VarArgs;
+    va_start(VarArgs, Format);
+
+    vsnprintf(Buffer, BufferSize, Format, VarArgs);
+
+    va_end(VarArgs);
+}
+
+void
 Log_(LogType Type, const char *Format, va_list VarArgs)
 {
     char Buffer[4096];

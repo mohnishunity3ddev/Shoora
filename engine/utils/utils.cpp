@@ -92,6 +92,18 @@ StringConcat(const char *A, const char *B, char *Out)
 }
 
 void
+StringConcat(char *A, const char *B)
+{
+    u32 Index = 0;
+
+    u32 sIndex = 0;
+    while(B[sIndex] != '\0')
+    {
+        A[Index++] = B[sIndex++];
+    }
+}
+
+void
 StringNCopy(const char *Src, char *Dst, i32 Num)
 {
     i32 Index = 0;

@@ -1,4 +1,5 @@
 #if !defined(UTILS_H)
+#define UTILS_H
 
 #include <defines.h>
 #include "sort/sort.h"
@@ -24,8 +25,9 @@ struct colorU32
 u32 GetMaxValueIndex(u32 *NumsArray, u32 NumsCount);
 u32 LogBase2(u32 Num);
 
-u32 StringLength(char *A);
+u32 StringLength(const char *A);
 void StringConcat(const char *A, const char *B, char *Out);
+void StringConcat(char *A, const char *B);
 void StringNCopy(const char *Src, char *Dst, i32 Num);
 void StringCopy(const char *Src, char *Dst);
 
@@ -36,5 +38,108 @@ b32 StringsEqual(const char *A, const char *B);
 shu::vec3f GetColor(u32 Col);
 u32 GetColorU32(const shu::vec3f &Color);
 
-#define UTILS_H
+#if _SHU_DEBUG
+
+#include <type_traits>
+#include <cstring>
+
+template <typename T>
+void
+GetFormatSpecifier(char *Buffer, T Value)
+{
+    if constexpr (std::is_same_v<T, int>) { StringCopy("%d", Buffer); }
+    else if constexpr (std::is_same_v<T, unsigned int>) { StringCopy("%u", Buffer); }
+    else if constexpr (std::is_same_v<T, long>) { StringCopy("%ld", Buffer); }
+    else if constexpr (std::is_same_v<T, unsigned long>) { StringCopy("%lu", Buffer); }
+    else if constexpr (std::is_same_v<T, long long>) { StringCopy("%lld", Buffer); }
+    else if constexpr (std::is_same_v<T, unsigned long long>) { StringCopy("%llu", Buffer); }
+    else if constexpr (std::is_same_v<T, float>) { StringCopy("%f", Buffer); }
+    else if constexpr (std::is_same_v<T, double>) { StringCopy("%lf", Buffer); }
+    else if constexpr (std::is_same_v<T, char>) { StringCopy("%c", Buffer); }
+    else if constexpr (std::is_same_v<T, const char *>) { StringCopy("%s", Buffer); }
+    else if constexpr (std::is_pointer_v<T>) { StringCopy("%p", Buffer); }
+    else { SHU_INVALID_CODEPATH; }
+}
+
+struct templated_log_string
+{
+  private:
+    char Buffer[4096];
+    i32 Index;
+
+  public:
+    templated_log_string() : Index(0) {}
+
+    templated_log_string& operator<<(const char *Rhs)
+    {
+        StringConcat(Buffer + Index, Rhs);
+        Index += StringLength(Rhs);
+        return *this;
+    }
+
+    template <typename T>
+    templated_log_string& operator<<(const T& Rhs)
+    {
+        char FormatSpec[5];
+        GetFormatSpecifier(FormatSpec, Rhs);
+
+        StringConcat(Buffer + Index, FormatSpec);
+        Index += StringLength(FormatSpec);
+        return *this;
+    }
+
+    char *ToString()
+    {
+        Buffer[Index] = '\0';
+        Index = 0;
+        return Buffer;
+    }
+};
+typedef templated_log_string templateString;
+
+// Base case: when there's only one argument left
+template <typename T>
+const char *
+AccumulateTlsString(templateString &Tls, T arg)
+{
+    Tls << arg;
+    return Tls.ToString();
+}
+
+template <typename T, typename... VarArgs>
+void
+AccumulateTlsString(templateString &Tls, T FirstArg, VarArgs... Args)
+{
+    Tls << FirstArg;
+    AccumulateTlsString(Tls, Args...);
+}
+
+#define TemplatedLogString(Buffer, ...)                                                                           \
+    do                                                                                                            \
+    {                                                                                                             \
+        tls Tls;                                                                                                  \
+        AccumulateTlsString(Tls, __VA_ARGS__);                                                                    \
+        StringCopy(Tls.ToString(), Buffer);                                                                       \
+    } while (0)
+
+#define TemplatedLog(LogFunc, s1, v1)                                                                             \
+    do                                                                                                            \
+    {                                                                                                             \
+        char FormatSpecifier[5];                                                                                  \
+        GetFormatSpecifier(FormatSpecifier, v1);                                                                  \
+                                                                                                                  \
+        char Buffer2[4096];                                                                                       \
+        char FormatString[4098];                                                                                  \
+        StringConcat(s1, "%s", FormatString);                                                                     \
+        Platform_GenerateString(Buffer2, ARRAY_SIZE(Buffer2), FormatString, FormatSpecifier);                     \
+                                                                                                                  \
+        LogFunc(Buffer2, v1);                                                                                     \
+    } while (0)
+
+#elif
+#define TemplatedLog(LogFunc, s1, v1)
+#define TemplatedLogString(Buffer, ...)
+
+#endif
+
 #endif // UTILS_H

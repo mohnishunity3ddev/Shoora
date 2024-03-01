@@ -106,6 +106,9 @@ SHU_EXPORT void LogTraceUnformatted(const char *Message);
 
 SHU_EXPORT void LogString(const char *String);
 
+SHU_EXPORT void Platform_GenerateString(char *Buffer, u32 BufferSize, const char *Format, ...);
+SHU_EXPORT void Platform_FreeMemory(void *Memory);
+
 SHU_EXPORT void Platform_ExitApplication(const char *Reason);
 SHU_EXPORT void Platform_Sleep(u32 ms);
 SHU_EXPORT b8 Platform_GetKeyInputState(u8 KeyCode, KeyState State);
