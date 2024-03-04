@@ -2,28 +2,28 @@
 #include <platform/platform.h>
 #include <utils/utils.h>
 
-#if _SHU_DEBUG
-static templateString Tls;
-#endif
-
 template <typename T>
-singly_linked_list_node<T>::singly_linked_list_node(T value)
+singly_linked_list_node<T>::singly_linked_list_node(T data)
+    : data(data), next(nullptr)
 {
-    this->value = value;
-    this->next = nullptr;
 }
 
 template<typename T>
-singly_linked_list_node<T>::singly_linked_list_node(T val, singly_linked_list_node<T> *nextPtr)
+singly_linked_list_node<T>::singly_linked_list_node(T data, singly_linked_list_node<T> *nextPtr)
+    : data(data), next(nextPtr)
 {
-    this->value = val;
-    this->next = nextPtr;
 }
 
 template <typename T>
 singly_linked_list_node<T>::~singly_linked_list_node()
 {
     LogInfo("ll_node destructor called!\n");
+}
+
+template<typename T>
+singly_linked_list<T>::singly_linked_list()
+    : head(nullptr), tail(nullptr), numItems(0)
+{
 }
 
 template <typename T>
@@ -37,7 +37,7 @@ template <typename T>
 b32
 singly_linked_list<T>::IsEmpty()
 {
-    bool result = ((head == nullptr) && (size == 0));
+    bool result = ((head == nullptr) && (numItems == 0));
     return result;
 }
 
@@ -49,7 +49,7 @@ singly_linked_list<T>::Add(T val)
     if (IsEmpty())
     {
         head = n;
-        size = 1;
+        numItems = 1;
         tail = head;
     }
     else
@@ -57,20 +57,47 @@ singly_linked_list<T>::Add(T val)
         ASSERT(tail != nullptr && tail->next == nullptr);
         tail->next = n;
         tail = n;
-        size++;
+        numItems++;
     }
 }
 
 template <typename T>
 void
+singly_linked_list<T>::Insert(node *PreviousNode, node *NewNode)
+{
+    if(PreviousNode == nullptr) {
+        // new node is the new head of the linked list.
+        if(head != nullptr) {
+            NewNode->next = head;
+        } else {
+            NewNode->next = nullptr;
+        }
+        head = NewNode;
+    }
+    else {
+        if(PreviousNode->next == nullptr) {
+            PreviousNode->next = NewNode;
+            NewNode->next = nullptr;
+        } else {
+            NewNode->next = PreviousNode->next;
+            PreviousNode->next = NewNode;
+        }
+    }
+
+    ++this->numItems;
+}
+
+
+template <typename T>
+void
 singly_linked_list<T>::AddAt(i32 index, T val)
 {
-    if (index >= size || index < 0)
+    if (index >= numItems || index < 0)
     {
 #if _SHU_DEBUG
-        Tls << "Out of bounds access. The list has only " << size << " items and you are trying to access "
+        Tls << "Out of bounds access. The list has only " << numItems << " items and you are trying to access "
             << index << " index.\n";
-        LogInfo(Tls.ToString(), size, index);
+        LogInfo(Tls.ToString(), numItems, index);
 #endif
         return;
     }
@@ -98,12 +125,12 @@ template <typename T>
 void
 singly_linked_list<T>::Update(i32 index, T val)
 {
-    if (index >= size || index < 0)
+    if (index >= numItems || index < 0)
     {
 #if _SHU_DEBUG
-        Tls << "Out of bounds access. The list has only " << size << " items and you are trying to access "
+        Tls << "Out of bounds access. The list has only " << numItems << " items and you are trying to access "
             << index << " index.\n";
-        LogInfo(Tls.ToString(), size, index);
+        LogInfo(Tls.ToString(), numItems, index);
 #endif
 
         return;
@@ -115,23 +142,25 @@ singly_linked_list<T>::Update(i32 index, T val)
         c = c->next;
     }
     ASSERT(c != nullptr);
-    c->value = val;
+    c->data = val;
 }
 
 template <typename T>
 void
 singly_linked_list<T>::RemoveAt(i32 index)
 {
-    if (index >= size || index < 0)
-    {
 #if _SHU_DEBUG
-        Tls << "Trying to Remove at index " << index << ".\n";
-        LogInfo(Tls.ToString(), index);
-        Tls << "Out of bounds access. The list has only " << size << " items and you are trying to access "
-            << index << " index.\n";
-        LogInfo(Tls.ToString(), size, index);
+    Tls << "Trying to Remove at index " << index << ".\n";
+    LogInfo(Tls.ToString(), index);
 #endif
 
+    if (index >= numItems || index < 0)
+    {
+#if _SHU_DEBUG
+        Tls << "Out of bounds access. The list has only " << numItems << " items and you are trying to access "
+            << index << " index.\n";
+        LogInfo(Tls.ToString(), numItems, index);
+#endif
         return;
     }
 
@@ -140,9 +169,9 @@ singly_linked_list<T>::RemoveAt(i32 index)
     {
         node *n = head;
         head = head->next;
-        T value = n->value;
+        T data = n->data;
         delete n;
-        size--;
+        numItems--;
         if (head == nullptr)
         {
             tail = nullptr;
@@ -158,11 +187,31 @@ singly_linked_list<T>::RemoveAt(i32 index)
         c = c->next;
     }
 
-    T val = c->value;
+    T val = c->data;
     node *n = c;
     p->next = c->next;
     delete n;
-    size--;
+    numItems--;
+}
+
+template <typename T>
+void
+singly_linked_list<T>::Remove(node *PreviousNode, node *ToDeleteNode)
+{
+    if (PreviousNode == nullptr)
+    {
+        if (ToDeleteNode->next == nullptr) {
+            head = nullptr;
+        } else {
+            head = ToDeleteNode->next;
+        }
+    }
+    else
+    {
+        PreviousNode->next = ToDeleteNode->next;
+    }
+
+    --this->numItems;
 }
 
 template <typename T>
@@ -172,7 +221,7 @@ singly_linked_list<T>::Remove(T val)
     node *c = head;
     node *p = c;
 
-    while (c != nullptr && c->value != val)
+    while (c != nullptr && c->data != val)
     {
         p = c;
         c = c->next;
@@ -190,7 +239,7 @@ singly_linked_list<T>::Remove(T val)
     node *n = c;
     p->next = c->next;
     delete n;
-    size--;
+    numItems--;
 
 #if _SHU_DEBUG
     Tls << "removed " << val << ".\n";
@@ -203,7 +252,7 @@ template <typename T>
 i32
 singly_linked_list<T>::GetCount()
 {
-    return size;
+    return numItems;
 }
 
 template <typename T>
@@ -216,14 +265,14 @@ singly_linked_list<T>::Display()
         LogInfo("the list is empty!\n");
         return;
     }
-    // LogInfo "list with size " << size << " is ";
+    // LogInfo "list with numItems " << numItems << " is ";
     LogInfo("Head");
     node *c = head;
     while (c != nullptr)
     {
 #if _SHU_DEBUG
-        Tls << " ==> " << c->value;
-        LogInfo(Tls.ToString(), c->value);
+        Tls << " ==> " << c->data;
+        LogInfo(Tls.ToString(), c->data);
 #endif
 
         c = c->next;
@@ -242,6 +291,6 @@ singly_linked_list<T>::Clear()
         c = c->next;
         delete n;
     }
-    size = 0;
+    numItems = 0;
     head = nullptr;
 }

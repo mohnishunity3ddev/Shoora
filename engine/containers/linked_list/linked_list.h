@@ -5,11 +5,11 @@
 template <typename T>
 struct singly_linked_list_node
 {
-    T value;
+    T data;
     singly_linked_list_node *next;
 
-    singly_linked_list_node(T value);
-    singly_linked_list_node(T val, singly_linked_list_node *nextPtr);
+    singly_linked_list_node(T data);
+    singly_linked_list_node(T data, singly_linked_list_node *nextPtr);
 
     ~singly_linked_list_node();
 };
@@ -18,15 +18,17 @@ struct singly_linked_list_node
 template <typename T>
 struct singly_linked_list
 {
-    node *head = nullptr;
-    node *tail = nullptr;
-    i32 size = 0;
+    node *head;
+    node *tail;
+    i32 numItems;
 
-    singly_linked_list() = default;
+    explicit singly_linked_list();
     ~singly_linked_list();
 
     b32 IsEmpty();
     void Add(T val);
+    void Insert(node *previousNode, node *newNode);
+    void Remove(node *previousNode, node *toDeleteNode);
     void AddAt(i32 index, T val);
     void Update(i32 index, T val);
     void RemoveAt(i32 index);
