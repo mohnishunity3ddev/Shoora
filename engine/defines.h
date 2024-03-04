@@ -39,6 +39,11 @@ typedef double f64;
 #define SHU_PIXELS_PER_METER 100.0f
 #define FPS_CAPPING_ENABLED 0
 
+#define KILOBYTES(Val) (Val) * 1024
+#define MEGABYTES(Val) KILOBYTES((Val)) * 1024
+#define GIGABYTES(Val) MEGABYTES((Val)) * 1024
+#define TERABYTES(Val) GIGABYTES((Val)) * 1024
+
 #define SHU_INT_MIN (i32)1 << 31
 
 #define USE_CPP_ATOMIC 0
@@ -198,14 +203,41 @@ ClampToRange(T Value, T Min, T Max)
     return Value;
 }
 
+// NOTE: Only works for power of 2 alignments.
 inline u64
-AlignAs(u64 Number, u32 AlignAs)
+AlignAsPow2(u64 Number, u64 Alignment)
 {
     u64 Result;
-    u64 AlignmentMask = (u64)(AlignAs - 1);
+    u64 AlignmentMask = (u64)(Alignment - 1);
     Result = (Number + AlignmentMask) & (~AlignmentMask);
     return Result;
 }
+
+inline u64
+AlignAsGeneric(u64 Number, u64 Alignment)
+{
+    u64 Result = Number;
+    if(Alignment != 0)
+    {
+        if(Number % Alignment != 0)
+        {
+            Result = Alignment * ((Number / Alignment) + 1);
+        }
+    }
+
+    return Result;
+}
+
+// NOTE: Only works for power of 2 alignments.
+inline u64
+NextAlignAsPow2(u64 Number, u64 Alignment)
+{
+    u64 Result = AlignAsPow2(Number + 1, Alignment);
+    ASSERT(Result > Number);
+    return Result;
+}
+
+
 
 template<typename T>
 struct interval {
