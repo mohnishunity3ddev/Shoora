@@ -364,15 +364,15 @@ void
 OutputDebugStringColor(LogType LogType, const char *message)
 {
     static COLORREF Colors[] = {RGB(255, 0, 0), RGB(0, 255, 0), RGB(0, 0, 255), RGB(242, 188, 47),
-                                RGB(40, 130, 255), RGB(128, 128, 128), RGB(96, 96, 96)};
+                                RGB(40, 130, 255), RGB(128, 128, 128), RGB(96, 96, 96), RGB(255, 255, 0)};
     COLORREF Color = Colors[4];
     switch(LogType)
     {
         case LogType_DebugReportCallbackInfo:
         {
             Color = Colors[6];
-        }
-        break;
+        } break;
+        case LogType_Trace:
         case LogType_ValidationLayerInfo:
         {
             Color = Colors[5];
@@ -384,11 +384,16 @@ OutputDebugStringColor(LogType LogType, const char *message)
         } break;
         case LogType_Warn:
         {
-            Color = Colors[3];
+            Color = Colors[ARRAY_SIZE(Colors) - 1];
         } break;
         case LogType_Info:
+        {
+            Color = Colors[1];
+        } break;
         case LogType_Debug:
-        case LogType_Trace:
+        {
+            Color = RGB(0, 255, 255);
+        } break;
         default:
         {
         } break;
