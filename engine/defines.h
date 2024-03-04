@@ -209,7 +209,11 @@ AlignAsPow2(u64 Number, u64 Alignment)
 {
     u64 Result;
     u64 AlignmentMask = (u64)(Alignment - 1);
-    Result = (Number + AlignmentMask) & (~AlignmentMask);
+    if(Number & AlignmentMask)
+    {
+        u64 Offset = Alignment - (Number & AlignmentMask);
+        Result += Offset;
+    }
     return Result;
 }
 

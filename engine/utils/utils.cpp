@@ -169,3 +169,35 @@ StringSubString(const char *SrcString, u32 StartIndex, u32 EndIndex, char *OutSt
 
     OutString[EndIndex - StartIndex + 1] = '\0';
 }
+
+b32
+IsPow2(size_t Num)
+{
+    ASSERT(Num > 0);
+
+    if(Num == 1) return true;
+
+    size_t Accum = 2;
+    while(Accum < Num)
+    {
+        Accum *= 2;
+    }
+
+    return Accum == Num;
+}
+
+#if _SHU_DEBUG
+void
+IsPow2Test(size_t MaxRange)
+{
+    LogInfo("Powers of 2 between 1 and %zu are: \n", MaxRange);
+    for (size_t i = 1; i < MaxRange; ++i)
+    {
+        if (IsPow2(i))
+        {
+            LogDebug("%zu, ", i);
+        }
+    }
+    LogInfoUnformatted("\n");
+}
+#endif

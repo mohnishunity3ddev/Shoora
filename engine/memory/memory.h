@@ -1,64 +1,40 @@
 #if !defined(MEMORY_H)
+#define MEMORY_H
 
 #include <defines.h>
-#include <containers/linked_list/linked_list.h>
-
-enum allocator_type
-{
-    FREE_LIST_ALLOCATOR,
-    STACK_ALLOCATOR,
-    LINEAR_ALLOCATOR,
-};
+#include "freelist_allocator.h"
 
 struct memory_arena
 {
-    void *Memory;
-    size_t TotalSize;
+    void *Base;
+    size_t Used = 0;
+    size_t Size = 0;
+
+    u32 StacksCount = 0;
 };
 
-#define flNode singly_linked_list_node<freelist_allocator::free_block_header>
-struct freelist_allocator
+struct stack_memory
 {
-    explicit freelist_allocator() : Memory(nullptr), TotalSize(0) {}
-    explicit freelist_allocator(void *Mem, size_t Size) { Initialize(Mem, Size); }
-
-    void Initialize(void *Memory, size_t Size);
-    void *Allocate(size_t Size, const size_t Alignment = 8);
-    void Free(void *Memory);
-
-    struct free_block_header
-    {
-        size_t BlockSize;
-    };
-
-    struct allocation_header
-    {
-        size_t AlignmentPadding;
-        size_t BlockSize;
-    };
-    const size_t AllocationHeaderSize = sizeof(allocation_header);
-
-  private:
-#if _SHU_DEBUG
-  public:
-    size_t DEBUGGetRemainingSpace();
-    singly_linked_list<free_block_header> Freelist;
-  private:
-#else
-    singly_linked_list<free_block_header> Freelist;
-#endif
-
-    void FirstFit(const size_t &Alignment, const size_t &RequiredSize, size_t &Padding, flNode **FoundNode,
-                  flNode **PreviousNode);
-    void *Memory = nullptr;
-    size_t TotalSize = 0;
-    b32 IsInitialized = false;
+    memory_arena *Arena;
+    size_t ArenaUsedAtBegin;
 };
 
+void InitializeArena(memory_arena *Arena, size_t Size, void *BasePtr);
+size_t GetArenaSizeRemaining(memory_arena *Arena, size_t Alignment = 4);
+stack_memory BeginStackMemory(memory_arena *Arena);
+void EndStackMemory(stack_memory TempMemory);
+void ValidateArena(memory_arena *Arena);
+void SubArena(memory_arena *Result, memory_arena *Arena, size_t Size, size_t Alignment = 16);
+
+void *ShuAllocate_(memory_arena *Arena, size_t SizeInit, size_t Alignment = 4);
+char *ShuAllocateString(memory_arena *Arena, const char *Source);
+
+#define ShuAllocate(Arena, Size, ...) ShuAllocate_(Arena, Size, __VA_ARGS__)
+#define ShuAllocateStruct(Arena, Type, ...) (Type *)ShuAllocate_(Arena, sizeof(Type), __VA_ARGS__)
+#define ShuAllocateArray(Arena, Count, Type, ...) (Type *)ShuAllocate_(Arena, sizeof(Type)*Count, __VA_ARGS__)
+
 #if _SHU_DEBUG
-void freelist_allocator_test();
-void memory_utils_test();
+void memoryTest();
 #endif
 
-#define MEMORY_H
 #endif // MEMORY_H

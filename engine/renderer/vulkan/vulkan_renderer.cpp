@@ -669,6 +669,7 @@ InitializeLightData()
     GlobalFragUniformData.SpotlightData.Intensity = 5.0f;
 }
 
+#include <memory/memory.h>
 void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
 {

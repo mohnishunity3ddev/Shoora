@@ -38,10 +38,16 @@ b32 StringsEqual(const char *A, const char *B);
 shu::vec3f GetColor(u32 Col);
 u32 GetColorU32(const shu::vec3f &Color);
 
+b32 IsPow2(size_t Num);
+
 #if _SHU_DEBUG
+
+#define ASSERTPow2(Num) ASSERT(IsPow2((Num)))
 
 #include <type_traits>
 #include <cstring>
+
+void IsPow2Test(size_t MaxRange);
 
 template <typename T>
 void
@@ -141,7 +147,7 @@ static templateString Tls;
 #elif
 #define TemplatedLog(LogFunc, s1, v1)
 #define TemplatedLogString(Buffer, ...)
-
+#define ASSERTPow2(Num)
 #endif
 
 #endif // UTILS_H
