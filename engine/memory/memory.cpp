@@ -74,6 +74,8 @@ ShuAllocate_(memory_arena *Arena, size_t SizeInit, size_t Alignment)
     return Result;
 }
 
+
+
 char *
 ShuAllocateString(memory_arena *Arena, const char *Source)
 {
@@ -85,13 +87,58 @@ ShuAllocateString(memory_arena *Arena, const char *Source)
     return Dest;
 }
 
+static task_with_memory TaskMemories[MAX_TASK_MEMORY_COUNT];
+
+void
+InitializeTaskMemories(memory_arena *Arena)
+{
+    for (i32 TaskIndex = 0;
+         TaskIndex < MAX_TASK_MEMORY_COUNT;
+         ++TaskIndex)
+    {
+        task_with_memory *Task = TaskMemories + TaskIndex;
+        Task->BeingUsed = false;
+        Task->StackMemory = {};
+        SubArena(&Task->Arena, Arena, MEGABYTES(4));
+    }
+}
+
+task_with_memory *
+GetTaskMemory()
+{
+    task_with_memory *FreeTask = nullptr;
+    for (i32 i = 0; i < MAX_TASK_MEMORY_COUNT; ++i)
+    {
+        task_with_memory *Task = TaskMemories + i;
+        if(!Task->BeingUsed)
+        {
+            FreeTask = Task;
+            ASSERT(FreeTask->Arena.Used == 0);
+            FreeTask->StackMemory = BeginStackMemory(&FreeTask->Arena);
+            break;
+        }
+    }
+
+    return FreeTask;
+}
+
+void
+FreeTaskMemory(task_with_memory *Task)
+{
+    EndStackMemory(Task->StackMemory);
+    ASSERT(Task->Arena.StacksCount == 0);
+
+    CompletePastWritesBeforeFutureWrites;
+    Task->BeingUsed = false;
+}
+
 #if _SHU_DEBUG
 void
 memoryTest()
 {
     size_t MemSize = MEGABYTES(256);
     void *Memory = malloc(MemSize);
-    
+
     memory_arena Arena;
     InitializeArena(&Arena, MemSize, Memory);
 
@@ -114,3 +161,5 @@ memoryTest()
     free(Memory);
 }
 #endif
+
+

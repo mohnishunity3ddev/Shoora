@@ -33,6 +33,19 @@ char *ShuAllocateString(memory_arena *Arena, const char *Source);
 #define ShuAllocateStruct(Arena, Type, ...) (Type *)ShuAllocate_(Arena, sizeof(Type), __VA_ARGS__)
 #define ShuAllocateArray(Arena, Count, Type, ...) (Type *)ShuAllocate_(Arena, sizeof(Type)*Count, __VA_ARGS__)
 
+#define MAX_TASK_MEMORY_COUNT 4
+struct task_with_memory
+{
+    b32 BeingUsed;
+    memory_arena Arena;
+    // NOTE: This is used to reset the Arena after a thread is done with its work.
+    stack_memory StackMemory;
+};
+
+void InitializeTaskMemories(memory_arena *Arena);
+task_with_memory *GetTaskMemory();
+void FreeTaskMemory(task_with_memory *Task);
+
 #if _SHU_DEBUG
 void memoryTest();
 #endif
