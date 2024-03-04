@@ -136,6 +136,8 @@ AccumulateTlsString(templateString &Tls, T FirstArg, VarArgs... Args)
         LogFunc(Buffer2, v1);                                                                                     \
     } while (0)
 
+static templateString Tls;
+
 #elif
 #define TemplatedLog(LogFunc, s1, v1)
 #define TemplatedLogString(Buffer, ...)
