@@ -10,10 +10,10 @@ struct memory_arena
     size_t Used = 0;
     size_t Size = 0;
 
-    u32 StacksCount = 0;
+    u32 TempMemoryCount = 0;
 };
 
-struct stack_memory
+struct temporary_memory
 {
     memory_arena *Arena;
     size_t ArenaUsedAtBegin;
@@ -21,8 +21,8 @@ struct stack_memory
 
 void InitializeArena(memory_arena *Arena, size_t Size, void *BasePtr);
 size_t GetArenaSizeRemaining(memory_arena *Arena, size_t Alignment = 4);
-stack_memory BeginStackMemory(memory_arena *Arena);
-void EndStackMemory(stack_memory TempMemory);
+temporary_memory BeginTemporaryMemory(memory_arena *Arena);
+void EndTemporaryMemory(temporary_memory TempMemory);
 void ValidateArena(memory_arena *Arena);
 void SubArena(memory_arena *Result, memory_arena *Arena, size_t Size, size_t Alignment = 16);
 
@@ -39,7 +39,7 @@ struct task_with_memory
     b32 BeingUsed;
     memory_arena Arena;
     // NOTE: This is used to reset the Arena after a thread is done with its work.
-    stack_memory StackMemory;
+    temporary_memory TemporaryMemory;
 };
 
 // NOTE: Initialize TASK_COUNT number of MemoryArenas which will be used by the individual threads in the

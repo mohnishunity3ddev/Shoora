@@ -7,7 +7,7 @@ InitializeArena(memory_arena *Arena, size_t Size, void *BasePtr)
     Arena->Base = (void *)((u8 *)BasePtr + GetAlignmentPadding(Arena, 16));
     Arena->Size = Size;
     Arena->Used = 0;
-    Arena->StacksCount = 0;
+    Arena->TempMemoryCount = 0;
 }
 
 size_t
@@ -19,11 +19,11 @@ GetArenaSizeRemaining(memory_arena *Arena, size_t Alignment)
     return RemainingSize;
 }
 
-stack_memory
-BeginStackMemory(memory_arena *Arena)
+temporary_memory
+BeginTemporaryMemory(memory_arena *Arena)
 {
-    stack_memory Result;
-    ++Arena->StacksCount;
+    temporary_memory Result;
+    ++Arena->TempMemoryCount;
 
     Result.Arena = Arena;
     Result.ArenaUsedAtBegin = Arena->Used;
@@ -32,21 +32,21 @@ BeginStackMemory(memory_arena *Arena)
 }
 
 void
-EndStackMemory(stack_memory TempMemory)
+EndTemporaryMemory(temporary_memory TempMemory)
 {
     memory_arena *Arena = TempMemory.Arena;
 
     ASSERT(Arena->Used >= TempMemory.ArenaUsedAtBegin);
     Arena->Used = TempMemory.ArenaUsedAtBegin;
 
-    ASSERT(Arena->StacksCount > 0);
-    --Arena->StacksCount;
+    ASSERT(Arena->TempMemoryCount > 0);
+    --Arena->TempMemoryCount;
 }
 
 void
 ValidateArena(memory_arena *Arena)
 {
-    ASSERT(Arena->StacksCount == 0);
+    ASSERT(Arena->TempMemoryCount == 0);
 }
 
 void
@@ -55,7 +55,7 @@ SubArena(memory_arena *Result, memory_arena *Arena, size_t Size, size_t Alignmen
     Result->Base = ShuAllocate_(Arena, Size, Alignment);
     Result->Used = 0;
     Result->Size = Size;
-    Result->StacksCount = 0;
+    Result->TempMemoryCount = 0;
 }
 
 void *
@@ -98,7 +98,7 @@ InitializeTaskMemories(memory_arena *Arena)
     {
         task_with_memory *Task = TaskMemories + TaskIndex;
         Task->BeingUsed = false;
-        Task->StackMemory = {};
+        Task->TemporaryMemory = {};
         SubArena(&Task->Arena, Arena, MEGABYTES(4));
     }
 }
@@ -114,19 +114,19 @@ GetTaskMemory()
         {
             FreeTask = Task;
             ASSERT(FreeTask->Arena.Used == 0);
-            FreeTask->StackMemory = BeginStackMemory(&FreeTask->Arena);
+            FreeTask->TemporaryMemory = BeginTemporaryMemory(&FreeTask->Arena);
             break;
         }
     }
-
+    
     return FreeTask;
 }
 
 void
 FreeTaskMemory(task_with_memory *Task)
 {
-    EndStackMemory(Task->StackMemory);
-    ASSERT(Task->Arena.StacksCount == 0);
+    EndTemporaryMemory(Task->TemporaryMemory);
+    ASSERT(Task->Arena.TempMemoryCount == 0);
 
     // NOTE: Doing this since this free gets called directly from the thread when its ending.
     CompletePastWritesBeforeFutureWrites;
@@ -148,10 +148,10 @@ memoryTest()
     SubArena(&PermArena, &Arena, MEGABYTES(120));
     SubArena(&TransientArena, &Arena, MEGABYTES(120));
 
-    stack_memory StackMemory = BeginStackMemory(&PermArena);
+    temporary_memory StackMemory = BeginTemporaryMemory(&PermArena);
     char *myName = ShuAllocateString(StackMemory.Arena, "mani");
     char *myName2 = ShuAllocateString(StackMemory.Arena, "Mohnish Sharma brother!");
-    EndStackMemory(StackMemory);
+    EndTemporaryMemory(StackMemory);
 
     i32 *NumsArray = ShuAllocateArray(&TransientArena, 22, i32);
     for (i32 i = 0; i < 22; ++i)
