@@ -40,9 +40,9 @@ typedef double f64;
 #define FPS_CAPPING_ENABLED 0
 
 #define KILOBYTES(Val) (Val) * 1024
-#define MEGABYTES(Val) KILOBYTES((Val)) * 1024
-#define GIGABYTES(Val) MEGABYTES((Val)) * 1024
-#define TERABYTES(Val) GIGABYTES((Val)) * 1024
+#define MEGABYTES(Val) (KILOBYTES(Val) * 1024LL)
+#define GIGABYTES(Val) (MEGABYTES(Val) * 1024LL)
+#define TERABYTES(Val) (GIGABYTES(Val) * 1024LL)
 
 #define SHU_INT_MIN (i32)1 << 31
 

@@ -22,6 +22,13 @@ struct win32_window_context
     HBRUSH ClearColor;
     HANDLE ConsoleHandle;
 };
+
+struct win32_state
+{
+    void *MemoryBlock;
+    size_t MemoryBlockSize;
+};
+
 static win32_window_context GlobalWin32WindowContext = {};
 static WINDOWPLACEMENT GlobalWin32WindowPosition = {sizeof(GlobalWin32WindowPosition)};
 static b8 Win32GlobalRunning = false;
@@ -31,6 +38,7 @@ static b32 GlobalIsFPSCap = false;
 static struct platform_input_state *GlobalInputState = nullptr;
 static u32 MonitorRefreshRate;
 static i32 GlobalFPS;
+static win32_state Win32State = {};
 
 void DummyWinResize(u32 Width, u32 Height) {}
 
@@ -1012,6 +1020,23 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     AppInfo.WindowHeight = WindowRect.bottom - WindowRect.top;
     AppInfo.JobQueue = &HighPriorityQueue;
 
+#if _SHU_DEBUG
+    LPVOID BaseAddress = (LPVOID) TERABYTES(2);
+#else
+    LPVOID BaseAddress = 0;
+#endif
+    AppInfo.GameMemory.PermSize = MEGABYTES(512);
+    AppInfo.GameMemory.FrameMemorySize = GIGABYTES(1);
+
+    Win32State.MemoryBlockSize = AppInfo.GameMemory.PermSize +
+                                 AppInfo.GameMemory.FrameMemorySize;
+    Win32State.MemoryBlock = VirtualAlloc(BaseAddress, Win32State.MemoryBlockSize, MEM_RESERVE | MEM_COMMIT,
+                                          PAGE_READWRITE);
+
+    AppInfo.GameMemory.PermMemory = Win32State.MemoryBlock;
+    AppInfo.GameMemory.FrameMemory = (void *)((u8 *)AppInfo.GameMemory.PermMemory +
+                                                          AppInfo.GameMemory.PermSize);
+
     GlobalWin32WindowContext.Handle = WindowHandle;
     GlobalWin32WindowContext.ClearColor = CreateSolidBrush(RGB(48, 10, 36));
 
@@ -1132,12 +1157,17 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         Win32PauseConsoleWindow();
     }
 
+    if (Win32State.MemoryBlock != nullptr)
+    {
+        VirtualFree(Win32State.MemoryBlock, 0, MEM_RELEASE);
+        Win32State.MemoryBlock = nullptr;
+    }
 
     if (WriteFp != nullptr)
     {
         fclose(WriteFp);
         WriteFp = nullptr;
-    }
+        }
     return 0;
 }
 

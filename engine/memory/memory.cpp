@@ -128,6 +128,7 @@ FreeTaskMemory(task_with_memory *Task)
     EndStackMemory(Task->StackMemory);
     ASSERT(Task->Arena.StacksCount == 0);
 
+    // NOTE: Doing this since this free gets called directly from the thread when its ending.
     CompletePastWritesBeforeFutureWrites;
     Task->BeingUsed = false;
 }

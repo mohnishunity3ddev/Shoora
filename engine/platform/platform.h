@@ -52,6 +52,14 @@ void FillVulkanWin32SurfaceCreateInfo(shoora_platform_presentation_surface *Surf
 #endif
 
 struct platform_work_queue;
+struct platform_memory
+{
+    void *PermMemory;
+    size_t PermSize;
+    void *FrameMemory;
+    size_t FrameMemorySize;
+};
+
 struct shoora_app_info
 {
     const char *AppName;
@@ -61,6 +69,8 @@ struct shoora_app_info
 
     func_window_resize *WindowResizeCallback;
     platform_work_queue *JobQueue;
+
+    platform_memory GameMemory;
 };
 
 struct shoora_platform_frame_packet

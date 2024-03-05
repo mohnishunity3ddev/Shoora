@@ -42,8 +42,13 @@ struct task_with_memory
     stack_memory StackMemory;
 };
 
+// NOTE: Initialize TASK_COUNT number of MemoryArenas which will be used by the individual threads in the
+// threadPool presnet in the platform layer.
 void InitializeTaskMemories(memory_arena *Arena);
+
+// NOTE: Gets called before starting a thread
 task_with_memory *GetTaskMemory();
+// NOTE: Gets called from a thread at its end.
 void FreeTaskMemory(task_with_memory *Task);
 
 #if _SHU_DEBUG

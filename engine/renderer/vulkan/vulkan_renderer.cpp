@@ -669,10 +669,22 @@ InitializeLightData()
     GlobalFragUniformData.SpotlightData.Intensity = 5.0f;
 }
 
-#include <memory/memory.h>
+void
+InitializeGameMemory(shoora_vulkan_context *VulkanContext, const platform_memory *PlatformMemory)
+{
+    app_memory *MemoryContext = &VulkanContext->AppMemory;
+
+    InitializeArena(&MemoryContext->PermArena, PlatformMemory->PermSize, PlatformMemory->PermMemory);
+    InitializeArena(&MemoryContext->FrameArena, PlatformMemory->FrameMemorySize, PlatformMemory->FrameMemory);
+
+    InitializeTaskMemories(&MemoryContext->PermArena);
+}
+
 void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
 {
+    InitializeGameMemory(VulkanContext, &AppInfo->GameMemory);
+
 #if _SHU_DEBUG
     isDebug = true;
 #endif
