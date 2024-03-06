@@ -171,13 +171,14 @@ enum shoora_quality
     }
 
 #define MEMZERO(MemPtr, Size)                                                                                     \
-    {                                                                                                             \
+    do {                                                                                                             \
         u8 *Ptr = (u8 *)(MemPtr);                                                                                 \
         for (i32 i = 0; (i < (Size)); ++i)                                                                        \
         {                                                                                                         \
             *Ptr++ = 0;                                                                                           \
         }                                                                                                         \
-    }
+    } while(0)
+
 #define SET_FLAG_BITS_IF_EQUAL(FlagsToSet, FirstFlagsToCheck, SecondFlagsToCheck, NumberOfBits)                   \
     {                                                                                                             \
         for (u32 BitIndex = 0; BitIndex < (NumberOfBits); ++BitIndex)                                             \
@@ -432,7 +433,7 @@ struct stack_array
     inline void
     clear()
     {
-        memset(data, 0, maxSize*sizeof(T));
+        MEMZERO(data, maxSize * sizeof(T));
     }
 };
 

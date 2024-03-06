@@ -1,6 +1,8 @@
 #include "image_loader.h"
 
 #if SHU_USE_STB
+#define STBI_ASSERT(x) ASSERT(x)
+// TODO: Define STBI_MALLOC, REALLOC and FREE from freelist_allocator
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #else

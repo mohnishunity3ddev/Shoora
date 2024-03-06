@@ -39,6 +39,7 @@ shu::vec3f GetColor(u32 Col);
 u32 GetColorU32(const shu::vec3f &Color);
 
 b32 IsPow2(size_t Num);
+size_t GetNextPow2(size_t Num);
 
 #if _SHU_DEBUG
 

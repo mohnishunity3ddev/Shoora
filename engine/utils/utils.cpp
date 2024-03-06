@@ -186,6 +186,24 @@ IsPow2(size_t Num)
     return Accum == Num;
 }
 
+size_t
+GetNextPow2(size_t Num)
+{
+    ASSERT(Num > 0);
+
+    size_t Result = Num-1;
+
+    for(;;)
+    {
+        if(IsPow2(++Result))
+        {
+            break;
+        }
+    }
+    
+    return Result;
+}
+
 #if _SHU_DEBUG
 void
 IsPow2Test(size_t MaxRange)

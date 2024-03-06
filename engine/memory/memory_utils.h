@@ -25,6 +25,23 @@ GetAlignmentPadding(memory_arena *Arena, size_t Alignment = 4)
 }
 
 inline size_t
+GetAlignmentPadding(size_t Addr, size_t Alignment = 4)
+{
+    ASSERTPow2(Alignment);
+
+    size_t MemoryPtr = Addr;
+    size_t AlignmentPadding = 0;
+    size_t AlignmentMask = Alignment - 1;
+    // If MemoryPtr is NOT aligned.
+    if (MemoryPtr & AlignmentMask)
+    {
+        AlignmentPadding = Alignment - (MemoryPtr & AlignmentMask); // Align it.
+    }
+
+    return AlignmentPadding;
+}
+
+inline size_t
 GetAlignmentPaddingWithRequirement(const size_t &RawNumber, const size_t &Alignment,
                                    const size_t &RequiredSize)
 {
