@@ -171,13 +171,25 @@ enum shoora_quality
     }
 
 #define MEMZERO(MemPtr, Size)                                                                                     \
-    do {                                                                                                             \
+    do                                                                                                            \
+    {                                                                                                             \
         u8 *Ptr = (u8 *)(MemPtr);                                                                                 \
         for (i32 i = 0; (i < (Size)); ++i)                                                                        \
         {                                                                                                         \
             *Ptr++ = 0;                                                                                           \
         }                                                                                                         \
-    } while(0)
+    } while (0)
+
+#define SHU_MEMCOPY(SrcPtr, DestPtr, NumBytes)                                                                    \
+    do                                                                                                            \
+    {                                                                                                             \
+        u8 *Destination = (u8 *)(DestPtr);                                                                        \
+        u8 *Source = (u8 *)(SrcPtr);                                                                              \
+        for (size_t i = 0; i < NumBytes; ++i)                                                                     \
+        {                                                                                                         \
+            *Destination++ = *Source++;                                                                           \
+        }                                                                                                         \
+    } while (0)
 
 #define SET_FLAG_BITS_IF_EQUAL(FlagsToSet, FirstFlagsToCheck, SecondFlagsToCheck, NumberOfBits)                   \
     {                                                                                                             \

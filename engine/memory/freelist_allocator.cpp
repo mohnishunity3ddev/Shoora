@@ -136,12 +136,15 @@ freelist_allocator::ReAllocateSized(void *OldMemoryPtr, size_t OldSize, size_t N
 {
     ASSERT(OldMemoryPtr != nullptr);
 
+    // NOTE: The Allocation Header contains info about the allocated memory. It is always Header Size(16 bytes) behind the
+    // allocated memory pointer.
     auto *AllocationHeader = (freelist_allocation_header *)((u8 *)OldMemoryPtr -
                                                             freelist_allocator::AllocationHeaderSize);
     void *NewMemoryPtr = OldMemoryPtr;
-    b32 FoundContiguousFreeblock = false;
     if (OldSize < NewSize)
     {
+        b32 FoundContiguousFreeblock = false;
+
         // NOTE: The size already allocated is less than the new size that we want here(So we need more memory than
         // already allocated). Look for a free block immediately after this which fits the requirements. If there
         // is, subtract the EXTRA MEMORY that we need from that free block and update its block size. If there is
@@ -161,7 +164,7 @@ freelist_allocator::ReAllocateSized(void *OldMemoryPtr, size_t OldSize, size_t N
                     // NOTE: Check if the lined up free block has enough space to fit the new size.
                     if(CurrFreeBlock->data.BlockSize >= ExtraSpace)
                     {
-                        AllocationHeader->BlockSize += (NewSize - OldSize);
+                        AllocationHeader->BlockSize += ExtraSpace;
 
                         size_t FreeblockSpaceLeft = CurrFreeBlock->data.BlockSize - ExtraSpace;
                         // NOTE: Check if the current Freeblock gets wholly consumed by the ExtraSpace required for
@@ -194,32 +197,69 @@ freelist_allocator::ReAllocateSized(void *OldMemoryPtr, size_t OldSize, size_t N
             PrevFreeBlock = CurrFreeBlock;
             CurrFreeBlock = CurrFreeBlock->next;
         }
-    }
 
-    if(OldSize > NewSize || !FoundContiguousFreeblock)
-    {
-        // NOTE: The new size required is less than the one currently being held. Whatever extra memory is left
-        // out, create a freeblock out of this and add it to the freelist.
-        NewMemoryPtr = this->Allocate(NewSize, Alignment);
-
-        if(NewMemoryPtr)
+        // NOTE: We could not a free block which lines up with the old allocation. In this case, look for an
+        // entirely new free block, copy the contents of old to this new location and set that as the pointer to
+        // memory you return.
+        if(!FoundContiguousFreeblock)
         {
-            // NOTE: Copy the old data from the old memoryPtr to this new MemoryPtr.
-            u8 *Destination = (u8 *)NewMemoryPtr;
-            u8 *Source = (u8 *)OldMemoryPtr;
-            for(size_t i = 0; i < OldSize; ++i)
+            // NOTE: Set the Memory that we return to the newly allocated memory containing old data.
+            NewMemoryPtr = this->Allocate(NewSize, Alignment);
+
+            if(NewMemoryPtr)
             {
-                *Destination++ = *Source++;
+                // NOTE: Copy the old data from the old memoryPtr to this new MemoryPtr.
+                SHU_MEMCOPY(OldMemoryPtr, NewMemoryPtr, OldSize);
+
+                // NOTE: Freeing the old memory allocation since we got a new one and we have copied all data from
+                // old to new.
+                this->Free(OldMemoryPtr);
+            }
+            else
+            {
+                LogErrorUnformatted("[ALLOCATOR: ReAlloc]Could not allocate for new size since the allocator has run "
+                                    "out of space. Sucks to be you brother! :(.\n");
+            }
+        }
+    }
+    else if (OldSize > NewSize)
+    {
+        // NOTE: The New Size requires is less than the old size allocated. We calculate the difference and set
+        // that as the free block.
+        size_t ExtraSpaceToFree = OldSize - NewSize;
+
+        // NOTE: Updating the old memory header to reflect the reduced size.
+        AllocationHeader->BlockSize -= ExtraSpaceToFree;
+
+        // NOTE: Calculating the address of the starting of a new free block chunk containing 'ExtraSpaceToFree'
+        // bytes to be added to the freelist.
+        flNode *NewFreeNode = (flNode *)((u8 *)OldMemoryPtr + ExtraSpaceToFree);
+        NewFreeNode->data.BlockSize = ExtraSpaceToFree;
+
+        // NOTE: Traverse the Linked list.
+        b32 Inserted = false;
+        flNode *CurrFreeNode = Freelist.head;
+        flNode *PrevFreeNode = nullptr;
+        while(CurrFreeNode != nullptr)
+        {
+            // NOTE: We have to enforce the freelist to contain free block chunks in ascending order of their
+            // memory addresses. That's why the check here.
+            if ((size_t)NewFreeNode < (size_t)CurrFreeNode)
+            {
+                Freelist.Insert(PrevFreeNode, NewFreeNode);
+                Inserted = true;
+                break;
             }
 
-            // NOTE: Freeing the old memory allocation since we got a new one and we have copied all data from old to
-            // new.
-            this->Free(OldMemoryPtr);
+            PrevFreeNode = CurrFreeNode;
+            CurrFreeNode = CurrFreeNode->next;
         }
-        else
+
+        // NOTE: If the free block chunk's memory address is larger than all free nodes in the freelist. Add it at
+        // the end as its tail.
+        if(!Inserted)
         {
-            LogErrorUnformatted("[ALLOCATOR: ReAlloc]Could not allocate for new size since the allocator has run "
-                                "out of space. Sucks to be you brother! :(.\n");
+            Freelist.Insert(PrevFreeNode, NewFreeNode);
         }
     }
 
@@ -369,9 +409,22 @@ freelist_allocator_test()
     ASSERT(Allocator.Freelist.numItems == 1);
     LogDebug("Free space: %zu.\n", Allocator.DEBUGGetRemainingSpace());
 
+    i32 _t = 255;
+    size_t CurrentFreeSize = Allocator.DEBUGGetRemainingSpace();
+    i16 *newi4 = (i16 *)Allocator.ReAllocate(i4, sizeof(i16), Alignment);
+    ASSERT(Allocator.Freelist.numItems == 2);
+    i4 = nullptr;
+    // NOTE: newi4[0] represents the i16 value already held in i4 which is 4.
+    // NOTE: newi4[1] represents the i16 value of the new freenode block size which is 2. Why? because i4 was a i32
+    // value(4 bytes), the newi4 is an i16 value (2 bytes). Since we reallocated 2 bytes from a 4 byte allocation
+    // block, the new free block size will be 2 bytes. newi4[1] represents the free block address now.
+    ASSERT(newi4[0] == 4 && newi4[1] == 2);
+    size_t NewFreeSize = Allocator.DEBUGGetRemainingSpace();
+    ASSERT(NewFreeSize == CurrentFreeSize + sizeof(i16));
+
     // NOTE: Free Test.
-    ASSERT(Allocator.Freelist.numItems == 1);
-    Allocator.Free(i4);
+    ASSERT(Allocator.Freelist.numItems == 2);
+    Allocator.Free(newi4);
     LogDebug("Free space: %zu.\n", Allocator.DEBUGGetRemainingSpace());
 
     if (i1 != nullptr)
