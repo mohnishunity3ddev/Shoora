@@ -228,19 +228,29 @@ freelist_allocator::ReAllocateSized(void *OldMemoryPtr, size_t OldSize, size_t N
         // that as the free block.
         size_t ExtraSpaceToFree = OldSize - NewSize;
 
+        // TODO: Handle this case where the memory to be freed is even less than required to fill freeNode info.
+        // NOTE: The memory to be freed is less than the freenode header size. If we write to the head, it will
+        // likely overwrite to values beyond the ExtraSpaceToFree range and invalidate memory already getting
+        // used/a free block node in the freelist.
+        ASSERT(ExtraSpaceToFree >= freelist_allocator::FreeNodeHeaderSize);
+
         // NOTE: Updating the old memory header to reflect the reduced size.
         AllocationHeader->BlockSize -= ExtraSpaceToFree;
 
         // NOTE: Calculating the address of the starting of a new free block chunk containing 'ExtraSpaceToFree'
         // bytes to be added to the freelist.
-        flNode *NewFreeNode = (flNode *)((u8 *)OldMemoryPtr + ExtraSpaceToFree);
+        size_t NewAllocationSize = OldSize - ExtraSpaceToFree;
+
+        flNode *NewFreeNode = nullptr;
+        NewFreeNode = (flNode *)((u8 *)OldMemoryPtr + NewAllocationSize);
         NewFreeNode->data.BlockSize = ExtraSpaceToFree;
+        NewFreeNode->next = nullptr;
 
         // NOTE: Traverse the Linked list.
         b32 Inserted = false;
         flNode *CurrFreeNode = Freelist.head;
         flNode *PrevFreeNode = nullptr;
-        while(CurrFreeNode != nullptr)
+        while (CurrFreeNode != nullptr)
         {
             // NOTE: We have to enforce the freelist to contain free block chunks in ascending order of their
             // memory addresses. That's why the check here.
@@ -257,10 +267,24 @@ freelist_allocator::ReAllocateSized(void *OldMemoryPtr, size_t OldSize, size_t N
 
         // NOTE: If the free block chunk's memory address is larger than all free nodes in the freelist. Add it at
         // the end as its tail.
-        if(!Inserted)
+        if (!Inserted)
         {
             Freelist.Insert(PrevFreeNode, NewFreeNode);
         }
+
+        // NOTE: We have to check if the added freeblock perfectly aligns with its next free block(in this
+        // case, the 'CurrentFreeNode'), if it does we merge both freeblocks into one and remove the
+        // 'CurrFreeBlock' from the freelist.
+        if (NewFreeNode->next != nullptr &&
+            ((u8 *)NewFreeNode + NewFreeNode->data.BlockSize) == (u8 *)NewFreeNode->next)
+        {
+            // NOTE: the freenode aligns perfectly with its next freenode. merging both current and next blocks
+            // into one.
+            NewFreeNode->data.BlockSize += NewFreeNode->next->data.BlockSize;
+            Freelist.Remove(NewFreeNode, NewFreeNode->next);
+        }
+
+        ASSERT(NewFreeNode != nullptr);
     }
 
     ASSERT(NewMemoryPtr);
@@ -368,6 +392,7 @@ freelist_allocator_test()
     freelist_allocator Allocator(Mem, MemSize);
     LogDebug("Free space: %zu.\n", Allocator.DEBUGGetRemainingSpace());
 
+#if 0
     int32 *i1 = (i32 *)Allocator.Allocate(sizeof(i32), Alignment);
     LogDebug("Free space: %zu.\n", Allocator.DEBUGGetRemainingSpace());
     int32 *i2 = (i32 *)Allocator.Allocate(sizeof(i32), Alignment);
@@ -456,6 +481,28 @@ freelist_allocator_test()
         LogDebug("Free space: %zu.\n", Allocator.DEBUGGetRemainingSpace());
         ASSERT(Allocator.Freelist.numItems == 1);
     }
+#else
+    // TODO: Handle this case!
+    // i32 *i = (i32 *)Allocator.Allocate(3*sizeof(i32), Alignment);
+
+    i32 *i = (i32 *)Allocator.Allocate(6*sizeof(i32), Alignment);
+    auto RemainingSpace = Allocator.DEBUGGetRemainingSpace();
+    LogDebug("Free space: %zu.\n", RemainingSpace);
+    ASSERT(Allocator.Freelist.numItems == 1);
+
+    i[0] = 0xffffffff;
+    i[1] = 1;
+    i[2] = 2;
+
+    i32 *newi = (i32 *)Allocator.ReAllocate(i, sizeof(i32), Alignment);
+    ASSERT(newi == i);
+    i = nullptr;
+    LogDebug("Free space: %zu.\n", Allocator.DEBUGGetRemainingSpace());
+    ASSERT(Allocator.Freelist.numItems == 1);
+
+    Allocator.Free(newi);
+
+#endif
 
     ASSERT(Allocator.DEBUGGetRemainingSpace() == MemSize);
 

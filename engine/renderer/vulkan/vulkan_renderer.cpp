@@ -683,6 +683,7 @@ InitializeGameMemory(shoora_vulkan_context *VulkanContext, const platform_memory
 void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
 {
+    freelist_allocator_test();
     InitializeGameMemory(VulkanContext, &AppInfo->GameMemory);
 
 #if _SHU_DEBUG

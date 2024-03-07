@@ -26,8 +26,9 @@ struct freelist_allocator
     void *ReAllocate(void *MemoryPtr, size_t NewSize, const size_t Alignment = 4);
     void *ReAllocateSized(void *MemoryPtr, size_t OldSize, size_t NewSize, const size_t Alignment = 4);
     void Free(void *Memory);
-
+    
     const size_t AllocationHeaderSize = sizeof(freelist_allocation_header);
+    const size_t FreeNodeHeaderSize = sizeof(free_block_header) + sizeof(void *);
 
   private:
 #if _SHU_DEBUG
