@@ -4,7 +4,8 @@
 #include <physics/collision.h>
 #include <physics/contact.h>
 #include <renderer/vulkan/graphics/vulkan_graphics.h>
-#include <physics/broadphase.h>
+
+#include <memory/memory.h>
 
 #ifdef WIN32
 #include "platform/windows/win_platform.h"
@@ -22,6 +23,10 @@ struct scene_shader_data
 
 shoora_scene::shoora_scene()
 {
+    Bodies.SetAllocator(MEMTYPE_FREELISTGLOBAL);
+    Constraints2D.SetAllocator(MEMTYPE_FREELISTGLOBAL);
+    PenetrationConstraints2D.SetAllocator(MEMTYPE_FREELISTGLOBAL);
+
     Bodies.reserve(32);
     Constraints2D.reserve(64);
     PenetrationConstraints2D.reserve(64);
@@ -31,12 +36,14 @@ shoora_scene::~shoora_scene()
 {
     LogWarnUnformatted("shoora scene destructor called!\n");
 
+#if 0
     size_t constraintsCount = Constraints2D.size();
     for(size_t i = 0; i < constraintsCount; ++i)
     {
         auto *C = Constraints2D[i];
         delete C;
     }
+#endif
 }
 
 void
@@ -58,6 +65,7 @@ shoora_scene::AddBody(const shoora_body &Body)
 shoora_body *
 shoora_scene::AddBody(shoora_body &&Body)
 {
+    ASSERT(!"Not tested!");
     Bodies.emplace_back((shoora_body &&)Body);
 
     shoora_body *b = Bodies.get(Bodies.size() - 1);
@@ -68,9 +76,12 @@ shoora_body *
 shoora_scene::AddCubeBody(const shu::vec3f &Pos, const shu::vec3f &Scale, u32 ColorU32, f32 Mass,
                           f32 Restitution, const shu::vec3f &EulerAngles)
 {
-    shoora_body body{GetColor(ColorU32), Pos, Mass, Restitution,
-                     std::make_unique<shoora_shape_cube>(Scale.x, Scale.y, Scale.z), EulerAngles};
-    Bodies.emplace_back(std::move(body));
+    shoora_shape_cube *CubeShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
+    auto shape = shoora_shape_cube(Scale.x, Scale.y, Scale.z);
+    SHU_MEMCOPY(&shape, CubeShape, sizeof(shoora_shape_cube));
+
+    shoora_body Body{GetColor(ColorU32), Pos, Mass, Restitution, CubeShape, EulerAngles};
+    Bodies.emplace_back(std::move(Body));
 
     shoora_body *b = Bodies.get(Bodies.size() - 1);
     return b;
@@ -80,9 +91,12 @@ shoora_body *
 shoora_scene::AddSphereBody(const shu::vec3f &Pos, u32 ColorU32, f32 Radius, f32 Mass, f32 Restitution,
                             const shu::vec3f &EulerAngles)
 {
-    shoora_body body{GetColor(ColorU32), Pos, Mass, Restitution, std::make_unique<shoora_shape_sphere>(Radius),
-                     EulerAngles};
-    Bodies.emplace_back(std::move(body));
+    shoora_shape_sphere *SphereShape = ShuAllocateStruct(shoora_shape_sphere, MEMTYPE_GLOBAL);
+    auto shape = shoora_shape_sphere(Radius);
+    SHU_MEMCOPY(&shape, SphereShape, sizeof(shoora_shape_sphere));
+
+    shoora_body Body{GetColor(ColorU32), Pos, Mass, Restitution, SphereShape, EulerAngles};
+    Bodies.emplace_back(std::move(Body));
 
     shoora_body *b = Bodies.get(Bodies.size() - 1);
     return b;
@@ -92,9 +106,13 @@ shoora_body *
 shoora_scene::AddCircleBody(const shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 Mass, f32 Restitution,
                             const shu::vec3f &EulerAngles)
 {
-    shoora_body body{GetColor(ColorU32), shu::Vec3f(Pos, 1.0f), Mass, Restitution,
-                     std::make_unique<shoora_shape_circle>(Radius), EulerAngles};
-    Bodies.emplace_back(std::move(body));
+    shoora_shape_circle *CircleShape = ShuAllocateStruct(shoora_shape_circle, MEMTYPE_GLOBAL);
+    auto shape = shoora_shape_circle(Radius);
+    SHU_MEMCOPY(&shape, CircleShape, sizeof(shoora_shape_circle));
+
+    shoora_body Body{GetColor(ColorU32), shu::Vec3f(Pos, 1.0f), Mass, Restitution, CircleShape, EulerAngles};
+    Bodies.emplace_back(std::move(Body));
+
     shoora_body *b = Bodies.get(Bodies.size() - 1);
     return b;
 }
@@ -103,9 +121,12 @@ shoora_body *
 shoora_scene::AddBoxBody(const shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Height, f32 Mass, f32 Restitution,
                          const shu::vec3f &EulerAngles)
 {
-    shoora_body body{GetColor(ColorU32), shu::Vec3f(Pos, 1.0f), Mass, Restitution,
-                     std::make_unique<shoora_shape_box>(Width, Height), EulerAngles};
-    Bodies.emplace_back(std::move(body));
+    shoora_shape_box *BoxShape = ShuAllocateStruct(shoora_shape_box, MEMTYPE_GLOBAL);
+    auto shape = shoora_shape_box(Width, Height);
+    SHU_MEMCOPY(&shape, BoxShape, sizeof(shoora_shape_box));
+
+    shoora_body Body{GetColor(ColorU32), shu::Vec3f(Pos, 1.0f), Mass, Restitution, BoxShape, EulerAngles};
+    Bodies.emplace_back(std::move(Body));
 
     shoora_body *b = Bodies.get(Bodies.size() - 1);
     return b;
@@ -115,8 +136,11 @@ shoora_body *
 shoora_scene::AddPolygonBody(const u32 MeshId, const shu::vec2f Pos, u32 ColorU32, f32 Mass, f32 Restitution,
                              const shu::vec3f &EulerAngles, f32 Scale)
 {
-    shoora_body body{GetColor(ColorU32), shu::Vec3f(Pos, 1.0f), Mass, Restitution,
-                     std::make_unique<shoora_shape_polygon>(MeshId, Scale), EulerAngles};
+    shoora_shape_polygon *PolygonShape = ShuAllocateStruct(shoora_shape_polygon, MEMTYPE_GLOBAL);
+    auto shape = shoora_shape_polygon(MeshId, Scale);
+    SHU_MEMCOPY(&shape, PolygonShape, sizeof(shoora_shape_polygon));
+
+    shoora_body body{GetColor(ColorU32), shu::Vec3f(Pos, 1.0f), Mass, Restitution, PolygonShape, EulerAngles};
     Bodies.emplace_back(std::move(body));
 
     shoora_body *b = Bodies.get(Bodies.size() - 1);
@@ -198,7 +222,7 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
     }
 
     // Broadphase
-    shoora_dynamic_array<collision_pair> CollisionPairs;
+    shoora_dynamic_array<collision_pair> CollisionPairs{MEMTYPE_FREELISTGLOBAL};
     CollisionPairs.reserve(BodyCount*BodyCount);
     broad_phase::BroadPhase(Bodies, BodyCount, CollisionPairs, dt);
 
@@ -316,7 +340,7 @@ shoora_scene::Draw(b32 Wireframe)
     for (u32 BodyIndex = 0; BodyIndex < Bodies.size(); ++BodyIndex)
     {
         shoora_body *Body = Bodies.data() + BodyIndex;
-        auto *BodyShape = Body->Shape.get();
+        shoora_shape *BodyShape = Body->Shape;
 
         u32 ColorU32 = Body->IsColliding ? colorU32::Red : colorU32::Green;
         // Shu::vec3f Color = GetColor(ColorU32);

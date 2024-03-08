@@ -152,8 +152,8 @@ collision::IsCollidingSphereSphere(shoora_body *A, shoora_body *B, const f32 Del
     b32 Result = false;
     ContactCount = 0;
 
-    shoora_shape_sphere *SphereA = (shoora_shape_sphere *)A->Shape.get();
-    shoora_shape_sphere *SphereB = (shoora_shape_sphere *)B->Shape.get();
+    shoora_shape_sphere *SphereA = (shoora_shape_sphere *)A->Shape;
+    shoora_shape_sphere *SphereB = (shoora_shape_sphere *)B->Shape;
 
     contact *Contact = &Contacts[0];
     *Contact = {};
@@ -220,8 +220,8 @@ collision::IsCollidingSphereSphere(shoora_body *A, shoora_body *B, const f32 Del
 b32
 collision::IsCollidingCircleCircle(shoora_body *A, shoora_body *B, contact *Contacts, i32 &ContactCount)
 {
-    shoora_shape_circle *CircleA = (shoora_shape_circle *)A->Shape.get();
-    shoora_shape_circle *CircleB = (shoora_shape_circle *)B->Shape.get();
+    shoora_shape_circle *CircleA = (shoora_shape_circle *)A->Shape;
+    shoora_shape_circle *CircleB = (shoora_shape_circle *)B->Shape;
 
     shu::vec3f DistanceAB = B->Position - A->Position;
     const f32 RadiusSum = CircleA->Radius + CircleB->Radius;
@@ -251,8 +251,8 @@ collision::IsCollidingPolygonPolygon(shoora_body *A, shoora_body *B, contact *Co
 {
     ContactCount = 0;
 
-    auto *PolyA = (shoora_shape_polygon *)A->Shape.get();
-    auto *PolyB = (shoora_shape_polygon *)B->Shape.get();
+    auto *PolyA = (shoora_shape_polygon *)A->Shape;
+    auto *PolyB = (shoora_shape_polygon *)B->Shape;
 
     i32 ReferenceEdgeIndexA = -1, ReferenceEdgeIndexB = -1;
     // NOTE: Support points are the corresponding vertex on the bodies which has the best penetration.
@@ -361,8 +361,8 @@ collision::IsCollidingPolygonCircle(shoora_body *Polygon, shoora_body *Circle, c
     ASSERT(Polygon->Shape->GetType() == shoora_mesh_type::POLYGON_2D || shoora_mesh_type::RECT_2D);
     ASSERT(Circle->Shape->GetType() == shoora_mesh_type::CIRCLE);
 
-    shoora_shape_polygon *Poly  = (shoora_shape_polygon *)Polygon->Shape.get();
-    shoora_shape_circle *Circ = (shoora_shape_circle *)Circle->Shape.get();
+    shoora_shape_polygon *Poly  = (shoora_shape_polygon *)Polygon->Shape;
+    shoora_shape_circle *Circ = (shoora_shape_circle *)Circle->Shape;
     f32 Radius = Circ->GetDim().x;
     shu::vec2f CircleCenter = Circle->Position.xy;
     shu::vec2f PolyCenter = Polygon->Position.xy;

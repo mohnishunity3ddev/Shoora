@@ -284,13 +284,17 @@ template <typename T>
 void
 singly_linked_list<T>::Clear()
 {
+    // TODO: Clear does not work with a custom allocator right now.
+#if 0
     node *c = head;
     while (c != nullptr)
     {
         node *n = c;
         c = c->next;
-        delete n;
+        // delete n;
     }
+#endif
+    head = nullptr;
     numItems = 0;
     head = nullptr;
 }

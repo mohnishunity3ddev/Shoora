@@ -119,7 +119,9 @@ struct shoora_dynamic_array
             // delete[] arr;
             ASSERT(Allocator != nullptr);
             Allocator->Free(arr);
+            arr = nullptr;
         }
+        
         this->Capacity = 0;
         this->Size = 0;
     }

@@ -5,7 +5,7 @@ static shoora_memory ShuMemory = {};
 
 inline void InitializeTaskMemories(memory_arena *Arena);
 
-inline memory_arena *
+memory_arena *
 GetArena(shoora_memory_type Type)
 {
     memory_arena *Result = nullptr;

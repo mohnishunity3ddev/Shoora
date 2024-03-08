@@ -61,6 +61,8 @@ enum shoora_memory_type
     MEMTYPE_FRAME,
 };
 
+memory_arena *GetArena(shoora_memory_type Type);
+
 void InitializeMemory(size_t GlobalMemSize, void *GlobalMem, size_t FrameMemSize, void *FrameMem);
 size_t GetRemainingMemory(shoora_memory_type Type, size_t Alignment = 4);
 freelist_allocator *GetFreelistAllocator(shoora_memory_type Type);

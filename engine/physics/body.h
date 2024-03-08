@@ -6,8 +6,6 @@
 #include <mesh/mesh_filter.h>
 #include <physics/shape.h>
 
-#include <memory>
-
 struct shoora_body
 {
     b32 IsColliding = false;
@@ -41,13 +39,13 @@ struct shoora_body
     shu::vec3f Scale;
     shu::vec3f Color;
 
-    std::unique_ptr<shoora_shape> Shape;
+    shoora_shape *Shape;
 
     shoora_body() = default;
     shoora_body(const shoora_body &other) = delete;
     shoora_body &operator=(const shoora_body &other) = delete;
     shoora_body(const shu::vec3f &Color, const shu::vec3f &InitPos, f32 Mass, f32 Restitution,
-                std::unique_ptr<shoora_shape> Shape, shu::vec3f eulerAngles = shu::Vec3f(0.0f));
+                shoora_shape *Shape, shu::vec3f eulerAngles = shu::Vec3f(0.0f));
     shoora_body(shoora_body &&other) noexcept;
     shoora_body &operator=(shoora_body &&other) noexcept;
     ~shoora_body();

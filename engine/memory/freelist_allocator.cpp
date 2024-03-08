@@ -92,7 +92,7 @@ freelist_allocator::Allocate(size_t RequiredSize, const size_t Alignment)
             this->Freelist.Insert(FreeNode, NextFreeNode);
         }
 
-        LogInfo("[Allocate]: Memory Address of free node: %zu.\n", (size_t)FreeNode);
+        // LogInfo("[Allocate]: Memory Address of free node: %zu.\n", (size_t)FreeNode);
 
         // NOTE: Remove the freenode that we found for the current allocation since its now being used for allocation.
         this->Freelist.Remove(PreviousNode, FreeNode);
@@ -403,8 +403,23 @@ freelist_allocator::Free(void *MemoryPtr)
     }
 }
 
-#if 0
+size_t
+freelist_allocator::DEBUGGetRemainingSpace()
+{
+    size_t Result = 0;
+    flNode *fNode = Freelist.head;
 
+    while (fNode != nullptr)
+    {
+        Result += fNode->data.BlockSize;
+
+        fNode = fNode->next;
+    }
+
+    return Result;
+}
+
+#if 0
 void
 freelist_allocator_test()
 {
@@ -627,21 +642,5 @@ memory_utils_test()
     p4 = GetAlignmentPaddingWithRequirement((size_t)m, 128, 512);
     p5 = GetAlignmentPaddingWithRequirement((size_t)m, 256, 512);
     p6 = GetAlignmentPaddingWithRequirement((size_t)m, 512, 512);
-}
-
-size_t
-freelist_allocator::DEBUGGetRemainingSpace()
-{
-    size_t Result = 0;
-    flNode *fNode = Freelist.head;
-
-    while(fNode != nullptr)
-    {
-        Result += fNode->data.BlockSize;
-
-        fNode = fNode->next;
-    }
-
-    return Result;
 }
 #endif

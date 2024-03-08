@@ -1,21 +1,24 @@
 #if !defined(VULKAN_SCENE_H)
 
+#include <containers/dynamic_array.h>
 #include <defines.h>
 #include <math/math.h>
 #include <physics/body.h>
+#include <physics/broadphase.h>
 #include <physics/constraint.h>
-#include <containers/dynamic_array.h>
 
-#include <vector>
+
 struct shoora_scene
 {
   private:
     shoora_dynamic_array<shoora_body> Bodies;
+
     // TODO: Use our dynamic array instead here.
-    std::vector<constraint_2d *> Constraints2D;
-    std::vector<penetration_constraint_2d> PenetrationConstraints2D;
+    shoora_dynamic_array<constraint_2d *> Constraints2D;
+    shoora_dynamic_array<penetration_constraint_2d> PenetrationConstraints2D;
 
     b32 SceneAddBegin = false, SceneAddEnd = false;
+
   public:
     shoora_scene();
     ~shoora_scene();

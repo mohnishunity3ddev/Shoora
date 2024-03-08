@@ -31,8 +31,6 @@
 #endif
 
 #define UNLIT_PIPELINE 1
-// #include <memory.h>
-// #include <vector>
 
 static shoora_vulkan_context *Context = nullptr;
 
@@ -426,6 +424,7 @@ void
 AddStandardSandBox()
 {
     shoora_body body = {};
+    shoora_shape_cube *BoxShape = nullptr;
 
     // Adding ground
     body.Position = shu::Vec3f(0, 0, 0);
@@ -435,7 +434,9 @@ AddStandardSandBox()
     body.InvMass = 0.0f;
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.5f;
-    body.Shape = std::make_unique<shoora_shape_cube>(g_boxGround, ARRAY_SIZE(g_boxGround));
+    BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
+    *BoxShape = shoora_shape_cube(g_boxGround, ARRAY_SIZE(g_boxGround));
+    body.Shape = BoxShape;
     body.Scale = body.Shape->GetDim();
     body.Color = GetColor(colorU32::Proto_Green);
     Scene->AddBody(std::move(body));
@@ -448,7 +449,9 @@ AddStandardSandBox()
     body.InvMass = 0.0f;
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.0f;
-    body.Shape = std::make_unique<shoora_shape_cube>(g_boxWall0, ARRAY_SIZE(g_boxWall0));
+    BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
+    *BoxShape = shoora_shape_cube(g_boxWall0, ARRAY_SIZE(g_boxWall0));
+    body.Shape = BoxShape;
     body.Scale = body.Shape->GetDim();
     body.Color = GetColor(colorU32::Proto_Blue);
     Scene->AddBody(std::move(body));
@@ -461,7 +464,9 @@ AddStandardSandBox()
     body.InvMass = 0.0f;
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.0f;
-    body.Shape = std::make_unique<shoora_shape_cube>(g_boxWall0, ARRAY_SIZE(g_boxWall0));
+    BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
+    *BoxShape = shoora_shape_cube(g_boxWall0, ARRAY_SIZE(g_boxWall0));
+    body.Shape = BoxShape;
     body.Scale = body.Shape->GetDim();
     body.Color = GetColor(colorU32::Proto_Orange);
     Scene->AddBody(std::move(body));
@@ -474,7 +479,9 @@ AddStandardSandBox()
     body.InvMass = 0.0f;
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.0f;
-    body.Shape = std::make_unique<shoora_shape_cube>(g_boxWall1, ARRAY_SIZE(g_boxWall1));
+    BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
+    *BoxShape = shoora_shape_cube(g_boxWall1, ARRAY_SIZE(g_boxWall1));
+    body.Shape = BoxShape;
     body.Scale = body.Shape->GetDim();
     body.Color = GetColor(colorU32::Proto_Red);
     Scene->AddBody(std::move(body));
@@ -487,7 +494,9 @@ AddStandardSandBox()
     body.InvMass = 0.0f;
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.0f;
-    body.Shape = std::make_unique<shoora_shape_cube>(g_boxWall1, ARRAY_SIZE(g_boxWall1));
+    BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
+    *BoxShape = shoora_shape_cube(g_boxWall1, ARRAY_SIZE(g_boxWall1));
+    body.Shape = BoxShape;
     body.Scale = body.Shape->GetDim();
     body.Color = GetColor(colorU32::Proto_Yellow);
     Scene->AddBody(std::move(body));
@@ -515,7 +524,7 @@ InitScene()
     // AddStandardSandBox();
 #endif
 
-#if 0
+#if 1
     // Dynamic Bodies
     shoora_body Body;
     for(i32 x = 0; x < 6; x++)
@@ -784,6 +793,9 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     shoora_graphics::UpdatePipelineLayout(Context->UnlitPipeline.Layout);
 
     Scene = ShuAllocateStruct(shoora_scene, MEMTYPE_GLOBAL);
+    shoora_scene TempScene = shoora_scene{};
+    SHU_MEMCOPY(&TempScene, Scene, sizeof(shoora_scene));
+
     // Scene->Bodies.SetAllocator(MEMTYPE_FREELISTGLOBAL);
     InitScene();
 }

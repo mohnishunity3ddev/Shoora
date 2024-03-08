@@ -2,7 +2,7 @@
 #include <renderer/vulkan/graphics/vulkan_graphics.h>
 
 shoora_body::shoora_body(const shu::vec3f &Color, const shu::vec3f &InitPos, f32 Mass, f32 Restitution,
-                         std::unique_ptr<shoora_shape> Shape, shu::vec3f eulerAngles)
+                         shoora_shape *Shape, shu::vec3f eulerAngles)
 {
     ASSERT(Mass >= 0.0f);
     ASSERT(Restitution >= 0.0f && Restitution <= 1.0f);
@@ -21,7 +21,7 @@ shoora_body::shoora_body(const shu::vec3f &Color, const shu::vec3f &InitPos, f32
     this->InertiaTensor = (Shape->InertiaTensor() * Mass);
     this->InverseInertiaTensor = this->InertiaTensor.IsZero() ? shu::Mat3f(0.0f) : this->InertiaTensor.Inverse();
 
-    this->Shape = std::move(Shape);
+    this->Shape = Shape;
     this->Scale = (this->Shape)->GetDim();
 
     this->SumForces = this->LinearVelocity = this->Acceleration = this->AngularVelocity = shu::vec3f::Zero();
@@ -38,7 +38,7 @@ shoora_body::shoora_body(shoora_body &&other) noexcept
       CoeffRestitution(other.CoeffRestitution), SumForces(std::move(other.SumForces)),
       SumTorques(other.SumTorques), FrictionCoeff(other.FrictionCoeff), Mass(other.Mass), InvMass(other.InvMass),
       InertiaTensor(other.InertiaTensor), InverseInertiaTensor(other.InverseInertiaTensor),
-      Scale(std::move(other.Scale)), Color(std::move(other.Color)), Shape(std::move(other.Shape))
+      Scale(std::move(other.Scale)), Color(std::move(other.Color)), Shape(other.Shape)
 {
     other.IsColliding = false;
     other.Shape = nullptr;
@@ -372,7 +372,7 @@ shoora_body::DrawWireframe(const shu::mat4f &model, f32 thickness, u32 color)
     else if (Type == shoora_mesh_type::POLYGON_2D || Type == shoora_mesh_type::RECT_2D)
     {
         ASSERT(mesh->VertexCount >= 3);
-        auto *Poly = (shoora_shape_polygon *)this->Shape.get();
+        auto *Poly = (shoora_shape_polygon *)this->Shape;
         auto *WorldVertices = Poly->WorldVertices;
 
         // NOTE: No need to calculate TRS here since that's already been done in the physics loop for polygons.
