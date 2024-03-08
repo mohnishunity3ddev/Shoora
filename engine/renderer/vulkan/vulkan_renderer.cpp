@@ -31,8 +31,8 @@
 #endif
 
 #define UNLIT_PIPELINE 1
-#include <memory.h>
-#include <vector>
+// #include <memory.h>
+// #include <vector>
 
 static shoora_vulkan_context *Context = nullptr;
 
@@ -41,6 +41,7 @@ static b32 WireframeMode = false;
 static f32 TestCameraScale = 0.5f;
 static b32 GlobalDebugMode = true;
 static b32 GlobalPausePhysics = false;
+
 static platform_work_queue *GlobalJobQueue;
 
 // NOTE: ALso make the same changes to the lighting shader.
@@ -497,9 +498,9 @@ InitScene()
 {
     // Bottom Wall (Static Rigidbody)
     shu::vec2f Window = shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
-
+#if 0
     FillDiamond();
-#if 1
+
     shoora_body body = {};
     body.Position = shu::Vec3f(0, 0, 10);
     body.Rotation = shu::Quat(0, 0, 0, 1);
@@ -510,10 +511,7 @@ InitScene()
     body.FrictionCoeff = 0.5f;
     body.Shape = std::make_unique<shoora_shape_convex>(g_diamond, ARRAY_SIZE(g_diamond));
     // body.Shape = std::make_unique<shoora_shape_convex>(GlobalJobQueue, g_diamond, ARRAY_SIZE(g_diamond));
-
-
     // Scene->AddBody(std::move(body));
-
     // AddStandardSandBox();
 #endif
 
@@ -531,9 +529,9 @@ InitScene()
             f32 Mass = 1.0f;
             f32 Restitution = 0.5f;
 
-            auto *b = Scene->AddSphereBody(Shu::Vec3f(xx, 100.0f, zz), colorU32::Proto_Orange, Radius, Mass, Restitution);
+            auto *b = Scene->AddSphereBody(shu::Vec3f(xx, 100.0f, zz), colorU32::Proto_Orange, Radius, Mass, Restitution);
             b->FrictionCoeff = 0.5f;
-            b->LinearVelocity = Shu::Vec3f(0.0f);
+            b->LinearVelocity = shu::Vec3f(0.0f);
         }
     }
 
@@ -549,10 +547,9 @@ InitScene()
             f32 Mass = 0.0f;
             f32 Restitution = 0.99f;
 
-            auto *b = Scene->AddSphereBody(Shu::Vec3f(xx, 10.0f, zz), colorU32::Gray, Radius, Mass,
-                                           Restitution);
+            auto *b = Scene->AddSphereBody(shu::Vec3f(xx, 10.0f, zz), colorU32::Gray, Radius, Mass, Restitution);
             b->FrictionCoeff = 0.5f;
-            b->LinearVelocity = Shu::Vec3f(0.0f);
+            b->LinearVelocity = shu::Vec3f(0.0f);
         }
     }
 #endif
@@ -670,21 +667,10 @@ InitializeLightData()
 }
 
 void
-InitializeGameMemory(shoora_vulkan_context *VulkanContext, const platform_memory *PlatformMemory)
-{
-    app_memory *MemoryContext = &VulkanContext->AppMemory;
-
-    InitializeArena(&MemoryContext->PermArena, PlatformMemory->PermSize, PlatformMemory->PermMemory);
-    InitializeArena(&MemoryContext->FrameArena, PlatformMemory->FrameMemorySize, PlatformMemory->FrameMemory);
-
-    InitializeTaskMemories(&MemoryContext->PermArena);
-}
-
-void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
 {
-    freelist_allocator_test();
-    InitializeGameMemory(VulkanContext, &AppInfo->GameMemory);
+    platform_memory GameMemory = AppInfo->GameMemory;
+    InitializeMemory(GameMemory.PermSize, GameMemory.PermMemory, GameMemory.FrameMemorySize, GameMemory.FrameMemory);
 
 #if _SHU_DEBUG
     isDebug = true;
@@ -730,11 +716,11 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     shoora_camera *pCamera = &VulkanContext->Camera;
     SetupCamera(pCamera, shoora_projection::PROJECTION_PERSPECTIVE, 0.1f, 1000.0f, 16.0f / 9.0f,
                 GlobalWindowSize.y, 45.0f, shu::Vec3f(0, 0, -10));
-#if 0
-    pCamera->Pos = Shu::Vec3f(14.1368380f, 106.438675f, -40.9848938f);
-    pCamera->Front = Shu::Vec3f(-0.332412988f, -0.475319535f, -0.814599872f);
-    pCamera->Right = Shu::Vec3f(-0.925878108f , 0.0f, 0.377822191f);
-    pCamera->Up = Shu::Vec3f(-0.179586262, 0.879813194, -0.440087944f);
+#if 1
+    pCamera->Pos = shu::Vec3f(14.1368380f, 106.438675f, -40.9848938f);
+    pCamera->Front = shu::Vec3f(-0.332412988f, -0.475319535f, -0.814599872f);
+    pCamera->Right = shu::Vec3f(-0.925878108f , 0.0f, 0.377822191f);
+    pCamera->Up = shu::Vec3f(-0.179586262, 0.879813194, -0.440087944f);
     pCamera->Yaw = 247.801147f;
     pCamera->Pitch = -28.3801575f;
 #endif
@@ -797,7 +783,8 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
 
     shoora_graphics::UpdatePipelineLayout(Context->UnlitPipeline.Layout);
 
-    Scene = new shoora_scene();
+    Scene = ShuAllocateStruct(shoora_scene, MEMTYPE_GLOBAL);
+    // Scene->Bodies.SetAllocator(MEMTYPE_FREELISTGLOBAL);
     InitScene();
 }
 
@@ -1087,7 +1074,7 @@ DestroyVulkanRenderer(shoora_vulkan_context *Context)
 {
     VK_CHECK(vkDeviceWaitIdle(Context->Device.LogicalDevice));
     shoora_vulkan_device *RenderDevice = &Context->Device;
-    delete Scene;
+    // delete Scene;
     ImGuiCleanup(RenderDevice, &Context->ImContext);
     CleanupGeometry(RenderDevice, &Context->Geometry);
 

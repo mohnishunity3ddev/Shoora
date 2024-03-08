@@ -14,10 +14,10 @@ struct freelist_allocation_header
     size_t BlockSize;
 };
 
-#define flNode singly_linked_list_node<free_block_header>
+typedef singly_linked_list_node<free_block_header> flNode;
 struct freelist_allocator
 {
-    explicit freelist_allocator() : Memory(nullptr), TotalSize(0) {}
+    freelist_allocator() : Memory(nullptr), TotalSize(0) {}
     explicit freelist_allocator(void *Mem, size_t Size) { Initialize(Mem, Size); }
 
     void Initialize(void *Memory, size_t Size);
@@ -26,9 +26,13 @@ struct freelist_allocator
     void *ReAllocate(void *MemoryPtr, size_t NewSize, const size_t Alignment = 4);
     void *ReAllocateSized(void *MemoryPtr, size_t OldSize, size_t NewSize, const size_t Alignment = 4);
     void Free(void *Memory);
-    
+
     const size_t AllocationHeaderSize = sizeof(freelist_allocation_header);
     const size_t FreeNodeHeaderSize = sizeof(free_block_header) + sizeof(void *);
+
+  public:
+    void *Memory = nullptr;
+    size_t TotalSize = 0;
 
   private:
 #if _SHU_DEBUG
@@ -43,13 +47,12 @@ struct freelist_allocator
 
     void FirstFit(const size_t &Alignment, const size_t &RequiredSize, size_t &Padding, flNode **FoundNode,
                   flNode **PreviousNode);
-    void *Memory = nullptr;
-    size_t TotalSize = 0;
     b32 IsInitialized = false;
 };
 
 #if _SHU_DEBUG
 void freelist_allocator_test();
+void dynamic_array_test();
 void memory_utils_test();
 #endif
 

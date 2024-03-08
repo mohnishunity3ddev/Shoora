@@ -170,13 +170,23 @@ enum shoora_quality
         }                                                                                                                                                           \
     }
 
-#define MEMZERO(MemPtr, Size)                                                                                     \
+#define SHU_MEMZERO(MemPtr, Size)                                                                                 \
     do                                                                                                            \
     {                                                                                                             \
         u8 *Ptr = (u8 *)(MemPtr);                                                                                 \
         for (i32 i = 0; (i < (Size)); ++i)                                                                        \
         {                                                                                                         \
             *Ptr++ = 0;                                                                                           \
+        }                                                                                                         \
+    } while (0)
+
+#define SHU_MEMSET(MemPtr, Value, Size)                                                                           \
+    do                                                                                                            \
+    {                                                                                                             \
+        u8 *Ptr = (u8 *)(MemPtr);                                                                                 \
+        for (i32 i = 0; (i < (Size)); ++i)                                                                        \
+        {                                                                                                         \
+            *Ptr++ = (Value);                                                                                     \
         }                                                                                                         \
     } while (0)
 
@@ -445,7 +455,7 @@ struct stack_array
     inline void
     clear()
     {
-        MEMZERO(data, maxSize * sizeof(T));
+        SHU_MEMZERO(data, maxSize * sizeof(T));
     }
 };
 

@@ -4,6 +4,7 @@
 #include <memory.h>
 #include <platform/platform.h>
 #include <utility>
+#include <memory/memory.h>
 
 template<typename T>
 struct shoora_dynamic_array
@@ -12,6 +13,7 @@ struct shoora_dynamic_array
     T *arr;
     i32 Size = 0;
     i32 Capacity = 0;
+    freelist_allocator *Allocator;
 
   public:
     shoora_dynamic_array()
@@ -19,44 +21,76 @@ struct shoora_dynamic_array
         this->Capacity = 0;
         Size = 0;
         this->arr = nullptr;
+        this->Allocator = nullptr;
     }
 
-    shoora_dynamic_array(const shoora_dynamic_array<T> &Rhs)
+    shoora_dynamic_array(shoora_memory_type Type)
+    {
+        this->Capacity = 0;
+        Size = 0;
+        this->arr = nullptr;
+
+        this->Allocator = GetFreelistAllocator(Type);
+    }
+
+    void
+    SetAllocator(shoora_memory_type Type)
+    {
+        this->Allocator = GetFreelistAllocator(Type);
+    }
+
+    shoora_dynamic_array(const shoora_dynamic_array<T> &Rhs) = delete;
+#if 0
     {
         this->Capacity = Rhs.Capacity;
         Size = Rhs.Size;
-        this->arr = new T[this->Capacity];
+        this->Allocator = Rhs.Allocator;
+
+        // this->arr = new T[this->Capacity];
+        this->arr = Allocator->Allocate(sizeof(T) * this->Capacity);
         for(i32 i = 0; i < Size; ++i)
         {
             this->arr[i] = Rhs[i];
         }
     }
+#endif
 
     shoora_dynamic_array(shoora_dynamic_array<T> &&Rhs)
     {
         this->Capacity = Rhs.Capacity;
         this->Size = Rhs.Size;
         this->arr = Rhs.arr;
+        this->Allocator = Rhs.Allocator;
 
         Rhs.Capacity = 0;
         Rhs.Size = 0;
         Rhs.arr = nullptr;
+        Rhs.Allocator = nullptr;
     }
 
-    shoora_dynamic_array &
-    operator=(const shoora_dynamic_array<T> &Rhs)
+    shoora_dynamic_array &operator=(const shoora_dynamic_array<T> &Rhs) = delete;
+#if 0
     {
-        if(this->arr) { delete[] this->arr; }
+        if(this->arr)
+        {
+            ASSERT(this->Allocator != nullptr)
+            delete[] this->arr;
+        }
 
         this->Capacity = Rhs.Capacity;
-        Size = Rhs.Size;
-        this->arr = new T[this->Capacity];
+        this->Size = Rhs.Size;
+
+        this->Allocator = Rhs.Allocator;
+        this->arr = Allocator->Allocate(sizeof(T) * this->Capacity);
+
+        // this->arr = new T[this->Capacity];
         for(i32 i = 0; i < Size; ++i)
         {
             this->arr[i] = Rhs[i];
         }
         return *this;
     }
+#endif
 
     shoora_dynamic_array &
     operator=(shoora_dynamic_array<T> &&Rhs)
@@ -64,10 +98,14 @@ struct shoora_dynamic_array
         this->Capacity = Rhs.Capacity;
         Size = Rhs.Size;
         this->arr = Rhs.arr;
+        this->Allocator = Rhs.Allocator;
+
+        ASSERT(this->Allocator != nullptr);
 
         Rhs.Capacity = 0;
         Rhs.Size = 0;
         Rhs.arr = nullptr;
+        Rhs.Allocator = nullptr;
 
         return *this;
     }
@@ -78,7 +116,9 @@ struct shoora_dynamic_array
         // LogFatalUnformatted("Dynamic array destructor called!\n");
         if(arr != nullptr)
         {
-            delete[] arr;
+            // delete[] arr;
+            ASSERT(Allocator != nullptr);
+            Allocator->Free(arr);
         }
         this->Capacity = 0;
         this->Size = 0;
@@ -90,7 +130,8 @@ struct shoora_dynamic_array
         ASSERT(this->Capacity == 0 && this->Size == 0);
 
         this->Capacity = capacity;
-        arr = new T[this->Capacity];
+        this->arr = (T *)this->Allocator->Allocate(sizeof(T) * this->Capacity);
+        // arr = new T[this->Capacity];
         Size = 0;
 
         this->Clear();
@@ -103,14 +144,15 @@ struct shoora_dynamic_array
     Resize()
     {
         i32 NewCapacity = Capacity == 0 ? 1 : Capacity*2;
-        T *NewArr = new T[NewCapacity];
-        for (i32 i = 0; i < Size; ++i)
-        {
-            NewArr[i] = std::move(arr[i]);
+        T *NewArr = nullptr;
+        if (this->arr != nullptr) {
+            NewArr = (T *)this->Allocator->ReAllocate(arr, NewCapacity * sizeof(T));
+        } else {
+            NewArr = (T *)this->Allocator->Allocate(sizeof(T));
         }
-        delete[] arr;
-        arr = NewArr;
-        Capacity = NewCapacity;
+
+        this->arr = NewArr;
+        this->Capacity = NewCapacity;
 
         // LogWarn("Array has been resized to capacity: %d!\n", Capacity);
     }
@@ -189,7 +231,7 @@ struct shoora_dynamic_array
     Clear()
     {
         ASSERT(Capacity >= Size);
-        memset(arr, 0, sizeof(T) * Capacity);
+        SHU_MEMZERO(arr, sizeof(T) * Capacity);
     }
 };
 

@@ -237,16 +237,6 @@ struct shoora_vulkan_geometry
     VkDescriptorSet DescriptorSet;
 };
 
-// TODO: Move this into application.cpp whenever it is created.
-#include <memory/memory.h>
-
-// TODO: memory used by the engine does not belong to the renderer. Move it as soon as you can!
-struct app_memory
-{
-    memory_arena PermArena;
-    memory_arena FrameArena;
-};
-
 struct shoora_vulkan_context
 {
     VkInstance Instance;
@@ -267,15 +257,12 @@ struct shoora_vulkan_context
     // shoora_vulkan_graphics_pipeline WireframePipeline;
 
     shoora_vulkan_synchronization SyncHandles;
-
+    
     shoora_camera Camera;
 
     shoora_vulkan_imgui ImContext;
 
     shoora_vulkan_geometry Geometry;
-
-    // TODO: Move this out of there as it does not belong in the renderer.
-    app_memory AppMemory;
 
     b32 IsInitialized;
     u32 CurrentFrame;

@@ -4,6 +4,18 @@
 #include <defines.h>
 #include "freelist_allocator.h"
 
+#define MAX_TASK_MEMORY_COUNT 4
+
+#define ShuAllocate(Size, MemType, ...) ShuAllocate_(Size, MemType, __VA_ARGS__)
+#define ShuAllocateStruct(Type, MemType, ...) (Type *)ShuAllocate_(sizeof(Type), MemType, __VA_ARGS__)
+#define ShuAllocateArray(Type, Count, MemType, ...) (Type *)ShuAllocate_(sizeof(Type)*Count, MemType, __VA_ARGS__)
+
+#if 0
+#define ShuAllocateGlobal(Size, ...) ShuAllocate_(Size, __VA_ARGS__)
+#define ShuAllocateStructGlobal(Type, ...) (Type *)ShuAllocate_(sizeof(Type), __VA_ARGS__)
+#define ShuAllocateArrayGlobal(Type, Count, ...) (Type *)ShuAllocate_(sizeof(Type)*Count, __VA_ARGS__)
+#endif
+
 struct memory_arena
 {
     void *Base;
@@ -19,21 +31,6 @@ struct temporary_memory
     size_t ArenaUsedAtBegin;
 };
 
-void InitializeArena(memory_arena *Arena, size_t Size, void *BasePtr);
-size_t GetArenaSizeRemaining(memory_arena *Arena, size_t Alignment = 4);
-temporary_memory BeginTemporaryMemory(memory_arena *Arena);
-void EndTemporaryMemory(temporary_memory TempMemory);
-void ValidateArena(memory_arena *Arena);
-void SubArena(memory_arena *Result, memory_arena *Arena, size_t Size, size_t Alignment = 16);
-
-void *ShuAllocate_(memory_arena *Arena, size_t SizeInit, size_t Alignment = 4);
-char *ShuAllocateString(memory_arena *Arena, const char *Source);
-
-#define ShuAllocate(Arena, Size, ...) ShuAllocate_(Arena, Size, __VA_ARGS__)
-#define ShuAllocateStruct(Arena, Type, ...) (Type *)ShuAllocate_(Arena, sizeof(Type), __VA_ARGS__)
-#define ShuAllocateArray(Arena, Count, Type, ...) (Type *)ShuAllocate_(Arena, sizeof(Type)*Count, __VA_ARGS__)
-
-#define MAX_TASK_MEMORY_COUNT 4
 struct task_with_memory
 {
     b32 BeingUsed;
@@ -42,9 +39,41 @@ struct task_with_memory
     temporary_memory TemporaryMemory;
 };
 
-// NOTE: Initialize TASK_COUNT number of MemoryArenas which will be used by the individual threads in the
-// threadPool presnet in the platform layer.
-void InitializeTaskMemories(memory_arena *Arena);
+struct shoora_memory
+{
+    memory_arena PermanentArena;
+    memory_arena FrameArena;
+
+    memory_arena GlobalFreelistArena;
+    memory_arena FrameFreelistArena;
+    freelist_allocator GlobalFreelistAllocator;
+    freelist_allocator FrameFreelistAllocator;
+
+    task_with_memory TaskMemories[MAX_TASK_MEMORY_COUNT];
+};
+
+enum shoora_memory_type
+{
+    MEMTYPE_NONE,
+    MEMTYPE_GLOBAL,
+    MEMTYPE_FREELISTGLOBAL,
+    MEMTYPE_FREELISTFRAME,
+    MEMTYPE_FRAME,
+};
+
+void InitializeMemory(size_t GlobalMemSize, void *GlobalMem, size_t FrameMemSize, void *FrameMem);
+size_t GetRemainingMemory(shoora_memory_type Type, size_t Alignment = 4);
+freelist_allocator *GetFreelistAllocator(shoora_memory_type Type);
+
+temporary_memory BeginTemporaryMemory(memory_arena *Arena);
+void EndTemporaryMemory(temporary_memory TempMemory);
+
+void ValidateArena(shoora_memory_type Type);
+
+void SubArena(memory_arena *Result, shoora_memory_type Type, size_t Size, size_t Alignment = 16);
+
+void *ShuAllocate_(size_t SizeInit, shoora_memory_type Type = MEMTYPE_GLOBAL, size_t Alignment = 4);
+char *ShuAllocateString(const char *Source, shoora_memory_type Type = MEMTYPE_GLOBAL);
 
 // NOTE: Gets called before starting a thread
 task_with_memory *GetTaskMemory();

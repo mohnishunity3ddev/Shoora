@@ -62,6 +62,7 @@ freelist_allocator::Allocate(size_t RequiredSize, const size_t Alignment)
     // "Alignment" that was input here. This padding also includes the allocation header size.
     size_t HeaderSizePlusAlignPadding = 0;
     flNode *FreeNode = nullptr, *PreviousNode = nullptr;
+    RequiredSize = MAX(RequiredSize, freelist_allocator::FreeNodeHeaderSize);
 
     // NOTE: Find the first free block that fits our requirements.
     this->FirstFit(Alignment, RequiredSize, HeaderSizePlusAlignPadding, &FreeNode, &PreviousNode);
@@ -85,6 +86,7 @@ freelist_allocator::Allocate(size_t RequiredSize, const size_t Alignment)
         // NOTE: Create a new free node, which has remaining space.
         if(RemainingSpace > 0)
         {
+            ASSERT(RemainingSpace >= freelist_allocator::FreeNodeHeaderSize)
             flNode *NextFreeNode = (flNode *)((u8 *)FreeNode + AllocationBlockSize);
             NextFreeNode->data.BlockSize = RemainingSpace;
             this->Freelist.Insert(FreeNode, NextFreeNode);
@@ -127,6 +129,7 @@ freelist_allocator::ReAllocate(void *MemoryPtr, size_t NewSize, const size_t Ali
                                                             freelist_allocator::AllocationHeaderSize);
     size_t HeaderPlusAlign = freelist_allocator::AllocationHeaderSize + AllocationHeader->AlignmentPadding;
     size_t OldSize = AllocationHeader->BlockSize - HeaderPlusAlign;
+    NewSize = MAX(NewSize, freelist_allocator::FreeNodeHeaderSize);
 
     return this->ReAllocateSized(MemoryPtr, OldSize, NewSize, Alignment);
 }
@@ -176,9 +179,22 @@ freelist_allocator::ReAllocateSized(void *OldMemoryPtr, size_t OldSize, size_t N
                         }
                         else
                         {
+                            ASSERT(FreeblockSpaceLeft >= freelist_allocator::FreeNodeHeaderSize);
+
                             // NOTE: A part of the space left in freeblock has been used, so remove that much space
                             // from the free block.
-                            CurrFreeBlock->data.BlockSize = FreeblockSpaceLeft;
+                            flNode *CurrFreeBlockExt = (flNode *)((u8 *)CurrFreeBlock + ExtraSpace);
+                            CurrFreeBlockExt->data.BlockSize = FreeblockSpaceLeft;
+                            CurrFreeBlockExt->next = CurrFreeBlock->next;
+                            if (PrevFreeBlock)
+                            {
+                                PrevFreeBlock->next = CurrFreeBlockExt;
+                            }
+                            else if (CurrFreeBlock == Freelist.head)
+                            {
+                                Freelist.head = CurrFreeBlockExt;
+                            }
+                            CurrFreeBlock = CurrFreeBlockExt;
                         }
 
                         FoundContiguousFreeblock = true;
@@ -217,8 +233,8 @@ freelist_allocator::ReAllocateSized(void *OldMemoryPtr, size_t OldSize, size_t N
             }
             else
             {
-                LogErrorUnformatted("[ALLOCATOR: ReAlloc]Could not allocate for new size since the allocator has run "
-                                    "out of space. Sucks to be you brother! :(.\n");
+                LogErrorUnformatted("[ALLOCATOR: ReAlloc] Could not allocate for new size since the allocator has "
+                                    "run out of space. Sucks to be you brother! :(.\n");
             }
         }
     }
@@ -284,6 +300,15 @@ freelist_allocator::ReAllocateSized(void *OldMemoryPtr, size_t OldSize, size_t N
             Freelist.Remove(NewFreeNode, NewFreeNode->next);
         }
 
+        if (PrevFreeNode != nullptr &&
+            (size_t)((u8 *)PrevFreeNode + PrevFreeNode->data.BlockSize) == (size_t)NewFreeNode)
+        {
+            // NOTE: the freenode aligns perfectly with its next freenode. merging both current and next blocks
+            // into one.
+            PrevFreeNode->data.BlockSize += PrevFreeNode->next->data.BlockSize;
+            Freelist.Remove(PrevFreeNode, NewFreeNode);
+        }
+
         ASSERT(NewFreeNode != nullptr);
     }
 
@@ -316,6 +341,7 @@ freelist_allocator::Free(void *MemoryPtr)
 
     flNode *NewFreeNode = (flNode *)((u8 *)AllocationHeader - AllocationHeader->AlignmentPadding);
     size_t FreeBlockSize = AllocationHeader->BlockSize;
+    ASSERT(FreeBlockSize >= freelist_allocator::FreeNodeHeaderSize);
     NewFreeNode->data.BlockSize = FreeBlockSize;
     NewFreeNode->next = nullptr;
 
@@ -501,6 +527,9 @@ freelist_allocator_test()
     ASSERT(Allocator.Freelist.numItems == 1);
 
     Allocator.Free(newi);
+#endif
+
+#if 1
 
 #endif
 
@@ -509,6 +538,65 @@ freelist_allocator_test()
     // NOTE: not doing this here, since the linked list destructor in the Freelist will call its destructor and do
     // this for us.
     // free(Mem);
+}
+
+#include <containers/dynamic_array.h>
+void
+dynamic_array_test()
+{
+    shoora_dynamic_array<i32> Nums1{MEMTYPE_FREELISTGLOBAL};
+    shoora_dynamic_array<i32> Nums2{MEMTYPE_FREELISTGLOBAL};
+#if 1
+    for (i32 i = 0; i < 100; ++i)
+    {
+        Nums1.emplace_back(i + 1);
+        Nums2.emplace_back(i + 2);
+    }
+#else
+    Nums1.reserve(30);
+    Nums2.reserve(30);
+    for (i32 i = 0; i < 30; ++i)
+    {
+        Nums1.emplace_back(i + 1);
+        Nums2.emplace_back(101 + i);
+    }
+
+#endif
+
+#if 0
+    LogWarnUnformatted("Nums 1 Array: \n");
+    for (i32 i = 0; i < Nums1.size(); ++i)
+    {
+        LogInfo("%d, ", Nums1[i]);
+    }
+    LogWarnUnformatted("\nNums 2 Array: \n");
+    for (i32 i = 0; i < Nums2.size(); ++i)
+    {
+        LogInfo("%d, ", Nums2[i]);
+    }
+#endif
+
+    for (i32 i = 0; i < Nums1.size(); ++i)
+    {
+        ASSERT(Nums1[i] == (i + 1));
+    }
+
+    for (i32 i = 0; i < Nums2.size(); ++i)
+    {
+        ASSERT(Nums2[i] == (i + 2));
+    }
+
+    auto *allocator = GetFreelistAllocator(MEMTYPE_FREELISTGLOBAL);
+    flNode *Node = allocator->Freelist.head;
+    while (Node != nullptr)
+    {
+        auto blockSize = Node->data.BlockSize;
+
+        Node = Node->next;
+        int x = 0;
+    }
+
+    int x = 0;
 }
 
 #include <utils/random/random.h>
