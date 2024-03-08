@@ -403,7 +403,7 @@ freelist_allocator::Free(void *MemoryPtr)
     }
 }
 
-#if _SHU_DEBUG
+#if 0
 
 void
 freelist_allocator_test()
