@@ -26,10 +26,6 @@ shoora_scene::shoora_scene()
     Bodies.SetAllocator(MEMTYPE_FREELISTGLOBAL);
     Constraints2D.SetAllocator(MEMTYPE_FREELISTGLOBAL);
     PenetrationConstraints2D.SetAllocator(MEMTYPE_FREELISTGLOBAL);
-
-    Bodies.reserve(32);
-    Constraints2D.reserve(64);
-    PenetrationConstraints2D.reserve(64);
 }
 
 shoora_scene::~shoora_scene()
@@ -65,7 +61,7 @@ shoora_scene::AddBody(const shoora_body &Body)
 shoora_body *
 shoora_scene::AddBody(shoora_body &&Body)
 {
-    ASSERT(!"Not tested!");
+    // ASSERT(!"Not tested!");
     Bodies.emplace_back((shoora_body &&)Body);
 
     shoora_body *b = Bodies.get(Bodies.size() - 1);
@@ -92,7 +88,7 @@ shoora_scene::AddSphereBody(const shu::vec3f &Pos, u32 ColorU32, f32 Radius, f32
                             const shu::vec3f &EulerAngles)
 {
     shoora_shape_sphere *SphereShape = ShuAllocateStruct(shoora_shape_sphere, MEMTYPE_GLOBAL);
-    auto shape = shoora_shape_sphere(Radius);
+    shoora_shape_sphere shape = shoora_shape_sphere(Radius);
     SHU_MEMCOPY(&shape, SphereShape, sizeof(shoora_shape_sphere));
 
     shoora_body Body{GetColor(ColorU32), Pos, Mass, Restitution, SphereShape, EulerAngles};
@@ -222,18 +218,24 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
     }
 
     // Broadphase
-    shoora_dynamic_array<collision_pair> CollisionPairs{MEMTYPE_FREELISTGLOBAL};
-    CollisionPairs.reserve(BodyCount*BodyCount);
-    broad_phase::BroadPhase(Bodies, BodyCount, CollisionPairs, dt);
+    memory_arena *FrameArena = GetArena(MEMTYPE_FRAME);
+    temporary_memory MemoryFlush = BeginTemporaryMemory(FrameArena);
+    collision_pair *CollisionPairs = ShuAllocateArray(collision_pair, BodyCount * BodyCount, MEMTYPE_FRAME);
+    SHU_MEMZERO(CollisionPairs, BodyCount * BodyCount * sizeof(collision_pair));
+    i32 FinalPairsCount = 0;
+
+    // shoora_dynamic_array<collision_pair> CollisionPairs{MEMTYPE_FREELISTGLOBAL};
+    // CollisionPairs.reserve(BodyCount*BodyCount);
+    broad_phase::BroadPhase(Bodies, BodyCount, CollisionPairs, FinalPairsCount, dt);
 
     i32 NumContacts = 0;
     const int MaxContacts = BodyCount * BodyCount;
 
-    size_t contactsMemSize = sizeof(contact) * CollisionPairs.size();
+    size_t contactsMemSize = sizeof(contact) * FinalPairsCount;
     contact *Contacts = (contact *)_alloca(contactsMemSize);
     memset(Contacts, 0, contactsMemSize);
 
-    for(i32 i = 0; i < CollisionPairs.size(); ++i)
+    for(i32 i = 0; i < FinalPairsCount; ++i)
     {
         const collision_pair &Pair = CollisionPairs[i];
         shoora_body *BodyA = &Bodies[Pair.A];
@@ -323,6 +325,8 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
             bounds.Draw();
         }
     }
+
+    EndTemporaryMemory(MemoryFlush);
 }
 
 void

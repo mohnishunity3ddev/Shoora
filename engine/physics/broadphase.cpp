@@ -51,10 +51,10 @@ SortBodiesBounds(const shoora_body *Bodies, const i32 BodyCount, pseudo_body *So
 }
 
 void
-BuildPairs(shoora_dynamic_array<collision_pair> &CollisionPairs, const pseudo_body *SortedPseudoBodies,
+BuildPairs(collision_pair *CollisionPairs, i32 &PairCount, const pseudo_body *SortedPseudoBodies,
            const i32 SortedPseudoBodyCount)
 {
-    CollisionPairs.Clear();
+    // CollisionPairs.Clear();
 
     // At this point, the bodies should be sorted. We build collision Pairs now.
     for(i32 i = 0; i < SortedPseudoBodyCount; ++i)
@@ -78,13 +78,13 @@ BuildPairs(shoora_dynamic_array<collision_pair> &CollisionPairs, const pseudo_bo
             if (!B.IsMin) { continue; }
 
             Pair.B = B.Id;
-            CollisionPairs.push_back(Pair);
+            CollisionPairs[PairCount++] = (Pair);
         }
     }
 }
 
 void
-SweepAndPrune1D(const shoora_body *Bodies, const i32 BodyCount, shoora_dynamic_array<collision_pair> &FinalPairs,
+SweepAndPrune1D(const shoora_body *Bodies, const i32 BodyCount, collision_pair *FinalPairs, i32 &PairCount,
                 const f32 DeltaTime)
 {
     pseudo_body *SortedPseudoBodies = (pseudo_body *)_alloca(sizeof(pseudo_body) * BodyCount * 2);
@@ -95,13 +95,13 @@ SweepAndPrune1D(const shoora_body *Bodies, const i32 BodyCount, shoora_dynamic_a
     // each body. One is the dot product of its Bounds.Min with Axis, the other is the dot product of its
     // Bounds.Max with chosen Axis.
     i32 SortedPseudoBodyCount = BodyCount * 2;
-    BuildPairs(FinalPairs, SortedPseudoBodies, SortedPseudoBodyCount);
+    BuildPairs(FinalPairs, PairCount, SortedPseudoBodies, SortedPseudoBodyCount);
 }
 
 void
 broad_phase::BroadPhase(const shoora_body *Bodies, const i32 BodyCount,
-                        shoora_dynamic_array<collision_pair> &FinalPairs, const f32 deltaTime)
+                        collision_pair *FinalPairs, i32 &PairCount, const f32 deltaTime)
 {
-    FinalPairs.Clear();
-    SweepAndPrune1D(Bodies, BodyCount, FinalPairs, deltaTime);
+    // FinalPairs.Clear();
+    SweepAndPrune1D(Bodies, BodyCount, FinalPairs, PairCount, deltaTime);
 }

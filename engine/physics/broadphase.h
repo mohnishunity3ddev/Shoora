@@ -34,8 +34,8 @@ struct collision_pair
 struct broad_phase
 {
     broad_phase() = delete;
-    static void BroadPhase(const shoora_body *Bodies, const i32 BodyCount,
-                           shoora_dynamic_array<collision_pair> &FinalPairs, const f32 deltaTime);
+    static void BroadPhase(const shoora_body *Bodies, const i32 BodyCount, collision_pair *FinalPairs,
+                           i32 &PairCount, const f32 deltaTime);
 };
 
 #define BROADPHASE_H

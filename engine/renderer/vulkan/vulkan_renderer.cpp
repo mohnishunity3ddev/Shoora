@@ -435,7 +435,8 @@ AddStandardSandBox()
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.5f;
     BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
-    *BoxShape = shoora_shape_cube(g_boxGround, ARRAY_SIZE(g_boxGround));
+    shoora_shape_cube shape = shoora_shape_cube(g_boxGround, ARRAY_SIZE(g_boxGround));
+    SHU_MEMCOPY(&shape, BoxShape, sizeof(shoora_shape_cube));
     body.Shape = BoxShape;
     body.Scale = body.Shape->GetDim();
     body.Color = GetColor(colorU32::Proto_Green);
@@ -450,7 +451,8 @@ AddStandardSandBox()
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.0f;
     BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
-    *BoxShape = shoora_shape_cube(g_boxWall0, ARRAY_SIZE(g_boxWall0));
+    shape = shoora_shape_cube(g_boxWall0, ARRAY_SIZE(g_boxWall0));
+    SHU_MEMCOPY(&shape, BoxShape, sizeof(shoora_shape_cube));
     body.Shape = BoxShape;
     body.Scale = body.Shape->GetDim();
     body.Color = GetColor(colorU32::Proto_Blue);
@@ -465,7 +467,8 @@ AddStandardSandBox()
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.0f;
     BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
-    *BoxShape = shoora_shape_cube(g_boxWall0, ARRAY_SIZE(g_boxWall0));
+    shape = shoora_shape_cube(g_boxWall0, ARRAY_SIZE(g_boxWall0));
+    SHU_MEMCOPY(&shape, BoxShape, sizeof(shoora_shape_cube));
     body.Shape = BoxShape;
     body.Scale = body.Shape->GetDim();
     body.Color = GetColor(colorU32::Proto_Orange);
@@ -480,7 +483,8 @@ AddStandardSandBox()
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.0f;
     BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
-    *BoxShape = shoora_shape_cube(g_boxWall1, ARRAY_SIZE(g_boxWall1));
+    shape = shoora_shape_cube(g_boxWall1, ARRAY_SIZE(g_boxWall1));
+    SHU_MEMCOPY(&shape, BoxShape, sizeof(shoora_shape_cube));
     body.Shape = BoxShape;
     body.Scale = body.Shape->GetDim();
     body.Color = GetColor(colorU32::Proto_Red);
@@ -495,11 +499,14 @@ AddStandardSandBox()
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.0f;
     BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
-    *BoxShape = shoora_shape_cube(g_boxWall1, ARRAY_SIZE(g_boxWall1));
+    shape = shoora_shape_cube(g_boxWall1, ARRAY_SIZE(g_boxWall1));
+    SHU_MEMCOPY(&shape, BoxShape, sizeof(shoora_shape_cube));
     body.Shape = BoxShape;
     body.Scale = body.Shape->GetDim();
     body.Color = GetColor(colorU32::Proto_Yellow);
     Scene->AddBody(std::move(body));
+
+    int x = 0;
 }
 
 void
@@ -523,8 +530,8 @@ InitScene()
     // Scene->AddBody(std::move(body));
     // AddStandardSandBox();
 #endif
-
-#if 1
+    AddStandardSandBox();
+#if 0
     // Dynamic Bodies
     shoora_body Body;
     for(i32 x = 0; x < 6; x++)
@@ -725,7 +732,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     shoora_camera *pCamera = &VulkanContext->Camera;
     SetupCamera(pCamera, shoora_projection::PROJECTION_PERSPECTIVE, 0.1f, 1000.0f, 16.0f / 9.0f,
                 GlobalWindowSize.y, 45.0f, shu::Vec3f(0, 0, -10));
-#if 1
+#if 0
     pCamera->Pos = shu::Vec3f(14.1368380f, 106.438675f, -40.9848938f);
     pCamera->Front = shu::Vec3f(-0.332412988f, -0.475319535f, -0.814599872f);
     pCamera->Right = shu::Vec3f(-0.925878108f , 0.0f, 0.377822191f);
@@ -796,7 +803,9 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     shoora_scene TempScene = shoora_scene{};
     SHU_MEMCOPY(&TempScene, Scene, sizeof(shoora_scene));
 
-    // Scene->Bodies.SetAllocator(MEMTYPE_FREELISTGLOBAL);
+    Scene->Bodies.SetAllocator(MEMTYPE_FREELISTGLOBAL);
+    Scene->Constraints2D.SetAllocator(MEMTYPE_FREELISTGLOBAL);
+    Scene->PenetrationConstraints2D.SetAllocator(MEMTYPE_FREELISTGLOBAL);
     InitScene();
 }
 

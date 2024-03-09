@@ -121,7 +121,7 @@ struct shoora_dynamic_array
             Allocator->Free(arr);
             arr = nullptr;
         }
-        
+
         this->Capacity = 0;
         this->Size = 0;
     }

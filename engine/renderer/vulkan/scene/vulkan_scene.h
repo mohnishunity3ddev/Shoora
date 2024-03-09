@@ -11,13 +11,12 @@
 struct shoora_scene
 {
   private:
-    shoora_dynamic_array<shoora_body> Bodies;
+    b32 SceneAddBegin = false, SceneAddEnd = false;
 
-    // TODO: Use our dynamic array instead here.
+  public:
+    shoora_dynamic_array<shoora_body> Bodies;
     shoora_dynamic_array<constraint_2d *> Constraints2D;
     shoora_dynamic_array<penetration_constraint_2d> PenetrationConstraints2D;
-
-    b32 SceneAddBegin = false, SceneAddEnd = false;
 
   public:
     shoora_scene();

@@ -66,7 +66,6 @@ freelist_allocator::Allocate(size_t RequiredSize, const size_t Alignment)
 
     // NOTE: Find the first free block that fits our requirements.
     this->FirstFit(Alignment, RequiredSize, HeaderSizePlusAlignPadding, &FreeNode, &PreviousNode);
-    // ASSERT(FreeNode != nullptr);
 
     if(FreeNode != nullptr)
     {
@@ -77,10 +76,6 @@ freelist_allocator::Allocate(size_t RequiredSize, const size_t Alignment)
         ASSERT(FreeNode->data.BlockSize >= AllocationBlockSize);
         size_t RemainingSpace = FreeNode->data.BlockSize - AllocationBlockSize;
 
-        if(RemainingSpace == 0)
-        {
-            int x = 0;
-        }
         ASSERT(RemainingSpace >= 0 && "Freelist should have enough space for this allocation");
 
         // NOTE: Create a new free node, which has remaining space.
@@ -91,8 +86,6 @@ freelist_allocator::Allocate(size_t RequiredSize, const size_t Alignment)
             NextFreeNode->data.BlockSize = RemainingSpace;
             this->Freelist.Insert(FreeNode, NextFreeNode);
         }
-
-        // LogInfo("[Allocate]: Memory Address of free node: %zu.\n", (size_t)FreeNode);
 
         // NOTE: Remove the freenode that we found for the current allocation since its now being used for allocation.
         this->Freelist.Remove(PreviousNode, FreeNode);
@@ -184,8 +177,8 @@ freelist_allocator::ReAllocateSized(void *OldMemoryPtr, size_t OldSize, size_t N
                             // NOTE: A part of the space left in freeblock has been used, so remove that much space
                             // from the free block.
                             flNode *CurrFreeBlockExt = (flNode *)((u8 *)CurrFreeBlock + ExtraSpace);
-                            CurrFreeBlockExt->data.BlockSize = FreeblockSpaceLeft;
                             CurrFreeBlockExt->next = CurrFreeBlock->next;
+                            CurrFreeBlockExt->data.BlockSize = FreeblockSpaceLeft;
                             if (PrevFreeBlock)
                             {
                                 PrevFreeBlock->next = CurrFreeBlockExt;
