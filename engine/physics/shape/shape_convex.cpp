@@ -14,7 +14,7 @@ shoora_shape_convex::shoora_shape_convex(const shu::vec3f *Points, const i32 Num
 PLATFORM_WORK_QUEUE_CALLBACK(BuildWork)
 {
     shape_convex_build_work_data *Work = (shape_convex_build_work_data *)Args;
-    new (Work->ConvexShapeMemory) shoora_shape_convex(Work->Points, Work->NumPoints, Work->Arena);
+    new (Work->ConvexShapeMemory) shoora_shape_convex(Work->Points, Work->NumPoints, &Work->Arena);
     if (Work->CompleteCallback)
     {
         Work->CompleteCallback(Work->ConvexShapeMemory);
@@ -40,7 +40,7 @@ BuildConvexThreaded(platform_work_queue *Queue, shoora_shape_convex *ConvexMem, 
     WorkData->NumPoints = NumPoints;
     WorkData->CompleteCallback = OnComplete;
     WorkData->TaskMem = TaskMem;
-    WorkData->Arena = Arena;
+    WorkData->Arena = *Arena;
 
     Platform_AddWorkEntry(Queue, BuildWork, WorkData);
 }
