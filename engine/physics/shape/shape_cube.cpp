@@ -16,8 +16,13 @@ shoora_shape_cube::shoora_shape_cube(const shu::vec3f *Points, const i32 Num)
 }
 
 void
-shoora_shape_cube::Build(const shu::vec3f *Points, const i32 Num)
+shoora_shape_cube::Build(const shu::vec3f *Points, const i32 Num, memory_arena *Arena)
 {
+    if(Arena != nullptr)
+    {
+        ASSERT(!"Handle this case where a memory arena is passed!");
+    }
+
     for (i32 i = 0; i < Num; ++i)
     {
         mBounds.Expand(Points[i]);

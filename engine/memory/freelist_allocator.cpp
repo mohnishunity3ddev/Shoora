@@ -26,7 +26,7 @@ freelist_allocator::FirstFit(const size_t &Alignment, const size_t &RequiredSize
     flNode *CurrentNode = this->Freelist.head;
     flNode *Prev = nullptr;
     size_t PaddingForAlignment = 0;
-
+    
     while (CurrentNode != nullptr)
     {
         PaddingForAlignment = GetAlignmentPaddingWithRequirement((size_t)CurrentNode, Alignment,

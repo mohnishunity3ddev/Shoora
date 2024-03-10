@@ -39,6 +39,12 @@ struct shoora_dynamic_array
         this->Allocator = GetFreelistAllocator(Type);
     }
 
+    void
+    SetAllocator(freelist_allocator *Allocator)
+    {
+        this->Allocator = Allocator;
+    }
+
     shoora_dynamic_array(const shoora_dynamic_array<T> &Rhs) = delete;
 #if 0
     {

@@ -21,7 +21,7 @@ struct shoora_shape
     shoora_shape(shoora_mesh_type Type);
     shoora_shape(shoora_mesh_type Type, shoora_mesh_filter *MeshFilter);
 
-    virtual void Build(const shu::vec3f *Points, const i32 Num) {}
+    virtual void Build(const shu::vec3f *Points, const i32 Num, memory_arena *Arena  = nullptr) {}
 
     virtual ~shoora_shape() = default;
     virtual shu::mat3f InertiaTensor() const = 0;
@@ -140,7 +140,7 @@ struct shoora_shape_cube : shoora_shape
     shoora_shape_cube() = delete;
     explicit shoora_shape_cube(u32 Width, u32 Height, u32 Depth);
     explicit shoora_shape_cube(const shu::vec3f *Points, const i32 Num);
-    virtual void Build(const shu::vec3f *Points, const i32 Num) override;
+    virtual void Build(const shu::vec3f *Points, const i32 Num, memory_arena *Arena = nullptr) override;
 
     virtual ~shoora_shape_cube();
 
@@ -188,8 +188,8 @@ struct shoora_shape_convex : shoora_shape
 {
   public:
     shoora_shape_convex() = delete;
-    explicit shoora_shape_convex(const shu::vec3f *Points, const i32 Num);
-    virtual void Build(const shu::vec3f *Points, const i32 Num) override;
+    explicit shoora_shape_convex(const shu::vec3f *Points, const i32 Num, memory_arena *Arena = nullptr);
+    virtual void Build(const shu::vec3f *Points, const i32 Num, memory_arena *Arena = nullptr) override;
 
     virtual ~shoora_shape_convex();
 
@@ -206,8 +206,12 @@ struct shoora_shape_convex : shoora_shape
     // velocity of the vertex travelling the fastest in this Direction.
     virtual f32 FastestLinearSpeed(const shu::vec3f &AngularVelocity, const shu::vec3f &Direction) const override;
 
+    static size_t GetRequiredSizeForConvexBuild(u32 TotalNumPoints);
+
   public:
-    shoora_dynamic_array<shu::vec3f> mPoints;
+    shu::vec3f *Points = nullptr, *HullPoints = nullptr;
+    tri_t *HullTris = nullptr;
+    i32 NumPoints = 0, NumHullPoints = 0, NumHullTris = 0;
     shoora_bounds mBounds;
     shu::mat3f mInertiaTensor;
 
@@ -224,7 +228,7 @@ struct shoora_shape_convex : shoora_shape
     void BuildTetrahedron(const shu::vec3f *Vertices, const i32 VertexCount,
                           stack_array<shu::vec3f> &HullPoints, stack_array<tri_t> &HullTris);
     void ExpandConvexHull(stack_array<shu::vec3f> &HullPoints, stack_array<tri_t> &HullTris,
-                          const shoora_dynamic_array<shu::vec3f> &Vertices);
+                          const shu::vec3f *Vertices, const i32 VertexCount);
     // NOTE: Remove any points inside the tetrahedron from the lists.
     void RemoveInternalVertices(const stack_array<shu::vec3f> &HullPoints,
                                 const stack_array<tri_t> &HullTris, stack_array<shu::vec3f> &Vertices);
@@ -235,7 +239,7 @@ struct shoora_shape_convex : shoora_shape
                   stack_array<tri_t> &HullTris, const shu::vec3f &Point);
     void RemoveUnreferencedVertices(stack_array<shu::vec3f> &HullPoints,
                                     stack_array<tri_t> &HullTris);
-    void BuildConvexHull(const shoora_dynamic_array<shu::vec3f> &Vertices, stack_array<shu::vec3f> &HullPoints,
+    void BuildConvexHull(const shu::vec3f *Vertices, const i32 VertexCount, stack_array<shu::vec3f> &HullPoints,
                          stack_array<tri_t> &HullTris);
     b32 IsExternal(const stack_array<shu::vec3f> &Points, const stack_array<tri_t> &Tris, const shu::vec3f &Point);
     shu::vec3f CalculateCenterOfMass(const stack_array<shu::vec3f> &Points, const stack_array<tri_t> &Tris);

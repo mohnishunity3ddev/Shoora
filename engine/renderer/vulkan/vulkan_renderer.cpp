@@ -519,7 +519,8 @@ OnConvexBodyReady(shoora_shape_convex *Convex)
     body.SumForces = body.Acceleration = shu::vec3f::Zero();
     body.SumTorques = 0.0f;
     // body.Shape = std::make_unique<shoora_shape_convex>(GlobalJobQueue, g_diamond, ARRAY_SIZE(g_diamond));
-    Scene->AddBody(std::move(body));
+    shoora_body *ConvexBody = Scene->AddBody(std::move(body));
+    int x = 0;
 }
 
 void
@@ -532,7 +533,12 @@ InitScene()
     FillDiamond();
 
     shoora_shape_convex *ConvexShapeMemory = ShuAllocateStruct(shoora_shape_convex, MEMTYPE_GLOBAL);
-    BuildConvexThreaded(GlobalJobQueue, ConvexShapeMemory, g_diamond, ARRAY_SIZE(g_diamond), OnConvexBodyReady);
+
+    memory_arena ConvexArena{};
+    size_t ConvexMemSize = shoora_shape_convex::GetRequiredSizeForConvexBuild(ARRAY_SIZE(g_diamond));
+    SubArena(&ConvexArena, MEMTYPE_GLOBAL, ConvexMemSize);
+    BuildConvexThreaded(GlobalJobQueue, ConvexShapeMemory, g_diamond, ARRAY_SIZE(g_diamond), OnConvexBodyReady,
+                        &ConvexArena);
 
 #if 0
     shoora_body body = {};

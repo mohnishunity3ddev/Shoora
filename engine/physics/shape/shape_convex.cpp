@@ -1,38 +1,46 @@
 #include "shape.h"
 #include "shape_convex.h"
 
-shoora_shape_convex::shoora_shape_convex(const shu::vec3f *Points, const i32 Num)
+shoora_shape_convex::shoora_shape_convex(const shu::vec3f *Points, const i32 Num, memory_arena *Arena)
     : shoora_shape(shoora_mesh_type::CONVEX)
 {
-    this->Build(Points, Num);
+    ASSERT(Arena->Size != 0);
+    ASSERT(Arena->Used == 0);
+    ValidateArena(Arena);
+
+    this->Build(Points, Num, Arena);
 }
 
 PLATFORM_WORK_QUEUE_CALLBACK(BuildWork)
 {
     shape_convex_build_work_data *Work = (shape_convex_build_work_data *)Args;
-    new (Work->ConvexShapeMemory) shoora_shape_convex(Work->Points, Work->NumPoints);
-    if(Work->CompleteCallback)
+    new (Work->ConvexShapeMemory) shoora_shape_convex(Work->Points, Work->NumPoints, Work->Arena);
+    if (Work->CompleteCallback)
     {
         Work->CompleteCallback(Work->ConvexShapeMemory);
     }
+
     FreeTaskMemory(Work->TaskMem);
 }
 
 void
 BuildConvexThreaded(platform_work_queue *Queue, shoora_shape_convex *ConvexMem, shu::vec3f *Points, i32 NumPoints,
-                    OnWorkComplete *OnComplete)
+                    OnWorkComplete *OnComplete, memory_arena *Arena)
 {
+    ASSERT(Arena != nullptr);
+
     task_with_memory *TaskMem = GetTaskMemory();
     ASSERT(TaskMem->Arena.Base != nullptr && TaskMem->Arena.Size > 0 && !TaskMem->Arena.Used);
     TaskMem->BeingUsed = true;
 
-
-    auto *WorkData = (shape_convex_build_work_data *)ShuAllocate_(&TaskMem->Arena, sizeof(shape_convex_build_work_data));
+    auto *WorkData = (shape_convex_build_work_data *)ShuAllocate_(&TaskMem->Arena,
+                                                                  sizeof(shape_convex_build_work_data));
     WorkData->ConvexShapeMemory = ConvexMem;
     WorkData->Points = Points;
     WorkData->NumPoints = NumPoints;
     WorkData->CompleteCallback = OnComplete;
     WorkData->TaskMem = TaskMem;
+    WorkData->Arena = Arena;
 
     Platform_AddWorkEntry(Queue, BuildWork, WorkData);
 }
@@ -42,37 +50,65 @@ shoora_shape_convex::~shoora_shape_convex()
     LogInfoUnformatted("Destructor for convex hull called!\n");
 }
 
-void
-shoora_shape_convex::Build(const shu::vec3f *Points, const i32 Num)
+size_t
+shoora_shape_convex::GetRequiredSizeForConvexBuild(u32 NumPoints)
 {
-    this->mPoints.SetAllocator(MEMTYPE_FREELISTGLOBAL);
-    this->mPoints.Clear();
-    ASSERT(this->mPoints.capacity() == 0);
-    this->mPoints.reserve(Num);
+    size_t PointsSize = (sizeof(shu::vec3f) * NumPoints);
+    size_t HullPointsSize = PointsSize;
+    size_t HullTrianglesSize = sizeof(tri_t) * NumPoints * 3;
+    size_t ExtraPadding = 64;
 
+    size_t TotalSizeRequired = PointsSize + HullPointsSize + HullTrianglesSize + ExtraPadding;
+    return TotalSizeRequired;
+}
+
+void
+shoora_shape_convex::Build(const shu::vec3f *Points, const i32 Num, memory_arena *Arena)
+{
+    if (Arena == nullptr)
+    {
+        Arena = GetArena(MEMTYPE_GLOBAL);
+    }
+
+    this->Points = (shu::vec3f *)ShuAllocate_(Arena, sizeof(shu::vec3f) * Num);
     for (i32 i = 0; i < Num; ++i)
     {
-        this->mPoints.emplace_back(Points[i]);
+        this->Points[NumPoints++] = Points[i];
     }
+
+    this->HullPoints = (shu::vec3f *)ShuAllocate_(Arena, sizeof(shu::vec3f) * Num);
+    this->HullTris = (tri_t *)ShuAllocate_(Arena, sizeof(tri_t)*Num*3);
 
     shu::vec3f *HullPointsArr = (shu::vec3f *) _alloca(sizeof(shu::vec3f) * Num);
-    stack_array<shu::vec3f> HullPoints(HullPointsArr, Num);
+    stack_array<shu::vec3f> _HullPoints(HullPointsArr, Num);
     tri_t *HullTrianglesArr = (tri_t *) _alloca(sizeof(tri_t) * Num * 3);
-    stack_array<tri_t> HullTriangles(HullTrianglesArr, Num*3);
-    BuildConvexHull(this->mPoints, HullPoints, HullTriangles);
+    stack_array<tri_t> _HullTriangles(HullTrianglesArr, Num*3);
+    BuildConvexHull(this->Points, this->NumPoints, _HullPoints, _HullTriangles);
 
-    for (i32 i = 0; i < HullPoints.size; ++i)
+    // for (i32 i = 0; i < _HullPoints.size; ++i)
+    // {
+    //     this->Points[i] = _HullPoints.data[i];
+    // }
+    // this->NumPoints = _HullPoints.size;
+
+    for(i32 i = 0; i < _HullPoints.size; ++i)
     {
-        this->mPoints[i] = HullPoints.data[i];
+        this->HullPoints[i] = _HullPoints.data[i];
     }
+    this->NumHullPoints = _HullPoints.size;
 
-    // Expand the bounds
+    for(i32 i = 0; i < _HullTriangles.size; ++i)
+    {
+        this->HullTris[i] = _HullTriangles.data[i];
+    }
+    this->NumHullTris = _HullTriangles.size;
+
+    // NOTE: Expand the bounds
     mBounds.Clear();
-    mBounds.Expand(mPoints.data(), mPoints.size());
+    mBounds.Expand(this->Points, this->NumPoints);
 
-    mCenterOfMass = CalculateCenterOfMass(HullPoints, HullTriangles);
-    mInertiaTensor = CalculateInertiaTensor(HullPoints, HullTriangles);
-    int x = 0;
+    mCenterOfMass = CalculateCenterOfMass(_HullPoints, _HullTriangles);
+    mInertiaTensor = CalculateInertiaTensor(_HullPoints, _HullTriangles);
 }
 
 shu::mat3f
@@ -132,9 +168,9 @@ f32
 shoora_shape_convex::FastestLinearSpeed(const shu::vec3f &AngularVelocity, const shu::vec3f &Direction) const
 {
     f32 MaxSpeed = -SHU_FLOAT_MIN;
-    for(i32 i = 0; i < mPoints.size(); ++i)
+    for(i32 i = 0; i < this->NumPoints; ++i)
     {
-        const shu::vec3f r = this->mPoints[i] - this->mCenterOfMass;
+        const shu::vec3f r = this->Points[i] - this->mCenterOfMass;
         shu::vec3f LinearVelocity = AngularVelocity.Cross(r);
 
         f32 speed = LinearVelocity.Dot(Direction);
@@ -293,12 +329,12 @@ shoora_shape_convex::BuildTetrahedron(const shu::vec3f *Vertices, const i32 Vert
 
 void
 shoora_shape_convex::ExpandConvexHull(stack_array<shu::vec3f> &HullPoints, stack_array<tri_t> &HullTris,
-                                      const shoora_dynamic_array<shu::vec3f> &Vertices)
+                                      const shu::vec3f *Vertices, const i32 VertexCount)
 {
-    shu::vec3f *ExternalVertsArr = (shu::vec3f *)_alloca(sizeof(shu::vec3f) * Vertices.size());
-    stack_array<shu::vec3f> ExternalVerts(ExternalVertsArr, Vertices.size());
+    shu::vec3f *ExternalVertsArr = (shu::vec3f *)_alloca(sizeof(shu::vec3f) * VertexCount);
+    stack_array<shu::vec3f> ExternalVerts(ExternalVertsArr, VertexCount);
 
-    for(i32 i = 0; i < Vertices.size(); ++i)
+    for(i32 i = 0; i < VertexCount; ++i)
     {
         ExternalVerts.add(Vertices[i]);
     }
@@ -524,17 +560,17 @@ shoora_shape_convex::RemoveUnreferencedVertices(stack_array<shu::vec3f> &HullPoi
 }
 
 void
-shoora_shape_convex::BuildConvexHull(const shoora_dynamic_array<shu::vec3f> &Vertices, stack_array<shu::vec3f> &HullPoints,
-                                     stack_array<tri_t> &HullTris)
+shoora_shape_convex::BuildConvexHull(const shu::vec3f *Vertices, const i32 VertexCount,
+                                     stack_array<shu::vec3f> &HullPoints, stack_array<tri_t> &HullTris)
 {
-    if(Vertices.size() < 4)
+    if(VertexCount < 4)
     {
         return;
     }
 
     // Build a Tetrahedron
-    BuildTetrahedron(Vertices.data(), (i32)Vertices.size(), HullPoints, HullTris);
-    ExpandConvexHull(HullPoints, HullTris, Vertices);
+    BuildTetrahedron(Vertices, VertexCount, HullPoints, HullTris);
+    ExpandConvexHull(HullPoints, HullTris, Vertices, VertexCount);
 }
 
 b32
