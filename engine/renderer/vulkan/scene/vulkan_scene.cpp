@@ -344,6 +344,7 @@ shoora_scene::Draw(b32 Wireframe)
     for (u32 BodyIndex = 0; BodyIndex < Bodies.size(); ++BodyIndex)
     {
         shoora_body *Body = Bodies.data() + BodyIndex;
+
         shoora_shape *BodyShape = Body->Shape;
 
         u32 ColorU32 = Body->IsColliding ? colorU32::Red : colorU32::Green;
@@ -357,7 +358,7 @@ shoora_scene::Draw(b32 Wireframe)
         if(!Wireframe)
         {
             vkCmdPushConstants(shoora_graphics::GetCmdBuffer(), shoora_graphics::GetPipelineLayout(),
-                               VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(scene_shader_data), &Value);
+                            VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(scene_shader_data), &Value);
             Body->Draw();
         }
         else
@@ -367,7 +368,7 @@ shoora_scene::Draw(b32 Wireframe)
         }
 #else
         vkCmdPushConstants(shoora_graphics::GetCmdBuffer(), shoora_graphics::GetPipelineLayout(),
-                           VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(scene_shader_data), &Value);
+                        VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(scene_shader_data), &Value);
         Body->Draw();
         Body->DrawWireframe(Model, 1.5f, 0xffffffff);
 #endif

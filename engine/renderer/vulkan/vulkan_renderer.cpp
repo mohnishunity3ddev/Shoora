@@ -435,9 +435,7 @@ AddStandardSandBox()
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.5f;
     BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
-    shoora_shape_cube shape = shoora_shape_cube(g_boxGround, ARRAY_SIZE(g_boxGround));
-    SHU_MEMCOPY(&shape, BoxShape, sizeof(shoora_shape_cube));
-    body.Shape = BoxShape;
+    body.Shape = new (BoxShape) shoora_shape_cube(g_boxGround, ARRAY_SIZE(g_boxGround));
     body.Scale = body.Shape->GetDim();
     body.Color = GetColor(colorU32::Proto_Green);
     Scene->AddBody(std::move(body));
@@ -451,9 +449,7 @@ AddStandardSandBox()
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.0f;
     BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
-    shape = shoora_shape_cube(g_boxWall0, ARRAY_SIZE(g_boxWall0));
-    SHU_MEMCOPY(&shape, BoxShape, sizeof(shoora_shape_cube));
-    body.Shape = BoxShape;
+    body.Shape = new (BoxShape) shoora_shape_cube(g_boxWall0, ARRAY_SIZE(g_boxWall0));
     body.Scale = body.Shape->GetDim();
     body.Color = GetColor(colorU32::Proto_Blue);
     Scene->AddBody(std::move(body));
@@ -467,9 +463,7 @@ AddStandardSandBox()
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.0f;
     BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
-    shape = shoora_shape_cube(g_boxWall0, ARRAY_SIZE(g_boxWall0));
-    SHU_MEMCOPY(&shape, BoxShape, sizeof(shoora_shape_cube));
-    body.Shape = BoxShape;
+    body.Shape = new (BoxShape) shoora_shape_cube(g_boxWall0, ARRAY_SIZE(g_boxWall0));
     body.Scale = body.Shape->GetDim();
     body.Color = GetColor(colorU32::Proto_Orange);
     Scene->AddBody(std::move(body));
@@ -483,9 +477,7 @@ AddStandardSandBox()
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.0f;
     BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
-    shape = shoora_shape_cube(g_boxWall1, ARRAY_SIZE(g_boxWall1));
-    SHU_MEMCOPY(&shape, BoxShape, sizeof(shoora_shape_cube));
-    body.Shape = BoxShape;
+    body.Shape = new (BoxShape) shoora_shape_cube(g_boxWall1, ARRAY_SIZE(g_boxWall1));
     body.Scale = body.Shape->GetDim();
     body.Color = GetColor(colorU32::Proto_Red);
     Scene->AddBody(std::move(body));
@@ -499,9 +491,7 @@ AddStandardSandBox()
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.0f;
     BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
-    shape = shoora_shape_cube(g_boxWall1, ARRAY_SIZE(g_boxWall1));
-    SHU_MEMCOPY(&shape, BoxShape, sizeof(shoora_shape_cube));
-    body.Shape = BoxShape;
+    body.Shape = new (BoxShape) shoora_shape_cube(g_boxWall1, ARRAY_SIZE(g_boxWall1));
     body.Scale = body.Shape->GetDim();
     body.Color = GetColor(colorU32::Proto_Yellow);
     Scene->AddBody(std::move(body));
@@ -509,14 +499,11 @@ AddStandardSandBox()
     int x = 0;
 }
 
-void
-InitScene()
-{
-    // Bottom Wall (Static Rigidbody)
-    shu::vec2f Window = shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
-#if 0
-    FillDiamond();
+#include <physics/shape/shape_convex.h>
 
+void
+OnConvexBodyReady(shoora_shape_convex *Convex)
+{
     shoora_body body = {};
     body.Position = shu::Vec3f(0, 0, 10);
     body.Rotation = shu::Quat(0, 0, 0, 1);
@@ -525,12 +512,50 @@ InitScene()
     body.Mass = 1.0f;
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.5f;
-    body.Shape = std::make_unique<shoora_shape_convex>(g_diamond, ARRAY_SIZE(g_diamond));
+    body.Shape = Convex;
+    body.InertiaTensor = (body.Shape->InertiaTensor() * body.Mass);
+    body.InverseInertiaTensor = body.InertiaTensor.IsZero() ? shu::Mat3f(0.0f) : body.InertiaTensor.Inverse();
+    body.Scale = body.Shape->GetDim();
+    body.SumForces = body.Acceleration = shu::vec3f::Zero();
+    body.SumTorques = 0.0f;
     // body.Shape = std::make_unique<shoora_shape_convex>(GlobalJobQueue, g_diamond, ARRAY_SIZE(g_diamond));
-    // Scene->AddBody(std::move(body));
-    // AddStandardSandBox();
+    Scene->AddBody(std::move(body));
+}
+
+void
+InitScene()
+{
+    // Bottom Wall (Static Rigidbody)
+    shu::vec2f Window = shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
+
+#if 1
+    FillDiamond();
+
+    shoora_shape_convex *ConvexShapeMemory = ShuAllocateStruct(shoora_shape_convex, MEMTYPE_GLOBAL);
+    BuildConvexThreaded(GlobalJobQueue, ConvexShapeMemory, g_diamond, ARRAY_SIZE(g_diamond), OnConvexBodyReady);
+
+#if 0
+    shoora_body body = {};
+    body.Position = shu::Vec3f(0, 0, 10);
+    body.Rotation = shu::Quat(0, 0, 0, 1);
+    body.LinearVelocity = shu::Vec3f(0, 0, 0);
+    body.InvMass = 1.0f;
+    body.Mass = 1.0f;
+    body.CoeffRestitution = 0.5f;
+    body.FrictionCoeff = 0.5f;
+    body.Shape = new (ConvexShapeMemory) shoora_shape_convex(g_diamond, ARRAY_SIZE(g_diamond));
+    body.InertiaTensor = (body.Shape->InertiaTensor() * body.Mass);
+    body.InverseInertiaTensor = body.InertiaTensor.IsZero() ? shu::Mat3f(0.0f) : body.InertiaTensor.Inverse();
+    body.Scale = body.Shape->GetDim();
+    body.SumForces = body.Acceleration = shu::vec3f::Zero();
+    body.SumTorques = 0.0f;
+    // body.Shape = std::make_unique<shoora_shape_convex>(GlobalJobQueue, g_diamond, ARRAY_SIZE(g_diamond));
+    Scene->AddBody(std::move(body));
 #endif
+#endif
+
     AddStandardSandBox();
+
 #if 0
     // Dynamic Bodies
     shoora_body Body;

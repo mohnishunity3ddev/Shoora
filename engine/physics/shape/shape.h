@@ -4,7 +4,7 @@
 #include <mesh/database/mesh_database.h>
 #include <math/math.h>
 #include <containers/dynamic_array.h>
-#include "bounds.h"
+#include "../bounds.h"
 #include <platform/platform.h>
 
 #define MOMENT_OF_INTERTIA_FUNC(name) f32 name()
@@ -189,7 +189,6 @@ struct shoora_shape_convex : shoora_shape
   public:
     shoora_shape_convex() = delete;
     explicit shoora_shape_convex(const shu::vec3f *Points, const i32 Num);
-    explicit shoora_shape_convex(platform_work_queue *Queue, const shu::vec3f *Points, const i32 Num);
     virtual void Build(const shu::vec3f *Points, const i32 Num) override;
 
     virtual ~shoora_shape_convex();

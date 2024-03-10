@@ -1,4 +1,5 @@
 #include "shape.h"
+#include "shape_convex.h"
 
 shoora_shape_convex::shoora_shape_convex(const shu::vec3f *Points, const i32 Num)
     : shoora_shape(shoora_mesh_type::CONVEX)
@@ -6,30 +7,34 @@ shoora_shape_convex::shoora_shape_convex(const shu::vec3f *Points, const i32 Num
     this->Build(Points, Num);
 }
 
-struct build_work_data
-{
-    shoora_shape_convex *ConvexShape;
-    shu::vec3f *Points;
-    i32 Num;
-};
-
 PLATFORM_WORK_QUEUE_CALLBACK(BuildWork)
 {
-    build_work_data *Work = (build_work_data *)Args;
-    Work->ConvexShape->Build(Work->Points, Work->Num);
-    delete Work;
-    LogInfoUnformatted("Convex Shape Built!!\n");
+    shape_convex_build_work_data *Work = (shape_convex_build_work_data *)Args;
+    new (Work->ConvexShapeMemory) shoora_shape_convex(Work->Points, Work->NumPoints);
+    if(Work->CompleteCallback)
+    {
+        Work->CompleteCallback(Work->ConvexShapeMemory);
+    }
+    FreeTaskMemory(Work->TaskMem);
 }
 
-shoora_shape_convex::shoora_shape_convex(platform_work_queue *Queue, const shu::vec3f *Points, const i32 Num)
-    : shoora_shape(shoora_mesh_type::CONVEX)
+void
+BuildConvexThreaded(platform_work_queue *Queue, shoora_shape_convex *ConvexMem, shu::vec3f *Points, i32 NumPoints,
+                    OnWorkComplete *OnComplete)
 {
-    build_work_data *Args = new build_work_data();
-    Args->ConvexShape = this;
-    Args->Points = (shu::vec3f *)Points;
-    Args->Num = Num;
+    task_with_memory *TaskMem = GetTaskMemory();
+    ASSERT(TaskMem->Arena.Base != nullptr && TaskMem->Arena.Size > 0 && !TaskMem->Arena.Used);
+    TaskMem->BeingUsed = true;
 
-    Platform_AddWorkEntry(Queue, BuildWork, Args);
+
+    auto *WorkData = (shape_convex_build_work_data *)ShuAllocate_(&TaskMem->Arena, sizeof(shape_convex_build_work_data));
+    WorkData->ConvexShapeMemory = ConvexMem;
+    WorkData->Points = Points;
+    WorkData->NumPoints = NumPoints;
+    WorkData->CompleteCallback = OnComplete;
+    WorkData->TaskMem = TaskMem;
+
+    Platform_AddWorkEntry(Queue, BuildWork, WorkData);
 }
 
 shoora_shape_convex::~shoora_shape_convex()
@@ -40,6 +45,7 @@ shoora_shape_convex::~shoora_shape_convex()
 void
 shoora_shape_convex::Build(const shu::vec3f *Points, const i32 Num)
 {
+    this->mPoints.SetAllocator(MEMTYPE_FREELISTGLOBAL);
     this->mPoints.Clear();
     ASSERT(this->mPoints.capacity() == 0);
     this->mPoints.reserve(Num);

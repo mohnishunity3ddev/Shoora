@@ -71,10 +71,12 @@ temporary_memory BeginTemporaryMemory(memory_arena *Arena);
 void EndTemporaryMemory(temporary_memory TempMemory);
 
 void ValidateArena(shoora_memory_type Type);
+void ValidateArena(memory_arena *Arena);
 
 void SubArena(memory_arena *Result, shoora_memory_type Type, size_t Size, size_t Alignment = 16);
 
 void *ShuAllocate_(size_t SizeInit, shoora_memory_type Type = MEMTYPE_GLOBAL, size_t Alignment = 4);
+void *ShuAllocate_(memory_arena *Arena, size_t SizeInit, size_t Alignment = 4);
 char *ShuAllocateString(const char *Source, shoora_memory_type Type = MEMTYPE_GLOBAL);
 
 // NOTE: Gets called before starting a thread

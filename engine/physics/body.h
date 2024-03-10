@@ -4,7 +4,7 @@
 #include <math/math.h>
 #include <mesh/primitive/geometry_primitive.h>
 #include <mesh/mesh_filter.h>
-#include <physics/shape.h>
+#include <physics/shape/shape.h>
 
 struct shoora_body
 {

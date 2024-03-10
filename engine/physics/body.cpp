@@ -400,7 +400,15 @@ shoora_body::Draw()
         ASSERT(!"TO-DO");
     }
 #endif
-    auto *mesh = (shoora_mesh *)this->Shape->MeshFilter;
-    shoora_mesh_info Info = mesh->GetInfo();
-    shoora_graphics::Draw(Info.IndexCount, Info.IndexOffset, Info.VertexOffset);
+
+    shoora_mesh *mesh = (shoora_mesh *)this->Shape->MeshFilter;
+    if (mesh != nullptr)
+    {
+        shoora_mesh_info Info = mesh->GetInfo();
+        shoora_graphics::Draw(Info.IndexCount, Info.IndexOffset, Info.VertexOffset);
+    }
+    else
+    {
+        ASSERT(this->Shape->Type == shoora_mesh_type::CONVEX);
+    }
 }

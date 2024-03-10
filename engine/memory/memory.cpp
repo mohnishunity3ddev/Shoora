@@ -35,12 +35,13 @@ GetFreelistAllocator(shoora_memory_type Type)
     return Result;
 }
 
-inline void *
-ShuAllocate_(memory_arena *Arena, size_t SizeInit, size_t Alignment = 4)
+void *
+ShuAllocate_(memory_arena *Arena, size_t SizeInit, size_t Alignment)
 {
     size_t Size = SizeInit;
     size_t AlignmentPadding = GetAlignmentPadding(Arena, Alignment);
     Size += AlignmentPadding;
+    // LogInfo("Allocated: %zu.\n", Size);
 
     ASSERT(Size >= SizeInit);
     ASSERT((Arena->Used + Size) <= Arena->Size);
@@ -86,6 +87,8 @@ InitializeMemory(size_t GlobalMemSize, void *GlobalMem, size_t FrameMemSize, voi
     SubArena(&ShuMemory.FrameFreelistArena, &ShuMemory.FrameArena, FrameFreelistSize);
     void *FrameFreelistMemory = ShuAllocate_(&ShuMemory.FrameFreelistArena, FrameFreelistSize);
     ShuMemory.FrameFreelistAllocator.Initialize(FrameFreelistMemory, FrameFreelistSize);
+
+    int x = 0;
 }
 
 size_t
@@ -215,6 +218,7 @@ void
 FreeTaskMemory(task_with_memory *Task)
 {
     EndTemporaryMemory(Task->TemporaryMemory);
+    ASSERT(Task->BeingUsed);
     ASSERT(Task->Arena.TempMemoryCount == 0);
 
     // NOTE: Doing this since this free gets called directly from the thread when its ending.
