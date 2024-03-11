@@ -198,7 +198,7 @@ struct shoora_shape_convex : shoora_shape
     virtual shoora_bounds GetBounds(const shu::vec3f &Pos, const shu::quat &Orientation) const override;
     virtual shoora_bounds GetBounds() const override;
     virtual shu::vec3f GetDim() const override { return shu::Vec3f(); }
-    // NOTE: Takes in a direction, and returns the position of the vertex in the shape, which is the furthest in
+    // NOTE: pMareturns the position of the vertex in the shape, which is the furthest in
     // this direction.
     virtual shu::vec3f Support(const shu::vec3f &Direction, const shu::vec3f &Position,
                                const shu::quat &Orientation, const f32 Bias) const override;
@@ -210,10 +210,12 @@ struct shoora_shape_convex : shoora_shape
 
   public:
     shu::vec3f *Points = nullptr, *HullPoints = nullptr;
-    tri_t *HullTris = nullptr;
-    i32 NumPoints = 0, NumHullPoints = 0, NumHullTris = 0;
+    u32 *HullIndices = nullptr;
+    i32 NumPoints = 0, NumHullPoints = 0, NumHullIndices = 0;
     shoora_bounds mBounds;
     shu::mat3f mInertiaTensor;
+    shoora_vulkan_buffer VertexBuffer;
+    shoora_vulkan_buffer IndexBuffer;
 
   private:
     i32 FindPointFurthestInDirection(const shu::vec3f *Points, const i32 Num, const shu::vec3f &Direction);

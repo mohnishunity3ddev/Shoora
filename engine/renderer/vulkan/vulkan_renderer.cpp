@@ -506,18 +506,40 @@ OnConvexBodyReady(shoora_shape_convex *Convex)
 {
     shoora_body body = {};
     body.Position = shu::Vec3f(0, 0, 10);
+    body.Scale = shu::Vec3f(1, 1, 1);
     body.Rotation = shu::Quat(0, 0, 0, 1);
     body.LinearVelocity = shu::Vec3f(0, 0, 0);
-    body.InvMass = 1.0f;
-    body.Mass = 1.0f;
+    body.InvMass = 0.0f;
+    body.Mass = 0.0f;
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.5f;
     body.Shape = Convex;
     body.InertiaTensor = (body.Shape->InertiaTensor() * body.Mass);
     body.InverseInertiaTensor = body.InertiaTensor.IsZero() ? shu::Mat3f(0.0f) : body.InertiaTensor.Inverse();
-    body.Scale = body.Shape->GetDim();
+    // TODO: Check out this Dim Function in the Shape Class.
+    // body.Scale = body.Shape->GetDim();
     body.SumForces = body.Acceleration = shu::vec3f::Zero();
     body.SumTorques = 0.0f;
+
+    memory_arena *Arena = GetArena(MEMTYPE_GLOBAL);
+    shoora_vertex_info *Vertices = (shoora_vertex_info *)ShuAllocate_(Arena, sizeof(shoora_vertex_info) * Convex->NumPoints);
+    for(i32 i = 0; i < Convex->NumPoints; ++i)
+    {
+        Vertices[i].Pos = Convex->HullPoints[i];
+    }
+    CreateVertexBuffers(&Context->Device, Vertices, Convex->NumPoints, Convex->HullIndices, Convex->NumHullIndices,
+                        &Convex->VertexBuffer, &Convex->IndexBuffer);
+
+#if 0
+    // TODO: Remove
+    u32 *TempIndices = (u32 *)Convex->IndexBuffer.pMapped;
+    for(u32 i = 0; i < Convex->NumHullIndices; ++i)
+    {
+        u32 TempIndex = TempIndices[i];
+        ASSERT(TempIndex == Convex->HullIndices[i]);
+    }
+#endif
+
     // body.Shape = std::make_unique<shoora_shape_convex>(GlobalJobQueue, g_diamond, ARRAY_SIZE(g_diamond));
     shoora_body *ConvexBody = Scene->AddBody(std::move(body));
     int x = 0;
@@ -560,7 +582,7 @@ InitScene()
 #endif
 #endif
 
-    AddStandardSandBox();
+    // AddStandardSandBox();
 
 #if 0
     // Dynamic Bodies
@@ -771,6 +793,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     pCamera->Yaw = 247.801147f;
     pCamera->Pitch = -28.3801575f;
 #endif
+
     // NOTE: Mesh Database setup
     shoora_mesh_database::MeshDbBegin(RenderDevice);
     shu::vec3f Poly1[] = {{0, 10, 1}, {10, 3, 1}, {10, -5, 1}, {-10, -5, 1}, {-10, 3, 1}};
@@ -1013,8 +1036,8 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     RenderArea.offset = {0, 0};
     RenderArea.extent = Context->Swapchain.ImageDimensions;
 
-    ImGuiNewFrame();
-    ImGuiUpdateBuffers(&Context->Device, &Context->ImContext);
+    // ImGuiNewFrame();
+    // ImGuiUpdateBuffers(&Context->Device, &Context->ImContext);
 
     VkRenderPassBeginInfo RenderPassBeginInfo = {};
     RenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1076,49 +1099,87 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Handle);
 
         VkDeviceSize offsets[1] = {0};
+#if 0
         vkCmdBindVertexBuffers(DrawCmdBuffer, 0, 1, shoora_mesh_database::GetVertexBufferHandlePtr(), offsets);
         vkCmdBindIndexBuffer(DrawCmdBuffer, shoora_mesh_database::GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
+#endif
+        if(Scene->GetBodyCount() > 0)
+        {
+            const shoora_body *Body = &Scene->Bodies[0];
+            shoora_shape_convex *ConvexShape = (shoora_shape_convex *)Body->Shape;
+
+            vkCmdBindVertexBuffers(DrawCmdBuffer, 0, 1, &ConvexShape->VertexBuffer.Handle, offsets);
+            vkCmdBindIndexBuffer(DrawCmdBuffer, ConvexShape->IndexBuffer.Handle, 0, VK_INDEX_TYPE_UINT32);
+            // Shu::vec3f Color = GetColor(ColorU32);
+            shu::vec3f Color = GetColor(colorU32::Proto_Orange);
+
+            shu::mat4f Model = shu::TRS(Body->Position, Body->Scale, Body->Rotation);
+            light_shader_push_constant_data Value = {.Model = Model, .Color = Color};
+            vkCmdPushConstants(DrawCmdBuffer, shoora_graphics::GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+                               sizeof(light_shader_push_constant_data), &Value);
+
+            vkCmdDrawIndexed(DrawCmdBuffer, ConvexShape->NumHullIndices, 1, 0, 0, 0);
+
+#if 0
+            vkCmdBindVertexBuffers(DrawCmdBuffer, 0, 1, shoora_mesh_database::GetVertexBufferHandlePtr(), offsets);
+            vkCmdBindIndexBuffer(DrawCmdBuffer, shoora_mesh_database::GetIndexBufferHandle(), 0,
+                                 VK_INDEX_TYPE_UINT32);
+
+            auto *Vertices = ConvexShape->Points;
+            // NOTE: No need to calculate TRS here since that's already been done in the physics loop for polygons.
+            for (i32 i = 0; i < ConvexShape->NumPoints; ++i)
+            {
+                auto p0 = Vertices[i];
+                auto p1 = Vertices[(i+1) % ConvexShape->NumPoints];
+                shoora_graphics::DrawLine3D(p0, p1, colorU32::Proto_Orange, .025f);
+            }
+#endif
+
+            // vkCmdDrawIndexed(DrawCmdBuffer, ConvexShape->NumHullIndices, 1, 0, 0, 1);
+            // Scene->Draw(true);
+        }
 
         Scene->UpdateInput(CurrentMouseWorldPos);
-        f32 pDt = GlobalPausePhysics ? 0.0f : GlobalDeltaTime;
-        Scene->PhysicsUpdate(pDt, GlobalDebugMode);
-        DrawScene(DrawCmdBuffer);
+        // f32 pDt = GlobalPausePhysics ? 0.0f : GlobalDeltaTime;
+        // Scene->PhysicsUpdate(pDt, GlobalDebugMode);
+        // DrawScene(DrawCmdBuffer);
+
 #endif
-        ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
-    vkCmdEndRenderPass(DrawCmdBuffer);
+        // ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
+        vkCmdEndRenderPass(DrawCmdBuffer);
 
-    VK_CHECK(vkEndCommandBuffer(DrawCmdBuffer));
+        VK_CHECK(vkEndCommandBuffer(DrawCmdBuffer));
 
-    //? Submit DrawCommandBuffer
-    // NOTE: Wait for the ImageAvailableSemaphore To Be Signaled at this stage.
-    VkPipelineStageFlags WaitStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    VkSubmitInfo SubmitInfo = {};
-    SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    SubmitInfo.pNext = nullptr;
-    SubmitInfo.waitSemaphoreCount = 1;
-    SubmitInfo.pWaitSemaphores = &pCurrentFrameImageAvlSemaphore->Handle;
-    SubmitInfo.pWaitDstStageMask = &WaitStageMask;
-    SubmitInfo.commandBufferCount = 1;
-    SubmitInfo.pCommandBuffers = &DrawCmdBuffer;
-    SubmitInfo.signalSemaphoreCount = 1;
-    SubmitInfo.pSignalSemaphores = &pCurrentFramePresentCompleteSemaphore->Handle;
-    VkQueue GraphicsQueue = GetQueueHandle(&Context->Device, QueueType_Graphics);
-    VK_CHECK(vkQueueSubmit(GraphicsQueue, 1, &SubmitInfo, pCurrentFrameFence->Handle));
+        //? Submit DrawCommandBuffer
+        // NOTE: Wait for the ImageAvailableSemaphore To Be Signaled at this stage.
+        VkPipelineStageFlags WaitStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        VkSubmitInfo SubmitInfo = {};
+        SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        SubmitInfo.pNext = nullptr;
+        SubmitInfo.waitSemaphoreCount = 1;
+        SubmitInfo.pWaitSemaphores = &pCurrentFrameImageAvlSemaphore->Handle;
+        SubmitInfo.pWaitDstStageMask = &WaitStageMask;
+        SubmitInfo.commandBufferCount = 1;
+        SubmitInfo.pCommandBuffers = &DrawCmdBuffer;
+        SubmitInfo.signalSemaphoreCount = 1;
+        SubmitInfo.pSignalSemaphores = &pCurrentFramePresentCompleteSemaphore->Handle;
+        VkQueue GraphicsQueue = GetQueueHandle(&Context->Device, QueueType_Graphics);
+        VK_CHECK(vkQueueSubmit(GraphicsQueue, 1, &SubmitInfo, pCurrentFrameFence->Handle));
 
-    //? Command Buffer should finish rendering. Present the Swapchain Image to the presentation engine
-    VkPresentInfoKHR PresentInfo = {};
-    PresentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    PresentInfo.pNext = nullptr;
-    PresentInfo.waitSemaphoreCount = 1;
-    PresentInfo.pWaitSemaphores = &pCurrentFramePresentCompleteSemaphore->Handle;
-    PresentInfo.swapchainCount = 1;
-    PresentInfo.pSwapchains = &Context->Swapchain.Handle;
-    PresentInfo.pImageIndices = &Context->Swapchain.CurrentImageIndex;
-    VK_CHECK(vkQueuePresentKHR(GraphicsQueue, &PresentInfo));
+        //? Command Buffer should finish rendering. Present the Swapchain Image to the presentation engine
+        VkPresentInfoKHR PresentInfo = {};
+        PresentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+        PresentInfo.pNext = nullptr;
+        PresentInfo.waitSemaphoreCount = 1;
+        PresentInfo.pWaitSemaphores = &pCurrentFramePresentCompleteSemaphore->Handle;
+        PresentInfo.swapchainCount = 1;
+        PresentInfo.pSwapchains = &Context->Swapchain.Handle;
+        PresentInfo.pImageIndices = &Context->Swapchain.CurrentImageIndex;
+        VK_CHECK(vkQueuePresentKHR(GraphicsQueue, &PresentInfo));
 
-    AdvanceToNextFrame();
-    ImGuiUpdateInputState(FramePacket->MouseXPos, FramePacket->MouseYPos, LMBDown);
-    VK_CHECK(vkQueueWaitIdle(Context->Device.GraphicsQueue));
+        AdvanceToNextFrame();
+        ImGuiUpdateInputState(FramePacket->MouseXPos, FramePacket->MouseYPos, LMBDown);
+        VK_CHECK(vkQueueWaitIdle(Context->Device.GraphicsQueue));
 }
 
 void

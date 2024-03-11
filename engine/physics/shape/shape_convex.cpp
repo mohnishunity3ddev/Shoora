@@ -77,7 +77,7 @@ shoora_shape_convex::Build(const shu::vec3f *Points, const i32 Num, memory_arena
     }
 
     this->HullPoints = (shu::vec3f *)ShuAllocate_(Arena, sizeof(shu::vec3f) * Num);
-    this->HullTris = (tri_t *)ShuAllocate_(Arena, sizeof(tri_t)*Num*3);
+    this->HullIndices = (u32 *)ShuAllocate_(Arena, (sizeof(u32)*3)*Num*3);
 
     shu::vec3f *HullPointsArr = (shu::vec3f *) _alloca(sizeof(shu::vec3f) * Num);
     stack_array<shu::vec3f> _HullPoints(HullPointsArr, Num);
@@ -99,9 +99,10 @@ shoora_shape_convex::Build(const shu::vec3f *Points, const i32 Num, memory_arena
 
     for(i32 i = 0; i < _HullTriangles.size; ++i)
     {
-        this->HullTris[i] = _HullTriangles.data[i];
+        this->HullIndices[this->NumHullIndices++] = _HullTriangles.data[i].A;
+        this->HullIndices[this->NumHullIndices++] = _HullTriangles.data[i].B;
+        this->HullIndices[this->NumHullIndices++] = _HullTriangles.data[i].C;
     }
-    this->NumHullTris = _HullTriangles.size;
 
     // NOTE: Expand the bounds
     mBounds.Clear();

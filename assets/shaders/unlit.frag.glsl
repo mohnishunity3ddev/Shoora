@@ -8,7 +8,7 @@ layout(set = 1, binding = 0) uniform sampler2D DiffuseMap;
 layout(location = 0) out vec4 FragColor;
 void main()
 {
-    vec4 color = texture(DiffuseMap, InUV) * vec4(InColor, 1.0);
-    // vec4 color = vec4(InColor, 1.0);
+    // vec4 color = texture(DiffuseMap, InUV) * vec4(InColor, 1.0);
+    vec4 color = vec4(InColor, 1.0);
     FragColor = vec4(color.rgb, color.a);
 }

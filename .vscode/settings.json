@@ -4,7 +4,7 @@
     // "editor.lineHeight": 25,
     // "editor.letterSpacing": 0.5,
     "editor.fontLigatures": true,
-    "editor.fontWeight": "bold",
+    "editor.fontWeight": "normal",
     "editor.renderWhitespace": "selection",
 
     // "editor.letterSpacing": 1,

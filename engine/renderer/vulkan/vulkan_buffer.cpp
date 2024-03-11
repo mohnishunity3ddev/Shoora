@@ -158,9 +158,13 @@ CreateVertexBuffers(shoora_vulkan_device *RenderDevice, shoora_vertex_info *Vert
 
     outVertexBuffer->Handle = VertexBuffer.Handle;
     outVertexBuffer->Memory = VertexBuffer.Memory;
+    outVertexBuffer->MemSize = VertexBuffer.MemSize;
+    outVertexBuffer->pMapped = VertexBuffer.pMapped;
 
     outIndexBuffer->Handle = IndexBuffer.Handle;
     outIndexBuffer->Memory = IndexBuffer.Memory;
+    outIndexBuffer->MemSize = IndexBuffer.MemSize;
+    outIndexBuffer->pMapped = IndexBuffer.pMapped;
 
     LogOutput(LogType_Info, "Created Vertex buffer and Index buffers\n");
 }

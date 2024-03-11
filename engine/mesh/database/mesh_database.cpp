@@ -2,6 +2,7 @@
 
 #include <mesh/primitive/geometry_primitive.h>
 #include <renderer/vulkan/vulkan_debug.h>
+#include <memory/memory.h>
 
 static const shu::vec3f *RunningPolygonVertexPositions[MAX_MESH_COUNT];
 static u32 RunningPolygonVertexCounts[MAX_MESH_COUNT];
@@ -48,6 +49,7 @@ shoora_mesh_database::AddPolygonMeshToDb(const shu::vec3f *vPositions, i32 vCoun
     RunningPolygonVertexPositions[CustomPolyCount] = vPositions;
     RunningPolygonVertexCounts[CustomPolyCount] = vCount;
     CustomPolyCount++;
+    TotalMeshCount++;
 }
 
 void shoora_mesh_database::MeshDbEnd()
@@ -72,9 +74,14 @@ Initialize()
         u32 nTriangles = vCount - 2;
         TotalIndexCount += nTriangles*3;
     }
+
     size_t RequiredSize = TotalVertexCount*sizeof(shoora_vertex_info) + TotalIndexCount*sizeof(u32);
-    Memory = malloc(RequiredSize);
-    memset(Memory, 0, RequiredSize);
+
+    Memory = ShuAllocate_(GetArena(MEMTYPE_GLOBAL), RequiredSize);
+    ASSERT(Memory != nullptr);
+
+    SHU_MEMZERO(Memory, RequiredSize);
+
     Vertices = (shoora_vertex_info *)Memory;
     Indices = (u32 *)(Vertices + TotalVertexCount);
 
@@ -102,8 +109,9 @@ Initialize()
     UVSphereMeshFilter->VertexCount = UVSphereInfo.VertexCount;
     UVSphereMeshFilter->Indices = Indices + RunningIndexCount;
     UVSphereMeshFilter->IndexCount = UVSphereInfo.IndexCount;
-    memcpy(UVSphereMeshFilter->Vertices, UVSphereInfo.Vertices, UVSphereMeshFilter->VertexCount * sizeof(shoora_vertex_info));
-    memcpy(UVSphereMeshFilter->Indices, UVSphereInfo.Indices, UVSphereMeshFilter->IndexCount * sizeof(u32));
+    SHU_MEMCOPY(UVSphereInfo.Vertices, UVSphereMeshFilter->Vertices,
+                UVSphereMeshFilter->VertexCount * sizeof(shoora_vertex_info));
+    SHU_MEMCOPY(UVSphereInfo.Indices, UVSphereMeshFilter->Indices, UVSphereMeshFilter->IndexCount * sizeof(u32));
     RunningVertexCount += UVSphereMeshFilter->VertexCount;
     RunningIndexCount += UVSphereMeshFilter->IndexCount;
 
@@ -118,8 +126,9 @@ Initialize()
     CubeMeshFilter->VertexCount = CubeInfo.VertexCount;
     CubeMeshFilter->Indices = Indices + RunningIndexCount;
     CubeMeshFilter->IndexCount = CubeInfo.IndexCount;
-    memcpy(CubeMeshFilter->Vertices, CubeInfo.Vertices, CubeMeshFilter->VertexCount * sizeof(shoora_vertex_info));
-    memcpy(CubeMeshFilter->Indices, CubeInfo.Indices, CubeMeshFilter->IndexCount * sizeof(u32));
+    SHU_MEMCOPY(CubeInfo.Vertices, CubeMeshFilter->Vertices,
+                CubeMeshFilter->VertexCount * sizeof(shoora_vertex_info));
+    SHU_MEMCOPY(CubeInfo.Indices, CubeMeshFilter->Indices, CubeMeshFilter->IndexCount * sizeof(u32));
     RunningVertexCount += CubeMeshFilter->VertexCount;
     RunningIndexCount += CubeMeshFilter->IndexCount;
 
@@ -133,8 +142,9 @@ Initialize()
     RectMeshFilter->VertexCount = RectInfo.VertexCount;
     RectMeshFilter->Indices = Indices + RunningIndexCount;
     RectMeshFilter->IndexCount = RectInfo.IndexCount;
-    memcpy(RectMeshFilter->Vertices, RectInfo.Vertices, RectMeshFilter->VertexCount * sizeof(shoora_vertex_info));
-    memcpy(RectMeshFilter->Indices, RectInfo.Indices, RectMeshFilter->IndexCount * sizeof(u32));
+    SHU_MEMCOPY(RectInfo.Vertices, RectMeshFilter->Vertices,
+                RectMeshFilter->VertexCount * sizeof(shoora_vertex_info));
+    SHU_MEMCOPY(RectInfo.Indices, RectMeshFilter->Indices, RectMeshFilter->IndexCount * sizeof(u32));
     RunningVertexCount += RectMeshFilter->VertexCount;
     RunningIndexCount += RectMeshFilter->IndexCount;
 
@@ -148,7 +158,8 @@ Initialize()
     LineMeshFilter->VertexCount = LineInfo.VertexCount;
     LineMeshFilter->Indices = nullptr;
     LineMeshFilter->IndexCount = LineInfo.IndexCount;
-    memcpy(LineMeshFilter->Vertices, LineInfo.Vertices, LineMeshFilter->VertexCount * sizeof(shoora_vertex_info));
+    SHU_MEMCOPY(LineInfo.Vertices, LineMeshFilter->Vertices,
+                LineMeshFilter->VertexCount * sizeof(shoora_vertex_info));
     RunningVertexCount += LineMeshFilter->VertexCount;
     RunningIndexCount += LineMeshFilter->IndexCount;
 
@@ -185,7 +196,7 @@ Initialize()
         PolyMeshFilter->VertexCount = VCount;
         PolyMeshFilter->Indices = IndexDest;
         PolyMeshFilter->IndexCount = ICount;
-
+        
 
         RunningVertexCount += VCount;
         RunningIndexCount += ICount;
@@ -266,7 +277,8 @@ shoora_mesh_database::Destroy()
 
     TotalVertexCount = 0;
     TotalIndexCount = 0;
-    free(Memory);
+    // NOTE: Using Custom Linear Allocator right now, Can't use free.
+    // free(Memory);
     Vertices = nullptr;
     Indices = nullptr;
     DestroyVertexBuffer(RenderDevice, &vBuffer, &iBuffer);
