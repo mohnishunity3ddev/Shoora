@@ -197,7 +197,7 @@ struct shoora_shape_convex : shoora_shape
     virtual shoora_mesh_type GetType() const override;
     virtual shoora_bounds GetBounds(const shu::vec3f &Pos, const shu::quat &Orientation) const override;
     virtual shoora_bounds GetBounds() const override;
-    virtual shu::vec3f GetDim() const override { return shu::Vec3f(); }
+    virtual shu::vec3f GetDim() const override { return shu::Vec3f(1.0, 1.0f, 1.0f); }
     // NOTE: pMareturns the position of the vertex in the shape, which is the furthest in
     // this direction.
     virtual shu::vec3f Support(const shu::vec3f &Direction, const shu::vec3f &Position,
@@ -209,9 +209,11 @@ struct shoora_shape_convex : shoora_shape
     static size_t GetRequiredSizeForConvexBuild(u32 TotalNumPoints);
 
   public:
-    shu::vec3f *Points = nullptr, *HullPoints = nullptr;
+    shu::vec3f *Points = nullptr;
+    shu::vec3f *HullPoints = nullptr;
     u32 *HullIndices = nullptr;
     i32 NumPoints = 0, NumHullPoints = 0, NumHullIndices = 0;
+
     shoora_bounds mBounds;
     shu::mat3f mInertiaTensor;
     shoora_vulkan_buffer VertexBuffer;

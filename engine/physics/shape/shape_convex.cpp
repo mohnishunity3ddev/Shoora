@@ -17,7 +17,7 @@ PLATFORM_WORK_QUEUE_CALLBACK(BuildWork)
     new (Work->ConvexShapeMemory) shoora_shape_convex(Work->Points, Work->NumPoints, &Work->Arena);
     if (Work->CompleteCallback)
     {
-        Work->CompleteCallback(Work->ConvexShapeMemory);
+        Work->CompleteCallback(Work->ConvexShapeMemory, &Work->Arena);
     }
 
     FreeTaskMemory(Work->TaskMem);
@@ -56,12 +56,16 @@ shoora_shape_convex::GetRequiredSizeForConvexBuild(u32 NumPoints)
     size_t PointsSize = (sizeof(shu::vec3f) * NumPoints);
     size_t HullPointsSize = PointsSize;
     size_t HullTrianglesSize = sizeof(tri_t) * NumPoints * 3;
+    size_t VertexBufferSize = sizeof(shoora_vertex_info) * NumPoints;
+    size_t extraSpace = sizeof(u32) * NumPoints;
     size_t ExtraPadding = 64;
 
-    size_t TotalSizeRequired = PointsSize + HullPointsSize + HullTrianglesSize + ExtraPadding;
+    size_t TotalSizeRequired = PointsSize + HullPointsSize + HullTrianglesSize + VertexBufferSize + ExtraPadding +
+                               extraSpace;
     return TotalSizeRequired;
 }
 
+// TODO: Add this as a preprocessor step so that this potentially expensive function is not called at runtime.
 void
 shoora_shape_convex::Build(const shu::vec3f *Points, const i32 Num, memory_arena *Arena)
 {
@@ -84,12 +88,6 @@ shoora_shape_convex::Build(const shu::vec3f *Points, const i32 Num, memory_arena
     tri_t *HullTrianglesArr = (tri_t *) _alloca(sizeof(tri_t) * Num * 3);
     stack_array<tri_t> _HullTriangles(HullTrianglesArr, Num*3);
     BuildConvexHull(this->Points, this->NumPoints, _HullPoints, _HullTriangles);
-
-    // for (i32 i = 0; i < _HullPoints.size; ++i)
-    // {
-    //     this->Points[i] = _HullPoints.data[i];
-    // }
-    // this->NumPoints = _HullPoints.size;
 
     for(i32 i = 0; i < _HullPoints.size; ++i)
     {

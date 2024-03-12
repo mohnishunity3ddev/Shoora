@@ -5,7 +5,7 @@
 #include <math/math.h>
 #include <memory/memory.h>
 
-typedef void OnWorkComplete(struct shoora_shape_convex *ConvexShape);
+typedef void OnWorkComplete(struct shoora_shape_convex *ConvexShape, memory_arena *Arena);
 
 struct shape_convex_build_work_data
 {

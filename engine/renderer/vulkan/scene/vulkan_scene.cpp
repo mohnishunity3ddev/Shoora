@@ -58,6 +58,7 @@ shoora_scene::AddBody(const shoora_body &Body)
 }
 #endif
 
+// TODO: Make AddBody Thread Safe.
 shoora_body *
 shoora_scene::AddBody(shoora_body &&Body)
 {
@@ -346,7 +347,7 @@ shoora_scene::Draw(b32 Wireframe)
         shoora_body *Body = Bodies.data() + BodyIndex;
 
         shoora_shape *BodyShape = Body->Shape;
-        
+
         u32 ColorU32 = Body->IsColliding ? colorU32::Red : colorU32::Green;
         // Shu::vec3f Color = GetColor(ColorU32);
         shu::vec3f Color = Body->Color;

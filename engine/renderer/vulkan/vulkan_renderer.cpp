@@ -502,11 +502,11 @@ AddStandardSandBox()
 #include <physics/shape/shape_convex.h>
 
 void
-OnConvexBodyReady(shoora_shape_convex *Convex)
+OnConvexBodyReady(shoora_shape_convex *Convex, memory_arena *Arena = nullptr)
 {
     shoora_body body = {};
-    body.Position = shu::Vec3f(0, 0, 10);
-    body.Scale = shu::Vec3f(1, 1, 1);
+    body.Position = shu::Vec3f(0, 0, 0);
+    // body.Scale = shu::Vec3f(1, 1, 1);
     body.Rotation = shu::Quat(0, 0, 0, 1);
     body.LinearVelocity = shu::Vec3f(0, 0, 0);
     body.InvMass = 0.0f;
@@ -516,33 +516,49 @@ OnConvexBodyReady(shoora_shape_convex *Convex)
     body.Shape = Convex;
     body.InertiaTensor = (body.Shape->InertiaTensor() * body.Mass);
     body.InverseInertiaTensor = body.InertiaTensor.IsZero() ? shu::Mat3f(0.0f) : body.InertiaTensor.Inverse();
-    // TODO: Check out this Dim Function in the Shape Class.
-    // body.Scale = body.Shape->GetDim();
+    body.Scale = body.Shape->GetDim();
     body.SumForces = body.Acceleration = shu::vec3f::Zero();
     body.SumTorques = 0.0f;
 
-    memory_arena *Arena = GetArena(MEMTYPE_GLOBAL);
-    shoora_vertex_info *Vertices = (shoora_vertex_info *)ShuAllocate_(Arena, sizeof(shoora_vertex_info) * Convex->NumPoints);
-    for(i32 i = 0; i < Convex->NumPoints; ++i)
+    if(Arena == nullptr) { Arena = GetArena(MEMTYPE_GLOBAL); }
+    shoora_vertex_info *Vertices = (shoora_vertex_info *)ShuAllocate_(Arena, sizeof(shoora_vertex_info)*Convex->NumPoints);
+    for(i32 i = 0; i < Convex->NumHullPoints; ++i)
     {
         Vertices[i].Pos = Convex->HullPoints[i];
+        Vertices[i].Normal = shu::vec3f::Zero();
+        Vertices[i].Color = shu::Vec3f(i) / (f32)Convex->NumHullPoints;
     }
+
+    // NOTE: Normals Calculation
+    for(i32 i = 0; i < Convex->NumHullIndices; i += 3)
+    {
+        // counter clockwise normal calculation
+        u32 vIndex0 = Convex->HullIndices[i + 0];
+        u32 vIndex1 = Convex->HullIndices[i + 1];
+        u32 vIndex2 = Convex->HullIndices[i + 2];
+
+        shu::vec3f a = Vertices[vIndex0].Pos;
+        shu::vec3f b = Vertices[vIndex1].Pos;
+        shu::vec3f c = Vertices[vIndex2].Pos;
+
+        shu::vec3f ba = (b - a);
+        shu::vec3f ca = (c - a);
+        shu::vec3f normal = shu::Normalize(shu::Cross(ba, ca));
+
+        Vertices[vIndex0].Normal += normal;
+        Vertices[vIndex1].Normal += normal;
+        Vertices[vIndex2].Normal += normal;
+    }
+    for(i32 i = 0; i < Convex->NumHullPoints; ++i)
+    {
+        Vertices[i].Normal = shu::Normalize(Vertices[i].Normal);
+    }
+
     CreateVertexBuffers(&Context->Device, Vertices, Convex->NumPoints, Convex->HullIndices, Convex->NumHullIndices,
                         &Convex->VertexBuffer, &Convex->IndexBuffer);
 
-#if 0
-    // TODO: Remove
-    u32 *TempIndices = (u32 *)Convex->IndexBuffer.pMapped;
-    for(u32 i = 0; i < Convex->NumHullIndices; ++i)
-    {
-        u32 TempIndex = TempIndices[i];
-        ASSERT(TempIndex == Convex->HullIndices[i]);
-    }
-#endif
-
-    // body.Shape = std::make_unique<shoora_shape_convex>(GlobalJobQueue, g_diamond, ARRAY_SIZE(g_diamond));
+    // TODO: Make AddBody Thread Safe.
     shoora_body *ConvexBody = Scene->AddBody(std::move(body));
-    int x = 0;
 }
 
 void
@@ -683,7 +699,7 @@ CreateUnlitPipeline(shoora_vulkan_context *Context)
 
     CreatePipelineLayout(RenderDevice, ARRAY_SIZE(Context->UnlitSetLayouts), Context->UnlitSetLayouts,
                          ARRAY_SIZE(PushConstants), PushConstants, &Context->UnlitPipeline.Layout);
-    CreateGraphicsPipeline(Context, "shaders/spirv/unlit.vert.spv", "shaders/spirv/unlit.frag.spv",
+    CreateGraphicsPipeline(Context, "shaders/spirv/checkerboard.vert.spv", "shaders/spirv/checkerboard.frag.spv",
                            &Context->UnlitPipeline);
 }
 
@@ -1036,8 +1052,8 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     RenderArea.offset = {0, 0};
     RenderArea.extent = Context->Swapchain.ImageDimensions;
 
-    // ImGuiNewFrame();
-    // ImGuiUpdateBuffers(&Context->Device, &Context->ImContext);
+    ImGuiNewFrame();
+    ImGuiUpdateBuffers(&Context->Device, &Context->ImContext);
 
     VkRenderPassBeginInfo RenderPassBeginInfo = {};
     RenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1102,6 +1118,7 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 #if 0
         vkCmdBindVertexBuffers(DrawCmdBuffer, 0, 1, shoora_mesh_database::GetVertexBufferHandlePtr(), offsets);
         vkCmdBindIndexBuffer(DrawCmdBuffer, shoora_mesh_database::GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
+        DrawDebugDiamond();
 #endif
         if(Scene->GetBodyCount() > 0)
         {
@@ -1145,7 +1162,7 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         // DrawScene(DrawCmdBuffer);
 
 #endif
-        // ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
+        ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
         vkCmdEndRenderPass(DrawCmdBuffer);
 
         VK_CHECK(vkEndCommandBuffer(DrawCmdBuffer));
