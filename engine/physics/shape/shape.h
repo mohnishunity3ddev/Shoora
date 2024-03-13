@@ -187,7 +187,7 @@ struct edge_t
 struct shoora_shape_convex : shoora_shape
 {
   public:
-    shoora_shape_convex() = delete;
+    explicit shoora_shape_convex() : shoora_shape(CONVEX) {}
     explicit shoora_shape_convex(const shu::vec3f *Points, const i32 Num, memory_arena *Arena = nullptr);
     virtual void Build(const shu::vec3f *Points, const i32 Num, memory_arena *Arena = nullptr) override;
 
@@ -197,7 +197,7 @@ struct shoora_shape_convex : shoora_shape
     virtual shoora_mesh_type GetType() const override;
     virtual shoora_bounds GetBounds(const shu::vec3f &Pos, const shu::quat &Orientation) const override;
     virtual shoora_bounds GetBounds() const override;
-    virtual shu::vec3f GetDim() const override { return shu::Vec3f(1.0, 1.0f, 1.0f); }
+    virtual shu::vec3f GetDim() const override { return Scale; }
     // NOTE: pMareturns the position of the vertex in the shape, which is the furthest in
     // this direction.
     virtual shu::vec3f Support(const shu::vec3f &Direction, const shu::vec3f &Position,
@@ -206,16 +206,20 @@ struct shoora_shape_convex : shoora_shape
     // velocity of the vertex travelling the fastest in this Direction.
     virtual f32 FastestLinearSpeed(const shu::vec3f &AngularVelocity, const shu::vec3f &Direction) const override;
 
+    void SetCenterOfMass(const shu::vec3f &COM) { mCenterOfMass = COM; }
+
     static size_t GetRequiredSizeForConvexBuild(u32 TotalNumPoints);
+
 
   public:
     shu::vec3f *Points = nullptr;
     shu::vec3f *HullPoints = nullptr;
     u32 *HullIndices = nullptr;
     i32 NumPoints = 0, NumHullPoints = 0, NumHullIndices = 0;
-
+    shu::vec3f Scale;
     shoora_bounds mBounds;
     shu::mat3f mInertiaTensor;
+
     shoora_vulkan_buffer VertexBuffer;
     shoora_vulkan_buffer IndexBuffer;
 

@@ -330,12 +330,11 @@ shu::vec3f g_boxBeam[] =
     shu::Vec3f( l,  t,  t)
 };
 
-shu::vec3f g_diamond[7*8];
 
+shu::vec3f g_diamond[7*8];
 void
 DrawDebugDiamond()
 {
-
 #if 1
     shoora_graphics::DrawSphere(g_diamond[0], .025f, colorU32::Red);
     for (i32 i = 1; i < ARRAY_SIZE(g_diamond); ++i)
@@ -380,6 +379,82 @@ DrawDebugDiamond()
     }
 #endif
 }
+
+#if 0
+#include <physics/shape/shape_convex.h>
+void
+OnConvexBodyReady(shoora_shape_convex *Convex, memory_arena *Arena = nullptr)
+{
+    shoora_body body = {};
+    body.Position = shu::Vec3f(0, 0, 0);
+    // body.Scale = shu::Vec3f(1, 1, 1);
+    // body.Rotation = shu::QuatAngleAxisDeg(45, shu::Vec3f(1, 1, 1));
+    body.Rotation = shu::Quat(0, 0, 0, 1);
+    body.LinearVelocity = shu::Vec3f(0, 0, 0);
+    body.InvMass = 0.0f;
+    body.Mass = 0.0f;
+    body.CoeffRestitution = 0.5f;
+    body.FrictionCoeff = 0.5f;
+    body.Shape = Convex;
+    body.InertiaTensor = (body.Shape->InertiaTensor() * body.Mass);
+    body.InverseInertiaTensor = body.InertiaTensor.IsZero() ? shu::Mat3f(0.0f) : body.InertiaTensor.Inverse();
+    body.Scale = body.Shape->GetDim();
+    body.SumForces = body.Acceleration = shu::vec3f::Zero();
+    body.SumTorques = 0.0f;
+
+    LogInfoUnformatted("\n\n");
+
+    if (Arena == nullptr)
+    {
+        Arena = GetArena(MEMTYPE_GLOBAL);
+    }
+    shoora_vertex_info *Vertices = (shoora_vertex_info *)ShuAllocate_(Arena,
+                                                                      sizeof(shoora_vertex_info) * Convex->NumPoints);
+    for (i32 i = 0; i < Convex->NumHullPoints; ++i)
+    {
+        Vertices[i].Pos = Convex->HullPoints[i];
+        Vertices[i].Normal = shu::vec3f::Zero();
+        Vertices[i].Color = shu::Vec3f(i) / (f32)Convex->NumHullPoints;
+    }
+
+    // NOTE: Normals Calculation
+    for (i32 i = 0; i < Convex->NumHullIndices; i += 3)
+    {
+        // counter clockwise normal calculation
+        u32 vIndex0 = Convex->HullIndices[i + 0];
+        u32 vIndex1 = Convex->HullIndices[i + 1];
+        u32 vIndex2 = Convex->HullIndices[i + 2];
+
+        shu::vec3f a = Vertices[vIndex0].Pos;
+        shu::vec3f b = Vertices[vIndex1].Pos;
+        shu::vec3f c = Vertices[vIndex2].Pos;
+
+        shu::vec3f ba = (b - a);
+        shu::vec3f ca = (c - a);
+        shu::vec3f normal = shu::Normalize(shu::Cross(ba, ca));
+
+        Vertices[vIndex0].Normal += normal;
+        Vertices[vIndex1].Normal += normal;
+        Vertices[vIndex2].Normal += normal;
+    }
+    for (i32 i = 0; i < Convex->NumHullPoints; ++i)
+    {
+        Vertices[i].Normal = shu::Normalize(Vertices[i].Normal);
+    }
+
+    for(i32 i = 0; i < Convex->NumHullPoints; ++i)
+    {
+        LogInfo("Pos: {%f, %f, %f}.\n", Convex->HullPoints[i].x, Convex->HullPoints[i].y, Convex->HullPoints[i].z);
+        LogInfo("Normal: {%f, %f, %f}.\n", Vertices[i].Normal.x, Vertices[i].Normal.y, Vertices[i].Normal.z);
+    }
+
+    CreateVertexBuffers(&Context->Device, Vertices, Convex->NumPoints, Convex->HullIndices, Convex->NumHullIndices,
+                        &Convex->VertexBuffer, &Convex->IndexBuffer);
+
+    // TODO: Make AddBody Thread Safe.
+    shoora_body *ConvexBody = Scene->AddBody(std::move(body));
+}
+#endif
 
 void
 FillDiamond()
@@ -495,70 +570,6 @@ AddStandardSandBox()
     body.Scale = body.Shape->GetDim();
     body.Color = GetColor(colorU32::Proto_Yellow);
     Scene->AddBody(std::move(body));
-
-    int x = 0;
-}
-
-#include <physics/shape/shape_convex.h>
-
-void
-OnConvexBodyReady(shoora_shape_convex *Convex, memory_arena *Arena = nullptr)
-{
-    shoora_body body = {};
-    body.Position = shu::Vec3f(0, 0, 0);
-    // body.Scale = shu::Vec3f(1, 1, 1);
-    body.Rotation = shu::Quat(0, 0, 0, 1);
-    body.LinearVelocity = shu::Vec3f(0, 0, 0);
-    body.InvMass = 0.0f;
-    body.Mass = 0.0f;
-    body.CoeffRestitution = 0.5f;
-    body.FrictionCoeff = 0.5f;
-    body.Shape = Convex;
-    body.InertiaTensor = (body.Shape->InertiaTensor() * body.Mass);
-    body.InverseInertiaTensor = body.InertiaTensor.IsZero() ? shu::Mat3f(0.0f) : body.InertiaTensor.Inverse();
-    body.Scale = body.Shape->GetDim();
-    body.SumForces = body.Acceleration = shu::vec3f::Zero();
-    body.SumTorques = 0.0f;
-
-    if(Arena == nullptr) { Arena = GetArena(MEMTYPE_GLOBAL); }
-    shoora_vertex_info *Vertices = (shoora_vertex_info *)ShuAllocate_(Arena, sizeof(shoora_vertex_info)*Convex->NumPoints);
-    for(i32 i = 0; i < Convex->NumHullPoints; ++i)
-    {
-        Vertices[i].Pos = Convex->HullPoints[i];
-        Vertices[i].Normal = shu::vec3f::Zero();
-        Vertices[i].Color = shu::Vec3f(i) / (f32)Convex->NumHullPoints;
-    }
-
-    // NOTE: Normals Calculation
-    for(i32 i = 0; i < Convex->NumHullIndices; i += 3)
-    {
-        // counter clockwise normal calculation
-        u32 vIndex0 = Convex->HullIndices[i + 0];
-        u32 vIndex1 = Convex->HullIndices[i + 1];
-        u32 vIndex2 = Convex->HullIndices[i + 2];
-
-        shu::vec3f a = Vertices[vIndex0].Pos;
-        shu::vec3f b = Vertices[vIndex1].Pos;
-        shu::vec3f c = Vertices[vIndex2].Pos;
-
-        shu::vec3f ba = (b - a);
-        shu::vec3f ca = (c - a);
-        shu::vec3f normal = shu::Normalize(shu::Cross(ba, ca));
-
-        Vertices[vIndex0].Normal += normal;
-        Vertices[vIndex1].Normal += normal;
-        Vertices[vIndex2].Normal += normal;
-    }
-    for(i32 i = 0; i < Convex->NumHullPoints; ++i)
-    {
-        Vertices[i].Normal = shu::Normalize(Vertices[i].Normal);
-    }
-
-    CreateVertexBuffers(&Context->Device, Vertices, Convex->NumPoints, Convex->HullIndices, Convex->NumHullIndices,
-                        &Convex->VertexBuffer, &Convex->IndexBuffer);
-
-    // TODO: Make AddBody Thread Safe.
-    shoora_body *ConvexBody = Scene->AddBody(std::move(body));
 }
 
 void
@@ -567,6 +578,7 @@ InitScene()
     // Bottom Wall (Static Rigidbody)
     shu::vec2f Window = shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
+#if 0
 #if 1
     FillDiamond();
 
@@ -577,8 +589,7 @@ InitScene()
     SubArena(&ConvexArena, MEMTYPE_GLOBAL, ConvexMemSize);
     BuildConvexThreaded(GlobalJobQueue, ConvexShapeMemory, g_diamond, ARRAY_SIZE(g_diamond), OnConvexBodyReady,
                         &ConvexArena);
-
-#if 0
+#else
     shoora_body body = {};
     body.Position = shu::Vec3f(0, 0, 10);
     body.Rotation = shu::Quat(0, 0, 0, 1);
@@ -598,7 +609,9 @@ InitScene()
 #endif
 #endif
 
-    // AddStandardSandBox();
+    AddStandardSandBox();
+    Scene->AddDiamondBody(shu::Vec3f(0, 8, 10), shu::Vec3f(1.0f), colorU32::Proto_Orange, 0.0f, .5f,
+                          shu::Vec3f(0.0f));
 
 #if 0
     // Dynamic Bodies
@@ -1115,51 +1128,14 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         vkCmdBindPipeline(DrawCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->UnlitPipeline.Handle);
 
         VkDeviceSize offsets[1] = {0};
-#if 0
+
         vkCmdBindVertexBuffers(DrawCmdBuffer, 0, 1, shoora_mesh_database::GetVertexBufferHandlePtr(), offsets);
         vkCmdBindIndexBuffer(DrawCmdBuffer, shoora_mesh_database::GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
-        DrawDebugDiamond();
-#endif
-        if(Scene->GetBodyCount() > 0)
-        {
-            const shoora_body *Body = &Scene->Bodies[0];
-            shoora_shape_convex *ConvexShape = (shoora_shape_convex *)Body->Shape;
-
-            vkCmdBindVertexBuffers(DrawCmdBuffer, 0, 1, &ConvexShape->VertexBuffer.Handle, offsets);
-            vkCmdBindIndexBuffer(DrawCmdBuffer, ConvexShape->IndexBuffer.Handle, 0, VK_INDEX_TYPE_UINT32);
-            // Shu::vec3f Color = GetColor(ColorU32);
-            shu::vec3f Color = GetColor(colorU32::Proto_Orange);
-
-            shu::mat4f Model = shu::TRS(Body->Position, Body->Scale, Body->Rotation);
-            light_shader_push_constant_data Value = {.Model = Model, .Color = Color};
-            vkCmdPushConstants(DrawCmdBuffer, shoora_graphics::GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
-                               sizeof(light_shader_push_constant_data), &Value);
-
-            vkCmdDrawIndexed(DrawCmdBuffer, ConvexShape->NumHullIndices, 1, 0, 0, 0);
-
-#if 0
-            vkCmdBindVertexBuffers(DrawCmdBuffer, 0, 1, shoora_mesh_database::GetVertexBufferHandlePtr(), offsets);
-            vkCmdBindIndexBuffer(DrawCmdBuffer, shoora_mesh_database::GetIndexBufferHandle(), 0,
-                                 VK_INDEX_TYPE_UINT32);
-
-            auto *Vertices = ConvexShape->Points;
-            // NOTE: No need to calculate TRS here since that's already been done in the physics loop for polygons.
-            for (i32 i = 0; i < ConvexShape->NumPoints; ++i)
-            {
-                auto p0 = Vertices[i];
-                auto p1 = Vertices[(i+1) % ConvexShape->NumPoints];
-                shoora_graphics::DrawLine3D(p0, p1, colorU32::Proto_Orange, .025f);
-            }
-#endif
-
-            // vkCmdDrawIndexed(DrawCmdBuffer, ConvexShape->NumHullIndices, 1, 0, 0, 1);
-            // Scene->Draw(true);
-        }
 
         Scene->UpdateInput(CurrentMouseWorldPos);
-        // f32 pDt = GlobalPausePhysics ? 0.0f : GlobalDeltaTime;
-        // Scene->PhysicsUpdate(pDt, GlobalDebugMode);
-        // DrawScene(DrawCmdBuffer);
+        f32 pDt = GlobalPausePhysics ? 0.0f : GlobalDeltaTime;
+        Scene->PhysicsUpdate(pDt, GlobalDebugMode);
+        DrawScene(DrawCmdBuffer);
 
 #endif
         ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);

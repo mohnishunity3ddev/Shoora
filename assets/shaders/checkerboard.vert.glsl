@@ -47,8 +47,9 @@ main()
 
     mat4 MVP = PushConstant.Model * ubo.View * ubo.Projection;
 
-    OutNormal = (vec4(InNormal, 1.0) * PushConstant.Model).xyz;
+    OutNormal = (vec4(InNormal, 0.0) * PushConstant.Model).xyz;
     // OutNormal = (vec4(InNormal, 1.0)).xyz;
+    OutNormal = normalize(OutNormal);
     OutNormal = (OutNormal * .5) + .5;
 
     OutModelPos = vec4(InPos, 1.) * PushConstant.Model;

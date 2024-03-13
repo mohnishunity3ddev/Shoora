@@ -330,6 +330,7 @@ void
 shoora_shape_convex::ExpandConvexHull(stack_array<shu::vec3f> &HullPoints, stack_array<tri_t> &HullTris,
                                       const shu::vec3f *Vertices, const i32 VertexCount)
 {
+    // NOTE: All vertices in the given vertex list which are not yet part of the hull.
     shu::vec3f *ExternalVertsArr = (shu::vec3f *)_alloca(sizeof(shu::vec3f) * VertexCount);
     stack_array<shu::vec3f> ExternalVerts(ExternalVertsArr, VertexCount);
 
@@ -338,6 +339,7 @@ shoora_shape_convex::ExpandConvexHull(stack_array<shu::vec3f> &HullPoints, stack
         ExternalVerts.add(Vertices[i]);
     }
 
+    // NOTE: Removing all the vertices that are inside the "volume" of the calculated hull so far.
     RemoveInternalVertices(HullPoints, HullTris, ExternalVerts);
 
     while(ExternalVerts.size > 0)
@@ -350,6 +352,8 @@ shoora_shape_convex::ExpandConvexHull(stack_array<shu::vec3f> &HullPoints, stack
         ExternalVerts.erase(PointIdX);
 
         AddPoint(HullPoints, HullTris, Point);
+
+        // NOTE: Removing all the vertices that are inside the "volume" of the calculated hull so far.
         RemoveInternalVertices(HullPoints, HullTris, ExternalVerts);
     }
 
@@ -474,13 +478,16 @@ shoora_shape_convex::AddPoint(stack_array<shu::vec3f> &HullPoints, stack_array<t
         }
     }
 
-    // NOTE: Now find all the edges that areunique to the tris, these will be the new edges that will form triangles
-    edge_t *UniqueEdgesArr = (edge_t *) _alloca(sizeof(edge_t) * 3 * FacingTris.size);
+    // NOTE: Now find all the edges that are unique to the tris, these will be the new edges that will form
+    // triangles.
+    // NOTE: If two triangles are there with one common edge between the two, unique edges are all the edges of
+    // these triangle except this common edge.
+    edge_t *UniqueEdgesArr = (edge_t *)_alloca(sizeof(edge_t) * 3 * FacingTris.size);
     stack_array<edge_t> UniqueEdges(UniqueEdgesArr, 3 * FacingTris.size);
     for (i32 i = 0; i < FacingTris.size; i++)
     {
-        const i32 TriIdX = FacingTris.data[i];
-        const tri_t &Tri = HullTris.data[TriIdX];
+        const i32 FacingTriToIgnore = FacingTris.data[i];
+        const tri_t &Tri = HullTris.data[FacingTriToIgnore];
 
         edge_t Edges[3];
         Edges[0].A = Tri.A;
@@ -492,11 +499,15 @@ shoora_shape_convex::AddPoint(stack_array<shu::vec3f> &HullPoints, stack_array<t
         Edges[2].A = Tri.C;
         Edges[2].B = Tri.A;
 
-        for(i32 e = 0; e < 3; ++e)
+        for(i32 EdgeIndex = 0; EdgeIndex < 3; ++EdgeIndex)
         {
-            if(IsEdgeUnique(HullTris.data, FacingTris, TriIdX, Edges[e]))
+            const edge_t Edge = Edges[EdgeIndex];
+            // NOTE: If there is an edge contained in this facingTriToIgnore which is also there in some other tri
+            // in the list of facing tris, then the edge is not Unique and should not be added to the Unique list.
+            // All other edges will be added.
+            if(IsEdgeUnique(HullTris.data, FacingTris, FacingTriToIgnore, Edge))
             {
-                UniqueEdges.add(Edges[e]);
+                UniqueEdges.add(Edge);
             }
         }
     }

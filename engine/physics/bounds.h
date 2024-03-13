@@ -7,6 +7,7 @@ struct shoora_bounds
 {
     shoora_bounds() { this->Clear(); }
     shoora_bounds(const shoora_bounds &other) : Mins(other.Mins), Maxs(other.Maxs) {}
+    shoora_bounds(shu::vec3f Min, shu::vec3f Max) : Mins(Min), Maxs(Max) {}
     const shoora_bounds &operator=(const shoora_bounds &other);
     ~shoora_bounds() = default;
 

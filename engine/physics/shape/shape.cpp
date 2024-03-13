@@ -5,10 +5,7 @@ shoora_shape::shoora_shape(shoora_mesh_type Type)
 {
     this->Type = Type;
     this->isPrimitive = true;
-    this->MeshFilter = nullptr;
-    if(Type != CONVEX) {
-        this->MeshFilter = shoora_mesh_database::GetMeshFilter(Type);
-    }
+    this->MeshFilter = shoora_mesh_database::GetMeshFilter(Type);
 }
 
 shoora_shape::shoora_shape(shoora_mesh_type Type, shoora_mesh_filter *MeshFilter)

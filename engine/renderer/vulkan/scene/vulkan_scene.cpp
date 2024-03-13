@@ -115,6 +115,28 @@ shoora_scene::AddCircleBody(const shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 
 }
 
 shoora_body *
+shoora_scene::AddDiamondBody(const shu::vec3f &Pos, const shu::vec3f &Scale, u32 ColorU32, f32 Mass,
+                             f32 Restitution, const shu::vec3f &EulerAngles)
+{
+    shoora_shape_convex *DiamondShape = ShuAllocateStruct(shoora_shape_convex, MEMTYPE_GLOBAL);
+    auto shape = shoora_shape_convex();
+    shape.SetCenterOfMass(shu::Vec3f(0.0f, 0.0f, -0.082f));
+    shape.mInertiaTensor = shu::Mat3f(0.2484f, 0.0f, 0.0f, 0.0f, 0.248386f, 0.0f, 0.0f, 0.0f, 0.341404f);
+    shu::vec3f DiamondBounds_Min = shu::Vec3f(-1.0f, -1.0f, -1.0f);
+    shu::vec3f DiamondBounds_Max = shu::Vec3f(1.0f, 1.0f, 0.4f);
+    shoora_bounds DiamondBounds = shoora_bounds(DiamondBounds_Min, DiamondBounds_Max);
+    shape.Scale = Scale;
+    shape.Type = shoora_mesh_type::CONVEX_DIAMOND;
+    SHU_MEMCOPY(&shape, DiamondShape, sizeof(shoora_shape_convex));
+
+    shoora_body Body{GetColor(ColorU32), Pos, Mass, Restitution, DiamondShape, EulerAngles};
+    Bodies.emplace_back(std::move(Body));
+
+    shoora_body *b = Bodies.get(Bodies.size() - 1);
+    return b;
+}
+
+shoora_body *
 shoora_scene::AddBoxBody(const shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Height, f32 Mass, f32 Restitution,
                          const shu::vec3f &EulerAngles)
 {

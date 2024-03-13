@@ -388,27 +388,10 @@ shoora_body::DrawWireframe(const shu::mat4f &model, f32 thickness, u32 color)
 void
 shoora_body::Draw()
 {
-#if 0
-    if(this->Shape->isPrimitive)
-    {
-        auto *mesh = (shoora_mesh *)this->Shape->MeshFilter;
-        shoora_mesh_info Info = mesh->GetInfo();
-        shoora_graphics::Draw(Info.IndexCount, Info.IndexOffset, Info.VertexOffset);
-    }
-    else
-    {
-        ASSERT(!"TO-DO");
-    }
-#endif
-
     shoora_mesh *mesh = (shoora_mesh *)this->Shape->MeshFilter;
     if (mesh != nullptr)
     {
         shoora_mesh_info Info = mesh->GetInfo();
         shoora_graphics::Draw(Info.IndexCount, Info.IndexOffset, Info.VertexOffset);
-    }
-    else
-    {
-        ASSERT(this->Shape->Type == shoora_mesh_type::CONVEX);
     }
 }

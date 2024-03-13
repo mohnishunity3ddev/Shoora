@@ -27,6 +27,7 @@ static shoora_mesh *_Rect2DMesh;
 static shoora_mesh *_CircleMesh;
 static shoora_mesh *_CubeMesh;
 static shoora_mesh *_UVSphereMesh;
+static shoora_mesh *_DiamondConvexMesh;
 static u32 PrimitiveCount;
 
 static shoora_mesh *CustomPolyMeshes;
@@ -91,6 +92,7 @@ Initialize()
     _Rect2DMesh = &Meshes[TotalMeshCount++];
     _LineMesh = &Meshes[TotalMeshCount++];
     _UVSphereMesh = &Meshes[TotalMeshCount++];
+    _DiamondConvexMesh = &Meshes[TotalMeshCount++];
 
     PrimitiveCount = TotalMeshCount;
 
@@ -131,6 +133,22 @@ Initialize()
     SHU_MEMCOPY(CubeInfo.Indices, CubeMeshFilter->Indices, CubeMeshFilter->IndexCount * sizeof(u32));
     RunningVertexCount += CubeMeshFilter->VertexCount;
     RunningIndexCount += CubeMeshFilter->IndexCount;
+
+    auto DiamondInfo = shoora_primitive_collection::GetPrimitiveInfo((u32)shoora_mesh_type::CONVEX_DIAMOND);
+    shoora_mesh *DiamondMesh = _DiamondConvexMesh;
+    DiamondMesh->Type = shoora_mesh_type::CONVEX_DIAMOND;
+    DiamondMesh->VertexOffset = RunningVertexCount;
+    DiamondMesh->IndexOffset = RunningIndexCount;
+    shoora_mesh_filter *DiamondMeshFilter = &DiamondMesh->MeshFilter;
+    DiamondMeshFilter->Vertices = Vertices + RunningVertexCount;
+    DiamondMeshFilter->VertexCount = DiamondInfo.VertexCount;
+    DiamondMeshFilter->Indices = Indices + RunningIndexCount;
+    DiamondMeshFilter->IndexCount = DiamondInfo.IndexCount;
+    SHU_MEMCOPY(DiamondInfo.Vertices, DiamondMeshFilter->Vertices,
+                DiamondMeshFilter->VertexCount * sizeof(shoora_vertex_info));
+    SHU_MEMCOPY(DiamondInfo.Indices, DiamondMeshFilter->Indices, DiamondMeshFilter->IndexCount * sizeof(u32));
+    RunningVertexCount += DiamondMeshFilter->VertexCount;
+    RunningIndexCount += DiamondMeshFilter->IndexCount;
 
     auto RectInfo = shoora_primitive_collection::GetPrimitiveInfo((u32)shoora_mesh_type::RECT_2D);
     shoora_mesh *RectMesh = _Rect2DMesh;
@@ -196,7 +214,7 @@ Initialize()
         PolyMeshFilter->VertexCount = VCount;
         PolyMeshFilter->Indices = IndexDest;
         PolyMeshFilter->IndexCount = ICount;
-        
+
 
         RunningVertexCount += VCount;
         RunningIndexCount += ICount;
@@ -229,6 +247,8 @@ shoora_mesh_database::GetMesh(shoora_mesh_type Type)
         case shoora_mesh_type::RECT_2D: { Result = _Rect2DMesh; } break;
         case shoora_mesh_type::CUBE: { Result = _CubeMesh; } break;
         case shoora_mesh_type::LINE: { Result = _LineMesh; } break;
+        case shoora_mesh_type::CONVEX:
+        case shoora_mesh_type::CONVEX_DIAMOND: { Result = _DiamondConvexMesh; } break;
         SHU_INVALID_DEFAULT;
     }
 

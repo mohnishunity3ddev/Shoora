@@ -70,7 +70,7 @@ typedef double f64;
 #define SHU_EPSILON FLT_EPSILON
 #if _DEBUG
     #define _SHU_DEBUG 1
-    #define SHU_CRASH_DUMP_ENABLE 0
+    #define SHU_CRASH_DUMP_ENABLE 1
 #else
     #define _SHU_RELEASE 1
     #define SHU_CRASH_DUMP_ENABLE 1

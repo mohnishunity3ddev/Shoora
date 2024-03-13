@@ -40,6 +40,8 @@ struct shoora_scene
                                const shu::vec3f &EulerAngles = shu::Vec3f(0.0f));
     shoora_body *AddPolygonBody(const u32 MeshId, const shu::vec2f Pos, u32 ColorU32, f32 Mass, f32 Restitution,
                                 const shu::vec3f &EulerAngles = shu::Vec3f(0.0f), f32 Scale = 1.0f);
+    shoora_body *AddDiamondBody(const shu::vec3f &Pos, const shu::vec3f &Scale, u32 ColorU32, f32 Mass,
+                                f32 Restitution, const shu::vec3f &EulerAngles);
 
     i32 GetBodyCount();
     shoora_body *GetBodies();
