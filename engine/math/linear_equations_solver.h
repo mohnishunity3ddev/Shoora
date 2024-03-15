@@ -6,6 +6,58 @@
 
 namespace shu
 {
+    template <typename T>
+    vec3<T>
+    LE_CramersRule(const mat3<T> &CoeffMatrix, const vec3<T> &ConstantVec)
+    {
+        vec3<T> Result;
+
+        T CoeffDet = CoeffMatrix.Determinant();
+
+        mat3<T> XMat = CoeffMatrix;
+        XMat.SetColumn(0, ConstantVec);
+        T XDeter = XMat.Determinant();
+        ASSERT(!NearlyEqual(XDeter, 0.0f));
+
+        mat3<T> YMat = CoeffMatrix;
+        YMat.SetColumn(1, ConstantVec);
+        T YDeter = YMat.Determinant();
+        ASSERT(!NearlyEqual(YDeter, 0.0f));
+
+        mat3<T> ZMat = CoeffMatrix;
+        ZMat.SetColumn(2, ConstantVec);
+        T ZDeter = ZMat.Determinant();
+        ASSERT(!NearlyEqual(ZDeter, 0.0f));
+
+        Result.x = XDeter / CoeffDet;
+        Result.y = YDeter / CoeffDet;
+        Result.z = ZDeter / CoeffDet;
+
+        return Result;
+    }
+
+    template <typename T>
+    vec2<T>
+    LE_CramersRule(const T CoeffMatrix[2][2], const vec2<T> &ConstantVec)
+    {
+        vec2<T> Result;
+
+        T CoeffDet = CoeffMatrix[0][0]*CoeffMatrix[1][1] - CoeffMatrix[0][1]*CoeffMatrix[1][0];
+
+        T XMat[2][2] = {ConstantVec.x, CoeffMatrix[0][1], ConstantVec.y, CoeffMatrix[1][1]};
+        T XDeter = XMat[0][0]*XMat[1][1] - XMat[0][1]*XMat[1][0];
+        ASSERT(!NearlyEqual(XDeter, 0.0f));
+
+        T YMat[2][2] = {CoeffMatrix[0][0], ConstantVec.x, CoeffMatrix[1][0], ConstantVec.y};
+        T YDeter = YMat[0][0]*YMat[1][1] - YMat[0][1]*YMat[1][0];
+        ASSERT(!NearlyEqual(YDeter, 0.0f));
+        
+        Result.x = XDeter / CoeffDet;
+        Result.y = YDeter / CoeffDet;
+
+        return Result;
+    }
+
     template<typename T>
     vec3<T>
     LCP_Mat3(const mat3<T> &M, const vec3<T> &V)

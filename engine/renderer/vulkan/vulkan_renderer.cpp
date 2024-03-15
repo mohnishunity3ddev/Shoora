@@ -610,7 +610,7 @@ InitScene()
 #endif
 
     AddStandardSandBox();
-    Scene->AddDiamondBody(shu::Vec3f(0, 8, 10), shu::Vec3f(1.0f), colorU32::Proto_Orange, 0.0f, .5f,
+    Scene->AddDiamondBody(shu::Vec3f(0, 8, 10), shu::Vec3f(1.0f), colorU32::Proto_Orange, 0.0f, 0.5f,
                           shu::Vec3f(0.0f));
 
 #if 0
@@ -767,6 +767,8 @@ InitializeLightData()
 void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
 {
+    shu::TestBarycentric();
+
     platform_memory GameMemory = AppInfo->GameMemory;
     InitializeMemory(GameMemory.PermSize, GameMemory.PermMemory, GameMemory.FrameMemorySize, GameMemory.FrameMemory);
 

@@ -55,6 +55,7 @@ namespace shu
         inline vec3<T> MulVec(const vec3<T> &V);
         inline mat3<T> Mul(T A);
         inline vec3<T> GetColumn(size_t Index);
+        inline void SetColumn(u32 ColumnIndex, const vec3<T> &Column);
         inline vec3<T> GetRow(size_t Index);
 
         inline T Determinant() const;
@@ -577,6 +578,20 @@ namespace shu
 
         vec3<T> Result = vec3<T>{this->m[0][Index], this->m[1][Index], this->m[2][Index]};
         return Result;
+    }
+
+    template <typename T>
+    void
+    mat3<T>::SetColumn(u32 ColumnIndex, const vec3<T> &Column)
+    {
+        if (ColumnIndex < 0 || ColumnIndex >= 3)
+        {
+            ASSERT(!"Index Out of bounds");
+        }
+
+        this->m[0][ColumnIndex] = Column.x;
+        this->m[1][ColumnIndex] = Column.y;
+        this->m[2][ColumnIndex] = Column.z;
     }
 
     template <typename T>
