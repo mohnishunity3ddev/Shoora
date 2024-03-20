@@ -91,6 +91,7 @@ namespace shu
         inline vec3<T> operator/=(const vec3<T>& A);
         inline vec3<T> operator/=(T A);
         inline T& operator[](size_t Index);
+        inline T& operator[](size_t Index) const;
         inline T SqMagnitude() const;
         inline T Magnitude() const;
         inline void Normalize();
@@ -98,6 +99,7 @@ namespace shu
         inline vec3<T> Cross(const vec3<T> &A) const;
         inline vec3<T> Reciprocal() const;
         inline b32 IsValid() const;
+        inline b32 IsNormalized() const;
         static vec3<T> Zero()
         {
             vec3<T> Result = {(T)0, (T)0, (T)0};
@@ -131,7 +133,8 @@ namespace shu
     template <typename T> SHU_EXPORT vec3<T> operator/(const vec3<T>& A, T B);
     template <typename T> SHU_EXPORT T SqMagnitude(const vec3<T> &A);
     template <typename T> SHU_EXPORT T Magnitude(const vec3<T> &A);
-
+    // NOTE: Exaluates A.(B X C)
+    template <typename T> SHU_EXPORT T ScalarTripleProduct(const vec3<T> &A, const vec3<T> &B, const vec3<T> &C);
     template <typename T> SHU_EXPORT vec3f Normalize(const vec3<T> &A);
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -672,6 +675,17 @@ namespace shu
     }
 
     template <typename T>
+    inline b32
+    vec3<T>::IsNormalized() const
+    {
+        f32 SqMagnitude = this->x*this->x * this->y*this->y * this->z*this->z;
+
+        b32 Result = NearlyEqual(SqMagnitude, 1.0f, 0.0001f);
+
+        return Result;
+    }
+
+    template <typename T>
     vec3<T>
     operator+(const vec3<T>& A, const vec3<T>& B)
     {
@@ -842,6 +856,18 @@ namespace shu
     }
 
     template <typename T>
+    T&
+    vec3<T>::operator[](size_t Index) const
+    {
+        if (Index >= 3)
+        {
+            ASSERT(!"Index Out of Bounds");
+        }
+
+        return this->E[Index];
+    }
+
+    template <typename T>
     T
     vec3<T>::SqMagnitude() const
     {
@@ -879,6 +905,14 @@ namespace shu
     Magnitude(const vec3<T> &A)
     {
         T Result = sqrtf(A.x*A.x + A.y*A.y + A.z*A.z);
+        return Result;
+    }
+
+    template <typename T>
+    T
+    ScalarTripleProduct(const vec3<T> &A, const vec3<T> &B, const vec3<T> &C)
+    {
+        T Result = Dot(A, Cross(B, C));
         return Result;
     }
 

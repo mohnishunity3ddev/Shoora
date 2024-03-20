@@ -71,7 +71,7 @@ BarycentricProjectionMethod(const triangle &Tri, const vec3f &p)
 #if _SHU_DEBUG
     vec3f norm = shu::Normalize(n);
     f32 dist = (p - b).Dot(norm);
-    ASSERT(NearlyEqual(dist, 0.0f, 0.001f));
+    ASSERT(NearlyEqual(dist, 0.0f, 0.001f) && "Point P should be in the plane of the triangle!");
 #endif
 
     f32 numeratorU, numeratorV, oneOverDenom;
@@ -128,23 +128,31 @@ BarycentricCrossMethod(const triangle &Tri, const vec3f &p)
     shu::vec3f bc = c - b;
     shu::vec3f ca = a - c;
 
-    shu::vec3f n = ab.Cross(bc);
+    shu::vec3f UnNormalizedNormal = ab.Cross(bc);
 
 #if _SHU_DEBUG
-    auto norm = shu::Normalize(n);
+    auto norm = shu::Normalize(UnNormalizedNormal);
     f32 dist = (p - b).Dot(norm);
-    ASSERT(NearlyEqual(dist, 0.0f, 0.001f));
+    ASSERT(NearlyEqual(dist, 0.0f, 0.001f) && "Point P should be in the plane of the triangle!");
 #endif
 
     shu::vec3f ap = p - a;
     shu::vec3f bp = p - b;
     shu::vec3f cp = p - c;
 
-    f32 abc = shu::Dot(ab.Cross(bc), n); // * 0.5f;
-    f32 pbc = shu::Dot(bc.Cross(cp), n); // * 0.5f;
-    f32 pca = shu::Dot(ca.Cross(ap), n); // * 0.5f;
+    // NOTE: Area of the triangle given 3 points, is the cross product of two of its edges. Dot product with the
+    // triangle normal gives the SignedArea of the triangle w.r.t. the original triangle abc to if its normal is
+    // aligned with the abc triangle. for area we also have to divide by 2.0f not doing here since we are
+    // calculating ratios.
+    //  IMPORTANT: n here has not been normalized since we are dividing these pbc, pca and pab by the original
+    //  triangle anyways. and triangle abc area is dotted with it's unnormalized normal.
+    f32 abc = shu::Dot(ab.Cross(bc), UnNormalizedNormal); // * 0.5f;
+    f32 pbc = shu::Dot(bc.Cross(cp), UnNormalizedNormal); // * 0.5f;
+    f32 pca = shu::Dot(ca.Cross(ap), UnNormalizedNormal); // * 0.5f;
     // f32 pab = shu::Dot(ab.Cross(bp), n); // * 0.5f;
 
+    // NOTE: Barycentric coordinates are the ratio between the internal(or external) 3 triangles that are made by
+    // the given point on the original abc triangle.
     f32 u = pbc / abc;
     f32 v = pca / abc;
     // f32 w = pab / abc;
@@ -223,7 +231,7 @@ TriangleArea2D(const shu::vec2f &A, const shu::vec2f &B, const shu::vec2f &C)
 {
     f32 Result = 0.0f;
 
-    Result = (B.x - A.x) * (C.y - B.y) - (C.x - B.x) * (B.y - A.y);
+    Result = (B.x - A.x)*(C.y - B.y) - (C.x - B.x)*(B.y - A.y);
     Result *= 0.5f;
 
     return Result;
@@ -234,7 +242,7 @@ DoubleTriangleArea2D(f32 x1, f32 y1, f32 x2, f32 y2, f32 x3, f32 y3)
 {
     f32 Result = 0.0f;
 
-    Result = (x2 - x1) * (y3 - y2) - (x3 - x2) * (y2 - y1);
+    Result = (x2 - x1)*(y3 - y2) - (x3 - x2)*(y2 - y1);
     return Result;
 }
 }; // namespace shu

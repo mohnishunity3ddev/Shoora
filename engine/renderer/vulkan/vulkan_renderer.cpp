@@ -764,10 +764,16 @@ InitializeLightData()
     GlobalFragUniformData.SpotlightData.Intensity = 5.0f;
 }
 
+#include <physics/primitive_tests/primitive_tests.h>
+
 void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
 {
-    shu::TestBarycentric();
+    line_segment Line;
+    Line.A = shu::Vec3f(0, 0, 0);
+    Line.B = shu::Vec3f(3, -2, 0);
+    shu::vec3f Point = shu::Vec3f(1, 1, 0);
+    shu::vec3f Closest = ClosestPtPointLineSegment(Line, Point);
 
     platform_memory GameMemory = AppInfo->GameMemory;
     InitializeMemory(GameMemory.PermSize, GameMemory.PermMemory, GameMemory.FrameMemorySize, GameMemory.FrameMemory);
