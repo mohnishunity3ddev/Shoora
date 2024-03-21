@@ -75,7 +75,7 @@ BarycentricProjectionMethod(const triangle &Tri, const vec3f &p)
 #endif
 
     f32 numeratorU, numeratorV, oneOverDenom;
-
+    
     f32 nX = SHU_ABSOLUTE(n.x);
     f32 nY = SHU_ABSOLUTE(n.y);
     f32 nZ = SHU_ABSOLUTE(n.z);

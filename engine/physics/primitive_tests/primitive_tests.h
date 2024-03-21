@@ -101,6 +101,10 @@ ClosestPtPointLineSegment(const line_segment &Line, const shu::vec3f &Point)
     f32 t = ProjTimesABLen / LenSquared;
     t = ClampToRange(t, 0.0f, 1.0f);
 
+    // TODO: Remove this
+    shu::vec2f baryCoord = shu::Vec2f(1.0f - t, t);
+    LogInfo("Bary: %f, %f.\n", baryCoord.x, baryCoord.y);
+
     shu::vec3f Result = Line.A + t * (Line.B - Line.A);
     return Result;
 }
@@ -326,6 +330,7 @@ ClosestPtPointTriangle(const shu::vec3f &Point, const shu::vec3f &A, const shu::
         // NOTE: The Closest Point is the projection of P onto the edge AB.
         // d1 - d3 here represents the length of the edge AB. d1 is the projection ap onto ab.
         f32 t = d1 / (d1 - d3);
+        // NOTE: Barycentric coordinates: (1-t, t, 0)
         return A + t * AB;
     }
 
@@ -337,6 +342,7 @@ ClosestPtPointTriangle(const shu::vec3f &Point, const shu::vec3f &A, const shu::
     if(d6 >= 0.0f && d5 <= d6)
     {
         // NOTE: The closest point is vertex C of the triangle ABC
+        // NOTE: Barycentric coordinates: (0, 0, 1)
         return C;
     }
 
@@ -354,6 +360,7 @@ ClosestPtPointTriangle(const shu::vec3f &Point, const shu::vec3f &A, const shu::
         // d2 - d6 is the sum of the tow projection of AP onto AC and CP onto AC. which together make up the length
         // of AC. The fraction t is the ratio of the projection AP makes onto AC over the total length AC.
         f32 t = d2 / (d2 - d6);
+        // NOTE: Barycentric coordinates: (1-t, 0, t)
         return A + t*AC;
     }
 
@@ -369,6 +376,7 @@ ClosestPtPointTriangle(const shu::vec3f &Point, const shu::vec3f &A, const shu::
         // NOTE: How close bp is to the edge bc is also decided by - by what amount is cp closer to ab than ac (d5 - d6)
         // NOTE: The ratio between these gives the weight along bc.
         float t = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+        // NOTE: Barycentric coordinates: (0, 1-t, t)
         return B + t*(C - B);
     }
 
@@ -377,6 +385,7 @@ ClosestPtPointTriangle(const shu::vec3f &Point, const shu::vec3f &A, const shu::
     float v = vb * denom;
     float w = vc * denom;
     // NOTE: u*a + v*b + w*c, u = va * denom = 1.0f - v - w
+    // NOTE: Barycentric coordinates: (1-v-w, v, w)
     return A + AB*v + AC*w;
 }
 
@@ -429,10 +438,21 @@ ClosestPtPointTetrahedron(const shu::vec3f &P, const shu::vec3f &A, const shu::v
         }
     }
 
+    if(PointOutsidePlane(P, A, C, D))
+    {
+        shu::vec3f Closest = ClosestPtPointTriangle(P, D, B, A);
+        f32 CurrentSqDistance = shu::Dot(Closest - P, Closest - P);
+        if(CurrentSqDistance < BestSqDistance)
+        {
+            BestSqDistance = CurrentSqDistance;
+            Result = Closest;
+        }
+    }
+
     return Result;
 }
 
-// NOTE: Cehck concepts/obb-obb-sat folder for the intersection proof.
+// IMPORTANT: NOTE: Check concepts/obb-obb-sat folder for the intersection proof.
 b32
 ObbObbTestSeparatingAxis(const obb &A, const obb &B)
 {
@@ -498,49 +518,49 @@ ObbObbTestSeparatingAxis(const obb &A, const obb &B)
     // NOTE: Test axis L = A0 x B1
     ra = A.HalfExtents[1] * AbsR[2][1] + A.HalfExtents[2] * AbsR[1][1];
     rb = B.HalfExtents[0] * AbsR[0][2] + B.HalfExtents[2] * AbsR[0][0];
-    if(SHU_ABSOLUTE(T[2]*R[1][1] - T[1]*R[2][1]) > (ra + rb))
+    if(SHU_ABSOLUTE(T[2] * R[1][1] - T[1] * R[2][1]) > (ra + rb))
         return false;
 
     // NOTE: Test axis L = A0 x B2
     ra = A.HalfExtents[1] * AbsR[2][2] + A.HalfExtents[2] * AbsR[1][2];
     rb = B.HalfExtents[0] * AbsR[0][1] + B.HalfExtents[1] * AbsR[0][0];
-    if(SHU_ABSOLUTE(T[2]*R[1][2] - T[1]*R[2][2]) > (ra + rb))
+    if(SHU_ABSOLUTE(T[2] * R[1][2] - T[1] * R[2][2]) > (ra + rb))
         return false;
 
     // NOTE: Test axis L = A1 x B0
     ra = A.HalfExtents[0] * AbsR[2][0] + A.HalfExtents[2] * AbsR[0][0];
     rb = B.HalfExtents[1] * AbsR[1][2] + B.HalfExtents[2] * AbsR[1][1];
-    if(SHU_ABSOLUTE(T[0]*R[2][0] - T[2]*R[0][0]) > (ra + rb))
+    if(SHU_ABSOLUTE(T[0] * R[2][0] - T[2] * R[0][0]) > (ra + rb))
         return false;
 
     // NOTE: Test axis L = A1 x B1
     ra = A.HalfExtents[0] * AbsR[2][1] + A.HalfExtents[2] * AbsR[0][1];
     rb = B.HalfExtents[0] * AbsR[1][2] + B.HalfExtents[2] * AbsR[1][0];
-    if(SHU_ABSOLUTE(T[0]*R[2][1] - T[2]*R[0][1]) > (ra + rb))
+    if(SHU_ABSOLUTE(T[0] * R[2][1] - T[2] * R[0][1]) > (ra + rb))
         return false;
 
     // NOTE: Test axis L = A1 x B2
     ra = A.HalfExtents[0] * AbsR[2][2] + A.HalfExtents[2] * AbsR[0][2];
     rb = B.HalfExtents[0] * AbsR[1][1] + B.HalfExtents[1] * AbsR[1][0];
-    if(SHU_ABSOLUTE(T[0]*R[2][2] - T[2]*R[0][2]) > (ra + rb))
+    if(SHU_ABSOLUTE(T[0] * R[2][2] - T[2] * R[0][2]) > (ra + rb))
         return false;
 
     // NOTE: Test axis L = A2 x B0
     ra = A.HalfExtents[0] * AbsR[1][0] + A.HalfExtents[1] * AbsR[0][0];
     rb = B.HalfExtents[1] * AbsR[2][2] + B.HalfExtents[2] * AbsR[2][1];
-    if(SHU_ABSOLUTE(T[1]*R[0][0] - T[0]*R[1][0]) > (ra + rb))
+    if(SHU_ABSOLUTE(T[1] * R[0][0] - T[0] * R[1][0]) > (ra + rb))
         return false;
 
     // NOTE: Test axis L = A2 x B1
     ra = A.HalfExtents[0] * AbsR[1][1] + A.HalfExtents[1] * AbsR[0][1];
     rb = B.HalfExtents[0] * AbsR[2][2] + B.HalfExtents[2] * AbsR[2][0];
-    if(SHU_ABSOLUTE(T[1]*R[0][1] - T[0]*R[1][1]) > (ra + rb))
+    if(SHU_ABSOLUTE(T[1] * R[0][1] - T[0] * R[1][1]) > (ra + rb))
         return false;
 
     // NOTE: Test axis L = A2 x B2
     ra = A.HalfExtents[0] * AbsR[1][2] + A.HalfExtents[1] * AbsR[0][2];
     rb = B.HalfExtents[0] * AbsR[2][1] + B.HalfExtents[1] * AbsR[2][0];
-    if(SHU_ABSOLUTE(T[1]*R[0][2] - T[0]*R[1][2]) > (ra + rb))
+    if(SHU_ABSOLUTE(T[1] * R[0][2] - T[0] * R[1][2]) > (ra + rb))
         return false;
 
     // Since no separating axis is found, the OBBs must be intersecting

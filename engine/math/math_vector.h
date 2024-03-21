@@ -91,7 +91,7 @@ namespace shu
         inline vec3<T> operator/=(const vec3<T>& A);
         inline vec3<T> operator/=(T A);
         inline T& operator[](size_t Index);
-        inline T& operator[](size_t Index) const;
+        inline T operator[](size_t Index) const;
         inline T SqMagnitude() const;
         inline T Magnitude() const;
         inline void Normalize();
@@ -100,6 +100,7 @@ namespace shu
         inline vec3<T> Reciprocal() const;
         inline b32 IsValid() const;
         inline b32 IsNormalized() const;
+        inline void ZeroOut();
         static vec3<T> Zero()
         {
             vec3<T> Result = {(T)0, (T)0, (T)0};
@@ -161,6 +162,7 @@ namespace shu
         inline vec4<T> operator/=(const vec4<T>& A);
         inline vec4<T> operator/=(T A);
         inline T &operator[](size_t Index);
+        inline void ZeroOut();
         inline b32 IsValid() const;
     };
 
@@ -686,6 +688,15 @@ namespace shu
     }
 
     template <typename T>
+    inline void
+    vec3<T>::ZeroOut()
+    {
+        this->x = (T)0;
+        this->y = (T)0;
+        this->z = (T)0;
+    }
+
+    template <typename T>
     vec3<T>
     operator+(const vec3<T>& A, const vec3<T>& B)
     {
@@ -856,7 +867,7 @@ namespace shu
     }
 
     template <typename T>
-    T&
+    T
     vec3<T>::operator[](size_t Index) const
     {
         if (Index >= 3)
@@ -1074,12 +1085,22 @@ namespace shu
     T &
     vec4<T>::operator[](size_t Index)
     {
-        if (Index >= 2)
+        if (Index >= 4)
         {
             ASSERT(!"Index Out of Bounds");
         }
 
         return this->E[Index];
+    }
+
+    template <typename T>
+    void
+    vec4<T>::ZeroOut()
+    {
+        this->x = (T)0;
+        this->y = (T)0;
+        this->z = (T)0;
+        this->w = (T)0;
     }
 
     template <typename T>
