@@ -31,8 +31,8 @@ struct shoora_shape
 
     // NOTE: The support point of the shape is a point on the shape that is the furthest away in a particular
     // direction. Used in the GJK algorithm used in collision detection for convex shapes.
-    virtual shu::vec3f Support(const shu::vec3f &Direction, const shu::vec3f &Position,
-                               const shu::quat &Orientation, const f32 Bias) const = 0;
+    virtual shu::vec3f SupportPtWorldSpace(const shu::vec3f &Direction, const shu::vec3f &Position,
+                                           const shu::quat &Orientation, const f32 Bias) const = 0;
 
     // NOTE: FastestLinearSpeed is used in continuous collision detection. It's necessary for objects that are
     // "long". Since "long" objects can rotate and still hit objects even though they have ZERO Linear Velocity.
@@ -82,7 +82,7 @@ struct shoora_shape_polygon : shoora_shape
     i32 GetNextVertexIndex(i32 EdgeIndex);
     i32 ClipSegmentToLine(shu::vec2f Contacts[2], shu::vec2f Clipped[2], shu::vec2f r0, shu::vec2f r1);
     void UpdateWorldVertices(shu::mat4f &ModelMatrix);
-    virtual shu::vec3f Support(const shu::vec3f &Direction, const shu::vec3f &Position,
+    virtual shu::vec3f SupportPtWorldSpace(const shu::vec3f &Direction, const shu::vec3f &Position,
                                const shu::quat &Orientation, const f32 Bias) const override;
 };
 
@@ -98,8 +98,8 @@ struct shoora_shape_circle : shoora_shape
     virtual shoora_mesh_type GetType() const override;
     virtual shoora_bounds GetBounds(const shu::vec3f &Pos, const shu::quat &Orientation) const override;
     virtual shoora_bounds GetBounds() const override;
-    virtual shu::vec3f Support(const shu::vec3f &Direction, const shu::vec3f &Position,
-                               const shu::quat &Orientation, const f32 Bias) const override;
+    virtual shu::vec3f SupportPtWorldSpace(const shu::vec3f &Direction, const shu::vec3f &Position,
+                                           const shu::quat &Orientation, const f32 Bias) const override;
 };
 
 struct shoora_shape_sphere : shoora_shape
@@ -114,8 +114,8 @@ struct shoora_shape_sphere : shoora_shape
     virtual shoora_mesh_type GetType() const override;
     virtual shoora_bounds GetBounds(const shu::vec3f &Pos, const shu::quat &Orientation) const override;
     virtual shoora_bounds GetBounds() const override;
-    virtual shu::vec3f Support(const shu::vec3f &DirectionNormalized, const shu::vec3f &Position,
-                               const shu::quat &Orientation, const f32 Bias) const override;
+    virtual shu::vec3f SupportPtWorldSpace(const shu::vec3f &DirectionNormalized, const shu::vec3f &Position,
+                                           const shu::quat &Orientation, const f32 Bias) const override;
 };
 
 struct shoora_shape_box : shoora_shape_polygon
@@ -130,8 +130,8 @@ struct shoora_shape_box : shoora_shape_polygon
     virtual shoora_mesh_type GetType() const override;
     virtual shoora_bounds GetBounds(const shu::vec3f &Pos, const shu::quat &Orientation) const override;
     virtual shoora_bounds GetBounds() const override;
-    virtual shu::vec3f Support(const shu::vec3f &Direction, const shu::vec3f &Position,
-                               const shu::quat &Orientation, const f32 Bias) const override;
+    virtual shu::vec3f SupportPtWorldSpace(const shu::vec3f &Direction, const shu::vec3f &Position,
+                                           const shu::quat &Orientation, const f32 Bias) const override;
 };
 
 struct shoora_shape_cube : shoora_shape
@@ -152,8 +152,8 @@ struct shoora_shape_cube : shoora_shape
 
     // NOTE: Takes in a direction, and returns the position of the vertex in the shape, which is the furthest in
     // this direction.
-    virtual shu::vec3f Support(const shu::vec3f &Direction, const shu::vec3f &Position,
-                               const shu::quat &Orientation, const f32 Bias) const override;
+    virtual shu::vec3f SupportPtWorldSpace(const shu::vec3f &Direction, const shu::vec3f &Position,
+                                           const shu::quat &Orientation, const f32 Bias) const override;
 
     // NOTE: To be used in CCD. Takes in Angular Velocity of the object and the Direction and returns the max
     // velocity of the vertex travelling the fastest in this Direction.
@@ -200,8 +200,8 @@ struct shoora_shape_convex : shoora_shape
     virtual shu::vec3f GetDim() const override { return Scale; }
     // NOTE: pMareturns the position of the vertex in the shape, which is the furthest in
     // this direction.
-    virtual shu::vec3f Support(const shu::vec3f &Direction, const shu::vec3f &Position,
-                               const shu::quat &Orientation, const f32 Bias) const override;
+    virtual shu::vec3f SupportPtWorldSpace(const shu::vec3f &Direction, const shu::vec3f &Position,
+                                           const shu::quat &Orientation, const f32 Bias) const override;
     // NOTE: To be used in CCD. Takes in Angular Velocity of the object and the Direction and returns the max
     // velocity of the vertex travelling the fastest in this Direction.
     virtual f32 FastestLinearSpeed(const shu::vec3f &AngularVelocity, const shu::vec3f &Direction) const override;

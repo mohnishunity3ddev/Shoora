@@ -3,6 +3,7 @@
 
 #include <defines.h>
 #include <math/math.h>
+#include "body.h"
 
 // NOTE: This is basically calculating the barycentric coordinate of the Origin with respect to the Line joining s2
 // and s1. if vec2(b1, b2) is the barycentric coordinate of the origin with respect to this line segment, then
@@ -63,6 +64,40 @@ shu::vec3f SignedVolume2D_Optimized(const shu::vec3f &A, const shu::vec3f &B, co
 // NOTE: In our case, since we want to get bary coords of the origin, P = (0, 0, 0)
 shu::vec4f SignedVolume3D(const shu::vec3f &A, const shu::vec3f &B, const shu::vec3f &C, const shu::vec3f &D);
 
+struct gjk_point
+{
+    // NOTE: Point on the "Minkowki Difference"
+    // Minkowski Difference is the convex shape that results when points on body A is subtracted by every point in
+    // body B.
+    shu::vec3f MinkowskiPoint;
+    shu::vec3f PointA; // Point on Body A
+    shu::vec3f PointB; // Point on Body B
+
+    gjk_point() : MinkowskiPoint(shu::Vec3f(0.0f)), PointA(shu::Vec3f(0.0f)), PointB(shu::Vec3f(0.0f)) {}
+
+    const gjk_point &
+    operator=(const gjk_point &rhs)
+    {
+        this->MinkowskiPoint = rhs.MinkowskiPoint;
+        this->PointA = rhs.PointA;
+        this->PointB = rhs.PointB;
+    }
+
+    b32
+    operator==(const gjk_point &rhs) const
+    {
+        b32 Result = ((this->MinkowskiPoint == rhs.MinkowskiPoint) &&
+                      (this->PointA == rhs.PointA) &&
+                      (this->MinkowskiPoint == this->PointB));
+        return Result;
+    }
+};
+
+// NOTE: Reuturns the support on the Minkowski difference convex shape given a direction.
+gjk_point GJK_Support(const shoora_body *A, const shoora_body *B, shu::vec3f Dir, const f32 Bias);
+
+#if _SHU_DEBUG
 void TestSignedVolumeProjection();
+#endif
 
 #endif // SIGNED_VOLUMES_H

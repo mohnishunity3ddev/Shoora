@@ -90,6 +90,7 @@ namespace shu
         inline vec3<T> operator*=(const vec3<T> &A);
         inline vec3<T> operator/=(const vec3<T>& A);
         inline vec3<T> operator/=(T A);
+        inline b32 operator==(const vec3<T> &Rhs) const;
         inline T& operator[](size_t Index);
         inline T operator[](size_t Index) const;
         inline T SqMagnitude() const;
@@ -162,6 +163,7 @@ namespace shu
         inline vec4<T> operator/=(const vec4<T>& A);
         inline vec4<T> operator/=(T A);
         inline T &operator[](size_t Index);
+        inline T operator[](size_t Index) const;
         inline void ZeroOut();
         inline b32 IsValid() const;
     };
@@ -847,6 +849,14 @@ namespace shu
     }
 
     template <typename T>
+    b32
+    vec3<T>::operator==(const vec3<T> &Rhs) const
+    {
+        b32 Result = NearlyEqual(this.x, Rhs.x) && NearlyEqual(this.y, Rhs.y) && NearlyEqual(this.z, Rhs.z);
+        return Result;
+    }
+
+    template <typename T>
     vec3<T>
     vec3<T>::operator/=(T A)
     {
@@ -1086,6 +1096,18 @@ namespace shu
     vec4<T>::operator[](size_t Index)
     {
         if (Index >= 4)
+        {
+            ASSERT(!"Index Out of Bounds");
+        }
+
+        return this->E[Index];
+    }
+
+    template <typename T>
+    T
+    vec4<T>::operator[](size_t Index) const
+    {
+        if(Index >= 4)
         {
             ASSERT(!"Index Out of Bounds");
         }

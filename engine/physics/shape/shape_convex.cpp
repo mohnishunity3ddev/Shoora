@@ -155,12 +155,29 @@ shoora_shape_convex::GetBounds() const
 }
 
 shu::vec3f
-shoora_shape_convex::Support(const shu::vec3f &Direction, const shu::vec3f &Position, const shu::quat &Orientation,
-                             const f32 Bias) const
+shoora_shape_convex::SupportPtWorldSpace(const shu::vec3f &Direction, const shu::vec3f &Position,
+                                         const shu::quat &Orientation, const f32 Bias) const
 {
-    // TODO: To Be Implemented
-    shu::vec3f Support;
-    return Support;
+    // NOTE: Find the point furthest in the direction.
+    shu::vec3f MaxPoint = shu::QuatRotateVec(Orientation, this->Points[0]) + Position;
+    f32 MaxProj = MaxPoint.Dot(Direction);
+    for(i32 i = 1; i < this->NumPoints; ++i)
+    {
+        auto Point = shu::QuatRotateVec(Orientation, this->Points[i]) + Position;
+        auto PointDistance = Point.Dot(Direction);
+
+        if(MaxProj < PointDistance)
+        {
+            MaxProj = PointDistance;
+            MaxPoint = Point;
+        }
+    }
+
+    shu::vec3f Normal = shu::Normalize(Direction);
+    Normal *= Bias;
+
+    shu::vec3f Result = MaxPoint + Normal;
+    return Result;
 }
 
 f32

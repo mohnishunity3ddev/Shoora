@@ -208,7 +208,7 @@ shoora_shape_polygon::GetBounds() const
 }
 
 shu::vec3f
-shoora_shape_polygon::Support(const shu::vec3f &Direction, const shu::vec3f &Position,
+shoora_shape_polygon::SupportPtWorldSpace(const shu::vec3f &Direction, const shu::vec3f &Position,
                               const shu::quat &Orientation, const f32 Bias) const
 {
     // TODO): TO BE IMPLEMENTED

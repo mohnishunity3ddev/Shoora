@@ -1,4 +1,4 @@
-#include "signed_volumes.h"
+#include "gjk.h"
 
 shu::vec2f
 SignedVolume1D(const shu::vec3f &s1, const shu::vec3f &s2)
@@ -331,6 +331,216 @@ SignedVolume3D(const shu::vec3f &A, const shu::vec3f &B, const shu::vec3f &C, co
     return baryCoords;
 }
 
+gjk_point
+GJK_Support(const shoora_body *A, const shoora_body *B, shu::vec3f Dir, const f32 Bias)
+{
+    // NOTE: Calculates the support point on the monkowski difference convex shape of the two bodies.
+    // Since GJK does not calculate the entire minkowski difference, it just gets a subset of the minkowski
+    // difference vertices in specific directions that the algorithm chooses.
+    // NOTE: You will get a support point on the Minkowski Difference by getting the support point on A in the
+    // given direction, subtracted by the support point in body B in the opposite direction.
+    gjk_point Point;
+
+    Dir = shu::Normalize(Dir);
+    // NOTE: Point on A furthest in the given Direction.
+    Point.PointA = A->Shape->SupportPtWorldSpace(Dir,  A->Position, A->Rotation, Bias);
+    // NOTE: Point on B furthest in the opposite Direction to the one given.
+    Point.PointB = B->Shape->SupportPtWorldSpace(-Dir, B->Position, B->Rotation, Bias);
+
+    // NOTE: Point on the Minkowski Difference convex shape furthest in the given direction.
+    Point.MinkowskiPoint = Point.PointA - Point.PointB;
+
+    return Point;
+}
+
+// NOTE: Project the origin onto the simplex to acquire the new search direction. Also checks if the origin is
+// inside the simplex.
+b32
+SimplexSignedVolumes(gjk_point *Points, const i32 Num, shu::vec3f &NewDir, shu::vec4f &BaryCoords)
+{
+    const f32 Epsilon = 0.0001f * 0.0001f;
+    BaryCoords.ZeroOut();
+
+    b32 doesIntersect = false;
+    switch(Num)
+    {
+        default:
+        case 2:
+        {
+            shu::vec2f baryCoordsLine = SignedVolume1D_Optimized(Points[0].MinkowskiPoint, Points[1].MinkowskiPoint);
+            shu::vec3f projectedPoint = baryCoordsLine.x * Points[0].MinkowskiPoint +
+                                        baryCoordsLine.y * Points[1].MinkowskiPoint;
+
+            NewDir = projectedPoint * -1.0f;
+            // NOTE: If the 1-simplex line is too close to the origin to be intersecting.
+            doesIntersect = (projectedPoint.SqMagnitude() < Epsilon);
+            BaryCoords.x = baryCoordsLine.x;
+            BaryCoords.y = baryCoordsLine.y;
+        } break;
+
+        case 3:
+        {
+            shu::vec3f baryCoordsTriangle = SignedVolume2D_Optimized(Points[0].MinkowskiPoint,
+                                                                     Points[1].MinkowskiPoint,
+                                                                     Points[2].MinkowskiPoint);
+            shu::vec3f projectedPoint = baryCoordsTriangle.x * Points[0].MinkowskiPoint +
+                                        baryCoordsTriangle.y * Points[1].MinkowskiPoint +
+                                        baryCoordsTriangle.z * Points[2].MinkowskiPoint;
+
+            NewDir = projectedPoint * -1.0f;
+            doesIntersect = (projectedPoint.SqMagnitude() < Epsilon);
+            BaryCoords.x = baryCoordsTriangle.x;
+            BaryCoords.y = baryCoordsTriangle.y;
+            BaryCoords.z = baryCoordsTriangle.z;
+        } break;
+
+        case 4:
+        {
+            shu::vec4f baryCoordsTetrahedron = SignedVolume3D(Points[0].MinkowskiPoint, Points[1].MinkowskiPoint,
+                                                              Points[2].MinkowskiPoint, Points[3].MinkowskiPoint);
+            shu::vec3f projectedPoint = baryCoordsTetrahedron.x * Points[0].MinkowskiPoint +
+                                        baryCoordsTetrahedron.y * Points[1].MinkowskiPoint +
+                                        baryCoordsTetrahedron.z * Points[2].MinkowskiPoint +
+                                        baryCoordsTetrahedron.w * Points[3].MinkowskiPoint;
+
+            NewDir = projectedPoint * -1.0f;
+            doesIntersect = (projectedPoint.SqMagnitude() < Epsilon);
+            BaryCoords.x = baryCoordsTetrahedron.x;
+            BaryCoords.y = baryCoordsTetrahedron.y;
+            BaryCoords.z = baryCoordsTetrahedron.z;
+            BaryCoords.w = baryCoordsTetrahedron.w;
+        } break;
+    }
+
+    return doesIntersect;
+}
+
+// NOTE: Tells whether the newPoint we select for simplex set is already there in the simple set.
+b32
+HasPoint(const gjk_point SimplexPoints[4], const gjk_point &NewPoint)
+{
+    const f32 precision = 1e-06f;
+
+    for(i32 i = 0; i < 4; ++i)
+    {
+        shu::vec3f delta = SimplexPoints[i].MinkowskiPoint - NewPoint.MinkowskiPoint;
+        if(delta.SqMagnitude() < (precision * precision))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void
+SortValids(gjk_point SimplexPoints[4], shu::vec4f &BaryCoords)
+{
+    b32 Valids[4];
+    for(i32 i = 0; i < 4; ++i)
+    {
+        Valids[i] = true;
+        if(NearlyEqual(BaryCoords[i], 0.0f))
+        {
+            Valids[i] = false;
+        }
+    }
+
+    shu::vec4f validLambdas{};
+    i32 validCount = 0;
+    gjk_point validPoints[4];
+    SHU_MEMZERO(validPoints, sizeof(gjk_point) * 4);
+    for(i32 i = 0; i < 4; i++)
+    {
+        if(Valids[i])
+        {
+            validPoints[validCount] = SimplexPoints[i];
+            validLambdas[validCount] = BaryCoords[i];
+            validCount++;
+        }
+    }
+
+    // Copy the valids back into simplexPoints
+    for (i32 i = 0; i < 4; i++)
+    {
+        SimplexPoints[i] = validPoints[i];
+        BaryCoords[i] = validLambdas[i];
+    }
+}
+
+static i32
+NumValids(const shu::vec4f &BaryCoords)
+{
+    i32 num = 0;
+    for (i32 i = 0; i < 4; i++)
+    {
+        if (NearlyEqual(BaryCoords[i], 0.0f))
+        {
+            num++;
+        }
+    }
+    return num;
+}
+
+b32
+GJK_DoesIntersect(const shoora_body *A, const shoora_body *B)
+{
+    const shu::vec3f Origin = shu::Vec3f(0.0f);
+
+    i32 NumPoints = 1;
+    gjk_point SimplexPoints[4];
+
+    SimplexPoints[0] = GJK_Support(A, B, shu::Vec3f(1, 1, 1), 0.0f);
+    f32 ClosestDistance = 1e10f;
+    b32 DoesContainOrigin = false;
+    shu::vec3f NewDirection = SimplexPoints[0].MinkowskiPoint * -1.0f;
+
+    do
+    {
+        // NOTE: Get the new point to check on.
+        gjk_point NewPoint = GJK_Support(A, B, NewDirection, 0.0f);
+
+        // NOTE: If the new point is the same as a previous point, then we can't expand further. A and B don't
+        // intersect.
+        if(HasPoint(SimplexPoints, NewPoint)) { break; }
+
+        SimplexPoints[NumPoints++] = NewPoint;
+
+        // NOTE: If the new point has not crossed the origin, then there is no way origin is contained in the
+        // minkowski difference.
+        f32 dot = NewDirection.Dot(NewPoint.MinkowskiPoint - Origin);
+        if(dot < 0.0f) { break; }
+
+        shu::vec4f ProjectedBaryCoords;
+        DoesContainOrigin = SimplexSignedVolumes(SimplexPoints, NumPoints, NewDirection, ProjectedBaryCoords);
+        if(DoesContainOrigin) { break; }
+
+        // NOTE: Check that the new projection of the origin onto the simplex is closer than the previous one. So
+        // that we can be rest assured that we are getting closer to the origin as we proceed... If we are not
+        // getting closer to the origin, then A and B are not colliding.
+        f32 Distance = NewDirection.SqMagnitude();
+        if(Distance >= ClosestDistance) { break; }
+        ClosestDistance = Distance;
+
+        // NOTE: Use the lambdas that support the new search direction, and invalidate any points that don't
+        // support it.
+        // IMPORTANT: NOTE: Here, we explain why the DoesContainOrigin = NumPoints == 4 statement works below.
+        // Say you have 4 points before calling SimplexSignedVolumes which projects the origin onto the simplex.
+        // 4 points meaning you have a tetrahedron. Now, after projection if its found the origin to be inside the
+        // tetrahedron, we don't even reach here. If its not, then projection will be on a triangle(max) which will
+        // have a max of 3 barycentric coordinates and the 4th one will be zero. After calling these SortValids,
+        // NumValids, my NumPoints which were 4 before get set to 3(a triangle). So in this case DoesContainOrigin
+        // does not evaluate to true since NumPoints == 3.
+        SortValids(SimplexPoints, ProjectedBaryCoords);
+        NumPoints = NumValids(ProjectedBaryCoords);
+
+        DoesContainOrigin = (NumPoints == 4);
+    } while(!DoesContainOrigin);
+
+    return DoesContainOrigin;
+}
+
+#if _SHU_DEBUG
 void
 TestSignedVolumeProjection()
 {
@@ -411,3 +621,4 @@ TestSignedVolumeProjection()
     LogInfo("lambdas: %.3f %.3f %.3f %.3f v: %.3f %.3f %.3f \n", lambdas.x, lambdas.y, lambdas.z, lambdas.w, v.x,
             v.y, v.z);
 }
+#endif

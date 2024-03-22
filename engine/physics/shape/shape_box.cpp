@@ -47,7 +47,7 @@ shoora_shape_box::GetBounds() const
 }
 
 shu::vec3f
-shoora_shape_box::Support(const shu::vec3f &Direction, const shu::vec3f &Position, const shu::quat &Orientation,
+shoora_shape_box::SupportPtWorldSpace(const shu::vec3f &Direction, const shu::vec3f &Position, const shu::quat &Orientation,
                           const f32 Bias) const
 {
     // TODO): TO BE IMPLEMENTED
