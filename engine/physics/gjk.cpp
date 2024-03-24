@@ -1,5 +1,8 @@
 #include "gjk.h"
 
+f32 EPA_Expand(const shoora_body *A, const shoora_body *B, const f32 Bias, const gjk_point SimplexPoints[4],
+               shu::vec3f &PointOnA, shu::vec3f &PointOnB);
+
 shu::vec2f
 SignedVolume1D(const shu::vec3f &s1, const shu::vec3f &s2)
 {
@@ -343,12 +346,12 @@ GJK_Support(const shoora_body *A, const shoora_body *B, shu::vec3f Dir, const f3
 
     Dir = shu::Normalize(Dir);
     // NOTE: Point on A furthest in the given Direction.
-    Point.PointA = A->Shape->SupportPtWorldSpace(Dir,  A->Position, A->Rotation, Bias);
+    Point.PointOnA = A->Shape->SupportPtWorldSpace(Dir,  A->Position, A->Rotation, Bias);
     // NOTE: Point on B furthest in the opposite Direction to the one given.
-    Point.PointB = B->Shape->SupportPtWorldSpace(-Dir, B->Position, B->Rotation, Bias);
+    Point.PointOnB = B->Shape->SupportPtWorldSpace(-Dir, B->Position, B->Rotation, Bias);
 
     // NOTE: Point on the Minkowski Difference convex shape furthest in the given direction.
-    Point.MinkowskiPoint = Point.PointA - Point.PointB;
+    Point.MinkowskiPoint = Point.PointOnA - Point.PointOnB;
 
     return Point;
 }
@@ -483,14 +486,15 @@ NumValids(const shu::vec4f &BaryCoords)
 }
 
 b32
-GJK_DoesIntersect(const shoora_body *A, const shoora_body *B)
+GJK_DoesIntersect(const shoora_body *A, const shoora_body *B, const f32 Bias, shu::vec3f &PointOnA,
+                  shu::vec3f &PointOnB)
 {
     const shu::vec3f Origin = shu::Vec3f(0.0f);
 
     i32 NumPoints = 1;
     gjk_point SimplexPoints[4];
-
     SimplexPoints[0] = GJK_Support(A, B, shu::Vec3f(1, 1, 1), 0.0f);
+
     f32 ClosestDistance = 1e10f;
     b32 DoesContainOrigin = false;
     shu::vec3f NewDirection = SimplexPoints[0].MinkowskiPoint * -1.0f;
@@ -537,7 +541,119 @@ GJK_DoesIntersect(const shoora_body *A, const shoora_body *B)
         DoesContainOrigin = (NumPoints == 4);
     } while(!DoesContainOrigin);
 
-    return DoesContainOrigin;
+    if(!DoesContainOrigin)
+    {
+        return false;
+    }
+
+    // NOTE: Ensure that we have a 3-simplex. EPA needs a tetrahedron to work.
+    if(NumPoints == 1)
+    {
+        shu::vec3f SearchDirection = SimplexPoints[0].MinkowskiPoint * -1.0f;
+        gjk_point NewPoint = GJK_Support(A, B, SearchDirection, 0.0f);
+        SimplexPoints[NumPoints++] = NewPoint;
+    }
+    if (NumPoints == 2)
+    {
+        shu::vec3f AB = SimplexPoints[1].MinkowskiPoint - SimplexPoints[0].MinkowskiPoint;
+        shu::vec3f u, v;
+        AB.GetOrtho(u, v);
+
+        shu::vec3f NewDirection = u;
+        gjk_point NewPoint = GJK_Support(A, B, NewDirection, 0.0f);
+        SimplexPoints[NumPoints++] = NewPoint;
+    }
+    if(NumPoints == 3)
+    {
+        shu::vec3f AB = SimplexPoints[1].MinkowskiPoint - SimplexPoints[0].MinkowskiPoint;
+        shu::vec3f BC = SimplexPoints[2].MinkowskiPoint - SimplexPoints[1].MinkowskiPoint;
+        shu::vec3f Normal = AB.Cross(BC);
+
+        shu::vec3f NewDirection = Normal;
+        gjk_point NewPoint = GJK_Support(A, B, NewDirection, 0.0f);
+        SimplexPoints[NumPoints++] = NewPoint;
+    }
+
+    // NOTE: Expand the Simplex by the Bias amount
+
+    // NOTE: Get the center point of the simplex.
+    shu::vec3f Average = shu::Vec3f(0.0f);
+    for (i32 i = 0; i < 4; ++i)
+    {
+        Average += SimplexPoints[i].MinkowskiPoint;
+    }
+    Average *= 0.25f;
+
+    // NOTE: Now expand the Simplex by the bias amount
+    for (i32 i = 0; i < NumPoints; ++i)
+    {
+        gjk_point &Point = SimplexPoints[i];
+
+        // NOTE: Ray from center to witness point.
+        shu::vec3f Direction = Point.MinkowskiPoint - Average;
+        Direction.Normalize();
+
+        Point.PointOnA += Direction * Bias;
+        Point.PointOnB -= Direction * Bias;
+        Point.MinkowskiPoint = Point.PointOnA - Point.PointOnB;
+    }
+
+    // NOTE: Perform EPA Expansion to get the closest face on the Minkowski Difference
+    EPA_Expand(A, B, Bias, SimplexPoints, PointOnA, PointOnB);
+    return true;
+}
+
+// NOTE: Returns the closest points between two bodies A and B using GJK
+void
+GJK_ClosestPoints(const shoora_body *A, const shoora_body *B, shu::vec3f &PointOnA, shu::vec3f &PointOnB)
+{
+    const shu::vec3f Origin = shu::Vec3f(0.0f);
+
+    f32 ClosestDistance = 1e10f;
+    const f32 Bias = 0.0f;
+
+    i32 NumPoints = 1;
+    gjk_point SimplexPoints[4];
+    SimplexPoints[0] = GJK_Support(A, B, shu::Vec3f(1, 1, 1), Bias);
+
+    shu::vec4f Lambdas = shu::Vec4f(1, 0, 0, 0);
+    shu::vec3f NewDirection = SimplexPoints[0].MinkowskiPoint * -1.0f;
+
+    do
+    {
+        // NOTE: Get the new point to check on.
+        gjk_point NewPoint = GJK_Support(A, B, NewDirection, Bias);
+
+        // NOTE: If the new point is the same as the previous point, we cannot expand any further.
+        if(HasPoint(SimplexPoints, NewPoint))
+        {
+            break;
+        }
+
+        // NOTE: Add Point and get new direction.
+        SimplexPoints[NumPoints++] = NewPoint;
+
+        SimplexSignedVolumes(SimplexPoints, NumPoints, NewDirection, Lambdas);
+        SortValids(SimplexPoints, Lambdas);
+        NumPoints = NumValids(Lambdas);
+
+        // NOTE: Check that the new projection of the origin onto the simplex is closer than the previous one.
+        f32 Distance = NewDirection.SqMagnitude();
+        if (Distance >= ClosestDistance)
+        {
+            break;
+        }
+
+        ClosestDistance = Distance;
+    } while (NumPoints < 4);
+
+    PointOnA.ZeroOut();
+    PointOnB.ZeroOut();
+    for(i32 i = 0; i < 4; ++i)
+    {
+        PointOnA += SimplexPoints[i].PointOnA * Lambdas[i];
+        PointOnB += SimplexPoints[i].PointOnB * Lambdas[i];
+    }
 }
 
 #if _SHU_DEBUG

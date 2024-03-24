@@ -13,9 +13,11 @@ struct shoora_graphics
     static VkCommandBuffer &GetCmdBuffer();
     static VkPipelineLayout &GetPipelineLayout();
 
-    static void DrawCubeWireframe(const shu::vec3f &v000, const shu::vec3f &v100, const shu::vec3f &v110, const shu::vec3f &v010,
-                                  const shu::vec3f &v001, const shu::vec3f &v101, const shu::vec3f &v111, const shu::vec3f &v011,
-                                  u32 ColorU32 = colorU32::Green, f32 Thickness = 0.01f);
+    static void DrawCube(const shu::vec3f &Position, const u32 ColorU32 = colorU32::Proto_Red, const f32 Scale = 1.0f);
+    static void DrawCubeWireframe(const shu::vec3f &v000, const shu::vec3f &v100, const shu::vec3f &v110,
+                                  const shu::vec3f &v010, const shu::vec3f &v001, const shu::vec3f &v101,
+                                  const shu::vec3f &v111, const shu::vec3f &v011, u32 ColorU32 = colorU32::Green,
+                                  f32 Thickness = 0.01f);
     static void DrawLine3D(const shu::vec3f &P0, const shu::vec3f &P1, u32 ColorU32 = colorU32::Green, f32 Thickness = 0.05f);
     static void DrawLine2D(const shu::vec2f P0, const shu::vec2f P1, u32 ColorU32, f32 Thickness);
     static void DrawRect(i32 X, i32 Y, u32 Width, u32 Height, u32 ColorU32);

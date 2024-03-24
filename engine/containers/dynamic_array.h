@@ -24,6 +24,26 @@ struct shoora_dynamic_array
         this->Allocator = nullptr;
     }
 
+    shoora_dynamic_array(freelist_allocator *Allocator, i32 Capacity)
+    {
+        ASSERT(Allocator != nullptr);
+
+        Size = 0;
+        this->Capacity = Capacity;
+        this->Allocator = Allocator;
+        this->arr = (T *)this->Allocator->Allocate(sizeof(T) * this->Capacity);
+    }
+
+    shoora_dynamic_array(freelist_allocator *Allocator)
+    {
+        ASSERT(Allocator != nullptr);
+        
+        Size = 0;
+        this->Capacity = 0;
+        this->Allocator = Allocator;
+        this->arr = nullptr;
+    }
+
     shoora_dynamic_array(shoora_memory_type Type)
     {
         this->Capacity = 0;

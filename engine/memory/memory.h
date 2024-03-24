@@ -23,6 +23,11 @@ struct memory_arena
     size_t Size = 0;
 
     u32 TempMemoryCount = 0;
+
+    void Log()
+    {
+        LogInfo("Arena Used Ptr: 0x%x.\n", ((size_t)Base + Used));
+    }
 };
 
 struct temporary_memory

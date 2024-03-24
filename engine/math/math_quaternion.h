@@ -35,6 +35,14 @@ namespace shu
         vec3f ToEuler() const;
         mat3f ToMat3f() const;
         mat4f ToMat4f() const;
+
+        static quat Identity()
+        {
+            quat Result;
+            Result.real = 0.0f;
+            Result.complex = shu::Vec3f(0, 0, 1);
+            return Result;
+        }
     };
 
     SHU_EXPORT quat Quat();
@@ -42,6 +50,7 @@ namespace shu
     SHU_EXPORT quat Quat(f32 Real, vec3f Complex);
     SHU_EXPORT quat QuatAngleAxisDeg(f32 AngleInDegrees, const vec3f &Axis);
     SHU_EXPORT quat QuatAngleAxisRad(f32 AngleInRadians, const vec3f &Axis);
+    SHU_EXPORT quat QuatIdentity();
     SHU_EXPORT quat operator-(const quat &A, const quat &B);
     SHU_EXPORT quat operator+(const quat &A, const quat &B);
     SHU_EXPORT quat operator*(const quat &A, const quat &B);

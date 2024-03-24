@@ -70,31 +70,38 @@ struct gjk_point
     // Minkowski Difference is the convex shape that results when points on body A is subtracted by every point in
     // body B.
     shu::vec3f MinkowskiPoint;
-    shu::vec3f PointA; // Point on Body A
-    shu::vec3f PointB; // Point on Body B
+    shu::vec3f PointOnA; // Point on Body A
+    shu::vec3f PointOnB; // Point on Body B
 
-    gjk_point() : MinkowskiPoint(shu::Vec3f(0.0f)), PointA(shu::Vec3f(0.0f)), PointB(shu::Vec3f(0.0f)) {}
+    gjk_point() : MinkowskiPoint(shu::Vec3f(0.0f)), PointOnA(shu::Vec3f(0.0f)), PointOnB(shu::Vec3f(0.0f)) {}
 
     const gjk_point &
     operator=(const gjk_point &rhs)
     {
         this->MinkowskiPoint = rhs.MinkowskiPoint;
-        this->PointA = rhs.PointA;
-        this->PointB = rhs.PointB;
+        this->PointOnA = rhs.PointOnA;
+        this->PointOnB = rhs.PointOnB;
+
+        return *this;
     }
 
     b32
     operator==(const gjk_point &rhs) const
     {
         b32 Result = ((this->MinkowskiPoint == rhs.MinkowskiPoint) &&
-                      (this->PointA == rhs.PointA) &&
-                      (this->MinkowskiPoint == this->PointB));
+                      (this->PointOnA == rhs.PointOnA) &&
+                      (this->MinkowskiPoint == this->PointOnB));
         return Result;
     }
 };
 
-// NOTE: Reuturns the support on the Minkowski difference convex shape given a direction.
 gjk_point GJK_Support(const shoora_body *A, const shoora_body *B, shu::vec3f Dir, const f32 Bias);
+
+// NOTE: Reuturns the support on the Minkowski difference convex shape given a direction.
+b32 GJK_DoesIntersect(const shoora_body *A, const shoora_body *B, const f32 Bias, shu::vec3f &PointOnA,
+                      shu::vec3f &PointOnB);
+void GJK_ClosestPoints(const shoora_body *A, const shoora_body *B, shu::vec3f &PointOnA, shu::vec3f &PointOnB);
+
 
 #if _SHU_DEBUG
 void TestSignedVolumeProjection();

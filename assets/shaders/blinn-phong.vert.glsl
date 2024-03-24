@@ -20,6 +20,7 @@ layout(set = 0, binding = 0) uniform UniformBuffer
 layout(push_constant) uniform PushConsts
 {
 	layout(row_major) mat4 Model;
+    vec3 Color;
 } pushConsts;
 
 layout(location = 0) out VS_OUT
@@ -32,7 +33,7 @@ layout(location = 0) out VS_OUT
 
 void main()
 {
-	VSOut.Color = InColor;
+	VSOut.Color = pushConsts.Color;
 	VSOut.UV = InUV;
 
 	mat4 ModelView = pushConsts.Model*ubo.View;

@@ -53,6 +53,12 @@ namespace shu
     }
 
     quat
+    QuatIdentity()
+    {
+        return quat::Identity();
+    }
+
+    quat
     QuatAngleAxisRad(f32 AngleInRadians, const vec3f &Axis)
     {
         quat Result;

@@ -9,6 +9,6 @@ layout(location = 0) out vec4 FragColor;
 void main()
 {
     // vec4 color = texture(DiffuseMap, InUV) * vec4(InColor, 1.0);
-    vec4 color = vec4(InColor, 1.0);
+    vec4 color = vec4(InColor, 0.1);
     FragColor = vec4(color.rgb, color.a);
 }

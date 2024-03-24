@@ -48,8 +48,8 @@ static platform_work_queue *GlobalJobQueue;
 
 struct vert_uniform_data
 {
-    // Shu::mat4f Model;
     shu::mat4f View;
+    // Shu::mat4f Model;
     shu::mat4f Projection;
 };
 
@@ -160,6 +160,7 @@ enum FpsOptions
     FpsOptions_240 = 3,
 };
 
+static shoora_body SphereA, SphereB;
 void
 ImGuiNewFrame()
 {
@@ -191,6 +192,9 @@ ImGuiNewFrame()
             SHU_INVALID_DEFAULT;
         }
     }
+
+    ImGui::DragFloat3("Sphere A Position", SphereA.Position.E, .05f, -100, 100);
+    ImGui::DragFloat3("Sphere B Position", SphereB.Position.E, .05f, -100, 100);
 
     ImGui::SliderFloat("Test Scale", &TestCameraScale, 0.5f, 100.0f);
     ImGui::Checkbox("Toggle Wireframe", (bool *)&WireframeMode);
@@ -573,6 +577,58 @@ AddStandardSandBox()
 }
 
 void
+InitializeGJKSpheres()
+{
+    // Adding ground
+    SphereA.Position = shu::Vec3f(8.5f, 0, 0);
+    SphereA.Rotation = shu::quat::Identity();
+    SphereA.LinearVelocity = shu::Vec3f(0.0f);
+    SphereA.AngularVelocity = shu::Vec3f(0.0f);
+    SphereA.InvMass = 0.0f;
+    SphereA.CoeffRestitution = 0.5f;
+    SphereA.FrictionCoeff = 0.5f;
+    shoora_shape_sphere *SphereShape = ShuAllocateStruct(shoora_shape_sphere, MEMTYPE_GLOBAL);
+    SphereA.Shape = new (SphereShape) shoora_shape_sphere(2.5f);
+    SphereA.Scale = SphereA.Shape->GetDim();
+    SphereA.Color = GetColor(colorU32::Proto_Green);
+
+    SphereB.Position = shu::Vec3f(10, 0, 0);
+    SphereB.Rotation = shu::quat::Identity();
+    SphereB.LinearVelocity = shu::Vec3f(0.0f);
+    SphereB.AngularVelocity = shu::Vec3f(0.0f);
+    SphereB.InvMass = 0.0f;
+    SphereB.CoeffRestitution = 0.5f;
+    SphereB.FrictionCoeff = 0.5f;
+    SphereShape = ShuAllocateStruct(shoora_shape_sphere, MEMTYPE_GLOBAL);
+    SphereB.Shape = new (SphereShape) shoora_shape_sphere(2.5f);
+    SphereB.Scale = SphereB.Shape->GetDim();
+    SphereB.Color = GetColor(colorU32::Proto_Blue);
+}
+
+void
+DrawGJKSpheres()
+{
+    shoora_graphics::DrawSphere(SphereA.Position, 2.5f, GetColorU32(SphereA.Color));
+    shoora_graphics::DrawSphere(SphereB.Position, 2.5f, GetColorU32(SphereB.Color));
+
+    shoora_mesh *SphereMesh = shoora_mesh_database::GetMesh(shoora_mesh_type::SPHERE);
+    u32 vertexCount = SphereMesh->MeshFilter.VertexCount;
+
+    for(i32 i = 0; i < vertexCount; ++i)
+    {
+        shu::vec3f vPos_a = (SphereMesh->MeshFilter.Vertices[i].Pos * SphereA.Scale) + SphereA.Position;
+
+        for(i32 j = 0; j < vertexCount; ++j)
+        {
+            shu::vec3f vPos_b = (SphereMesh->MeshFilter.Vertices[j].Pos * SphereB.Scale) + SphereB.Position;
+
+            shu::vec3f AB = vPos_b - vPos_a;
+            shoora_graphics::DrawCube(AB, colorU32::White, .075f);
+        }
+    }
+}
+
+void
 InitScene()
 {
     // Bottom Wall (Static Rigidbody)
@@ -609,9 +665,13 @@ InitScene()
 #endif
 #endif
 
+    InitializeGJKSpheres();
+
+#if 0
     AddStandardSandBox();
     Scene->AddDiamondBody(shu::Vec3f(0, 8, 10), shu::Vec3f(1.0f), colorU32::Proto_Orange, 0.0f, 0.5f,
                           shu::Vec3f(0.0f));
+#endif
 
 #if 0
     // Dynamic Bodies
@@ -763,6 +823,8 @@ InitializeLightData()
     GlobalFragUniformData.SpotlightData.Color = shu::Vec3f(30.0f / 255.0f, 194.0 / 255.0f, 165.0 / 255.0f);
     GlobalFragUniformData.SpotlightData.Intensity = 5.0f;
 }
+
+#include <physics/epa.h>
 
 void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
@@ -950,6 +1012,14 @@ GetMousePosDelta(f32 CurrentMouseDeltaX, f32 CurrentMouseDeltaY, f32 *outMouseDe
 }
 
 void
+DrawCoordinateAxes()
+{
+    shoora_graphics::DrawLine3D(shu::Vec3f(-1000, 0, 0), shu::Vec3f(1000, 0, 0), colorU32::Proto_Red);
+    shoora_graphics::DrawLine3D(shu::Vec3f(0, -1000, 0), shu::Vec3f(0, 1000, 0), colorU32::Proto_Green);
+    shoora_graphics::DrawLine3D(shu::Vec3f(0, 0, -1000), shu::Vec3f(0, 0, 1000), colorU32::Proto_Blue);
+}
+
+void
 DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 {
 #if 0
@@ -1131,12 +1201,15 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 
         vkCmdBindVertexBuffers(DrawCmdBuffer, 0, 1, shoora_mesh_database::GetVertexBufferHandlePtr(), offsets);
         vkCmdBindIndexBuffer(DrawCmdBuffer, shoora_mesh_database::GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
+        DrawCoordinateAxes();
 
+        DrawGJKSpheres();
+#if 0
         Scene->UpdateInput(CurrentMouseWorldPos);
         f32 pDt = GlobalPausePhysics ? 0.0f : GlobalDeltaTime;
         Scene->PhysicsUpdate(pDt, GlobalDebugMode);
         DrawScene(DrawCmdBuffer);
-
+#endif
 #endif
         ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
         vkCmdEndRenderPass(DrawCmdBuffer);

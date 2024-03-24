@@ -82,6 +82,23 @@ shoora_graphics::DrawCubeWireframe(const shu::vec3f &v000, const shu::vec3f &v10
 }
 
 void
+shoora_graphics::DrawCube(const shu::vec3f &Position, const u32 ColorU32, const f32 Scale)
+{
+    shu::mat4f Model = shu::Mat4f(1.0f);
+    Model = shu::Scale(Model, shu::Vec3f(Scale));
+    Model = shu::Translate(Model, Position);
+    
+    // shu::mat4f Model = shu::TRS(Position, shu::Vec3f(Scale), shu::QuatIdentity());
+
+    shoora_mesh *Cube = shoora_mesh_database::GetMesh(shoora_mesh_type::CUBE);
+    data Value = {.Model = Model, .Color = GetColor(ColorU32)};
+
+    vkCmdPushConstants(GlobalCommandBuffer, GlobalPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(data),
+                       &Value);
+    vkCmdDrawIndexed(GlobalCommandBuffer, Cube->MeshFilter.IndexCount, 1, Cube->IndexOffset, Cube->VertexOffset, 0);
+}
+
+void
 shoora_graphics::DrawLine3D(const shu::vec3f &P0, const shu::vec3f &P1, u32 ColorU32, f32 Thickness)
 {
     shu::vec3f Diff = P1 - P0;

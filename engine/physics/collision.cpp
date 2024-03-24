@@ -1,5 +1,6 @@
 #include "collision.h"
 #include <mesh/database/mesh_database.h>
+#include "gjk.h"
 
 #define SHU_CCD_ON 1
 
@@ -15,10 +16,14 @@ collision::IsColliding(shoora_body *A, shoora_body *B, const f32 DeltaTime, cont
     b32 isBodyACircle = (A->Shape->GetType() == shoora_mesh_type::CIRCLE);
     b32 isBodyAPolygon = (A->Shape->GetType() == POLYGON_2D || A->Shape->GetType() == RECT_2D);
     b32 isBodyASphere = (A->Shape->GetType() == shoora_mesh_type::SPHERE);
+    b32 isBodyAConvex = (A->Shape->GetType() == shoora_mesh_type::CONVEX ||
+                         A->Shape->GetType() == shoora_mesh_type::CONVEX_DIAMOND);
 
     b32 isBodyBCircle = (B->Shape->GetType() == shoora_mesh_type::CIRCLE);
     b32 isBodyBPolygon = (B->Shape->GetType() == POLYGON_2D || B->Shape->GetType() == RECT_2D);
     b32 isBodyBSphere = (B->Shape->GetType() == shoora_mesh_type::SPHERE);
+    b32 isBodyBConvex = (B->Shape->GetType() == shoora_mesh_type::CONVEX ||
+                         B->Shape->GetType() == shoora_mesh_type::CONVEX_DIAMOND);
 
     if(isBodyACircle && isBodyBCircle)
     {
@@ -39,6 +44,10 @@ collision::IsColliding(shoora_body *A, shoora_body *B, const f32 DeltaTime, cont
     else if(isBodyASphere && isBodyBSphere)
     {
         Result = IsCollidingSphereSphere(A, B, DeltaTime, Contacts, ContactCount);
+    }
+    else if(isBodyAConvex || isBodyBConvex)
+    {
+        Result = IsCollidingConvex(A, B, DeltaTime, Contacts, ContactCount);
     }
 
     return Result;
@@ -143,6 +152,60 @@ SphereSphereCCD(const shoora_shape_sphere *SphereA, const shoora_shape_sphere *S
     ReferenceHitPointA = newPosA + collisionNormal*SphereA->Radius;
     IncidentHitPointB = newPosB - collisionNormal*SphereB->Radius;
     return true;
+}
+
+b32
+collision::IsCollidingConvex(shoora_body *A, shoora_body *B, f32 DeltaTime, contact *Contacts, i32 &ContactCount)
+{
+    b32 Result = false;
+    shu::vec3f PointOnA, PointOnB;
+    const f32 Bias = 0.001f;
+
+    contact Contact;
+    ContactCount = 0;
+    if (GJK_DoesIntersect(A, B, Bias, PointOnA, PointOnB))
+    {
+        // NOTE: There was an intersection, get contact data.
+        shu::vec3f Normal = PointOnB - PointOnA;
+        Normal.Normalize();
+
+        PointOnA -= Normal * Bias;
+        PointOnB += Normal * Bias;
+
+        Contact.Normal = Normal;
+
+        Contact.ReferenceBodyA = A;
+        Contact.IncidentBodyB = B;
+
+        Contact.ReferenceHitPointA = PointOnA;
+        Contact.IncidentHitPointB = PointOnB;
+
+        Contact.ReferenceHitPointA_LocalSpace = A->WorldToLocalSpace(Contact.ReferenceHitPointA);
+        Contact.IncidentHitPointB_LocalSpace = B->WorldToLocalSpace(Contact.IncidentHitPointB);
+
+        shu::vec3f AB = B->Position - A->Position;
+        f32 r = (PointOnA - PointOnB).Magnitude();
+        Contact.Depth = -r;
+
+        Result = true;
+    }
+    else
+    {
+        // NOTE: There was no collision, but we still want some contact data.
+        GJK_ClosestPoints(A, B, PointOnA, PointOnB);
+        Contact.ReferenceHitPointA = PointOnA;
+        Contact.IncidentHitPointB = PointOnB;
+
+        Contact.ReferenceHitPointA_LocalSpace = A->WorldToLocalSpace(Contact.ReferenceHitPointA);
+        Contact.IncidentHitPointB_LocalSpace = B->WorldToLocalSpace(Contact.IncidentHitPointB);
+
+        shu::vec3f AB = B->Position - A->Position;
+        f32 r = (PointOnA - PointOnB).Magnitude();
+        Contact.Depth = -r;
+        Result = false;
+    }
+
+    return Result;
 }
 
 b32

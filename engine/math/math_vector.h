@@ -99,6 +99,7 @@ namespace shu
         inline T Dot(const vec3<T> &A) const;
         inline vec3<T> Cross(const vec3<T> &A) const;
         inline vec3<T> Reciprocal() const;
+        inline void GetOrtho(vec3<T> &U, vec3<T> &V) const;
         inline b32 IsValid() const;
         inline b32 IsNormalized() const;
         inline void ZeroOut();
@@ -661,6 +662,23 @@ namespace shu
     }
 
     template <typename T>
+    inline void
+    vec3<T>::GetOrtho(vec3<T> &U, vec3<T> &V) const
+    {
+        vec3<T> n = *this;
+        n.Normalize();
+
+        const shu::vec3<T> w = (n.z*n.z > .81f) ? Vec3<T>(1, 0, 0) : Vec3<T>(0, 0, 1);
+        U = w.Cross(n);
+        U.Normalize();
+
+        V = n.Cross(U);
+        V.Normalize();
+        U = V.Cross(n);
+        U.Normalize();
+    }
+
+    template <typename T>
     inline b32
     vec3<T>::IsValid() const
     {
@@ -852,7 +870,9 @@ namespace shu
     b32
     vec3<T>::operator==(const vec3<T> &Rhs) const
     {
-        b32 Result = NearlyEqual(this.x, Rhs.x) && NearlyEqual(this.y, Rhs.y) && NearlyEqual(this.z, Rhs.z);
+        b32 Result = NearlyEqual(this->x, Rhs.x, 0.0001f) &&
+                     NearlyEqual(this->y, Rhs.y, 0.0001f) &&
+                     NearlyEqual(this->z, Rhs.z, 0.0001f);
         return Result;
     }
 

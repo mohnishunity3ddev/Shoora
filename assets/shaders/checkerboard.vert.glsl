@@ -27,8 +27,8 @@ layout(location = 3) out vec3 OutNormal;
 void
 main()
 {
-    // OutColor = PushConstant.Color;
-    OutColor = InColor;
+    OutColor = PushConstant.Color;
+    // OutColor = InColor;
     // OutUV = InUV*PushConstant.Model[0][0];
     // TODO: Pass in the UV Scale using a uniform. Remove this!
     OutUV = InUV;

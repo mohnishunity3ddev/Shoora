@@ -20,6 +20,8 @@ struct collision
     // A is the reference body here, B is the one which is incident(colliding) with A.
     static b32 IsCollidingSphereSphere(shoora_body *A, shoora_body *B, const f32 DeltaTime, contact *Contacts,
                                        i32 &ContactCount);
+
+    static b32 IsCollidingConvex(shoora_body *A, shoora_body *B, f32 DeltaTime, contact *Contacts, i32 &ContactCount);
 };
 
 #define COLLISION2D_H
