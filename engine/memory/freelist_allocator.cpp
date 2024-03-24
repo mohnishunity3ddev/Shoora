@@ -396,6 +396,7 @@ freelist_allocator::Free(void *MemoryPtr)
     }
 }
 
+#if _SHU_DEBUG
 size_t
 freelist_allocator::DEBUGGetRemainingSpace()
 {
@@ -411,6 +412,7 @@ freelist_allocator::DEBUGGetRemainingSpace()
 
     return Result;
 }
+#endif
 
 #if 0
 void

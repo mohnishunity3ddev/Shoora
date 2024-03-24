@@ -145,7 +145,7 @@ AccumulateTlsString(templateString &Tls, T FirstArg, VarArgs... Args)
 
 static templateString Tls;
 
-#elif
+#else
 #define TemplatedLog(LogFunc, s1, v1)
 #define TemplatedLogString(Buffer, ...)
 #define ASSERTPow2(Num)
