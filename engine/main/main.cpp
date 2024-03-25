@@ -122,7 +122,7 @@ struct platform_input_state
 
     union
     {
-        platform_input_button_state KeyboardButtons[12];
+        platform_input_button_state KeyboardButtons[15];
 
         struct
         {
@@ -132,6 +132,8 @@ struct platform_input_state
             platform_input_button_state Keyboard_D;
             platform_input_button_state Keyboard_F;
             platform_input_button_state Keyboard_P;
+            platform_input_button_state Keyboard_M;
+            platform_input_button_state Keyboard_N;
             platform_input_button_state Keyboard_Space;
             platform_input_button_state Keyboard_UpArrow;
             platform_input_button_state Keyboard_DownArrow;
@@ -253,6 +255,8 @@ Platform_GetKeyInputState(u8 KeyCode, KeyState State)
             else if(KeyCode == SU_SPACE && Win32InputKeyPressed(&GlobalInputState->Keyboard_Space)) { Result = true; }
             else if(KeyCode == 'F' && Win32InputKeyPressed(&GlobalInputState->Keyboard_F)) { Result = true; }
             else if(KeyCode == 'P' && Win32InputKeyPressed(&GlobalInputState->Keyboard_P)) { Result = true; }
+            else if(KeyCode == 'M' && Win32InputKeyPressed(&GlobalInputState->Keyboard_M)) { Result = true; }
+            else if(KeyCode == 'N' && Win32InputKeyPressed(&GlobalInputState->Keyboard_N)) { Result = true; }
         } break;
 
         case SHU_KEYSTATE_DOWN:
@@ -264,6 +268,8 @@ Platform_GetKeyInputState(u8 KeyCode, KeyState State)
             else if(KeyCode == 'S' && GlobalInputState->Keyboard_S.IsCurrentlyDown) { Result = true; }
             else if(KeyCode == 'D' && GlobalInputState->Keyboard_D.IsCurrentlyDown) { Result = true; }
             else if(KeyCode == 'P' && GlobalInputState->Keyboard_P.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == 'M' && GlobalInputState->Keyboard_M.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == 'N' && GlobalInputState->Keyboard_N.IsCurrentlyDown) { Result = true; }
             else if(KeyCode == SU_LEFTARROW && GlobalInputState->Keyboard_LeftArrow.IsCurrentlyDown) { Result = true; }
             else if(KeyCode == SU_RIGHTARROW && GlobalInputState->Keyboard_RightArrow.IsCurrentlyDown) { Result = true; }
             else if(KeyCode == SU_UPARROW && GlobalInputState->Keyboard_UpArrow.IsCurrentlyDown) { Result = true; }
@@ -278,6 +284,8 @@ Platform_GetKeyInputState(u8 KeyCode, KeyState State)
             else if (KeyCode == 'S' && GlobalInputState->Keyboard_S.IsReleased) { Result = true; }
             else if (KeyCode == 'D' && GlobalInputState->Keyboard_D.IsReleased) { Result = true; }
             else if (KeyCode == 'P' && GlobalInputState->Keyboard_P.IsReleased) { Result = true; }
+            else if (KeyCode == 'M' && GlobalInputState->Keyboard_M.IsReleased) { Result = true; }
+            else if (KeyCode == 'N' && GlobalInputState->Keyboard_N.IsReleased) { Result = true; }
             else if (KeyCode == SU_LEFTSHIFT && GlobalInputState->Keyboard_LeftShift.IsReleased) { Result = true; }
             else if (KeyCode == SU_LEFTMOUSEBUTTON && GlobalInputState->LeftMouseButton.IsReleased) { Result = true; }
             else if (KeyCode == SU_RIGHTMOUSEBUTTON && GlobalInputState->RightMouseButton.IsReleased) { Result = true; }
@@ -618,6 +626,14 @@ Win32ProcessWindowsMessageQueue(HWND WindowHandle, platform_input_state *Input)
                 else if(KeyCode == 'P')
                 {
                     Win32UpdateInputButtonState(&Input->Keyboard_P, KeyIsCurrentlyDown);
+                }
+                else if(KeyCode == 'M')
+                {
+                    Win32UpdateInputButtonState(&Input->Keyboard_M, KeyIsCurrentlyDown);
+                }
+                else if(KeyCode == 'N')
+                {
+                    Win32UpdateInputButtonState(&Input->Keyboard_N, KeyIsCurrentlyDown);
                 }
                 else if(KeyCode == SU_SPACE)
                 {

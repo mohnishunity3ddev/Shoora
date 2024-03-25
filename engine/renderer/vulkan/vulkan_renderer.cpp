@@ -605,11 +605,21 @@ InitializeGJKSpheres()
     SphereB.Color = GetColor(colorU32::Proto_Blue);
 }
 
+#include <physics/gjk.h>
 void
 DrawGJKSpheres()
 {
-    shoora_graphics::DrawSphere(SphereA.Position, 2.5f, GetColorU32(SphereA.Color));
-    shoora_graphics::DrawSphere(SphereB.Position, 2.5f, GetColorU32(SphereB.Color));
+    shu::vec3f PointOnA, PointOnB;
+    shu::vec3f ColorA = SphereA.Color;
+    shu::vec3f ColorB = SphereB.Color;
+    if(GJK_DoesIntersect(&SphereA, &SphereB, 0.0f, PointOnA, PointOnB))
+    {
+        ColorA = GetColor(colorU32::Proto_Red);
+        ColorB = ColorA;
+    }
+
+    shoora_graphics::DrawSphere(SphereA.Position, 2.5f, GetColorU32(ColorA));
+    shoora_graphics::DrawSphere(SphereB.Position, 2.5f, GetColorU32(ColorB));
 
     shoora_mesh *SphereMesh = shoora_mesh_database::GetMesh(shoora_mesh_type::SPHERE);
     u32 vertexCount = SphereMesh->MeshFilter.VertexCount;

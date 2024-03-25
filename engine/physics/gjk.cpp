@@ -485,19 +485,83 @@ NumValids(const shu::vec4f &BaryCoords)
     return num;
 }
 
+#if GJK_DEBUG
+#include <memory/memory.h>
+#include <platform/platform.h>
+#ifdef WIN32
+#include "platform/windows/win_platform.h"
+#endif
+#include <renderer/vulkan/graphics/vulkan_graphics.h>
+
+static b32 DebugInitialized = false;
+static gjk_debug_result *DebugStepsArr;
+static i32 DebugStepsCount = 0;
+static i32 CurrentStep = 0;
+
+void
+InitializeDebug()
+{
+    if(DebugInitialized)
+    {
+        SHU_MEMZERO(DebugStepsArr, sizeof(gjk_debug_result) * DebugStepsCount);
+        DebugStepsCount = 0;
+        CurrentStep = 0;
+        return;
+    }
+
+    memory_arena *Arena = GetArena(MEMTYPE_GLOBAL);
+    size_t TotalSize = MEGABYTES(1);
+    DebugStepsArr = (gjk_debug_result *)ShuAllocate_(Arena, TotalSize);
+    DebugStepsCount = 0;
+    DebugInitialized = true;
+}
+
+void
+DebugSteps()
+{
+    if(Platform_GetKeyInputState(SU_ALPHABETKEYM, KeyState::SHU_KEYSTATE_PRESS)) {
+        CurrentStep = (CurrentStep + 1) % DebugStepsCount;
+    }
+    if(Platform_GetKeyInputState(SU_ALPHABETKEYN, KeyState::SHU_KEYSTATE_PRESS)) {
+        CurrentStep = (CurrentStep > 0) ? CurrentStep - 1 : 0;
+    }
+
+    gjk_debug_result DebugResult = DebugStepsArr[CurrentStep];
+
+    shu::vec3f v0 = shu::Vec3f(-10, 10, -34);
+    shu::vec3f v1 = shu::Vec3f(10, 0, 5);
+    shu::vec3f v2 = shu::Vec3f(5, 123, 23);
+    shoora_graphics::DrawTriangle(v0, v2, v1);
+}
+#endif
+
 b32
 GJK_DoesIntersect(const shoora_body *A, const shoora_body *B, const f32 Bias, shu::vec3f &PointOnA,
                   shu::vec3f &PointOnB)
 {
+#if GJK_DEBUG
+    InitializeDebug();
+#endif
+
     const shu::vec3f Origin = shu::Vec3f(0.0f);
 
     i32 NumPoints = 1;
     gjk_point SimplexPoints[4];
-    SimplexPoints[0] = GJK_Support(A, B, shu::Vec3f(1, 1, 1), 0.0f);
+    SimplexPoints[0] = GJK_Support(A, B, shu::Vec3f(0, 0, 1), 0.0f);
+
+#if GJK_DEBUG
+    auto DebugResult = gjk_debug_result(NumPoints, SimplexPoints, {}, false, shu::Vec3f(1), true, false);
+    DebugStepsArr[DebugStepsCount++] = (DebugResult);
+#endif
 
     f32 ClosestDistance = 1e10f;
     b32 DoesContainOrigin = false;
     shu::vec3f NewDirection = SimplexPoints[0].MinkowskiPoint * -1.0f;
+
+#if GJK_DEBUG
+    DebugResult = gjk_debug_result(NumPoints, SimplexPoints, {}, false, NewDirection, true, false);
+    DebugStepsArr[DebugStepsCount++] = (DebugResult);
+#endif
 
     do
     {
@@ -509,6 +573,10 @@ GJK_DoesIntersect(const shoora_body *A, const shoora_body *B, const f32 Bias, sh
         if(HasPoint(SimplexPoints, NewPoint)) { break; }
 
         SimplexPoints[NumPoints++] = NewPoint;
+#if GJK_DEBUG
+        DebugResult = gjk_debug_result(NumPoints, SimplexPoints, {}, false, NewDirection, true, false);
+        DebugStepsArr[DebugStepsCount++] = (DebugResult);
+#endif
 
         // NOTE: If the new point has not crossed the origin, then there is no way origin is contained in the
         // minkowski difference.
@@ -517,6 +585,13 @@ GJK_DoesIntersect(const shoora_body *A, const shoora_body *B, const f32 Bias, sh
 
         shu::vec4f ProjectedBaryCoords;
         DoesContainOrigin = SimplexSignedVolumes(SimplexPoints, NumPoints, NewDirection, ProjectedBaryCoords);
+
+#if GJK_DEBUG
+        DebugResult = gjk_debug_result(NumPoints, SimplexPoints, ProjectedBaryCoords, true, NewDirection, false,
+                                       DoesContainOrigin);
+        DebugStepsArr[DebugStepsCount++] = (DebugResult);
+#endif
+
         if(DoesContainOrigin) { break; }
 
         // NOTE: Check that the new projection of the origin onto the simplex is closer than the previous one. So
@@ -538,8 +613,19 @@ GJK_DoesIntersect(const shoora_body *A, const shoora_body *B, const f32 Bias, sh
         SortValids(SimplexPoints, ProjectedBaryCoords);
         NumPoints = NumValids(ProjectedBaryCoords);
 
+#if GJK_DEBUG
+        DebugResult = gjk_debug_result(NumPoints, SimplexPoints, ProjectedBaryCoords, true, NewDirection, true,
+                                       DoesContainOrigin);
+        DebugStepsArr[DebugStepsCount++] = (DebugResult);
+#endif
+
         DoesContainOrigin = (NumPoints == 4);
-    } while(!DoesContainOrigin);
+
+    } while (!DoesContainOrigin);
+
+#if GJK_DEBUG
+    DebugSteps();
+#endif
 
     if(!DoesContainOrigin)
     {
@@ -599,7 +685,7 @@ GJK_DoesIntersect(const shoora_body *A, const shoora_body *B, const f32 Bias, sh
     }
 
     // NOTE: Perform EPA Expansion to get the closest face on the Minkowski Difference
-    EPA_Expand(A, B, Bias, SimplexPoints, PointOnA, PointOnB);
+    // EPA_Expand(A, B, Bias, SimplexPoints, PointOnA, PointOnB);
     return true;
 }
 

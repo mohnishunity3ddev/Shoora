@@ -172,6 +172,7 @@ namespace shu
     template <typename T> SHU_EXPORT vec4<T> Vec4();
     template <typename T> SHU_EXPORT vec4<T> Vec4(T A);
     template <typename T> SHU_EXPORT vec4<T> Vec4(T x, T y, T z, T w);
+    template <typename T> SHU_EXPORT vec4<T> Vec4(const vec3<T> &v, f32 w);
     template <typename T> SHU_EXPORT vec4<T> MakeVec4(const T *const Ptr);
     template <typename T> SHU_EXPORT T Dot(const vec4<T> &A, const vec4<T> &B);
     template <typename T> SHU_EXPORT vec4<T> operator+(const vec4<T>& A, const vec4<T>& B);
@@ -998,6 +999,18 @@ namespace shu
         Result.x = x;
         Result.y = y;
         Result.z = z;
+        Result.w = w;
+        return Result;
+    }
+
+    template <typename T>
+    vec4<T>
+    Vec4(const vec3<T> &v, f32 w)
+    {
+        vec4<T> Result;
+        Result.x = v.x;
+        Result.y = v.y;
+        Result.z = v.z;
         Result.w = w;
         return Result;
     }

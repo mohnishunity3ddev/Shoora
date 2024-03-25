@@ -23,6 +23,7 @@ static u32 TotalMeshCount;
 
 // Primitives
 static shoora_mesh *_LineMesh;
+static shoora_mesh *_TriangleMesh;
 static shoora_mesh *_Rect2DMesh;
 static shoora_mesh *_CircleMesh;
 static shoora_mesh *_CubeMesh;
@@ -89,6 +90,7 @@ Initialize()
     // NOTE: Primitives first
     _CircleMesh = &Meshes[TotalMeshCount++];
     _CubeMesh = &Meshes[TotalMeshCount++];
+    _TriangleMesh = &Meshes[TotalMeshCount++];
     _Rect2DMesh = &Meshes[TotalMeshCount++];
     _LineMesh = &Meshes[TotalMeshCount++];
     _UVSphereMesh = &Meshes[TotalMeshCount++];
@@ -165,6 +167,22 @@ Initialize()
     SHU_MEMCOPY(RectInfo.Indices, RectMeshFilter->Indices, RectMeshFilter->IndexCount * sizeof(u32));
     RunningVertexCount += RectMeshFilter->VertexCount;
     RunningIndexCount += RectMeshFilter->IndexCount;
+
+    auto TriangleInfo = shoora_primitive_collection::GetPrimitiveInfo((u32)shoora_mesh_type::TRIANGLE);
+    shoora_mesh *TriangleMesh = _TriangleMesh;
+    TriangleMesh->Type = shoora_mesh_type::TRIANGLE;
+    TriangleMesh->VertexOffset = RunningVertexCount;
+    TriangleMesh->IndexOffset = RunningIndexCount;
+    shoora_mesh_filter *TriangleMeshFilter = &TriangleMesh->MeshFilter;
+    TriangleMeshFilter->Vertices = Vertices + RunningVertexCount;
+    TriangleMeshFilter->VertexCount = TriangleInfo.VertexCount;
+    TriangleMeshFilter->Indices = Indices + RunningIndexCount;
+    TriangleMeshFilter->IndexCount = TriangleInfo.IndexCount;
+    SHU_MEMCOPY(TriangleInfo.Vertices, TriangleMeshFilter->Vertices,
+                TriangleMeshFilter->VertexCount * sizeof(shoora_vertex_info));
+    SHU_MEMCOPY(TriangleInfo.Indices, TriangleMeshFilter->Indices, TriangleMeshFilter->IndexCount * sizeof(u32));
+    RunningVertexCount += TriangleMeshFilter->VertexCount;
+    RunningIndexCount += TriangleMeshFilter->IndexCount;
 
     auto LineInfo = shoora_primitive_collection::GetPrimitiveInfo((u32)shoora_mesh_type::LINE);
     shoora_mesh *LineMesh = _LineMesh;
@@ -245,6 +263,7 @@ shoora_mesh_database::GetMesh(shoora_mesh_type Type)
         case shoora_mesh_type::CIRCLE: { Result = _CircleMesh; } break;
         case shoora_mesh_type::SPHERE: { Result = _UVSphereMesh; } break;
         case shoora_mesh_type::RECT_2D: { Result = _Rect2DMesh; } break;
+        case shoora_mesh_type::TRIANGLE: { Result = _TriangleMesh; } break;
         case shoora_mesh_type::CUBE: { Result = _CubeMesh; } break;
         case shoora_mesh_type::LINE: { Result = _LineMesh; } break;
         case shoora_mesh_type::CONVEX:

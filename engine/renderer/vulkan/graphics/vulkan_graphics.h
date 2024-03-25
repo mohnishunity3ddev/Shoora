@@ -18,6 +18,8 @@ struct shoora_graphics
                                   const shu::vec3f &v010, const shu::vec3f &v001, const shu::vec3f &v101,
                                   const shu::vec3f &v111, const shu::vec3f &v011, u32 ColorU32 = colorU32::Green,
                                   f32 Thickness = 0.01f);
+    static void DrawTriangle(const shu::vec3f &A, const shu::vec3f &B, const shu::vec3f &C);
+
     static void DrawLine3D(const shu::vec3f &P0, const shu::vec3f &P1, u32 ColorU32 = colorU32::Green, f32 Thickness = 0.05f);
     static void DrawLine2D(const shu::vec2f P0, const shu::vec2f P1, u32 ColorU32, f32 Thickness);
     static void DrawRect(i32 X, i32 Y, u32 Width, u32 Height, u32 ColorU32);

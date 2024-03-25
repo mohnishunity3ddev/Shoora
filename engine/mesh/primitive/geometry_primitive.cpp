@@ -11,15 +11,16 @@ static shoora_vertex_info LineVertices[2] =
     {.Pos = shu::Vec3f( 0.5f,  0.5f, 1.0f)},
 };
 
-#if 0
 static shoora_vertex_info TriangleVertices[] =
 {
-    {.Pos = Shu::vec3f{ 0.0f,  0.5f, 1.0f}, .Color = Shu::vec3f{1, 0, 0}},
-    {.Pos = Shu::vec3f{ 0.5f, -0.5f, 1.0f}, .Color = Shu::vec3f{0, 1, 0}},
-    {.Pos = Shu::vec3f{-0.5f, -0.5f, 1.0f}, .Color = Shu::vec3f{0, 0, 1}}
+    // {.Pos = shu::vec3f{ 0.0f,  0.5f, 0.0f}, .Color = shu::vec3f{1, 0, 0}},
+    // {.Pos = shu::vec3f{ 0.5f, -0.5f, 0.0f}, .Color = shu::vec3f{0, 1, 0}},
+    // {.Pos = shu::vec3f{-0.5f, -0.5f, 0.0f}, .Color = shu::vec3f{0, 0, 1}}
+    {.Pos = shu::vec3f{ 0.0f, 0.0f, 0.0f}, .Color = shu::vec3f{1, 0, 0}},
+    {.Pos = shu::vec3f{ 0.0f, 1.0f, 0.0f}, .Color = shu::vec3f{0, 1, 0}},
+    {.Pos = shu::vec3f{ 1.0f, 0.0f, 0.0f}, .Color = shu::vec3f{0, 0, 1}}
 };
 static u32 TriangleIndices[] = {0, 1, 2};
-#endif
 
 static shoora_vertex_info RectVertices[] =
 {
@@ -312,8 +313,8 @@ shoora_primitive_collection::GenerateUVSphereMesh()
     // TODO: Dont rely on Loading Meshes using GLTF!!
     // LoadModel(&UVSphereModel, "meshes/primitives/uv_sphere.glb");
     // LoadModel(&UVSphereModel, "meshes/primitives/quad_sphere_uv.glb");
-    LoadModel(&UVSphereModel, "meshes/primitives/ico_sphere_lowres.glb");
-    // LoadModel(&UVSphereModel, "meshes/primitives/ico_sphere_1subd.glb");
+    // LoadModel(&UVSphereModel, "meshes/primitives/ico_sphere_lowres.glb");
+    LoadModel(&UVSphereModel, "meshes/primitives/ico_sphere_1subd.glb");
 #else
     // TODO: Do Custom Implementation here!
 #endif
@@ -337,6 +338,14 @@ shoora_mesh_filter shoora_primitive_collection::GetPrimitiveInfo(u32 Type)
         }
         break;
         */
+
+        case shoora_mesh_type::TRIANGLE:
+        {
+            Result.Vertices = TriangleVertices;
+            Result.VertexCount = ARRAY_SIZE(TriangleVertices);
+            Result.Indices = TriangleIndices;
+            Result.IndexCount = ARRAY_SIZE(TriangleIndices);
+        } break;
 
         case shoora_mesh_type::RECT_2D:
         {
@@ -386,8 +395,9 @@ i32
 shoora_primitive_collection::GetTotalVertexCount()
 {
     ASSERT(MeshesGenerated);
-    i32 Result = (CIRCLE_PRIMITIVE_RESOLUTION + 1) + ARRAY_SIZE(CubeVertices) + ARRAY_SIZE(RectVertices) +
-                 ARRAY_SIZE(LineVertices) + UVSphereModel.MeshFilter.VertexCount + ARRAY_SIZE(DiamondVertices);
+    i32 Result = (CIRCLE_PRIMITIVE_RESOLUTION + 1) + ARRAY_SIZE(CubeVertices) + ARRAY_SIZE(TriangleVertices) +
+                 ARRAY_SIZE(RectVertices) + ARRAY_SIZE(LineVertices) + UVSphereModel.MeshFilter.VertexCount +
+                 ARRAY_SIZE(DiamondVertices);
     return Result;
 }
 
@@ -395,8 +405,8 @@ i32
 shoora_primitive_collection::GetTotalIndexCount()
 {
     ASSERT(MeshesGenerated);
-    i32 Result = (CIRCLE_PRIMITIVE_RESOLUTION * 3) + ARRAY_SIZE(CubeIndices) + ARRAY_SIZE(RectIndices) +
-                 UVSphereModel.MeshFilter.IndexCount + ARRAY_SIZE(DiamondIndices);
+    i32 Result = (CIRCLE_PRIMITIVE_RESOLUTION * 3) + ARRAY_SIZE(CubeIndices) + ARRAY_SIZE(TriangleIndices) +
+                 ARRAY_SIZE(RectIndices) + UVSphereModel.MeshFilter.IndexCount + ARRAY_SIZE(DiamondIndices);
     return Result;
 }
 

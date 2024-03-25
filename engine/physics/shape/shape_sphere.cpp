@@ -51,8 +51,8 @@ shu::vec3f
 shoora_shape_sphere::SupportPtWorldSpace(const shu::vec3f &DirectionNormalized, const shu::vec3f &Position,
                              const shu::quat &Orientation, const f32 Bias) const
 {
-    ASSERT(DirectionNormalized.IsNormalized());
+    shu::vec3f n = shu::Normalize(DirectionNormalized);
 
-    shu::vec3f SupportPoint = Position + DirectionNormalized * (this->Radius + Bias);
+    shu::vec3f SupportPoint = Position + n * (this->Radius + Bias);
     return SupportPoint;
 }

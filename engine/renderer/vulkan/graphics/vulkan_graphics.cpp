@@ -81,13 +81,74 @@ shoora_graphics::DrawCubeWireframe(const shu::vec3f &v000, const shu::vec3f &v10
     DrawLine3D(v011, v001, ColorU32, Thickness);
 }
 
+static f32 _angle = 0.0f;
+
+shu::vec3f
+calculateCircumcenter(const shu::vec3f &vA, const shu::vec3f &vB, const shu::vec3f &vC)
+{
+    // Calculate the midpoints of two sides of the triangle
+    shu::vec3f midAB = (vA + vB) / 2.0f;
+    shu::vec3f midAC = (vA + vC) / 2.0f;
+
+    // Calculate the normal to the triangle plane
+    shu::vec3f normal = shu::Cross(vB - vA, vC - vA);
+    normal = shu::Normalize(normal);
+
+    // Calculate the perpendicular bisectors
+    shu::vec3f bisectorAB = shu::Cross(normal, vB - vA);
+    shu::vec3f bisectorAC = shu::Cross(normal, vC - vA);
+
+    // Calculate the intersection point of the bisectors
+    shu::vec3f circumcenter = midAB +
+                              bisectorAB * shu::Dot(midAC - midAB, bisectorAC) / shu::Dot(bisectorAB, bisectorAC);
+
+    return circumcenter;
+}
+
+void
+translateTriangleToOrigin(shu::vec3f &vA, shu::vec3f &vB, shu::vec3f &vC)
+{
+    shu::vec3f circumcenter = calculateCircumcenter(vA, vB, vC);
+    vA -= circumcenter;
+    vB -= circumcenter;
+    vC -= circumcenter;
+}
+
+void
+shoora_graphics::DrawTriangle(const shu::vec3f &A, const shu::vec3f &B, const shu::vec3f &C)
+{
+#if 0
+    DrawLine3D(A, B, colorU32::Proto_Green);
+    DrawLine3D(B, C, colorU32::Proto_Green);
+    DrawLine3D(C, A, colorU32::Proto_Green);
+#endif
+
+    shu::mat4f Model = shu::Mat4f(1.0f);
+    shu::vec3f xAxis = C - A;
+    shu::vec3f yAxis = B - A;
+    shu::vec3f zAxis = yAxis.Cross(xAxis);
+    Model.Row0 = shu::Vec4f(xAxis, 0);
+    Model.Row1 = shu::Vec4f(yAxis, 0);
+    Model.Row2 = shu::Vec4f(zAxis, 0);
+    Model.Row3 = shu::Vec4f(A, 1);
+
+    shoora_mesh *TriangleMesh = shoora_mesh_database::GetMesh(shoora_mesh_type::TRIANGLE);
+
+    data Value = {.Model = Model, .Color = GetColor(colorU32::Blue)};
+
+    vkCmdPushConstants(GlobalCommandBuffer, GlobalPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(data),
+                       &Value);
+    vkCmdDrawIndexed(GlobalCommandBuffer, TriangleMesh->MeshFilter.IndexCount, 1, TriangleMesh->IndexOffset,
+                     TriangleMesh->VertexOffset, 0);
+}
+
 void
 shoora_graphics::DrawCube(const shu::vec3f &Position, const u32 ColorU32, const f32 Scale)
 {
     shu::mat4f Model = shu::Mat4f(1.0f);
     Model = shu::Scale(Model, shu::Vec3f(Scale));
     Model = shu::Translate(Model, Position);
-    
+
     // shu::mat4f Model = shu::TRS(Position, shu::Vec3f(Scale), shu::QuatIdentity());
 
     shoora_mesh *Cube = shoora_mesh_database::GetMesh(shoora_mesh_type::CUBE);

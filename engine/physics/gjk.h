@@ -5,6 +5,8 @@
 #include <math/math.h>
 #include "body.h"
 
+#define GJK_DEBUG 1
+
 // NOTE: This is basically calculating the barycentric coordinate of the Origin with respect to the Line joining s2
 // and s1. if vec2(b1, b2) is the barycentric coordinate of the origin with respect to this line segment, then
 // origin can be seen as b1*s1 + b2*(s2 - s1) where b1 + b2 = 1(condition for barycentric coordinates). This can
@@ -94,6 +96,30 @@ struct gjk_point
         return Result;
     }
 };
+
+#if GJK_DEBUG
+struct gjk_debug_result
+{
+    i32 NumSimplexPoints;
+    gjk_point SimplexPoints[4];
+    b32 HasBaryCoords = false;
+    shu::vec4f BaryCoords;
+    b32 HasDirection = false;
+    shu::vec3f Direction;
+    b32 DoesIntersect = false;
+
+    gjk_debug_result(i32 Num, gjk_point Simplex[4], const shu::vec4f &Bary, b32 HasBary, const shu::vec3f &Dir,
+                     b32 HasDir, b32 DoesIntersect)
+        : NumSimplexPoints(Num), BaryCoords(Bary), HasDirection(HasDir), Direction(Dir), HasBaryCoords(HasBary),
+          DoesIntersect(DoesIntersect)
+    {
+        for (i32 i = 0; i < Num; ++i)
+        {
+            SimplexPoints[i] = Simplex[i];
+        }
+    }
+};
+#endif
 
 gjk_point GJK_Support(const shoora_body *A, const shoora_body *B, shu::vec3f Dir, const f32 Bias);
 

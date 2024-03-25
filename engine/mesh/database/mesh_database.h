@@ -20,6 +20,7 @@ enum shoora_mesh_type
     SPHERE,
     CONVEX,
     CONVEX_DIAMOND,
+    TRIANGLE,
     MAX_COUNT
 };
 
