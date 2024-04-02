@@ -115,7 +115,7 @@ translateTriangleToOrigin(shu::vec3f &vA, shu::vec3f &vB, shu::vec3f &vC)
 }
 
 void
-shoora_graphics::DrawTriangle(const shu::vec3f &A, const shu::vec3f &B, const shu::vec3f &C)
+shoora_graphics::DrawTriangle(const shu::vec3f &A, const shu::vec3f &B, const shu::vec3f &C, u32 ColorU32)
 {
 #if 0
     DrawLine3D(A, B, colorU32::Proto_Green);
@@ -134,12 +134,22 @@ shoora_graphics::DrawTriangle(const shu::vec3f &A, const shu::vec3f &B, const sh
 
     shoora_mesh *TriangleMesh = shoora_mesh_database::GetMesh(shoora_mesh_type::TRIANGLE);
 
-    data Value = {.Model = Model, .Color = GetColor(colorU32::Blue)};
+    data Value = {.Model = Model, .Color = GetColor(ColorU32)};
 
     vkCmdPushConstants(GlobalCommandBuffer, GlobalPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(data),
                        &Value);
     vkCmdDrawIndexed(GlobalCommandBuffer, TriangleMesh->MeshFilter.IndexCount, 1, TriangleMesh->IndexOffset,
                      TriangleMesh->VertexOffset, 0);
+}
+
+void
+shoora_graphics::DrawTetrahedron(const shu::vec3f &A, const shu::vec3f &B, const shu::vec3f &C, const shu::vec3f &D,
+                                 u32 triColorA, u32 triColorB, u32 triColorC, u32 triColorD)
+{
+    shoora_graphics::DrawTriangle(A, B, C, triColorA);
+    shoora_graphics::DrawTriangle(B, C, D, triColorB);
+    shoora_graphics::DrawTriangle(C, D, A, triColorC);
+    shoora_graphics::DrawTriangle(D, A, B, triColorD);
 }
 
 void

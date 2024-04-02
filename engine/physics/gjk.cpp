@@ -477,7 +477,7 @@ NumValids(const shu::vec4f &BaryCoords)
     i32 num = 0;
     for (i32 i = 0; i < 4; i++)
     {
-        if (NearlyEqual(BaryCoords[i], 0.0f))
+        if (!NearlyEqual(BaryCoords[i], 0.0f))
         {
             num++;
         }
@@ -493,45 +493,161 @@ NumValids(const shu::vec4f &BaryCoords)
 #endif
 #include <renderer/vulkan/graphics/vulkan_graphics.h>
 
-static b32 DebugInitialized = false;
-static gjk_debug_result *DebugStepsArr;
-static i32 DebugStepsCount = 0;
-static i32 CurrentStep = 0;
+static b32 GJK_DebugInitialized = false;
+static gjk_debug_result *GJK_DebugStepsArr;
+static i32 GJK_DebugResultCount = 0;
+static i32 GJK_CurrentStep = 0;
 
 void
-InitializeDebug()
+InitializeGJKDebug()
 {
-    if(DebugInitialized)
+    if(GJK_DebugInitialized)
     {
-        SHU_MEMZERO(DebugStepsArr, sizeof(gjk_debug_result) * DebugStepsCount);
-        DebugStepsCount = 0;
-        CurrentStep = 0;
+        SHU_MEMZERO(GJK_DebugStepsArr, sizeof(gjk_debug_result) * GJK_DebugResultCount);
+        GJK_DebugResultCount = 0;
         return;
     }
 
     memory_arena *Arena = GetArena(MEMTYPE_GLOBAL);
     size_t TotalSize = MEGABYTES(1);
-    DebugStepsArr = (gjk_debug_result *)ShuAllocate_(Arena, TotalSize);
-    DebugStepsCount = 0;
-    DebugInitialized = true;
+    GJK_DebugStepsArr = (gjk_debug_result *)ShuAllocate_(Arena, TotalSize);
+    GJK_DebugResultCount = 0;
+    GJK_DebugInitialized = true;
 }
 
 void
 DebugSteps()
 {
-    if(Platform_GetKeyInputState(SU_ALPHABETKEYM, KeyState::SHU_KEYSTATE_PRESS)) {
-        CurrentStep = (CurrentStep + 1) % DebugStepsCount;
-    }
-    if(Platform_GetKeyInputState(SU_ALPHABETKEYN, KeyState::SHU_KEYSTATE_PRESS)) {
-        CurrentStep = (CurrentStep > 0) ? CurrentStep - 1 : 0;
-    }
+    // if(Platform_GetKeyInputState(SU_ALPHABETKEYM, KeyState::SHU_KEYSTATE_PRESS)) {
+    //     GJK_CurrentStep = (GJK_CurrentStep + 1) % GJK_DebugResultCount;
+    // }
+    // if(Platform_GetKeyInputState(SU_ALPHABETKEYN, KeyState::SHU_KEYSTATE_PRESS)) {
+    //     GJK_CurrentStep = (GJK_CurrentStep > 0) ? GJK_CurrentStep - 1 : 0;
+    // }
 
-    gjk_debug_result DebugResult = DebugStepsArr[CurrentStep];
+    ASSERT(GJK_CurrentStep < GJK_DebugResultCount);
+    gjk_debug_result DebugResult = GJK_DebugStepsArr[GJK_CurrentStep];
 
-    shu::vec3f v0 = shu::Vec3f(-10, 10, -34);
-    shu::vec3f v1 = shu::Vec3f(10, 0, 5);
-    shu::vec3f v2 = shu::Vec3f(5, 123, 23);
-    shoora_graphics::DrawTriangle(v0, v2, v1);
+    i32 numSimplex = DebugResult.NumSimplexPoints;
+    switch(numSimplex)
+    {
+        case 1:
+        {
+            gjk_point GJKPoint = DebugResult.SimplexPoints[0];
+            shu::vec3f mV = GJKPoint.MinkowskiPoint;
+
+            shoora_graphics::DrawCube(mV, colorU32::Proto_Yellow, .1f);
+            shoora_graphics::DrawCube(GJKPoint.PointOnA, colorU32::Proto_Blue, .1f);
+            shoora_graphics::DrawCube(GJKPoint.PointOnB, colorU32::Proto_Green, .1f);
+
+            shu::vec3f pd = shu::Normalize(GJKPoint.PointOnA - GJKPoint.PointOnB);
+            shoora_graphics::DrawLine3D(GJKPoint.PointOnB, GJKPoint.PointOnB + pd * 10.0f, colorU32::Cyan, 0.01f);
+            shu::vec3f o = shu::Vec3f(0.0f);
+            shoora_graphics::DrawLine3D(o, o + pd * 10.0f, colorU32::Cyan, 0.01f);
+
+            if (DebugResult.HasDirection)
+            {
+                shu::vec3f dir = shu::Normalize(DebugResult.Direction);
+                shoora_graphics::DrawLine3D(o, o + dir*10.0f, colorU32::Red, .01f);
+            }
+        } break;
+
+        case 2:
+        {
+            gjk_point pGjk_0 = DebugResult.SimplexPoints[0];
+            gjk_point pGjk_1 = DebugResult.SimplexPoints[1];
+
+            shu::vec3f minkowski_0 = pGjk_0.MinkowskiPoint;
+            shu::vec3f minkowski_1 = pGjk_1.MinkowskiPoint;
+            shoora_graphics::DrawCube(minkowski_0, colorU32::Proto_Yellow, .1f);
+            shoora_graphics::DrawCube(minkowski_1, colorU32::Proto_Yellow, .1f);
+
+            shu::vec3f minkowskiLine = (minkowski_1 - minkowski_0);
+            shoora_graphics::DrawLine3D(minkowski_0, minkowski_1, colorU32::Proto_Yellow, .01f);
+            shu::vec3f o = shu::Vec3f();
+
+            if(DebugResult.HasDirection)
+            {
+                shu::vec3f dir = shu::Normalize(DebugResult.Direction);
+                shoora_graphics::DrawLine3D(o, o + dir*10.0f, colorU32::Red, .01f);
+            }
+
+            if(DebugResult.HasBaryCoords)
+            {
+                shu::vec2f Bary = DebugResult.BaryCoords.xy;
+                shu::vec3f ProjectedPoint = minkowski_0*Bary.x + minkowski_1*Bary.y;
+                shoora_graphics::DrawCube(ProjectedPoint, colorU32::Red, .1f);
+                if (DebugResult.HasDirection)
+                {
+                    shu::vec3f dir = shu::Normalize(DebugResult.Direction);
+                    shoora_graphics::DrawLine3D(ProjectedPoint, ProjectedPoint + dir * 10.0f, colorU32::Red, .01f);
+                }
+            }
+        } break;
+
+        case 3:
+        {
+            gjk_point pGjk_0 = DebugResult.SimplexPoints[0];
+            gjk_point pGjk_1 = DebugResult.SimplexPoints[1];
+            gjk_point pGjk_2 = DebugResult.SimplexPoints[2];
+
+            shu::vec3f minkowski_0 = pGjk_0.MinkowskiPoint;
+            shu::vec3f minkowski_1 = pGjk_1.MinkowskiPoint;
+            shu::vec3f minkowski_2 = pGjk_2.MinkowskiPoint;
+
+            shoora_graphics::DrawCube(minkowski_0, colorU32::Proto_Yellow, .1f);
+            shoora_graphics::DrawCube(minkowski_1, colorU32::Proto_Yellow, .1f);
+            shoora_graphics::DrawCube(minkowski_2, colorU32::Proto_Yellow, .1f);
+
+            shoora_graphics::DrawTriangle(minkowski_0, minkowski_1, minkowski_2, colorU32::Proto_Yellow);
+            if (DebugResult.HasBaryCoords)
+            {
+                shu::vec3f Bary = DebugResult.BaryCoords.xyz;
+                shu::vec3f ProjectedPoint = minkowski_0*Bary.x + minkowski_1*Bary.y + minkowski_2*Bary.z;
+                shoora_graphics::DrawCube(ProjectedPoint, colorU32::Red, .1f);
+                if (DebugResult.HasDirection)
+                {
+                    shu::vec3f dir = shu::Normalize(DebugResult.Direction);
+                    shoora_graphics::DrawLine3D(ProjectedPoint, ProjectedPoint + dir*10.0f, colorU32::Red, .01f);
+                }
+            }
+        } break;
+
+        case 4:
+        {
+            gjk_point pGjk_0 = DebugResult.SimplexPoints[0];
+            gjk_point pGjk_1 = DebugResult.SimplexPoints[1];
+            gjk_point pGjk_2 = DebugResult.SimplexPoints[2];
+            gjk_point pGjk_3 = DebugResult.SimplexPoints[3];
+
+            shu::vec3f minkowski_0 = pGjk_0.MinkowskiPoint;
+            shu::vec3f minkowski_1 = pGjk_1.MinkowskiPoint;
+            shu::vec3f minkowski_2 = pGjk_2.MinkowskiPoint;
+            shu::vec3f minkowski_3 = pGjk_3.MinkowskiPoint;
+
+            shoora_graphics::DrawCube(minkowski_0, colorU32::Proto_Yellow, .1f);
+            shoora_graphics::DrawCube(minkowski_1, colorU32::Proto_Yellow, .1f);
+            shoora_graphics::DrawCube(minkowski_2, colorU32::Proto_Yellow, .1f);
+            shoora_graphics::DrawCube(minkowski_3, colorU32::Proto_Yellow, .1f);
+
+            shoora_graphics::DrawTetrahedron(minkowski_0, minkowski_1, minkowski_2, minkowski_3,
+                                             colorU32::Red, colorU32::Green, colorU32::Blue, colorU32::White);
+            if (DebugResult.HasBaryCoords)
+            {
+                shu::vec4f Bary = DebugResult.BaryCoords;
+                shu::vec3f ProjectedPoint = minkowski_0*Bary.x + minkowski_1*Bary.y +
+                                            minkowski_2*Bary.z + minkowski_3*Bary.w;
+                shoora_graphics::DrawCube(ProjectedPoint, colorU32::Red, .1f);
+                if (DebugResult.HasDirection)
+                {
+                    shu::vec3f dir = shu::Normalize(DebugResult.Direction);
+                    shoora_graphics::DrawLine3D(ProjectedPoint, ProjectedPoint + dir * 10.0f, colorU32::Red, .01f);
+                }
+            }
+        } break;
+
+        SHU_INVALID_DEFAULT;
+    }
 }
 #endif
 
@@ -540,18 +656,19 @@ GJK_DoesIntersect(const shoora_body *A, const shoora_body *B, const f32 Bias, sh
                   shu::vec3f &PointOnB)
 {
 #if GJK_DEBUG
-    InitializeDebug();
+    InitializeGJKDebug();
 #endif
 
     const shu::vec3f Origin = shu::Vec3f(0.0f);
 
     i32 NumPoints = 1;
     gjk_point SimplexPoints[4];
-    SimplexPoints[0] = GJK_Support(A, B, shu::Vec3f(0, 0, 1), 0.0f);
+    shu::vec3f InitialDirection = shu::Vec3f(1, 1, 1);
+    SimplexPoints[0] = GJK_Support(A, B, InitialDirection, 0.0f);
 
 #if GJK_DEBUG
-    auto DebugResult = gjk_debug_result(NumPoints, SimplexPoints, {}, false, shu::Vec3f(1), true, false);
-    DebugStepsArr[DebugStepsCount++] = (DebugResult);
+    auto DebugResult = gjk_debug_result(NumPoints, SimplexPoints, {}, false, InitialDirection, true, false);
+    GJK_DebugStepsArr[GJK_DebugResultCount++] = (DebugResult);
 #endif
 
     f32 ClosestDistance = 1e10f;
@@ -560,7 +677,7 @@ GJK_DoesIntersect(const shoora_body *A, const shoora_body *B, const f32 Bias, sh
 
 #if GJK_DEBUG
     DebugResult = gjk_debug_result(NumPoints, SimplexPoints, {}, false, NewDirection, true, false);
-    DebugStepsArr[DebugStepsCount++] = (DebugResult);
+    GJK_DebugStepsArr[GJK_DebugResultCount++] = (DebugResult);
 #endif
 
     do
@@ -573,9 +690,10 @@ GJK_DoesIntersect(const shoora_body *A, const shoora_body *B, const f32 Bias, sh
         if(HasPoint(SimplexPoints, NewPoint)) { break; }
 
         SimplexPoints[NumPoints++] = NewPoint;
+
 #if GJK_DEBUG
         DebugResult = gjk_debug_result(NumPoints, SimplexPoints, {}, false, NewDirection, true, false);
-        DebugStepsArr[DebugStepsCount++] = (DebugResult);
+        GJK_DebugStepsArr[GJK_DebugResultCount++] = (DebugResult);
 #endif
 
         // NOTE: If the new point has not crossed the origin, then there is no way origin is contained in the
@@ -587,9 +705,9 @@ GJK_DoesIntersect(const shoora_body *A, const shoora_body *B, const f32 Bias, sh
         DoesContainOrigin = SimplexSignedVolumes(SimplexPoints, NumPoints, NewDirection, ProjectedBaryCoords);
 
 #if GJK_DEBUG
-        DebugResult = gjk_debug_result(NumPoints, SimplexPoints, ProjectedBaryCoords, true, NewDirection, false,
+        DebugResult = gjk_debug_result(NumPoints, SimplexPoints, ProjectedBaryCoords, true, NewDirection, true,
                                        DoesContainOrigin);
-        DebugStepsArr[DebugStepsCount++] = (DebugResult);
+        GJK_DebugStepsArr[GJK_DebugResultCount++] = (DebugResult);
 #endif
 
         if(DoesContainOrigin) { break; }
@@ -603,6 +721,15 @@ GJK_DoesIntersect(const shoora_body *A, const shoora_body *B, const f32 Bias, sh
 
         // NOTE: Use the lambdas that support the new search direction, and invalidate any points that don't
         // support it.
+        SortValids(SimplexPoints, ProjectedBaryCoords);
+        NumPoints = NumValids(ProjectedBaryCoords);
+
+#if GJK_DEBUG
+        DebugResult = gjk_debug_result(NumPoints, SimplexPoints, ProjectedBaryCoords, true, NewDirection, true,
+                                       DoesContainOrigin);
+        GJK_DebugStepsArr[GJK_DebugResultCount++] = (DebugResult);
+#endif
+
         // IMPORTANT: NOTE: Here, we explain why the DoesContainOrigin = NumPoints == 4 statement works below.
         // Say you have 4 points before calling SimplexSignedVolumes which projects the origin onto the simplex.
         // 4 points meaning you have a tetrahedron. Now, after projection if its found the origin to be inside the
@@ -610,15 +737,6 @@ GJK_DoesIntersect(const shoora_body *A, const shoora_body *B, const f32 Bias, sh
         // have a max of 3 barycentric coordinates and the 4th one will be zero. After calling these SortValids,
         // NumValids, my NumPoints which were 4 before get set to 3(a triangle). So in this case DoesContainOrigin
         // does not evaluate to true since NumPoints == 3.
-        SortValids(SimplexPoints, ProjectedBaryCoords);
-        NumPoints = NumValids(ProjectedBaryCoords);
-
-#if GJK_DEBUG
-        DebugResult = gjk_debug_result(NumPoints, SimplexPoints, ProjectedBaryCoords, true, NewDirection, true,
-                                       DoesContainOrigin);
-        DebugStepsArr[DebugStepsCount++] = (DebugResult);
-#endif
-
         DoesContainOrigin = (NumPoints == 4);
 
     } while (!DoesContainOrigin);
@@ -660,6 +778,15 @@ GJK_DoesIntersect(const shoora_body *A, const shoora_body *B, const f32 Bias, sh
         SimplexPoints[NumPoints++] = NewPoint;
     }
 
+#if GJK_DEBUG
+    if(GJK_CurrentStep == GJK_DebugResultCount - 1)
+    {
+        LogInfo("At the end of the GJK Sequence. Total Steps: %d.\n", (GJK_CurrentStep + 1));
+    }
+    DebugResult = gjk_debug_result(NumPoints, SimplexPoints, shu::Vec4f(), true, shu::Vec3f(), false, false);
+    GJK_DebugStepsArr[GJK_DebugResultCount++] = (DebugResult);
+#endif
+
     // NOTE: Expand the Simplex by the Bias amount
 
     // NOTE: Get the center point of the simplex.
@@ -685,7 +812,15 @@ GJK_DoesIntersect(const shoora_body *A, const shoora_body *B, const f32 Bias, sh
     }
 
     // NOTE: Perform EPA Expansion to get the closest face on the Minkowski Difference
-    // EPA_Expand(A, B, Bias, SimplexPoints, PointOnA, PointOnB);
+    f32 PenetrationDepth = EPA_Expand(A, B, Bias, SimplexPoints, PointOnA, PointOnB);
+    LogInfo("Penetration Depth: %0.3f.\n", PenetrationDepth);
+
+#if GJK_DEBUG
+    shoora_graphics::DrawCube(PointOnA, colorU32::Magenta, 0.1f);
+    shoora_graphics::DrawCube(PointOnB, colorU32::Magenta, 0.1f);
+
+#endif
+
     return true;
 }
 

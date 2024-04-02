@@ -7,6 +7,22 @@
 #include "shape/shape.h"
 #include "gjk.h"
 
+#define EPA_DEBUG 1
+
+#if EPA_DEBUG
+struct epa_debug_result
+{
+    gjk_point *GJKPoints;
+
+    i32 NewPointIndex = -1;
+    shu::vec3f NormalDir = shu::Vec3f(0.0f);
+
+    tri_t Triangles[64];
+    b32 DoubleSided = false;
+    i32 TriangleCount = 0;
+};
+#endif
+
 f32 EPA_Expand(const shoora_body *A, const shoora_body *B, const f32 Bias, const gjk_point SimplexPoints[4],
                shu::vec3f &PointOnA, shu::vec3f &PointOnB);
 

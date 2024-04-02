@@ -1,5 +1,120 @@
 #include "epa.h"
 
+#if EPA_DEBUG
+#include <platform/platform.h>
+#ifdef WIN32
+#include "platform/windows/win_platform.h"
+#endif
+#include <renderer/vulkan/graphics/vulkan_graphics.h>
+
+static u32 DebugColors[] = {
+     0xffff0000, // Red
+     0xff00ff00, // Green
+     0xff0000ff, // Blue
+     0xff00ffff, // Cyan
+     0xffff00ff, // Magenta
+     0xffffff00, // Yellow
+     0xffffffff, // White
+     0xff313131, // Gray
+     0xffFB8621, // Proto_Orange
+     0xffFFB900, // Proto_Yellow
+     0xff6DA174, // Proto_Green
+     0xffBD4334, // Proto_Red
+     0xff697FC4 // Proto_Blue
+};
+
+static b32 EPADebug_Initialized = false;
+static epa_debug_result EPADebug_Results[256];
+static i32 EPADebug_ResultCount = 0;
+static i32 EPADebug_CurrentStep = 0;
+
+void
+InitializeEPADebug()
+{
+    SHU_MEMZERO(EPADebug_Results, sizeof(epa_debug_result) * ARRAY_SIZE(EPADebug_Results));
+    EPADebug_ResultCount = 0;
+
+    EPADebug_Initialized = true;
+}
+
+void
+EPADebug_AddEntry(const shoora_dynamic_array<tri_t> &Triangles, gjk_point *Points, i32 NewPointIndex)
+{
+    ASSERT(EPADebug_ResultCount + 1 < ARRAY_SIZE(EPADebug_Results));
+
+    epa_debug_result *Result = EPADebug_Results + EPADebug_ResultCount++;
+    i32 TriCount = Triangles.size();
+    Result->TriangleCount = TriCount;
+    Result->GJKPoints = Points;
+    Result->NewPointIndex = NewPointIndex;
+
+    for(i32 i = 0; i < TriCount; ++i)
+    {
+        Result->Triangles[i] = Triangles[i];
+    }
+}
+
+void
+EPADebug_AddEntry(const tri_t &Triangle, gjk_point *Points, const shu::vec3f &Normal, i32 NewPointIndex)
+{
+    ASSERT(EPADebug_ResultCount + 1 < ARRAY_SIZE(EPADebug_Results));
+
+    epa_debug_result *Result = EPADebug_Results + EPADebug_ResultCount++;
+
+    Result->TriangleCount = 1;
+    Result->GJKPoints = Points;
+    Result->Triangles[0] = Triangle;
+    Result->NormalDir = shu::Normalize(Normal);
+    Result->NewPointIndex = NewPointIndex;
+    Result->DoubleSided = true;
+}
+
+void
+EPADebug_Visualize()
+{
+    if (Platform_GetKeyInputState(SU_ALPHABETKEYM, KeyState::SHU_KEYSTATE_PRESS))
+    {
+        EPADebug_CurrentStep = (EPADebug_CurrentStep + 1) % EPADebug_ResultCount;
+    }
+    if (Platform_GetKeyInputState(SU_ALPHABETKEYN, KeyState::SHU_KEYSTATE_PRESS))
+    {
+        EPADebug_CurrentStep = (EPADebug_CurrentStep > 0) ? (EPADebug_CurrentStep - 1)
+                                                          : (EPADebug_ResultCount - 1);
+    }
+
+    const epa_debug_result *Curr = EPADebug_Results + EPADebug_CurrentStep;
+    if(Curr->NewPointIndex != -1)
+    {
+        shu::vec3f NewPoint = Curr->GJKPoints[Curr->NewPointIndex].MinkowskiPoint;
+        shoora_graphics::DrawCube(NewPoint, colorU32::Cyan, .2f);
+    }
+
+    if(!Curr->NormalDir.IsZero())
+    {
+        shu::vec3f O = shu::Vec3f(0.0f);
+        shoora_graphics::DrawLine3D(O, O + Curr->NormalDir*10.0f, colorU32::Cyan);
+    }
+
+    for(i32 i = 0; i < Curr->TriangleCount; ++i)
+    {
+        tri_t Tri = Curr->Triangles[i];
+        shu::vec3f A = Curr->GJKPoints[Tri.A].MinkowskiPoint;
+        shu::vec3f B = Curr->GJKPoints[Tri.B].MinkowskiPoint;
+        shu::vec3f C = Curr->GJKPoints[Tri.C].MinkowskiPoint;
+
+        u32 Color = DebugColors[i % ARRAY_SIZE(DebugColors)];
+        shoora_graphics::DrawTriangle(A, B, C, Color);
+
+        if(Curr->DoubleSided)
+        {
+            shoora_graphics::DrawTriangle(A, C, B, Color);
+        }
+    }
+}
+
+#endif
+
+#if 0
 shu::vec3f
 BarycentricCoords(const shu::vec3f &v1, const shu::vec3f &v2, const shu::vec3f &v3, const shu::vec3f &Point)
 {
@@ -12,37 +127,53 @@ BarycentricCoords(const shu::vec3f &v1, const shu::vec3f &v2, const shu::vec3f &
     shu::vec3f pProj = Normal * (s1.Dot(Normal) / Normal.SqMagnitude());
 
     // NOTE: Find the axes with the greatest projected area.
-    i32 Axes = 0;
+    i32 Axes = -1;
     f32 MaxArea = 0.0f;
-    for(i32 i = 0; i < 3; ++i)
+
+    f32 nx = SHU_ABSOLUTE(Normal.x);
+    f32 ny = SHU_ABSOLUTE(Normal.y);
+    f32 nz = SHU_ABSOLUTE(Normal.z);
+    i32 a0, a1;
+
+    // NOTE: The Highest Normal component is the axis of maximum projected triangle area.
+    if((nx > ny) && (nx > nz))
     {
-        i32 j = (i + 1) % 3;
-        i32 k = (i + 2) % 3;
-
-        shu::vec2f a = shu::Vec2f(s1[j], s1[k]);
-        shu::vec2f b = shu::Vec2f(s2[j], s2[k]);
-        shu::vec2f c = shu::Vec2f(s3[j], s3[k]);
-
-        shu::vec2f ab = b - a;
-        shu::vec2f ac = c - a;
-
-        f32 Area = ab.x*ac.y - ab.y*ac.x;
-
-        if((Area*Area) > (MaxArea*MaxArea))
-        {
-            MaxArea = Area;
-            Axes = i;
-        }
+        Axes = 0;
+        a0 = 1;
+        a1 = 2;
+    }
+    else if((ny > nx) && (ny > nz))
+    {
+        Axes = 1;
+        a0 = 0;
+        a1 = 2;
+    }
+    else if((nz > nx) && (nz > ny))
+    {
+        Axes = 2;
+        a0 = 0;
+        a1 = 1;
     }
 
-    ASSERT(!NearlyEqual(MaxArea, 0.0f, 0.0001f));
+    if(Axes == -1)
+    {
+        return shu::Vec3f(1, 0, 0);
+    }
+    // ASSERT(Axes != -1);
+    // ASSERT((a0 != a1) && (a0 >= 0) && (a0 <= 2) && (a1 >= 0) && (a1 <= 2));
 
-    i32 x = (Axes + 1) % 3;
-    i32 y = (Axes + 2) % 3;
-    shu::vec2f pProj2D = shu::Vec2f(pProj[x], pProj[y]);
-    shu::vec2f aProj2D = shu::Vec2f(s1[x], s1[y]);
-    shu::vec2f bProj2D = shu::Vec2f(s2[x], s2[y]);
-    shu::vec2f cProj2D = shu::Vec2f(s3[x], s3[y]);
+    shu::vec2f pProj2D = shu::Vec2f(pProj[a0], pProj[a1]);
+    shu::vec2f aProj2D = shu::Vec2f(s1[a0], s1[a1]);
+    shu::vec2f bProj2D = shu::Vec2f(s2[a0], s2[a1]);
+    shu::vec2f cProj2D = shu::Vec2f(s3[a0], s3[a1]);
+    shu::vec2f abProj = bProj2D - aProj2D;
+    shu::vec2f acProj = cProj2D - aProj2D;
+
+    MaxArea = abProj.x*acProj.y - abProj.y*acProj.x; // ab X ac
+    if(NearlyEqual(MaxArea, 0.0f, 0.0001f))
+    {
+        return shu::Vec3f(1, 0, 0);
+    }
 
     // NOTE: Areas of projected triangles PAB, PBC, PCA.
     shu::vec2f pa = aProj2D - pProj2D;
@@ -56,7 +187,8 @@ BarycentricCoords(const shu::vec3f &v1, const shu::vec3f &v2, const shu::vec3f &
     shu::vec3f bary = shu::Vec3f(areaPBC, areaPCA, areaPAB);
     bary *= OneOverAreaABC;
 
-#if _SHU_DEBUG
+    // TODO: Check why this is failing in the EPA Routine!
+#if 0
     ASSERT(NearlyEqual((bary.x + bary.y + bary.z), 1.0f, 0.0001f));
     auto test = ((bary.x * v1) + (bary.y * v2) + (bary.z * v3));
     ASSERT(test == Point);
@@ -64,6 +196,7 @@ BarycentricCoords(const shu::vec3f &v1, const shu::vec3f &v2, const shu::vec3f &
 
     return bary;
 }
+#endif
 
 shu::vec3f
 NormalDirection(const tri_t &Tri, const shoora_dynamic_array<gjk_point> &Points)
@@ -76,6 +209,7 @@ NormalDirection(const tri_t &Tri, const shoora_dynamic_array<gjk_point> &Points)
     shu::vec3f ac = C - A;
 
     shu::vec3f Normal = ab.Cross(ac);
+    // ASSERT(!Normal.IsZero());
     Normal = shu::Normalize(Normal);
     return Normal;
 }
@@ -201,7 +335,11 @@ FindDanglingEdges(shoora_dynamic_array<edge_t> &DanglingEdges, const shoora_dyna
         {
             if(SharedTrianglesCount[k] == 0)
             {
-                DanglingEdges.emplace_back(Edges1[k]);
+                edge_t EdgeToAdd = Edges1[k];
+#if _SHU_DEBUG
+                EdgeToAdd.Validate();
+#endif
+                DanglingEdges.emplace_back(EdgeToAdd);
             }
         }
     }
@@ -211,13 +349,17 @@ f32
 EPA_Expand(const shoora_body *A, const shoora_body *B, const f32 Bias, const gjk_point SimplexPoints[4],
            shu::vec3f &PointOnA, shu::vec3f &PointOnB)
 {
+#if EPA_DEBUG
+    InitializeEPADebug();
+#endif
+
     memory_arena *Arena = GetArena(shoora_memory_type::MEMTYPE_FRAME);
     ASSERT(Arena != nullptr);
 
     temporary_memory TempMemory = BeginTemporaryMemory(Arena);
-    Arena->Log();
-
-    freelist_allocator TempAllocator(ShuAllocate_(Arena, MEGABYTES(1)), MEGABYTES(1));
+    // TempMemory.Arena->Log();
+    size_t TempMemorySize = MEGABYTES(1);
+    freelist_allocator TempAllocator(ShuAllocate_(TempMemory.Arena, TempMemorySize), TempMemorySize);
 
     shoora_dynamic_array<gjk_point> Points(&TempAllocator, 1024);
     shoora_dynamic_array<tri_t> Triangles(&TempAllocator, 1024);
@@ -231,6 +373,8 @@ EPA_Expand(const shoora_body *A, const shoora_body *B, const f32 Bias, const gjk
         Center += SimplexPoints[i].MinkowskiPoint;
     }
     Center *= 0.25f;
+
+    ASSERT(Points.size() == 4);
 
     // NOTE: Build Triangles.
     for (i32 i = 0; i < 4; ++i)
@@ -248,9 +392,12 @@ EPA_Expand(const shoora_body *A, const shoora_body *B, const f32 Bias, const gjk
         {
             SWAP(Triangle.A, Triangle.B);
         }
-
         Triangles.emplace_back(Triangle);
     }
+
+#if EPA_DEBUG
+    EPADebug_AddEntry(Triangles, Points.data(), -1);
+#endif
 
     // NOTE: Expand the Simplex to find the closest face of the Minkowski Convex Hull to the origin.
     while(1)
@@ -264,29 +411,42 @@ EPA_Expand(const shoora_body *A, const shoora_body *B, const f32 Bias, const gjk
         // further.
         if(HasPoint(NewPoint.MinkowskiPoint, Triangles, Points))
         {
+#if EPA_DEBUG
+            LogTraceUnformatted("BREAK: HasPoint!\n");
+#endif
             break;
         }
 
         f32 Distance = SignedDistanceToTriangle(Triangles[ClosestTriangleIndex], NewPoint.MinkowskiPoint, Points);
         // NOTE: Cannot expand the polytope further.
-        if (Distance < 0.0f)
+        if(Distance < 0.0f)
         {
+#if EPA_DEBUG
+            LogTraceUnformatted("BREAK: Distance is negative!\n");
+#endif
             break;
         }
 
         const i32 NewIdx = (i32)Points.size();
         Points.emplace_back(NewPoint);
 
+#if EPA_DEBUG
+        tri_t closestTriangle = Triangles[ClosestTriangleIndex];
+        EPADebug_AddEntry(closestTriangle, Points.data(), Normal, Points.size() - 1);
+#endif
         // NOTE: Remove Triangles that face this point.
         i32 NumRemoved = RemoveTrianglesFacingPoint(NewPoint.MinkowskiPoint, Triangles, Points);
         if(NumRemoved == 0)
         {
+#if EPA_DEBUG
+            LogTraceUnformatted("BREAK: NumRemoved == 0!\n");
+#endif
             break;
         }
 
         // NOTE: Find Dangling Edges.
-        DanglingEdges.Clear();
         FindDanglingEdges(DanglingEdges, Triangles);
+
         // NOTE: In theory the edges should be in proper CCW Order. So we only need to add the point "a" in order
         // to create new triangles that face away from the origin.
         for (i32 i = 0; i < DanglingEdges.size(); ++i)
@@ -301,33 +461,57 @@ EPA_Expand(const shoora_body *A, const shoora_body *B, const f32 Bias, const gjk
                 SWAP(Triangle.B, Triangle.C);
             }
 
+#if _SHU_DEBUG
+            Triangle.Validate();
+#endif
             Triangles.emplace_back(Triangle);
         }
+
+#if EPA_DEBUG
+        EPADebug_AddEntry(Triangles, Points.data(), Points.size() - 1);
+#endif
     }
 
     // NOTE: Get the Projection of the origin on the closest triangle.
     const i32 Idx = ClosestTriangle(Triangles, Points);
     const tri_t &Triangle = Triangles[Idx];
-    shu::vec3f PtA_W = Points[Triangle.A].MinkowskiPoint;
-    shu::vec3f PtB_W = Points[Triangle.B].MinkowskiPoint;
-    shu::vec3f PtC_W = Points[Triangle.C].MinkowskiPoint;
+#if EPA_DEBUG
+    EPADebug_AddEntry(Triangle, Points.data(), shu::Vec3f(0.0f), -1);
+#endif
 
-    shu::vec3f OriginBaryCoords = BarycentricCoords(PtA_W, PtB_W, PtC_W, shu::Vec3f(0.0f));
+    gjk_point PtA = Points[Triangle.A];
+    gjk_point PtB = Points[Triangle.B];
+    gjk_point PtC = Points[Triangle.C];
+
+#if EPA_DEBUG
+    EPADebug_Visualize();
+#endif
+
+    shu::vec3f PtA_W = PtA.MinkowskiPoint;
+    shu::vec3f PtB_W = PtB.MinkowskiPoint;
+    shu::vec3f PtC_W = PtC.MinkowskiPoint;
+    shu::vec3f OriginBaryCoords = shu::BarycentricProjectionMethod(PtA_W, PtB_W, PtC_W, shu::Vec3f(0.0f));
+
+#if EPA_DEBUG
+    shu::vec3f ProjectedPoint = OriginBaryCoords.x * PtA_W + OriginBaryCoords.y * PtB_W +
+                                OriginBaryCoords.z * PtC_W;
+    shoora_graphics::DrawCube(ProjectedPoint, colorU32::Yellow, .2f);
+#endif
 
     // NOTE: Get the Point on Shape A.
-    shu::vec3f PtA_a = Points[Triangle.A].PointOnA;
-    shu::vec3f PtB_a = Points[Triangle.B].PointOnA;
-    shu::vec3f PtC_a = Points[Triangle.C].PointOnA;
+    shu::vec3f PtA_a = PtA.PointOnA;
+    shu::vec3f PtB_a = PtB.PointOnA;
+    shu::vec3f PtC_a = PtC.PointOnA;
     PointOnA = PtA_a*OriginBaryCoords.x + PtB_a*OriginBaryCoords.y + PtC_a*OriginBaryCoords.z;
 
     // NOTE: Get the Point on Shape B.
-    shu::vec3f PtA_b = Points[Triangle.A].PointOnB;
-    shu::vec3f PtB_b = Points[Triangle.B].PointOnB;
-    shu::vec3f PtC_b = Points[Triangle.C].PointOnB;
+    shu::vec3f PtA_b = PtA.PointOnB;
+    shu::vec3f PtB_b = PtB.PointOnB;
+    shu::vec3f PtC_b = PtC.PointOnB;
     PointOnB = PtA_b*OriginBaryCoords.x + PtB_b*OriginBaryCoords.y + PtC_b*OriginBaryCoords.z;
 
     EndTemporaryMemory(TempMemory);
-    Arena->Log();
+    // Arena->Log();
 
     shu::vec3f Delta = PointOnB - PointOnA;
     f32 DeltaMagnitude = Delta.Magnitude();

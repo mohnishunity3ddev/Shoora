@@ -200,7 +200,7 @@ GetNextPow2(size_t Num)
             break;
         }
     }
-    
+
     return Result;
 }
 

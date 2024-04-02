@@ -170,6 +170,17 @@ struct tri_t
     i32 A;
     i32 B;
     i32 C;
+
+    inline void
+    Validate()
+    {
+#if !_SHU_DEBUG
+        ASSERT(!"This should not be called in a NON Debug Build!");
+#endif
+        ASSERT(this->A != this->B);
+        ASSERT(this->A != this->C);
+        ASSERT(this->B != this->C);
+    }
 };
 
 struct edge_t
@@ -181,6 +192,15 @@ struct edge_t
     {
         b32 Result = ((A == Other.A && B == Other.B) || (A == Other.B && B == Other.A));
         return Result;
+    }
+
+    inline void
+    Validate()
+    {
+#if !_SHU_DEBUG
+        ASSERT(!"This should not be called in a NON Debug Build!");
+#endif
+        ASSERT(this->A != this->B);
     }
 };
 

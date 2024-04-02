@@ -320,6 +320,7 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
     RasterizerInfo.rasterizerDiscardEnable = VK_FALSE;
     RasterizerInfo.polygonMode = VK_POLYGON_MODE_FILL;
     RasterizerInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+    // RasterizerInfo.cullMode = VK_CULL_MODE_NONE;
     RasterizerInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
     RasterizerInfo.depthBiasEnable = VK_FALSE;
     RasterizerInfo.depthBiasConstantFactor = 0.0f;

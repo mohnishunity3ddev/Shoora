@@ -44,7 +44,10 @@ typedef double f64;
 #define GIGABYTES(Val) (MEGABYTES(Val) * 1024LL)
 #define TERABYTES(Val) (GIGABYTES(Val) * 1024LL)
 
-#define SHU_INT_MIN (i32)1 << 31
+#define SHU_INT_MAX 2147483647
+#define SHU_INT_MIN (-SHU_INT_MAX - 1)
+#define SHU_UINT_MAX -1UL
+#define SHU_UINT_MIN 0UL
 
 #define USE_CPP_ATOMIC 0
 #if USE_CPP_ATOMIC
@@ -83,6 +86,11 @@ typedef double f64;
 #define ALIGN_16
 #endif
 
+inline b32
+IsInfinity(const f32 &F)
+{
+    return (F*0.0f != F*0.0f);
+}
 #define SHU_PI (3.14159265359f)
 #define SHU_PI_BY_2 (1.57079632679f)
 #define DEG_TO_RAD (SHU_PI / 180.0f)

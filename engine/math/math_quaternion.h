@@ -39,8 +39,7 @@ namespace shu
         static quat Identity()
         {
             quat Result;
-            Result.real = 0.0f;
-            Result.complex = shu::Vec3f(0, 0, 1);
+            Result.Quat = shu::Vec4f(1, 0, 0, 0);
             return Result;
         }
     };

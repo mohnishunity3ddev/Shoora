@@ -108,8 +108,8 @@ struct shoora_render_state
 {
     b8 WireframeMode = false;
     f32 WireLineWidth = 10.0f;
-    shu::vec3f ClearColor = shu::vec3f{0.043f, 0.259f, 0.259f};
-    // Shu::vec3f ClearColor = Shu::Vec3f(0.0f);
+    // shu::vec3f ClearColor = shu::vec3f{0.043f, 0.259f, 0.259f};
+    shu::vec3f ClearColor = shu::Vec3f(0.0f);
     shu::vec3f MeshColorUniform = shu::vec3f{1.0f, 1.0f, 1.0f};
 };
 
@@ -632,7 +632,7 @@ DrawGJKSpheres()
         {
             shu::vec3f vPos_b = (SphereMesh->MeshFilter.Vertices[j].Pos * SphereB.Scale) + SphereB.Position;
 
-            shu::vec3f AB = vPos_b - vPos_a;
+            shu::vec3f AB = vPos_a - vPos_b;
             shoora_graphics::DrawCube(AB, colorU32::White, .075f);
         }
     }

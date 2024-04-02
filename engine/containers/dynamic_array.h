@@ -37,7 +37,7 @@ struct shoora_dynamic_array
     shoora_dynamic_array(freelist_allocator *Allocator)
     {
         ASSERT(Allocator != nullptr);
-        
+
         Size = 0;
         this->Capacity = 0;
         this->Allocator = Allocator;
@@ -260,6 +260,7 @@ struct shoora_dynamic_array
     {
         ASSERT(Capacity >= Size);
         SHU_MEMZERO(arr, sizeof(T) * Capacity);
+        Size = 0;
     }
 };
 

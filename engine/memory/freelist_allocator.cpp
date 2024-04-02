@@ -331,7 +331,7 @@ freelist_allocator::Free(void *MemoryPtr)
     auto *AllocationHeader = (freelist_allocation_header *)((u8 *)MemoryPtr -
                                                             freelist_allocator::AllocationHeaderSize);
     size_t AllocatedBlockSize = AllocationHeader->BlockSize;
-
+    
     flNode *NewFreeNode = (flNode *)((u8 *)AllocationHeader - AllocationHeader->AlignmentPadding);
     size_t FreeBlockSize = AllocationHeader->BlockSize;
     ASSERT(FreeBlockSize >= freelist_allocator::FreeNodeHeaderSize);

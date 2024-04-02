@@ -100,8 +100,11 @@ namespace shu
         inline vec3<T> Cross(const vec3<T> &A) const;
         inline vec3<T> Reciprocal() const;
         inline void GetOrtho(vec3<T> &U, vec3<T> &V) const;
+
         inline b32 IsValid() const;
         inline b32 IsNormalized() const;
+        inline b32 IsZero() const;
+
         inline void ZeroOut();
         static vec3<T> Zero()
         {
@@ -706,6 +709,20 @@ namespace shu
         b32 Result = NearlyEqual(SqMagnitude, 1.0f, 0.0001f);
 
         return Result;
+    }
+
+    template <typename T>
+    inline b32
+    vec3<T>::IsZero() const
+    {
+        b32 xIsZero = (NearlyEqual(this->x, 0.0f, 0.00001f));
+        if(!xIsZero) return false;
+        b32 yIsZero = (NearlyEqual(this->y, 0.0f, 0.00001f));
+        if(!yIsZero) return false;
+        b32 zIsZero = (NearlyEqual(this->z, 0.0f, 0.00001f));
+        if(!zIsZero) return false;
+
+        return true;
     }
 
     template <typename T>

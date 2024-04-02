@@ -29,7 +29,7 @@ singly_linked_list<T>::singly_linked_list()
 template <typename T>
 singly_linked_list<T>::~singly_linked_list()
 {
-    LogInfo("destructor for linked list called!\n");
+    // LogInfo("destructor for linked list called!\n");
     this->Clear();
 }
 

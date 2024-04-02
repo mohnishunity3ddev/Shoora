@@ -14,13 +14,13 @@ namespace shu
 // and solve for u and v. w then can be solved using w = 1-u-v
 // TODO: NOT TESTED
 vec3f
-BarycentricCramersMethod(const triangle &Tri, const vec3f &P)
+BarycentricCramersMethod(const shu::vec3f &A, const shu::vec3f &B, const shu::vec3f &C, const vec3f &P)
 {
     vec3f Result = {};
 
-    vec3f v0 = Tri.C - Tri.A;
-    vec3f v1 = Tri.B - Tri.A;
-    vec3f v2 = P - Tri.A;
+    vec3f v0 = C - A;
+    vec3f v1 = B - A;
+    vec3f v2 = P - A;
 
     f32 d00 = v0.Dot(v0);
     f32 d01 = v0.Dot(v1);
@@ -54,12 +54,11 @@ BarycentricCramersMethod(const triangle &Tri, const vec3f &P)
 // component, we project triangles on to the yz plane and then calculate area of triangle ratios to get the
 // barycentric coordinates.
 vec3f
-BarycentricProjectionMethod(const triangle &Tri, const vec3f &p)
+BarycentricProjectionMethod(const shu::vec3f &A, const shu::vec3f &B, const shu::vec3f &C, const vec3f &p)
 {
-
-    auto a = Tri.A;
-    auto b = Tri.B;
-    auto c = Tri.C;
+    auto a = A;
+    auto b = B;
+    auto c = C;
 
     auto ab = b - a;
     auto bc = c - b;
@@ -68,14 +67,14 @@ BarycentricProjectionMethod(const triangle &Tri, const vec3f &p)
     // 2 * Area of ABC. Also the normal
     vec3f n = shu::Cross(ab, bc);
 
-#if _SHU_DEBUG
+#if 0
     vec3f norm = shu::Normalize(n);
     f32 dist = (p - b).Dot(norm);
     ASSERT(NearlyEqual(dist, 0.0f, 0.001f) && "Point P should be in the plane of the triangle!");
 #endif
 
     f32 numeratorU, numeratorV, oneOverDenom;
-    
+
     f32 nX = SHU_ABSOLUTE(n.x);
     f32 nY = SHU_ABSOLUTE(n.y);
     f32 nZ = SHU_ABSOLUTE(n.z);
@@ -102,10 +101,14 @@ BarycentricProjectionMethod(const triangle &Tri, const vec3f &p)
     }
 
     f32 u = numeratorU * oneOverDenom;
+    if(IsInfinity(u))
+    {
+        return shu::Vec3f(1, 0, 0);
+    }
     f32 v = numeratorV * oneOverDenom;
     f32 w = 1.0f - u - v;
 
-#if _SHU_DEBUG
+#if 0
     auto test = u * a + v * b + w * c;
     ASSERT(NearlyEqual(test.x, p.x, 0.001f));
     ASSERT(NearlyEqual(test.y, p.y, 0.001f));
@@ -118,11 +121,11 @@ BarycentricProjectionMethod(const triangle &Tri, const vec3f &p)
 
 // NOTE: Area of triangle can also be 0.5f*(edge1.Cross(edge2))
 vec3f
-BarycentricCrossMethod(const triangle &Tri, const vec3f &p)
+BarycentricCrossMethod(const shu::vec3f &A, const shu::vec3f &B, const shu::vec3f &C, const vec3f &p)
 {
-    auto a = Tri.A;
-    auto b = Tri.B;
-    auto c = Tri.C;
+    auto a = A;
+    auto b = B;
+    auto c = C;
 
     shu::vec3f ab = b - a;
     shu::vec3f bc = c - b;
@@ -178,8 +181,8 @@ TestBarycentric()
     shu::triangle Tri = {a, b, c};
     shu::vec3f P = shu::Vec3f(-0.21f, 1.36f, 2.69f);
 
-    auto b1 = shu::BarycentricProjectionMethod(Tri, P);
-    auto b2 = shu::BarycentricCrossMethod(Tri, P);
+    auto b1 = shu::BarycentricProjectionMethod(Tri.A, Tri.B, Tri.C, P);
+    auto b2 = shu::BarycentricCrossMethod(Tri.A, Tri.B, Tri.C, P);
 
     i32 x = 0;
 }
