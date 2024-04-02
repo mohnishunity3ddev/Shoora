@@ -6,6 +6,7 @@
 #include "platform/windows/win_platform.h"
 #endif
 #include <renderer/vulkan/graphics/vulkan_graphics.h>
+#include "primitive_tests/primitive_tests.h"
 
 static u32 DebugColors[] = {
      0xffff0000, // Red
@@ -38,19 +39,33 @@ InitializeEPADebug()
 }
 
 void
-EPADebug_AddEntry(const shoora_dynamic_array<tri_t> &Triangles, gjk_point *Points, i32 NewPointIndex)
+EPADebug_AddEntry(const shoora_dynamic_array<tri_t> &Triangles, gjk_point *Points, i32 NewPointIndex,
+                  const shoora_dynamic_array<edge_t> *DanglingEdges = nullptr)
 {
     ASSERT(EPADebug_ResultCount + 1 < ARRAY_SIZE(EPADebug_Results));
 
     epa_debug_result *Result = EPADebug_Results + EPADebug_ResultCount++;
+
     i32 TriCount = Triangles.size();
+    ASSERT(TriCount <= ARRAY_SIZE(Result->Triangles));
+
     Result->TriangleCount = TriCount;
     Result->GJKPoints = Points;
     Result->NewPointIndex = NewPointIndex;
-
     for(i32 i = 0; i < TriCount; ++i)
     {
         Result->Triangles[i] = Triangles[i];
+    }
+
+    if (DanglingEdges != nullptr)
+    {
+        const shoora_dynamic_array<edge_t> &Edges = *DanglingEdges;
+        Result->EdgeCount = Edges.size();
+        ASSERT(Result->EdgeCount <= ARRAY_SIZE(Result->DanglingEdges));
+        for (i32 i = 0; i < Result->EdgeCount; ++i)
+        {
+            Result->DanglingEdges[i] = Edges[i];
+        }
     }
 }
 
@@ -109,6 +124,14 @@ EPADebug_Visualize()
         {
             shoora_graphics::DrawTriangle(A, C, B, Color);
         }
+    }
+
+    for (i32 i = 0; i < Curr->EdgeCount; ++i)
+    {
+        edge_t Edge = Curr->DanglingEdges[i];
+        shu::vec3f P0 = Curr->GJKPoints[Edge.A].MinkowskiPoint;
+        shu::vec3f P1 = Curr->GJKPoints[Edge.B].MinkowskiPoint;
+        shoora_graphics::DrawLine3D(P0, P1, colorU32::Proto_Red, .02f);
     }
 }
 
@@ -412,14 +435,17 @@ EPA_Expand(const shoora_body *A, const shoora_body *B, const f32 Bias, const gjk
         if(HasPoint(NewPoint.MinkowskiPoint, Triangles, Points))
         {
 #if EPA_DEBUG
-            LogTraceUnformatted("BREAK: HasPoint!\n");
+            // LogTraceUnformatted("BREAK: HasPoint!\n");
 #endif
             break;
         }
 
         f32 Distance = SignedDistanceToTriangle(Triangles[ClosestTriangleIndex], NewPoint.MinkowskiPoint, Points);
+
         // NOTE: Cannot expand the polytope further.
-        if(Distance < 0.0f)
+        // Negative Distance in this case means the NewPoint is inside the volume of the polytope. so we cannot
+        // break the closest face of the polytope further.
+        if(Distance < 0.0f || NearlyEqual(Distance, 0.0f, 0.0001f))
         {
 #if EPA_DEBUG
             LogTraceUnformatted("BREAK: Distance is negative!\n");
@@ -429,11 +455,13 @@ EPA_Expand(const shoora_body *A, const shoora_body *B, const f32 Bias, const gjk
 
         const i32 NewIdx = (i32)Points.size();
         Points.emplace_back(NewPoint);
+        i32 NewPointIndex = Points.size() - 1;
 
 #if EPA_DEBUG
         tri_t closestTriangle = Triangles[ClosestTriangleIndex];
         EPADebug_AddEntry(closestTriangle, Points.data(), Normal, Points.size() - 1);
 #endif
+
         // NOTE: Remove Triangles that face this point.
         i32 NumRemoved = RemoveTrianglesFacingPoint(NewPoint.MinkowskiPoint, Triangles, Points);
         if(NumRemoved == 0)
@@ -446,6 +474,10 @@ EPA_Expand(const shoora_body *A, const shoora_body *B, const f32 Bias, const gjk
 
         // NOTE: Find Dangling Edges.
         FindDanglingEdges(DanglingEdges, Triangles);
+#if EPA_DEBUG
+        EPADebug_AddEntry(Triangles, Points.data(), NewPointIndex);
+        EPADebug_AddEntry(Triangles, Points.data(), NewPointIndex, &DanglingEdges);
+#endif
 
         // NOTE: In theory the edges should be in proper CCW Order. So we only need to add the point "a" in order
         // to create new triangles that face away from the origin.
@@ -468,7 +500,7 @@ EPA_Expand(const shoora_body *A, const shoora_body *B, const f32 Bias, const gjk
         }
 
 #if EPA_DEBUG
-        EPADebug_AddEntry(Triangles, Points.data(), Points.size() - 1);
+        EPADebug_AddEntry(Triangles, Points.data(), NewPointIndex);
 #endif
     }
 
@@ -476,7 +508,14 @@ EPA_Expand(const shoora_body *A, const shoora_body *B, const f32 Bias, const gjk
     const i32 Idx = ClosestTriangle(Triangles, Points);
     const tri_t &Triangle = Triangles[Idx];
 #if EPA_DEBUG
-    EPADebug_AddEntry(Triangle, Points.data(), shu::Vec3f(0.0f), -1);
+    shu::vec3f Normal = NormalDirection(Triangle, Points);
+    // if(Normal.IsZero())
+    // {
+    //     shoora_graphics::DrawCube(Points[Triangle.A].MinkowskiPoint, colorU32::Red, .2f);
+    //     shoora_graphics::DrawCube(Points[Triangle.B].MinkowskiPoint, colorU32::Red, .2f);
+    //     shoora_graphics::DrawCube(Points[Triangle.C].MinkowskiPoint, colorU32::Red, .2f);
+    // }
+    EPADebug_AddEntry(Triangle, Points.data(), Normal, -1);
 #endif
 
     gjk_point PtA = Points[Triangle.A];
@@ -490,7 +529,7 @@ EPA_Expand(const shoora_body *A, const shoora_body *B, const f32 Bias, const gjk
     shu::vec3f PtA_W = PtA.MinkowskiPoint;
     shu::vec3f PtB_W = PtB.MinkowskiPoint;
     shu::vec3f PtC_W = PtC.MinkowskiPoint;
-    shu::vec3f OriginBaryCoords = shu::BarycentricProjectionMethod(PtA_W, PtB_W, PtC_W, shu::Vec3f(0.0f));
+    shu::vec3f OriginBaryCoords = ClosestPtPointTriangle(shu::Vec3f(0.0f), PtA_W, PtB_W, PtC_W);
 
 #if EPA_DEBUG
     shu::vec3f ProjectedPoint = OriginBaryCoords.x * PtA_W + OriginBaryCoords.y * PtB_W +

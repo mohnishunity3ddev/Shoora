@@ -12,14 +12,17 @@
 #if EPA_DEBUG
 struct epa_debug_result
 {
+    b32 DoubleSided = false;
     gjk_point *GJKPoints;
 
     i32 NewPointIndex = -1;
     shu::vec3f NormalDir = shu::Vec3f(0.0f);
 
-    tri_t Triangles[64];
-    b32 DoubleSided = false;
+    tri_t Triangles[128];
     i32 TriangleCount = 0;
+
+    edge_t DanglingEdges[64];
+    i32 EdgeCount = 0;
 };
 #endif
 

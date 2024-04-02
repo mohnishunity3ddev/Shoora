@@ -282,6 +282,8 @@ ClosestPtPointTriangle_Unoptimized(const shu::vec3f &Point, const shu::vec3f &A,
 shu::vec3f
 ClosestPtPointTriangle(const shu::vec3f &Point, const shu::vec3f &A, const shu::vec3f &B, const shu::vec3f &C)
 {
+    shu::vec3f BaryCoords;
+
     shu::vec3f AB = B - A;
     shu::vec3f AC = C - A;
     shu::vec3f AP = Point - A;
@@ -292,7 +294,7 @@ ClosestPtPointTriangle(const shu::vec3f &Point, const shu::vec3f &A, const shu::
     if(d1 <= 0.0f && d2 <= 0.0f)
     {
         // NOTE: Closest Point on the Triangle ABC to point P is A. Barycentric coordinate (1, 0, 0).
-        return A;
+        return shu::Vec3f(1, 0, 0);
     }
 
     // NOTE: Check if the Point P is in the voronoi region of vertex B
@@ -304,7 +306,8 @@ ClosestPtPointTriangle(const shu::vec3f &Point, const shu::vec3f &A, const shu::
     if(d3 >= 0.0f && d4 <= d3)
     {
         // NOTE: Closest Point on the Triangle ABC to point P is B. Barycentric coordinate (0, 1, 0).
-        return B;
+        // return B;
+        return shu::Vec3f(0, 1, 0);
     }
 
     // NOTE: Check if the Point P is in the edge region of AB, if so perform the projection P' on AB and P' will be
@@ -331,7 +334,8 @@ ClosestPtPointTriangle(const shu::vec3f &Point, const shu::vec3f &A, const shu::
         // d1 - d3 here represents the length of the edge AB. d1 is the projection ap onto ab.
         f32 t = d1 / (d1 - d3);
         // NOTE: Barycentric coordinates: (1-t, t, 0)
-        return A + t * AB;
+        // return A + t * AB;
+        return shu::Vec3f(1.0 - t, t, 0);
     }
 
     // NOTE: Check if the point p is in the voronoi region of vertex C.
@@ -343,7 +347,8 @@ ClosestPtPointTriangle(const shu::vec3f &Point, const shu::vec3f &A, const shu::
     {
         // NOTE: The closest point is vertex C of the triangle ABC
         // NOTE: Barycentric coordinates: (0, 0, 1)
-        return C;
+        // return C;
+        return shu::Vec3f(0, 0, 1);
     }
 
     // NOTE: Check whether P is in the region of AC, if so, return the projection of P onto AC.
@@ -361,7 +366,8 @@ ClosestPtPointTriangle(const shu::vec3f &Point, const shu::vec3f &A, const shu::
         // of AC. The fraction t is the ratio of the projection AP makes onto AC over the total length AC.
         f32 t = d2 / (d2 - d6);
         // NOTE: Barycentric coordinates: (1-t, 0, t)
-        return A + t*AC;
+        // return A + t*AC;
+        return shu::Vec3f(1.0f - t, 0, t);
     }
 
     // NOTE: Check if the point P is the voronoi region of BC.
@@ -377,7 +383,8 @@ ClosestPtPointTriangle(const shu::vec3f &Point, const shu::vec3f &A, const shu::
         // NOTE: The ratio between these gives the weight along bc.
         float t = (d4 - d3) / ((d4 - d3) + (d5 - d6));
         // NOTE: Barycentric coordinates: (0, 1-t, t)
-        return B + t*(C - B);
+        // return B + t*(C - B);
+        return shu::Vec3f(0, 1.0f - t, t);
     }
 
     // P inside face region. Compute Q through its barycentric coordinates (u,v,w)
@@ -386,7 +393,8 @@ ClosestPtPointTriangle(const shu::vec3f &Point, const shu::vec3f &A, const shu::
     float w = vc * denom;
     // NOTE: u*a + v*b + w*c, u = va * denom = 1.0f - v - w
     // NOTE: Barycentric coordinates: (1-v-w, v, w)
-    return A + AB*v + AC*w;
+    // return A + AB*v + AC*w;
+    return shu::Vec3f(1.0f-v-w, v, w);
 }
 
 b32

@@ -813,12 +813,11 @@ GJK_DoesIntersect(const shoora_body *A, const shoora_body *B, const f32 Bias, sh
 
     // NOTE: Perform EPA Expansion to get the closest face on the Minkowski Difference
     f32 PenetrationDepth = EPA_Expand(A, B, Bias, SimplexPoints, PointOnA, PointOnB);
-    LogInfo("Penetration Depth: %0.3f.\n", PenetrationDepth);
 
 #if GJK_DEBUG
+    LogInfo("Penetration Depth: %0.3f.\n", PenetrationDepth);
     shoora_graphics::DrawCube(PointOnA, colorU32::Magenta, 0.1f);
     shoora_graphics::DrawCube(PointOnB, colorU32::Magenta, 0.1f);
-
 #endif
 
     return true;
