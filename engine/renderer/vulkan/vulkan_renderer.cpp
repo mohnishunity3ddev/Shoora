@@ -605,39 +605,6 @@ InitializeGJKSpheres()
     SphereB.Color = GetColor(colorU32::Proto_Blue);
 }
 
-#include <physics/gjk.h>
-void
-DrawGJKSpheres()
-{
-    shu::vec3f PointOnA, PointOnB;
-    shu::vec3f ColorA = SphereA.Color;
-    shu::vec3f ColorB = SphereB.Color;
-    if(GJK_DoesIntersect(&SphereA, &SphereB, 0.0f, PointOnA, PointOnB))
-    {
-        ColorA = GetColor(colorU32::Proto_Red);
-        ColorB = ColorA;
-    }
-
-    shoora_graphics::DrawSphere(SphereA.Position, 2.5f, GetColorU32(ColorA));
-    shoora_graphics::DrawSphere(SphereB.Position, 2.5f, GetColorU32(ColorB));
-
-    shoora_mesh *SphereMesh = shoora_mesh_database::GetMesh(shoora_mesh_type::SPHERE);
-    u32 vertexCount = SphereMesh->MeshFilter.VertexCount;
-
-    for(i32 i = 0; i < vertexCount; ++i)
-    {
-        shu::vec3f vPos_a = (SphereMesh->MeshFilter.Vertices[i].Pos * SphereA.Scale) + SphereA.Position;
-
-        for(i32 j = 0; j < vertexCount; ++j)
-        {
-            shu::vec3f vPos_b = (SphereMesh->MeshFilter.Vertices[j].Pos * SphereB.Scale) + SphereB.Position;
-
-            shu::vec3f AB = vPos_a - vPos_b;
-            shoora_graphics::DrawCube(AB, colorU32::White, .075f);
-        }
-    }
-}
-
 void
 InitScene()
 {
@@ -675,9 +642,7 @@ InitScene()
 #endif
 #endif
 
-    InitializeGJKSpheres();
-
-#if 0
+#if 1
     AddStandardSandBox();
     Scene->AddDiamondBody(shu::Vec3f(0, 8, 10), shu::Vec3f(1.0f), colorU32::Proto_Orange, 0.0f, 0.5f,
                           shu::Vec3f(0.0f));
@@ -1213,13 +1178,10 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         vkCmdBindIndexBuffer(DrawCmdBuffer, shoora_mesh_database::GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
         DrawCoordinateAxes();
 
-        DrawGJKSpheres();
-#if 0
         Scene->UpdateInput(CurrentMouseWorldPos);
         f32 pDt = GlobalPausePhysics ? 0.0f : GlobalDeltaTime;
         Scene->PhysicsUpdate(pDt, GlobalDebugMode);
         DrawScene(DrawCmdBuffer);
-#endif
 #endif
         ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
         vkCmdEndRenderPass(DrawCmdBuffer);

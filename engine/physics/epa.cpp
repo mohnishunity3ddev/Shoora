@@ -1,4 +1,5 @@
 #include "epa.h"
+#include "primitive_tests/primitive_tests.h"
 
 #if EPA_DEBUG
 #include <platform/platform.h>
@@ -6,7 +7,6 @@
 #include "platform/windows/win_platform.h"
 #endif
 #include <renderer/vulkan/graphics/vulkan_graphics.h>
-#include "primitive_tests/primitive_tests.h"
 
 static u32 DebugColors[] = {
      0xffff0000, // Red
@@ -448,7 +448,7 @@ EPA_Expand(const shoora_body *A, const shoora_body *B, const f32 Bias, const gjk
         if(Distance < 0.0f || NearlyEqual(Distance, 0.0f, 0.0001f))
         {
 #if EPA_DEBUG
-            LogTraceUnformatted("BREAK: Distance is negative!\n");
+            // LogTraceUnformatted("BREAK: Distance is negative!\n");
 #endif
             break;
         }
@@ -467,7 +467,7 @@ EPA_Expand(const shoora_body *A, const shoora_body *B, const f32 Bias, const gjk
         if(NumRemoved == 0)
         {
 #if EPA_DEBUG
-            LogTraceUnformatted("BREAK: NumRemoved == 0!\n");
+            // LogTraceUnformatted("BREAK: NumRemoved == 0!\n");
 #endif
             break;
         }

@@ -5,7 +5,7 @@
 #include <math/math.h>
 #include "body.h"
 
-#define GJK_DEBUG 1
+#define GJK_DEBUG 0
 
 // NOTE: This is basically calculating the barycentric coordinate of the Origin with respect to the Line joining s2
 // and s1. if vec2(b1, b2) is the barycentric coordinate of the origin with respect to this line segment, then

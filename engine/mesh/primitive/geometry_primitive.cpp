@@ -313,8 +313,8 @@ shoora_primitive_collection::GenerateUVSphereMesh()
     // TODO: Dont rely on Loading Meshes using GLTF!!
     // LoadModel(&UVSphereModel, "meshes/primitives/uv_sphere.glb");
     // LoadModel(&UVSphereModel, "meshes/primitives/quad_sphere_uv.glb");
-    // LoadModel(&UVSphereModel, "meshes/primitives/ico_sphere_lowres.glb");
-    LoadModel(&UVSphereModel, "meshes/primitives/ico_sphere_1subd.glb");
+    LoadModel(&UVSphereModel, "meshes/primitives/ico_sphere_lowres.glb");
+    // LoadModel(&UVSphereModel, "meshes/primitives/ico_sphere_1subd.glb");
 #else
     // TODO: Do Custom Implementation here!
 #endif

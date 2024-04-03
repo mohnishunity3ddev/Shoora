@@ -815,7 +815,7 @@ GJK_DoesIntersect(const shoora_body *A, const shoora_body *B, const f32 Bias, sh
     f32 PenetrationDepth = EPA_Expand(A, B, Bias, SimplexPoints, PointOnA, PointOnB);
 
 #if GJK_DEBUG
-    LogInfo("Penetration Depth: %0.3f.\n", PenetrationDepth);
+    // LogInfo("Penetration Depth: %0.3f.\n", PenetrationDepth);
     shoora_graphics::DrawCube(PointOnA, colorU32::Magenta, 0.1f);
     shoora_graphics::DrawCube(PointOnB, colorU32::Magenta, 0.1f);
 #endif
