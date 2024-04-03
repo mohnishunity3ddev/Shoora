@@ -183,7 +183,7 @@ shoora_shape_convex::SupportPtWorldSpace(const shu::vec3f &Direction, const shu:
 f32
 shoora_shape_convex::FastestLinearSpeed(const shu::vec3f &AngularVelocity, const shu::vec3f &Direction) const
 {
-    f32 MaxSpeed = -SHU_FLOAT_MIN;
+    f32 MaxSpeed = -SHU_FLOAT_MAX;
     for(i32 i = 0; i < this->NumPoints; ++i)
     {
         const shu::vec3f r = this->Points[i] - this->mCenterOfMass;

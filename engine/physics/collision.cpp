@@ -155,14 +155,13 @@ SphereSphereCCD(const shoora_shape_sphere *SphereA, const shoora_shape_sphere *S
 }
 
 b32
-collision::IsCollidingConvex(shoora_body *A, shoora_body *B, f32 DeltaTime, contact *Contacts, i32 &ContactCount)
+GJK_Intersect(shoora_body *A, shoora_body *B, contact &Contact)
 {
     b32 Result = false;
+
     shu::vec3f PointOnA, PointOnB;
     const f32 Bias = 0.001f;
 
-    contact Contact;
-    ContactCount = 0;
     if (GJK_DoesIntersect(A, B, Bias, PointOnA, PointOnB))
     {
         // NOTE: There was an intersection, get contact data.
@@ -201,9 +200,95 @@ collision::IsCollidingConvex(shoora_body *A, shoora_body *B, f32 DeltaTime, cont
 
         shu::vec3f AB = B->Position - A->Position;
         f32 r = (PointOnA - PointOnB).Magnitude();
-        Contact.Depth = -r;
+        Contact.Depth = r;
         Result = false;
     }
+
+    return Result;
+}
+
+// NOTE: We already know how to get the closest points on two convex bodies using GJK_ClosestPoints function. These
+// * points give the closest distance between the bodies. Now we find the velocities of the two bodies vA and vB,
+// * project them onto the ray separating them. Go forward in time until they both are just colliding, get the
+// * contact point and all that, the rest of the process is like CCD done on spheres here in SphereSphereCCD.
+b32
+GJK_ConservativeAdvance(shoora_body *A, shoora_body *B, f32 DeltaTime, contact &Contact)
+{
+    Contact.ReferenceBodyA = A;
+    Contact.IncidentBodyB = B;
+
+    f32 timeOfImpact = 0.0f;
+    i32 NumIterations = 0;
+    i32 MaxIterations = 10;
+
+    // NOTE: Advance the bodies until they touch or there is no time left.
+    while(DeltaTime > 0.0f)
+    {
+        // NOTE: Check for Intersection
+        b32 DidIntersect = GJK_Intersect(A, B, Contact);
+        if(DidIntersect) {
+            Contact.TimeOfImpact = timeOfImpact;
+            A->Update(-timeOfImpact);
+            B->Update(-timeOfImpact);
+            return true;
+        }
+
+        // NOTE: We have a limit on the nuymber of iterations this can do, what if there is a lot of angular motion
+        // but the objects dont have that much linear velocity to touch each other in this frame?
+        ++NumIterations;
+        if (NumIterations > 10) {
+            break;
+        }
+
+        // NOTE: Get the vector from the closest point on A to the closest point on B.
+        shu::vec3f AB = shu::Normalize(Contact.ReferenceHitPointA - Contact.IncidentHitPointB);
+
+        // NOTE: Project the relative velocity onto the ray of shortest distance between the two.
+        shu::vec3f RelativeVelocity = A->LinearVelocity - B->LinearVelocity;
+        f32 OrthoSpeed = RelativeVelocity.Dot(AB);
+
+        // NOTE: Add to the orthoSpeeds the maximum angular speeds of the relative shapes.
+        f32 AngularSpeedA = A->Shape->FastestLinearSpeed(A->AngularVelocity, AB);
+        f32 AngularSpeedB = B->Shape->FastestLinearSpeed(B->AngularVelocity, AB * -1.0f);
+
+        OrthoSpeed += AngularSpeedA + AngularSpeedB;
+        if(OrthoSpeed <= 0.0f) {
+            break;
+        }
+
+        f32 TimeToGo = Contact.Depth / OrthoSpeed;
+        if(TimeToGo > DeltaTime) {
+            break;
+        }
+
+        DeltaTime -= TimeToGo;
+        timeOfImpact += TimeToGo;
+        A->Update(TimeToGo);
+        B->Update(TimeToGo);
+    }
+
+    // NOTE: Unwind the time back
+    A->Update(-timeOfImpact);
+    B->Update(-timeOfImpact);
+
+    return false;
+}
+
+b32
+collision::IsCollidingConvex(shoora_body *A, shoora_body *B, f32 DeltaTime, contact *Contacts, i32 &ContactCount)
+{
+    b32 Result = false;
+
+    contact Contact;
+
+#if SHU_CCD_ON
+    Result = GJK_ConservativeAdvance(A, B, DeltaTime, Contact);
+#else
+    Result = GJK_Intersect(A, B, Contact);
+#endif
+
+    Contacts[0] = Contact;
+    ContactCount = 1;
 
     return Result;
 }

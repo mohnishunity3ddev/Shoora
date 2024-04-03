@@ -617,6 +617,21 @@ InitScene()
     AddStandardSandBox();
     Scene->AddDiamondBody(shu::Vec3f(0, 8, 10), shu::Vec3f(1.0f), colorU32::Proto_Orange, 0.0f, 0.5f,
                           shu::Vec3f(0.0f));
+
+    shoora_body Body;
+    Body.Position = shu::Vec3f(10, 8, 10);
+    Body.Rotation = shu::Quat();
+    // Body.LinearVelocity = shu::Vec3f(-100, 0, 0);
+    Body.LinearVelocity = shu::Vec3f(0.0f);
+    Body.AngularVelocity = shu::Vec3f(0.0f);
+    Body.InvMass = 0.0f;
+    Body.CoeffRestitution = 0.5f;
+    Body.FrictionCoeff = 0.5f;
+
+    shoora_shape_sphere *SphereShape = ShuAllocateStruct(shoora_shape_sphere, MEMTYPE_GLOBAL);
+    Body.Shape = new (SphereShape) shoora_shape_sphere(0.5f);
+    Body.Scale = Body.Shape->GetDim();
+    Scene->AddBody(std::move(Body));
     // Scene->AddSphereBody(shu::Vec3f(0, 8, 15), colorU32::Red, 1.0f, 1.0f, 0.5f);
 #endif
 
