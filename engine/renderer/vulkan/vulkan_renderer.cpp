@@ -577,35 +577,6 @@ AddStandardSandBox()
 }
 
 void
-InitializeGJKSpheres()
-{
-    // Adding ground
-    SphereA.Position = shu::Vec3f(8.5f, 0, 0);
-    SphereA.Rotation = shu::quat::Identity();
-    SphereA.LinearVelocity = shu::Vec3f(0.0f);
-    SphereA.AngularVelocity = shu::Vec3f(0.0f);
-    SphereA.InvMass = 0.0f;
-    SphereA.CoeffRestitution = 0.5f;
-    SphereA.FrictionCoeff = 0.5f;
-    shoora_shape_sphere *SphereShape = ShuAllocateStruct(shoora_shape_sphere, MEMTYPE_GLOBAL);
-    SphereA.Shape = new (SphereShape) shoora_shape_sphere(2.5f);
-    SphereA.Scale = SphereA.Shape->GetDim();
-    SphereA.Color = GetColor(colorU32::Proto_Green);
-
-    SphereB.Position = shu::Vec3f(10, 0, 0);
-    SphereB.Rotation = shu::quat::Identity();
-    SphereB.LinearVelocity = shu::Vec3f(0.0f);
-    SphereB.AngularVelocity = shu::Vec3f(0.0f);
-    SphereB.InvMass = 0.0f;
-    SphereB.CoeffRestitution = 0.5f;
-    SphereB.FrictionCoeff = 0.5f;
-    SphereShape = ShuAllocateStruct(shoora_shape_sphere, MEMTYPE_GLOBAL);
-    SphereB.Shape = new (SphereShape) shoora_shape_sphere(2.5f);
-    SphereB.Scale = SphereB.Shape->GetDim();
-    SphereB.Color = GetColor(colorU32::Proto_Blue);
-}
-
-void
 InitScene()
 {
     // Bottom Wall (Static Rigidbody)
@@ -646,6 +617,7 @@ InitScene()
     AddStandardSandBox();
     Scene->AddDiamondBody(shu::Vec3f(0, 8, 10), shu::Vec3f(1.0f), colorU32::Proto_Orange, 0.0f, 0.5f,
                           shu::Vec3f(0.0f));
+    // Scene->AddSphereBody(shu::Vec3f(0, 8, 15), colorU32::Red, 1.0f, 1.0f, 0.5f);
 #endif
 
 #if 0
@@ -850,7 +822,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
 
     shoora_camera *pCamera = &VulkanContext->Camera;
     SetupCamera(pCamera, shoora_projection::PROJECTION_PERSPECTIVE, 0.1f, 1000.0f, 16.0f / 9.0f,
-                GlobalWindowSize.y, 45.0f, shu::Vec3f(0, 0, -10));
+                GlobalWindowSize.y, 45.0f, shu::Vec3f(0, 4, -10));
 #if 0
     pCamera->Pos = shu::Vec3f(14.1368380f, 106.438675f, -40.9848938f);
     pCamera->Front = shu::Vec3f(-0.332412988f, -0.475319535f, -0.814599872f);

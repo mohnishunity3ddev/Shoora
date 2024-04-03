@@ -51,37 +51,9 @@ shu::vec3f
 shoora_shape_sphere::SupportPtWorldSpace(const shu::vec3f &Direction, const shu::vec3f &Position,
                              const shu::quat &Orientation, const f32 Bias) const
 {
-    // TODO: Remove this case.
-#if 1
-    shoora_mesh_filter *meshFilter = shoora_mesh_database::GetMeshFilter(this->Type);
-    
-    // NOTE: Find the point furthest in the direction.
-    shu::vec3f Scale = this->GetDim();
-    shu::mat4f Model = shu::TRS(Position, this->GetDim(), Orientation);
-    shu::vec3f MaxPoint = (Model * shu::Vec4f(meshFilter->Vertices[0].Pos, 1.0f)).xyz;
-    f32 MaxProj = MaxPoint.Dot(Direction);
-    for(i32 i = 1; i < meshFilter->VertexCount; ++i)
-    {
-        auto Point = (Model * shu::Vec4f(meshFilter->Vertices[i].Pos, 1.0f)).xyz;
-        auto PointDistance = Point.Dot(Direction);
-
-        if(MaxProj < PointDistance)
-        {
-            MaxProj = PointDistance;
-            MaxPoint = Point;
-        }
-    }
-
-    shu::vec3f Normal = shu::Normalize(Direction);
-    Normal *= Bias;
-
-    shu::vec3f Result = MaxPoint + Normal;
-    return Result;
-
-#else
     shu::vec3f n = shu::Normalize(Direction);
 
     shu::vec3f SupportPoint = Position + n * (this->Radius + Bias);
+
     return SupportPoint;
-#endif
 }

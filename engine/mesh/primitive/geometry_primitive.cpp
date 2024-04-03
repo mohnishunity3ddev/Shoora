@@ -312,8 +312,8 @@ shoora_primitive_collection::GenerateUVSphereMesh()
 #if 1
     // TODO: Dont rely on Loading Meshes using GLTF!!
     // LoadModel(&UVSphereModel, "meshes/primitives/uv_sphere.glb");
-    // LoadModel(&UVSphereModel, "meshes/primitives/quad_sphere_uv.glb");
-    LoadModel(&UVSphereModel, "meshes/primitives/ico_sphere_lowres.glb");
+    LoadModel(&UVSphereModel, "meshes/primitives/quad_sphere_uv.glb");
+    // LoadModel(&UVSphereModel, "meshes/primitives/ico_sphere_lowres.glb");
     // LoadModel(&UVSphereModel, "meshes/primitives/ico_sphere_1subd.glb");
 #else
     // TODO: Do Custom Implementation here!
@@ -338,7 +338,7 @@ shoora_mesh_filter shoora_primitive_collection::GetPrimitiveInfo(u32 Type)
         }
         break;
         */
-
+        
         case shoora_mesh_type::TRIANGLE:
         {
             Result.Vertices = TriangleVertices;
