@@ -17,13 +17,13 @@ collision::IsColliding(shoora_body *A, shoora_body *B, const f32 DeltaTime, cont
     b32 isBodyAPolygon = (A->Shape->GetType() == POLYGON_2D || A->Shape->GetType() == RECT_2D);
     b32 isBodyASphere = (A->Shape->GetType() == shoora_mesh_type::SPHERE);
     b32 isBodyAConvex = (A->Shape->GetType() == shoora_mesh_type::CONVEX ||
-                         A->Shape->GetType() == shoora_mesh_type::CONVEX_DIAMOND);
+                         A->Shape->GetType() == shoora_mesh_type::CONVEX_DIAMOND || A->Shape->GetType() == CUBE);
 
     b32 isBodyBCircle = (B->Shape->GetType() == shoora_mesh_type::CIRCLE);
     b32 isBodyBPolygon = (B->Shape->GetType() == POLYGON_2D || B->Shape->GetType() == RECT_2D);
     b32 isBodyBSphere = (B->Shape->GetType() == shoora_mesh_type::SPHERE);
     b32 isBodyBConvex = (B->Shape->GetType() == shoora_mesh_type::CONVEX ||
-                         B->Shape->GetType() == shoora_mesh_type::CONVEX_DIAMOND);
+                         B->Shape->GetType() == shoora_mesh_type::CONVEX_DIAMOND || A->Shape->GetType() == CUBE);
 
     if(isBodyACircle && isBodyBCircle)
     {
@@ -243,7 +243,7 @@ GJK_ConservativeAdvance(shoora_body *A, shoora_body *B, f32 DeltaTime, contact &
         // NOTE: Get the vector from the closest point on A to the closest point on B.
         shu::vec3f AB = shu::Normalize(Contact.ReferenceHitPointA - Contact.IncidentHitPointB);
 
-        // NOTE: Project the relative velocity onto the ray of shortest distance between the two.
+        // NOTE: Project the relative velocity onto the ray in the direction of shortest distance between the two.
         shu::vec3f RelativeVelocity = A->LinearVelocity - B->LinearVelocity;
         f32 OrthoSpeed = RelativeVelocity.Dot(AB);
 

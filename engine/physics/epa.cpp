@@ -256,14 +256,34 @@ ClosestTriangle(const shoora_dynamic_array<tri_t> &Triangles, const shoora_dynam
     i32 idx = -1;
     for(i32 i = 0; i < Triangles.size(); ++i)
     {
-        const tri_t &Triangle = Triangles[i];
+        const tri_t &CurrentTriangle = Triangles[i];
 
-        f32 Distance = SignedDistanceToTriangle(Triangle, shu::Vec3f(0.0f), Points);
+        f32 Distance = SignedDistanceToTriangle(CurrentTriangle, shu::Vec3f(0.0f), Points);
         f32 DistanceSq = Distance * Distance;
-        if (DistanceSq < MinDistanceSq)
+        if(DistanceSq < MinDistanceSq)
         {
             idx = i;
             MinDistanceSq = DistanceSq;
+        }
+        else if(DistanceSq == MinDistanceSq)
+        {
+            // NOTE: Found a new triangle with equal distance. This is the case where two triangles on the same
+            // plane. Find the closest centroid of the two triangles, the one with the minimum, gets to be the
+            // closest triangle.
+            const tri_t MinTriangle = Triangles[idx];
+            // NOTE: no need to divide by 3 since we are only comparing distances.
+            shu::vec3f centroidMin = Points[MinTriangle.A].MinkowskiPoint +
+                                     Points[MinTriangle.B].MinkowskiPoint +
+                                     Points[MinTriangle.C].MinkowskiPoint;
+            f32 DistanceMin = centroidMin.SqMagnitude();
+            shu::vec3f centroidCurr = Points[CurrentTriangle.A].MinkowskiPoint +
+                                      Points[CurrentTriangle.B].MinkowskiPoint +
+                                      Points[CurrentTriangle.C].MinkowskiPoint;
+            f32 DistanceCurr = centroidCurr.SqMagnitude();
+            if(DistanceCurr < DistanceMin)
+            {
+                idx = i;
+            }
         }
     }
 
@@ -548,6 +568,11 @@ EPA_Expand(const shoora_body *A, const shoora_body *B, const f32 Bias, const gjk
     shu::vec3f PtB_b = PtB.PointOnB;
     shu::vec3f PtC_b = PtC.PointOnB;
     PointOnB = PtA_b*OriginBaryCoords.x + PtB_b*OriginBaryCoords.y + PtC_b*OriginBaryCoords.z;
+
+#if EPA_DEBUG
+    shoora_graphics::DrawCube(PointOnA, colorU32::Green, .1f);
+    shoora_graphics::DrawCube(PointOnB, colorU32::Proto_Orange, .1f);
+#endif
 
     EndTemporaryMemory(TempMemory);
     // Arena->Log();

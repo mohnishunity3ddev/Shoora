@@ -119,15 +119,24 @@ shoora_scene::AddDiamondBody(const shu::vec3f &Pos, const shu::vec3f &Scale, u32
                              f32 Restitution, const shu::vec3f &EulerAngles)
 {
     shoora_shape_convex *DiamondShape = ShuAllocateStruct(shoora_shape_convex, MEMTYPE_GLOBAL);
-    auto shape = shoora_shape_convex();
-    shape.SetCenterOfMass(shu::Vec3f(0.0f, 0.0f, -0.082f));
-    shape.mInertiaTensor = shu::Mat3f(0.2484f, 0.0f, 0.0f, 0.0f, 0.248386f, 0.0f, 0.0f, 0.0f, 0.341404f);
+    new (DiamondShape) shoora_shape_convex();
+    DiamondShape->SetCenterOfMass(shu::Vec3f(0.0f, 0.0f, -0.082f));
+    DiamondShape->mInertiaTensor = shu::Mat3f(0.2484f, 0.0f, 0.0f, 0.0f, 0.248386f, 0.0f, 0.0f, 0.0f, 0.341404f);
     shu::vec3f DiamondBounds_Min = shu::Vec3f(-1.0f, -1.0f, -1.0f);
     shu::vec3f DiamondBounds_Max = shu::Vec3f(1.0f, 1.0f, 0.4f);
     shoora_bounds DiamondBounds = shoora_bounds(DiamondBounds_Min, DiamondBounds_Max);
-    shape.Scale = Scale;
-    shape.Type = shoora_mesh_type::CONVEX_DIAMOND;
-    SHU_MEMCOPY(&shape, DiamondShape, sizeof(shoora_shape_convex));
+    DiamondShape->Scale = Scale;
+    DiamondShape->Type = shoora_mesh_type::CONVEX_DIAMOND;
+    DiamondShape->MeshFilter = shoora_mesh_database::GetMeshFilter(CONVEX_DIAMOND);
+
+    DiamondShape->Points = ShuAllocateArray(shu::vec3f, DiamondShape->MeshFilter->VertexCount, MEMTYPE_GLOBAL);
+    for (i32 i = 0; i < DiamondShape->MeshFilter->VertexCount; ++i)
+    {
+        DiamondShape->Points[i] = DiamondShape->MeshFilter->Vertices[i].Pos;
+    }
+    DiamondShape->NumPoints = DiamondShape->MeshFilter->VertexCount;
+    DiamondShape->HullIndices = DiamondShape->MeshFilter->Indices;
+    DiamondShape->NumHullIndices = DiamondShape->MeshFilter->IndexCount;
 
     shoora_body Body{GetColor(ColorU32), Pos, Mass, Restitution, DiamondShape, EulerAngles};
     Bodies.emplace_back(std::move(Body));

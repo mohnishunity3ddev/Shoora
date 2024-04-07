@@ -518,12 +518,12 @@ InitializeGJKDebug()
 void
 DebugSteps()
 {
-    // if(Platform_GetKeyInputState(SU_ALPHABETKEYM, KeyState::SHU_KEYSTATE_PRESS)) {
-    //     GJK_CurrentStep = (GJK_CurrentStep + 1) % GJK_DebugResultCount;
-    // }
-    // if(Platform_GetKeyInputState(SU_ALPHABETKEYN, KeyState::SHU_KEYSTATE_PRESS)) {
-    //     GJK_CurrentStep = (GJK_CurrentStep > 0) ? GJK_CurrentStep - 1 : 0;
-    // }
+    if(Platform_GetKeyInputState(SU_ALPHABETKEYM, KeyState::SHU_KEYSTATE_PRESS)) {
+        GJK_CurrentStep = (GJK_CurrentStep + 1) % GJK_DebugResultCount;
+    }
+    if(Platform_GetKeyInputState(SU_ALPHABETKEYN, KeyState::SHU_KEYSTATE_PRESS)) {
+        GJK_CurrentStep = (GJK_CurrentStep > 0) ? GJK_CurrentStep - 1 : 0;
+    }
 
     ASSERT(GJK_CurrentStep < GJK_DebugResultCount);
     gjk_debug_result DebugResult = GJK_DebugStepsArr[GJK_CurrentStep];
@@ -537,13 +537,13 @@ DebugSteps()
             shu::vec3f mV = GJKPoint.MinkowskiPoint;
 
             shoora_graphics::DrawCube(mV, colorU32::Proto_Yellow, .1f);
-            shoora_graphics::DrawCube(GJKPoint.PointOnA, colorU32::Proto_Blue, .1f);
-            shoora_graphics::DrawCube(GJKPoint.PointOnB, colorU32::Proto_Green, .1f);
+            shoora_graphics::DrawCube(GJKPoint.PointOnA, colorU32::White, .4f);
+            shoora_graphics::DrawCube(GJKPoint.PointOnB, colorU32::Red, .4f);
 
             shu::vec3f pd = shu::Normalize(GJKPoint.PointOnA - GJKPoint.PointOnB);
-            shoora_graphics::DrawLine3D(GJKPoint.PointOnB, GJKPoint.PointOnB + pd * 10.0f, colorU32::Cyan, 0.01f);
+            shoora_graphics::DrawLine3D(GJKPoint.PointOnB, GJKPoint.PointOnB + pd * 10.0f, colorU32::Red, 0.01f);
             shu::vec3f o = shu::Vec3f(0.0f);
-            shoora_graphics::DrawLine3D(o, o + pd * 10.0f, colorU32::Cyan, 0.01f);
+            shoora_graphics::DrawLine3D(o, o + pd * 10.0f, colorU32::Red, 0.01f);
 
             if (DebugResult.HasDirection)
             {

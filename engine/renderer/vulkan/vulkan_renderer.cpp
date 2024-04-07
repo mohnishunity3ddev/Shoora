@@ -160,7 +160,6 @@ enum FpsOptions
     FpsOptions_240 = 3,
 };
 
-static shoora_body SphereA, SphereB;
 void
 ImGuiNewFrame()
 {
@@ -192,9 +191,10 @@ ImGuiNewFrame()
             SHU_INVALID_DEFAULT;
         }
     }
-
-    ImGui::DragFloat3("Sphere A Position", SphereA.Position.E, .05f, -100, 100);
-    ImGui::DragFloat3("Sphere B Position", SphereB.Position.E, .05f, -100, 100);
+    shoora_body *a = &Scene->Bodies[0];
+    shoora_body *b = &Scene->Bodies[1];
+    ImGui::DragFloat3("Sphere A Position", a->Position.E, .05f, -100, 100);
+    ImGui::DragFloat3("Sphere B Position", b->Position.E, .05f, -100, 100);
 
     ImGui::SliderFloat("Test Scale", &TestCameraScale, 0.5f, 100.0f);
     ImGui::Checkbox("Toggle Wireframe", (bool *)&WireframeMode);
@@ -576,6 +576,69 @@ AddStandardSandBox()
     Scene->AddBody(std::move(body));
 }
 
+#if 1
+void
+InitializeGJKDebugTest()
+{
+    shoora_body body = {};
+    shoora_shape_cube *BoxShape = nullptr;
+
+    // Adding ground
+    body.Position = shu::Vec3f(0, 0, 0);
+    body.Rotation = shu::Quat(1, 0, 0, 0);
+    body.LinearVelocity = shu::Vec3f(0.0f);
+    body.AngularVelocity = shu::Vec3f(0.0f);
+    body.InvMass = 0.0f;
+    body.CoeffRestitution = 0.5f;
+    body.FrictionCoeff = 0.5f;
+    BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
+    f32 width = 5, height = 5, depth = 5;
+    body.Shape = new (BoxShape) shoora_shape_cube(width, height, depth);
+    body.Scale = body.Shape->GetDim();
+    body.Color = GetColor(colorU32::Proto_Green);
+    Scene->AddBody(std::move(body));
+
+    Scene->AddDiamondBody(shu::Vec3f(0, 8, 10), shu::Vec3f(1.0f), colorU32::Proto_Orange, 0.0f, 0.5f,
+                          shu::Vec3f(0.0f));
+}
+
+#include <physics/gjk.h>
+
+void DrawDebug()
+{
+    shoora_body *A = &Scene->Bodies[0];
+    shoora_body *B = &Scene->Bodies[1];
+
+    shu::mat4f ModelA = shu::TRS(A->Position, A->Scale, A->Rotation);
+    shu::mat4f ModelB = shu::TRS(B->Position, B->Scale, B->Rotation);
+
+    i32 vertexCount_A = A->Shape->MeshFilter->VertexCount;
+    i32 vertexCount_B = B->Shape->MeshFilter->VertexCount;
+
+    shu::vec3f PtA, PtB;
+    b32 intersection = GJK_DoesIntersect(A, B, 0.0f, PtA, PtB);
+    if(intersection)
+    {
+        int x = 0;
+    }
+
+    for (i32 i = 0; i < vertexCount_A; ++i)
+    {
+        shu::vec3f ALocalPos = A->Shape->MeshFilter->Vertices[i].Pos;
+        shu::vec3f AWorldPos = (ModelA * shu::Vec4f(ALocalPos, 1.0f)).xyz;
+
+        for (i32 j = 0; j < vertexCount_B; ++j)
+        {
+            shu::vec3f BLocalPos = B->Shape->MeshFilter->Vertices[j].Pos;
+            shu::vec3f BWorldPos = (ModelB * shu::Vec4f(BLocalPos, 1.0f)).xyz;
+
+            shu::vec3f AB = AWorldPos - BWorldPos;
+            shoora_graphics::DrawCube(AB, colorU32::White, .075f);
+        }
+    }
+}
+#endif
+
 void
 InitScene()
 {
@@ -613,10 +676,12 @@ InitScene()
 #endif
 #endif
 
-#if 1
-    AddStandardSandBox();
-    Scene->AddDiamondBody(shu::Vec3f(0, 8, 10), shu::Vec3f(1.0f), colorU32::Proto_Orange, 0.0f, 0.5f,
+    InitializeGJKDebugTest();
+
+#if 0
+    Scene->AddDiamondBody(shu::Vec3f(0, 8, 10), shu::Vec3f(1.0f), colorU32::Proto_Orange, 1.0f, 0.5f,
                           shu::Vec3f(0.0f));
+    AddStandardSandBox();
 
     shoora_body Body;
     Body.Position = shu::Vec3f(10, 8, 10);
@@ -785,8 +850,6 @@ InitializeLightData()
     GlobalFragUniformData.SpotlightData.Color = shu::Vec3f(30.0f / 255.0f, 194.0 / 255.0f, 165.0 / 255.0f);
     GlobalFragUniformData.SpotlightData.Intensity = 5.0f;
 }
-
-#include <physics/epa.h>
 
 void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
@@ -1164,11 +1227,15 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         vkCmdBindVertexBuffers(DrawCmdBuffer, 0, 1, shoora_mesh_database::GetVertexBufferHandlePtr(), offsets);
         vkCmdBindIndexBuffer(DrawCmdBuffer, shoora_mesh_database::GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
         DrawCoordinateAxes();
-
+#if 0
         Scene->UpdateInput(CurrentMouseWorldPos);
         f32 pDt = GlobalPausePhysics ? 0.0f : GlobalDeltaTime;
         Scene->PhysicsUpdate(pDt, GlobalDebugMode);
+#endif
+
+        DrawDebug();
         DrawScene(DrawCmdBuffer);
+
 #endif
         ImGuiDrawFrame(DrawCmdBuffer, &Context->ImContext);
         vkCmdEndRenderPass(DrawCmdBuffer);

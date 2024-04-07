@@ -58,6 +58,6 @@ main()
     finalColor.a = 1.0;
 
     // FragColor = vec4(ModelNormal, 1.);
-    FragColor = finalColor;
-    // FragColor = vec4(InColor, 0.5);
+    // FragColor = finalColor;
+    FragColor = vec4(InColor, 0.5);
 }

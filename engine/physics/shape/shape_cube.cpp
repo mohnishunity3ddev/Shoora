@@ -6,6 +6,23 @@ shoora_shape_cube::shoora_shape_cube(u32 Width, u32 Height, u32 Depth) : shoora_
     this->Width = Width;
     this->Height = Height;
     this->Depth = Depth;
+
+    shu::vec3f V = shu::Vec3f(Width, Height, Depth) * 0.5f;
+
+    mBounds.Mins = -V;
+    mBounds.Maxs =  V;
+
+    memset(mPoints, 0, (ARRAY_SIZE(mPoints) * sizeof(shu::vec3f)));
+    mPoints[0] = shu::Vec3f(mBounds.Mins.x, mBounds.Mins.y, mBounds.Mins.z);
+    mPoints[1] = shu::Vec3f(mBounds.Maxs.x, mBounds.Mins.y, mBounds.Mins.z);
+    mPoints[2] = shu::Vec3f(mBounds.Mins.x, mBounds.Maxs.y, mBounds.Mins.z);
+    mPoints[3] = shu::Vec3f(mBounds.Mins.x, mBounds.Mins.y, mBounds.Maxs.z);
+
+    mPoints[4] = shu::Vec3f(mBounds.Maxs.x, mBounds.Maxs.y, mBounds.Maxs.z);
+    mPoints[5] = shu::Vec3f(mBounds.Mins.x, mBounds.Maxs.y, mBounds.Maxs.z);
+    mPoints[6] = shu::Vec3f(mBounds.Maxs.x, mBounds.Mins.y, mBounds.Maxs.z);
+    mPoints[7] = shu::Vec3f(mBounds.Maxs.x, mBounds.Maxs.y, mBounds.Mins.z);
+
     this->mCenterOfMass = shu::Vec3f(0.0f);
 }
 

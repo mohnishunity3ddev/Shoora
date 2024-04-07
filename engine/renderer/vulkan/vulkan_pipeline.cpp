@@ -318,7 +318,7 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
     RasterizerInfo.flags = 0;
     RasterizerInfo.depthClampEnable = VK_FALSE;
     RasterizerInfo.rasterizerDiscardEnable = VK_FALSE;
-    // RasterizerInfo.polygonMode = VK_POLYGON_MODE_FILL;
+    RasterizerInfo.polygonMode = VK_POLYGON_MODE_FILL;
     RasterizerInfo.cullMode = VK_CULL_MODE_BACK_BIT;
     // RasterizerInfo.cullMode = VK_CULL_MODE_NONE;
     RasterizerInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
@@ -357,7 +357,7 @@ CreateGraphicsPipeline(shoora_vulkan_context *Context, const char *VertexShaderF
 
     //? Color Blend Info
     VkPipelineColorBlendAttachmentState BlendAttachment;
-    BlendAttachment.blendEnable = VK_FALSE;
+    BlendAttachment.blendEnable = VK_TRUE;
     // NOTE: Src is the color calculated by the fragment shader. Dst is the color already there in the framebuffer
     // attachment.
     BlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
