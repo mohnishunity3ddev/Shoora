@@ -37,7 +37,7 @@ static shoora_vulkan_context *Context = nullptr;
 static b32 isDebug = false;
 static b32 WireframeMode = false;
 static f32 TestCameraScale = 0.5f;
-static b32 GlobalDebugMode = true;
+static b32 GlobalDebugMode = false;
 static b32 GlobalPausePhysics = false;
 
 static platform_work_queue *GlobalJobQueue;
@@ -160,6 +160,7 @@ enum FpsOptions
     FpsOptions_240 = 3,
 };
 
+#define GJK_STEPTHROUGH 0
 void
 ImGuiNewFrame()
 {
@@ -191,10 +192,13 @@ ImGuiNewFrame()
             SHU_INVALID_DEFAULT;
         }
     }
+
+#if GJK_STEPTHROUGH
     shoora_body *a = &Scene->Bodies[0];
     shoora_body *b = &Scene->Bodies[1];
     ImGui::DragFloat3("Sphere A Position", a->Position.E, .05f, -100, 100);
     ImGui::DragFloat3("Sphere B Position", b->Position.E, .05f, -100, 100);
+#endif
 
     ImGui::SliderFloat("Test Scale", &TestCameraScale, 0.5f, 100.0f);
     ImGui::Checkbox("Toggle Wireframe", (bool *)&WireframeMode);
@@ -576,7 +580,7 @@ AddStandardSandBox()
     Scene->AddBody(std::move(body));
 }
 
-#if 1
+#if GJK_STEPTHROUGH
 void
 InitializeGJKDebugTest()
 {
@@ -616,11 +620,10 @@ void DrawDebug()
     i32 vertexCount_B = B->Shape->MeshFilter->VertexCount;
 
     shu::vec3f PtA, PtB;
+#if 0
     b32 intersection = GJK_DoesIntersect(A, B, 0.0f, PtA, PtB);
-    if(intersection)
-    {
-        int x = 0;
-    }
+#endif
+    GJK_ClosestPoints(A, B, PtA, PtB);
 
     for (i32 i = 0; i < vertexCount_A; ++i)
     {
@@ -676,27 +679,31 @@ InitScene()
 #endif
 #endif
 
+#if GJK_STEPTHROUGH
     InitializeGJKDebugTest();
-
-#if 0
+#else
     Scene->AddDiamondBody(shu::Vec3f(0, 8, 10), shu::Vec3f(1.0f), colorU32::Proto_Orange, 1.0f, 0.5f,
                           shu::Vec3f(0.0f));
     AddStandardSandBox();
 
-    shoora_body Body;
-    Body.Position = shu::Vec3f(10, 8, 10);
-    Body.Rotation = shu::Quat();
-    // Body.LinearVelocity = shu::Vec3f(-100, 0, 0);
-    Body.LinearVelocity = shu::Vec3f(0.0f);
-    Body.AngularVelocity = shu::Vec3f(0.0f);
-    Body.InvMass = 0.0f;
-    Body.CoeffRestitution = 0.5f;
-    Body.FrictionCoeff = 0.5f;
+    // shoora_body Body;
+    // Body.Position = shu::Vec3f(10, 8, 10);
+    // Body.Rotation = shu::Quat();
+    // // Body.LinearVelocity = shu::Vec3f(-100, 0, 0);
+    // Body.LinearVelocity = shu::Vec3f(0.0f);
+    // Body.AngularVelocity = shu::Vec3f(0.0f);
+    // Body.InvMass = 0.0f;
+    // Body.CoeffRestitution = 0.5f;
+    // Body.FrictionCoeff = 0.5f;
 
-    shoora_shape_sphere *SphereShape = ShuAllocateStruct(shoora_shape_sphere, MEMTYPE_GLOBAL);
-    Body.Shape = new (SphereShape) shoora_shape_sphere(0.5f);
-    Body.Scale = Body.Shape->GetDim();
-    Scene->AddBody(std::move(Body));
+    // shoora_shape_sphere *SphereShape = ShuAllocateStruct(shoora_shape_sphere, MEMTYPE_GLOBAL);
+    // Body.Shape = new (SphereShape) shoora_shape_sphere(0.5f);
+    // Body.Scale = Body.Shape->GetDim();
+    // Scene->AddBody(std::move(Body));
+
+    shoora_body *sphereBody = Scene->AddSphereBody(shu::Vec3f(10, 8, 10), colorU32::White, .5f, 1.0f, .5f);
+    sphereBody->LinearVelocity = shu::Vec3f(-10, 0, 0);
+    sphereBody->FrictionCoeff = .5f;
     // Scene->AddSphereBody(shu::Vec3f(0, 8, 15), colorU32::Red, 1.0f, 1.0f, 0.5f);
 #endif
 
@@ -1227,13 +1234,14 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         vkCmdBindVertexBuffers(DrawCmdBuffer, 0, 1, shoora_mesh_database::GetVertexBufferHandlePtr(), offsets);
         vkCmdBindIndexBuffer(DrawCmdBuffer, shoora_mesh_database::GetIndexBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
         DrawCoordinateAxes();
-#if 0
+
+#if GJK_STEPTHROUGH
+        DrawDebug();
+#else
         Scene->UpdateInput(CurrentMouseWorldPos);
         f32 pDt = GlobalPausePhysics ? 0.0f : GlobalDeltaTime;
         Scene->PhysicsUpdate(pDt, GlobalDebugMode);
 #endif
-
-        DrawDebug();
         DrawScene(DrawCmdBuffer);
 
 #endif

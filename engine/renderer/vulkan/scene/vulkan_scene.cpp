@@ -89,8 +89,7 @@ shoora_scene::AddSphereBody(const shu::vec3f &Pos, u32 ColorU32, f32 Radius, f32
                             const shu::vec3f &EulerAngles)
 {
     shoora_shape_sphere *SphereShape = ShuAllocateStruct(shoora_shape_sphere, MEMTYPE_GLOBAL);
-    shoora_shape_sphere shape = shoora_shape_sphere(Radius);
-    SHU_MEMCOPY(&shape, SphereShape, sizeof(shoora_shape_sphere));
+    new (SphereShape) shoora_shape_sphere(Radius);
 
     shoora_body Body{GetColor(ColorU32), Pos, Mass, Restitution, SphereShape, EulerAngles};
     Bodies.emplace_back(std::move(Body));
@@ -106,7 +105,7 @@ shoora_scene::AddCircleBody(const shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 
     shoora_shape_circle *CircleShape = ShuAllocateStruct(shoora_shape_circle, MEMTYPE_GLOBAL);
     auto shape = shoora_shape_circle(Radius);
     SHU_MEMCOPY(&shape, CircleShape, sizeof(shoora_shape_circle));
-
+    
     shoora_body Body{GetColor(ColorU32), shu::Vec3f(Pos, 1.0f), Mass, Restitution, CircleShape, EulerAngles};
     Bodies.emplace_back(std::move(Body));
 

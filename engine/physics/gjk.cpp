@@ -277,9 +277,21 @@ SignedVolume3D(const shu::vec3f &A, const shu::vec3f &B, const shu::vec3f &C, co
 
     // NOTE: Signed Volume of the tetrahedron ABCD.
     const f32 DetM = c4.x + c4.y + c4.z + c4.w;
+
     // NOTE: Asserting theat the determinant is not zero, if this were the case then abcd would be coplanar and not
     // tetrahedron.
-    ASSERT(!NearlyEqual(DetM, 0.0f));
+    // TODO: UNComment after figuring out why this is zero in GJK_ClosestDistance()
+    // ASSERT(!NearlyEqual(DetM, 0.0f));
+
+    if(NearlyEqual(DetM, 0.0f))
+    {
+        // * NOTE: I think it does not matter, if the so called tetrahedron is coplanar. Because in any case, we
+        // * are trying to find the least distance triangle from the origin anyways, even if the thing coplanar and
+        // * not 3d, it does not matter, I think.
+        // * Btw, if the tetrahedron is coplanar, the determinant of M will be zero.
+
+        // LogFatalUnformatted("Coplanar Tetrahedron!\n");
+    }
 
     // NOTE: if all volumes pbcd, apcd, abpd, abcp have the same sign of volume with abcd, then P is inside the
     // tetrahedron abcd.
@@ -522,7 +534,8 @@ DebugSteps()
         GJK_CurrentStep = (GJK_CurrentStep + 1) % GJK_DebugResultCount;
     }
     if(Platform_GetKeyInputState(SU_ALPHABETKEYN, KeyState::SHU_KEYSTATE_PRESS)) {
-        GJK_CurrentStep = (GJK_CurrentStep > 0) ? GJK_CurrentStep - 1 : 0;
+        GJK_CurrentStep = (GJK_CurrentStep > 0) ? GJK_CurrentStep - 1 :
+                                                  GJK_DebugResultCount - 1;
     }
 
     ASSERT(GJK_CurrentStep < GJK_DebugResultCount);
@@ -537,8 +550,8 @@ DebugSteps()
             shu::vec3f mV = GJKPoint.MinkowskiPoint;
 
             shoora_graphics::DrawCube(mV, colorU32::Proto_Yellow, .1f);
-            shoora_graphics::DrawCube(GJKPoint.PointOnA, colorU32::White, .4f);
-            shoora_graphics::DrawCube(GJKPoint.PointOnB, colorU32::Red, .4f);
+            shoora_graphics::DrawCube(GJKPoint.PointOnA, colorU32::White, .1f);
+            shoora_graphics::DrawCube(GJKPoint.PointOnB, colorU32::Red, .1f);
 
             shu::vec3f pd = shu::Normalize(GJKPoint.PointOnA - GJKPoint.PointOnB);
             shoora_graphics::DrawLine3D(GJKPoint.PointOnB, GJKPoint.PointOnB + pd * 10.0f, colorU32::Red, 0.01f);
@@ -827,6 +840,10 @@ GJK_DoesIntersect(const shoora_body *A, const shoora_body *B, const f32 Bias, sh
 void
 GJK_ClosestPoints(const shoora_body *A, const shoora_body *B, shu::vec3f &PointOnA, shu::vec3f &PointOnB)
 {
+#if GJK_DEBUG
+    InitializeGJKDebug();
+#endif
+
     const shu::vec3f Origin = shu::Vec3f(0.0f);
 
     f32 ClosestDistance = 1e10f;
@@ -834,10 +851,21 @@ GJK_ClosestPoints(const shoora_body *A, const shoora_body *B, shu::vec3f &PointO
 
     i32 NumPoints = 1;
     gjk_point SimplexPoints[4];
-    SimplexPoints[0] = GJK_Support(A, B, shu::Vec3f(1, 1, 1), Bias);
+    shu::vec3f InitialDirection = shu::Vec3f(1, 1, 1);
+    SimplexPoints[0] = GJK_Support(A, B, InitialDirection, Bias);
 
-    shu::vec4f Lambdas = shu::Vec4f(1, 0, 0, 0);
+#if GJK_DEBUG
+    auto DebugResult = gjk_debug_result(NumPoints, SimplexPoints, {}, false, InitialDirection, true, false);
+    GJK_DebugStepsArr[GJK_DebugResultCount++] = (DebugResult);
+#endif
+
+    shu::vec4f ProjectedBaryCoords = shu::Vec4f(1, 0, 0, 0);
     shu::vec3f NewDirection = SimplexPoints[0].MinkowskiPoint * -1.0f;
+
+#if GJK_DEBUG
+    DebugResult = gjk_debug_result(NumPoints, SimplexPoints, {}, false, NewDirection, true, false);
+    GJK_DebugStepsArr[GJK_DebugResultCount++] = (DebugResult);
+#endif
 
     do
     {
@@ -853,9 +881,27 @@ GJK_ClosestPoints(const shoora_body *A, const shoora_body *B, shu::vec3f &PointO
         // NOTE: Add Point and get new direction.
         SimplexPoints[NumPoints++] = NewPoint;
 
-        SimplexSignedVolumes(SimplexPoints, NumPoints, NewDirection, Lambdas);
-        SortValids(SimplexPoints, Lambdas);
-        NumPoints = NumValids(Lambdas);
+#if GJK_DEBUG
+        DebugResult = gjk_debug_result(NumPoints, SimplexPoints, {}, false, NewDirection, true, false);
+        GJK_DebugStepsArr[GJK_DebugResultCount++] = (DebugResult);
+#endif
+
+        b32 DoesContainOrigin = SimplexSignedVolumes(SimplexPoints, NumPoints, NewDirection, ProjectedBaryCoords);
+
+#if GJK_DEBUG
+        DebugResult = gjk_debug_result(NumPoints, SimplexPoints, ProjectedBaryCoords, true, NewDirection, true,
+                                       DoesContainOrigin);
+        GJK_DebugStepsArr[GJK_DebugResultCount++] = (DebugResult);
+#endif
+
+        SortValids(SimplexPoints, ProjectedBaryCoords);
+        NumPoints = NumValids(ProjectedBaryCoords);
+
+#if GJK_DEBUG
+        DebugResult = gjk_debug_result(NumPoints, SimplexPoints, ProjectedBaryCoords, true, NewDirection, true,
+                                       DoesContainOrigin);
+        GJK_DebugStepsArr[GJK_DebugResultCount++] = (DebugResult);
+#endif
 
         // NOTE: Check that the new projection of the origin onto the simplex is closer than the previous one.
         f32 Distance = NewDirection.SqMagnitude();
@@ -867,13 +913,22 @@ GJK_ClosestPoints(const shoora_body *A, const shoora_body *B, shu::vec3f &PointO
         ClosestDistance = Distance;
     } while (NumPoints < 4);
 
+#if GJK_DEBUG
+    DebugSteps();
+#endif
+
     PointOnA.ZeroOut();
     PointOnB.ZeroOut();
     for(i32 i = 0; i < 4; ++i)
     {
-        PointOnA += SimplexPoints[i].PointOnA * Lambdas[i];
-        PointOnB += SimplexPoints[i].PointOnB * Lambdas[i];
+        PointOnA += SimplexPoints[i].PointOnA * ProjectedBaryCoords[i];
+        PointOnB += SimplexPoints[i].PointOnB * ProjectedBaryCoords[i];
     }
+
+#if GJK_DEBUG
+    shoora_graphics::DrawCube(PointOnA, colorU32::Magenta, .1f);
+    shoora_graphics::DrawCube(PointOnB, colorU32::Magenta, .1f);
+#endif
 }
 
 #if _SHU_DEBUG

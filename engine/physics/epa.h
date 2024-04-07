@@ -7,7 +7,7 @@
 #include "shape/shape.h"
 #include "gjk.h"
 
-#define EPA_DEBUG 1
+#define EPA_DEBUG 0
 
 #if EPA_DEBUG
 struct epa_debug_result

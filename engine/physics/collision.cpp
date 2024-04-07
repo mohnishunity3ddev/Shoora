@@ -24,7 +24,7 @@ collision::IsColliding(shoora_body *A, shoora_body *B, const f32 DeltaTime, cont
     b32 isBodyBSphere = (B->Shape->GetType() == shoora_mesh_type::SPHERE);
     b32 isBodyBConvex = (B->Shape->GetType() == shoora_mesh_type::CONVEX ||
                          B->Shape->GetType() == shoora_mesh_type::CONVEX_DIAMOND || A->Shape->GetType() == CUBE);
-
+    
     if(isBodyACircle && isBodyBCircle)
     {
         Result = IsCollidingCircleCircle(A, B, Contacts, ContactCount);
@@ -342,7 +342,7 @@ collision::IsCollidingSphereSphere(shoora_body *A, shoora_body *B, const f32 Del
         Result = true;
     }
 #else
-    Shu::vec3f AB = B->Position - A->Position;
+    shu::vec3f AB = B->Position - A->Position;
 
     f32 RadiusSum = SphereA->Radius + SphereB->Radius;
     f32 DistSquared = AB.SqMagnitude();
@@ -352,7 +352,7 @@ collision::IsCollidingSphereSphere(shoora_body *A, shoora_body *B, const f32 Del
         Contact->ReferenceBodyA = A;
         Contact->IncidentBodyB = B;
 
-        Contact->Normal = Shu::Normalize(AB);
+        Contact->Normal = shu::Normalize(AB);
         Contact->ReferenceHitPointA = B->Position - Contact->Normal*SphereB->Radius;
         Contact->IncidentHitPointB = A->Position + Contact->Normal*SphereA->Radius;
         Contact->Depth = (Contact->IncidentHitPointB - Contact->ReferenceHitPointA).Magnitude();
