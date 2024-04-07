@@ -6,6 +6,7 @@
 #include <containers/dynamic_array.h>
 #include "../bounds.h"
 #include <platform/platform.h>
+#include <physics/tetrahedron.h>
 
 #define MOMENT_OF_INTERTIA_FUNC(name) f32 name()
 typedef f32 getInertiaFunc();
@@ -163,45 +164,6 @@ struct shoora_shape_cube : shoora_shape
     u32 Width, Height, Depth;
     shu::vec3f mPoints[8];
     shoora_bounds mBounds;
-};
-
-struct tri_t
-{
-    i32 A;
-    i32 B;
-    i32 C;
-
-    inline void
-    Validate()
-    {
-#if !_SHU_DEBUG
-        ASSERT(!"This should not be called in a NON Debug Build!");
-#endif
-        ASSERT(this->A != this->B);
-        ASSERT(this->A != this->C);
-        ASSERT(this->B != this->C);
-    }
-};
-
-struct edge_t
-{
-    i32 A;
-    i32 B;
-
-    b32 operator == (const edge_t &Other) const
-    {
-        b32 Result = ((A == Other.A && B == Other.B) || (A == Other.B && B == Other.A));
-        return Result;
-    }
-
-    inline void
-    Validate()
-    {
-#if !_SHU_DEBUG
-        ASSERT(!"This should not be called in a NON Debug Build!");
-#endif
-        ASSERT(this->A != this->B);
-    }
 };
 
 struct shoora_shape_convex : shoora_shape

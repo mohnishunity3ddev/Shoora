@@ -388,7 +388,9 @@ DrawDebugDiamond()
 #endif
 }
 
-#if 0
+#define BUILD_CONVEX_THREADED 0
+
+#if BUILD_CONVEX_THREADED
 #include <physics/shape/shape_convex.h>
 void
 OnConvexBodyReady(shoora_shape_convex *Convex, memory_arena *Arena = nullptr)
@@ -450,11 +452,11 @@ OnConvexBodyReady(shoora_shape_convex *Convex, memory_arena *Arena = nullptr)
         Vertices[i].Normal = shu::Normalize(Vertices[i].Normal);
     }
 
-    for(i32 i = 0; i < Convex->NumHullPoints; ++i)
-    {
-        LogInfo("Pos: {%f, %f, %f}.\n", Convex->HullPoints[i].x, Convex->HullPoints[i].y, Convex->HullPoints[i].z);
-        LogInfo("Normal: {%f, %f, %f}.\n", Vertices[i].Normal.x, Vertices[i].Normal.y, Vertices[i].Normal.z);
-    }
+    // for(i32 i = 0; i < Convex->NumHullPoints; ++i)
+    // {
+    //     LogInfo("Pos: {%f, %f, %f}.\n", Convex->HullPoints[i].x, Convex->HullPoints[i].y, Convex->HullPoints[i].z);
+    //     LogInfo("Normal: {%f, %f, %f}.\n", Vertices[i].Normal.x, Vertices[i].Normal.y, Vertices[i].Normal.z);
+    // }
 
     CreateVertexBuffers(&Context->Device, Vertices, Convex->NumPoints, Convex->HullIndices, Convex->NumHullIndices,
                         &Convex->VertexBuffer, &Convex->IndexBuffer);
@@ -648,7 +650,7 @@ InitScene()
     // Bottom Wall (Static Rigidbody)
     shu::vec2f Window = shu::Vec2f((f32)GlobalWindowSize.x, (f32)GlobalWindowSize.y);
 
-#if 0
+#if BUILD_CONVEX_THREADED
 #if 1
     FillDiamond();
 
@@ -659,6 +661,7 @@ InitScene()
     SubArena(&ConvexArena, MEMTYPE_GLOBAL, ConvexMemSize);
     BuildConvexThreaded(GlobalJobQueue, ConvexShapeMemory, g_diamond, ARRAY_SIZE(g_diamond), OnConvexBodyReady,
                         &ConvexArena);
+    int x = 0;
 #else
     shoora_body body = {};
     body.Position = shu::Vec3f(0, 0, 10);

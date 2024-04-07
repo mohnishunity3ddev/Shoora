@@ -1,5 +1,6 @@
 #include "shape.h"
 #include "shape_convex.h"
+#include <physics/tetrahedron.h>
 
 shoora_shape_convex::shoora_shape_convex(const shu::vec3f *Points, const i32 Num, memory_arena *Arena)
     : shoora_shape(shoora_mesh_type::CONVEX)
@@ -33,14 +34,18 @@ BuildConvexThreaded(platform_work_queue *Queue, shoora_shape_convex *ConvexMem, 
     ASSERT(TaskMem->Arena.Base != nullptr && TaskMem->Arena.Size > 0 && !TaskMem->Arena.Used);
     TaskMem->BeingUsed = true;
 
+
     auto *WorkData = (shape_convex_build_work_data *)ShuAllocate_(&TaskMem->Arena,
                                                                   sizeof(shape_convex_build_work_data));
+    memory_arena WorkArena{};
+    SubArena(&WorkArena, MEMTYPE_GLOBAL, TaskMem->Arena.Size - TaskMem->BeingUsed);
+
     WorkData->ConvexShapeMemory = ConvexMem;
     WorkData->Points = Points;
     WorkData->NumPoints = NumPoints;
     WorkData->CompleteCallback = OnComplete;
     WorkData->TaskMem = TaskMem;
-    WorkData->Arena = *Arena;
+    WorkData->Arena = WorkArena;
 
     Platform_AddWorkEntry(Queue, BuildWork, WorkData);
 }
@@ -106,8 +111,10 @@ shoora_shape_convex::Build(const shu::vec3f *Points, const i32 Num, memory_arena
     mBounds.Clear();
     mBounds.Expand(this->Points, this->NumPoints);
 
-    mCenterOfMass = CalculateCenterOfMass(_HullPoints, _HullTriangles);
-    mInertiaTensor = CalculateInertiaTensor(_HullPoints, _HullTriangles);
+    mCenterOfMass = CalculateCenterOfMassTetrahedron(_HullPoints.data, _HullPoints.size, _HullTriangles.data,
+                                                     _HullTriangles.size, Arena);
+    mInertiaTensor = CalculateIntertiaTensorTetrahedron(_HullPoints.data, _HullPoints.size, _HullTriangles.data,
+                                                        _HullTriangles.size, mCenterOfMass);
 }
 
 shu::mat3f
