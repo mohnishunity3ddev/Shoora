@@ -129,10 +129,13 @@ shoora_body::GetCenterOfMassWS() const
     return Result;
 }
 
+#if 0
 b32
 shoora_body::CheckIfClicked(const shu::vec2f &ClickedWorldPos)
 {
     b32 Result = false;
+    return Result;
+
     if (this->Shape->Type == shoora_mesh_type::CIRCLE)
     {
         shu::vec2f l = ClickedWorldPos - shu::ToVec2(this->Position);
@@ -151,6 +154,7 @@ shoora_body::CheckIfClicked(const shu::vec2f &ClickedWorldPos)
 
     return Result;
 }
+#endif
 
 shoora_body::~shoora_body()
 {
@@ -194,7 +198,7 @@ shoora_body::ApplyImpulseAngular(const shu::vec3f &AngularImpulse)
     if(this->IsStatic()) {
         return;
     }
-    
+
     // NOTE: This Impulse is in WS, so we need the inertia tensor also in WS.
     this->AngularVelocity += AngularImpulse * this->GetInverseInertiaTensorWS();
 
@@ -308,6 +312,7 @@ shoora_body::Update(const f32 deltaTime)
     this->Position = CenterOfMassWS + shu::QuatRotateVec(dq, CMToPos);
 }
 
+#if 0
 void
 shoora_body::KeepInView(const shu::rect2d &ViewBounds, f32 DampFactor)
 {
@@ -346,6 +351,7 @@ shoora_body::KeepInView(const shu::rect2d &ViewBounds, f32 DampFactor)
         this->LinearVelocity.x *= DampFactor;
     }
 }
+#endif
 
 void
 shoora_body::DrawWireframe(const shu::mat4f &model, f32 thickness, u32 color)

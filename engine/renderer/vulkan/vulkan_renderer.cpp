@@ -39,6 +39,7 @@ static b32 WireframeMode = false;
 static f32 TestCameraScale = 0.5f;
 static b32 GlobalDebugMode = false;
 static b32 GlobalPausePhysics = false;
+void Shu_DebugBreak() { GlobalPausePhysics = !GlobalPausePhysics; }
 
 static platform_work_queue *GlobalJobQueue;
 
@@ -161,6 +162,10 @@ enum FpsOptions
 };
 
 #define GJK_STEPTHROUGH 0
+#if GJK_STEPTHROUGH
+static shu::vec3f diamondEulerAngles = shu::Vec3f(0.0f);
+#endif
+
 void
 ImGuiNewFrame()
 {
@@ -196,9 +201,17 @@ ImGuiNewFrame()
 #if GJK_STEPTHROUGH
     shoora_body *a = &Scene->Bodies[0];
     shoora_body *b = &Scene->Bodies[1];
-    ImGui::DragFloat3("Sphere A Position", a->Position.E, .05f, -100, 100);
-    ImGui::DragFloat3("Sphere B Position", b->Position.E, .05f, -100, 100);
+    ImGui::DragFloat3("Diamond Position", a->Position.E, .05f, -100, 100);
+    ImGui::DragFloat3("Diamond Rotation", diamondEulerAngles.E, .5f, -500, 500);
+    ImGui::DragFloat3("Floor Position", b->Position.E, .05f, -100, 100);
 #endif
+
+    i32 bodyCount = Scene->GetBodyCount();
+    if(bodyCount > 0)
+    {
+        const shu::vec3f &aPos = Scene->Bodies[0].Position;
+        ImGui::Text("DiamondPos: {%f, %f, %f}", aPos.x, aPos.y, aPos.z);
+    }
 
     ImGui::SliderFloat("Test Scale", &TestCameraScale, 0.5f, 100.0f);
     ImGui::Checkbox("Toggle Wireframe", (bool *)&WireframeMode);
@@ -261,18 +274,19 @@ WorldToMouse(const Shu::vec2f &WorldPos)
 
 static b32 msgShown = false;
 static const f32 width = 50;
+static const f32 height = 1;
 static const f32 depth = 25;
 
 shu::vec3f g_boxGround[] =
 {
-    shu::Vec3f(-width,  0.5f, -depth),
-    shu::Vec3f( width,  0.5f, -depth),
-    shu::Vec3f(-width,  0.5f,  depth),
-    shu::Vec3f( width,  0.5f,  depth),
-    shu::Vec3f(-width, -0.5f, -depth),
-    shu::Vec3f( width, -0.5f, -depth),
-    shu::Vec3f(-width, -0.5f,  depth),
-    shu::Vec3f( width, -0.5f,  depth)
+    shu::Vec3f(-width,  height*.5f, -depth),
+    shu::Vec3f( width,  height*.5f, -depth),
+    shu::Vec3f(-width,  height*.5f,  depth),
+    shu::Vec3f( width,  height*.5f,  depth),
+    shu::Vec3f(-width, -height*.5f, -depth),
+    shu::Vec3f( width, -height*.5f, -depth),
+    shu::Vec3f(-width, -height*.5f,  depth),
+    shu::Vec3f( width, -height*.5f,  depth)
 };
 
 shu::vec3f g_boxWall0[] =
@@ -586,11 +600,13 @@ AddStandardSandBox()
 void
 InitializeGJKDebugTest()
 {
+    diamondEulerAngles = shu::Vec3f(-79.5f, -141.5f, -155.5f);
+
     shoora_body body = {};
     shoora_shape_cube *BoxShape = nullptr;
 
     // Adding ground
-    body.Position = shu::Vec3f(0, 0, 0);
+    body.Position = shu::Vec3f(0, 5.15f, 33.87f);
     body.Rotation = shu::Quat(1, 0, 0, 0);
     body.LinearVelocity = shu::Vec3f(0.0f);
     body.AngularVelocity = shu::Vec3f(0.0f);
@@ -598,13 +614,12 @@ InitializeGJKDebugTest()
     body.CoeffRestitution = 0.5f;
     body.FrictionCoeff = 0.5f;
     BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
-    f32 width = 5, height = 5, depth = 5;
-    body.Shape = new (BoxShape) shoora_shape_cube(width, height, depth);
+    body.Shape = new (BoxShape) shoora_shape_cube(width, 1.0f, depth);
     body.Scale = body.Shape->GetDim();
     body.Color = GetColor(colorU32::Proto_Green);
     Scene->AddBody(std::move(body));
 
-    Scene->AddDiamondBody(shu::Vec3f(0, 8, 10), shu::Vec3f(1.0f), colorU32::Proto_Orange, 0.0f, 0.5f,
+    Scene->AddDiamondBody(shu::Vec3f(0, 5.4f, 24.75f), shu::Vec3f(1.0f), colorU32::Proto_Orange, 0.0f, 0.5f,
                           shu::Vec3f(0.0f));
 }
 
@@ -615,6 +630,8 @@ void DrawDebug()
     shoora_body *A = &Scene->Bodies[0];
     shoora_body *B = &Scene->Bodies[1];
 
+    B->Rotation = shu::QuatFromEuler(diamondEulerAngles.x, diamondEulerAngles.y, diamondEulerAngles.z);
+
     shu::mat4f ModelA = shu::TRS(A->Position, A->Scale, A->Rotation);
     shu::mat4f ModelB = shu::TRS(B->Position, B->Scale, B->Rotation);
 
@@ -622,10 +639,11 @@ void DrawDebug()
     i32 vertexCount_B = B->Shape->MeshFilter->VertexCount;
 
     shu::vec3f PtA, PtB;
-#if 0
+#if 1
     b32 intersection = GJK_DoesIntersect(A, B, 0.0f, PtA, PtB);
-#endif
+#else
     GJK_ClosestPoints(A, B, PtA, PtB);
+#endif
 
     for (i32 i = 0; i < vertexCount_A; ++i)
     {
@@ -685,29 +703,13 @@ InitScene()
 #if GJK_STEPTHROUGH
     InitializeGJKDebugTest();
 #else
-    Scene->AddDiamondBody(shu::Vec3f(0, 8, 10), shu::Vec3f(1.0f), colorU32::Proto_Orange, 1.0f, 0.5f,
-                          shu::Vec3f(0.0f));
+    shoora_body *diamond = Scene->AddDiamondBody(shu::Vec3f(0, 8, 10), shu::Vec3f(1.0f), colorU32::Proto_Orange,
+                                                 1.0f, 0.5f, shu::Vec3f(0.0f));
     AddStandardSandBox();
 
-    // shoora_body Body;
-    // Body.Position = shu::Vec3f(10, 8, 10);
-    // Body.Rotation = shu::Quat();
-    // // Body.LinearVelocity = shu::Vec3f(-100, 0, 0);
-    // Body.LinearVelocity = shu::Vec3f(0.0f);
-    // Body.AngularVelocity = shu::Vec3f(0.0f);
-    // Body.InvMass = 0.0f;
-    // Body.CoeffRestitution = 0.5f;
-    // Body.FrictionCoeff = 0.5f;
-
-    // shoora_shape_sphere *SphereShape = ShuAllocateStruct(shoora_shape_sphere, MEMTYPE_GLOBAL);
-    // Body.Shape = new (SphereShape) shoora_shape_sphere(0.5f);
-    // Body.Scale = Body.Shape->GetDim();
-    // Scene->AddBody(std::move(Body));
-
-    shoora_body *sphereBody = Scene->AddSphereBody(shu::Vec3f(10, 8, 10), colorU32::White, .5f, 1.0f, .5f);
-    sphereBody->LinearVelocity = shu::Vec3f(-10, 0, 0);
-    sphereBody->FrictionCoeff = .5f;
-    // Scene->AddSphereBody(shu::Vec3f(0, 8, 15), colorU32::Red, 1.0f, 1.0f, 0.5f);
+    shoora_body *SphereBody = Scene->AddSphereBody(shu::Vec3f(10, 8, 10), colorU32::White, .5f, 1.0f, .5f);
+    SphereBody->LinearVelocity = shu::Vec3f(-10, 0, 0);
+    SphereBody->FrictionCoeff = .5f;
 #endif
 
 #if 0
@@ -1241,7 +1243,7 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 #if GJK_STEPTHROUGH
         DrawDebug();
 #else
-        Scene->UpdateInput(CurrentMouseWorldPos);
+        // Scene->UpdateInput(CurrentMouseWorldPos);
         f32 pDt = GlobalPausePhysics ? 0.0f : GlobalDeltaTime;
         Scene->PhysicsUpdate(pDt, GlobalDebugMode);
 #endif

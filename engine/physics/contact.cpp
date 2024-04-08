@@ -7,8 +7,14 @@ contact::ResolvePenetration()
         return;
     }
 
+#if 0
+    auto as = this->ReferenceBodyA->Shape->GetType();
+    auto bs = this->IncidentBodyB->Shape->GetType();
+    b32 ShouldCheck = as == CONVEX || as == CONVEX_DIAMOND || bs == CONVEX || bs == CONVEX_DIAMOND;
+#endif
+
     // Bounciness
-    f32 Elasticity = ClampToRange(ReferenceBodyA->CoeffRestitution*IncidentBodyB->CoeffRestitution, 0.0f, 1.0f);
+    f32 Elasticity = ClampToRange(ReferenceBodyA->CoeffRestitution * IncidentBodyB->CoeffRestitution, 0.0f, 1.0f);
     const shu::vec3f n = this->Normal;
 
     // I^-1
@@ -94,6 +100,17 @@ contact::ResolvePenetration()
 
         ReferenceBodyA->Position -= this->Normal*dA;
         IncidentBodyB->Position += this->Normal*dB;
+
+#if 0
+        if(SHU_ABSOLUTE(dA) > 1.0f)
+        {
+            int x = 0;
+        }
+        if(ShouldCheck && (ReferenceBodyA->IsStatic() || IncidentBodyB->IsStatic()))
+        {
+            LogDebug("dA: %f || dB: %f.\n", dA, dB);
+        }
+#endif
 
         ReferenceBodyA->UpdateWorldVertices();
         IncidentBodyB->UpdateWorldVertices();

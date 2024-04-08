@@ -1,12 +1,12 @@
 #include "epa.h"
 #include "primitive_tests/primitive_tests.h"
+#include <renderer/vulkan/graphics/vulkan_graphics.h>
 
 #if EPA_DEBUG
 #include <platform/platform.h>
 #ifdef WIN32
 #include "platform/windows/win_platform.h"
 #endif
-#include <renderer/vulkan/graphics/vulkan_graphics.h>
 
 static u32 DebugColors[] = {
      0xffff0000, // Red
@@ -131,7 +131,7 @@ EPADebug_Visualize()
         edge_t Edge = Curr->DanglingEdges[i];
         shu::vec3f P0 = Curr->GJKPoints[Edge.A].MinkowskiPoint;
         shu::vec3f P1 = Curr->GJKPoints[Edge.B].MinkowskiPoint;
-        shoora_graphics::DrawLine3D(P0, P1, colorU32::Proto_Red, .02f);
+        shoora_graphics::DrawLine3D(P0, P1, colorU32::Red, .1f);
     }
 }
 
@@ -388,6 +388,10 @@ FindDanglingEdges(shoora_dynamic_array<edge_t> &DanglingEdges, const shoora_dyna
     }
 }
 
+#if 0
+static shu::vec3f ptA = shu::Vec3f(), ptB = shu::Vec3f();
+#endif
+
 f32
 EPA_Expand(const shoora_body *A, const shoora_body *B, const f32 Bias, const gjk_point SimplexPoints[4],
            shu::vec3f &PointOnA, shu::vec3f &PointOnB)
@@ -570,8 +574,8 @@ EPA_Expand(const shoora_body *A, const shoora_body *B, const f32 Bias, const gjk
     PointOnB = PtA_b*OriginBaryCoords.x + PtB_b*OriginBaryCoords.y + PtC_b*OriginBaryCoords.z;
 
 #if EPA_DEBUG
-    shoora_graphics::DrawCube(PointOnA, colorU32::Green, .1f);
-    shoora_graphics::DrawCube(PointOnB, colorU32::Proto_Orange, .1f);
+    shoora_graphics::DrawCube(PointOnA, colorU32::Proto_Orange, .1f);
+    shoora_graphics::DrawCube(PointOnB, colorU32::Green, .1f);
 #endif
 
     EndTemporaryMemory(TempMemory);

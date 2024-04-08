@@ -225,6 +225,8 @@ enum shoora_quality
 #define MAX(A, B) ((A) > (B) ? (A) : (B))
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
 
+void Shu_DebugBreak();
+
 template <typename T>
 inline T
 ClampToRange(T Value, T Min, T Max)

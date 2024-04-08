@@ -105,7 +105,7 @@ shoora_scene::AddCircleBody(const shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 
     shoora_shape_circle *CircleShape = ShuAllocateStruct(shoora_shape_circle, MEMTYPE_GLOBAL);
     auto shape = shoora_shape_circle(Radius);
     SHU_MEMCOPY(&shape, CircleShape, sizeof(shoora_shape_circle));
-    
+
     shoora_body Body{GetColor(ColorU32), shu::Vec3f(Pos, 1.0f), Mass, Restitution, CircleShape, EulerAngles};
     Bodies.emplace_back(std::move(Body));
 
@@ -174,6 +174,7 @@ shoora_scene::AddPolygonBody(const u32 MeshId, const shu::vec2f Pos, u32 ColorU3
     return b;
 }
 
+#if 0
 void
 shoora_scene::UpdateInput(const shu::vec2f &CurrentMouseWorldPos)
 {
@@ -217,20 +218,29 @@ shoora_scene::UpdateInput(const shu::vec2f &CurrentMouseWorldPos)
         BodyToMove = nullptr;
     }
 }
+#endif
 
+static i32 frameCount = 0;
 void
 shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
 {
     // NOTE: If I am debugging, the frametime is going to be huge. So hence, clamping here.
 #if _SHU_DEBUG
-    if (dt > (1.0f/29.0f))
-        dt = (1.0f/29.0f);
+    if(dt > (1.0f/29.0f))
+    {
+        dt = (1.0f / 29.0f);
+    }
 #endif
-
+    ++frameCount;
     i32 BodyCount = GetBodyCount();
     auto *Bodies = GetBodies();
     ASSERT(Bodies != nullptr);
 
+#if 0
+    auto *diamond = Bodies;
+    auto startPos = diamond->Position;
+    shu::vec3f endPos, deltaPos;
+#endif
     // Sum all the external forces to the body
     for(i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
     {
@@ -290,6 +300,16 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
                     shoora_graphics::DrawSphere(Contacts[i].IncidentHitPointB, .1f, colorU32::Green);
                 }
             }
+
+#if 0
+            if(ContactCount == 1 && SHU_ABSOLUTE(_Contacts[0].Depth) > 4.0f)
+            {
+                if(BodyA->Shape->GetType() == CONVEX && BodyB->IsStatic())
+                {
+                    LogWarn("Contact Depth: %f.\n", _Contacts[0].Depth);
+                }
+            }
+#endif
         }
     }
 
@@ -329,9 +349,25 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
         {
             auto *b = Bodies + j;
             b->Update(local_dt);
+#if 0
+            if(b == diamond)
+            {
+                endPos = diamond->Position;
+                deltaPos = endPos - startPos;
+                LogInfo("1. delta Magnitude: %f.\n", deltaPos.SqMagnitude());
+            }
+#endif
         }
 
         Contact.ResolveCollision();
+#if 0
+        if (Contact.ReferenceBodyA == diamond || Contact.IncidentBodyB == diamond)
+        {
+            endPos = diamond->Position;
+            deltaPos = endPos - startPos;
+            LogFatal("2. delta Magnitude: %f.\n", deltaPos.SqMagnitude());
+        }
+#endif
         AccumulatedTime += local_dt;
     }
 
@@ -344,6 +380,14 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
         {
             auto *b = Bodies + j;
             b->Update(TimeRemaining);
+#if 0
+            if (b == diamond)
+            {
+                endPos = diamond->Position;
+                deltaPos = endPos - startPos;
+                LogError("3. delta Magnitude: %f.\n", deltaPos.SqMagnitude());
+            }
+#endif
         }
     }
 
@@ -356,6 +400,15 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
             bounds.Draw();
         }
     }
+
+#if 0
+    endPos = diamond->Position;
+    deltaPos = endPos - startPos;
+    LogWarn("startPos: {%f, %f, %f} || endPos: {%f, %f, %f} || delta: %f || Linear Speed: %f || Angular Speed: %f "
+            "|| frameCount: %d.\n",
+            startPos.x, startPos.y, startPos.z, endPos.x, endPos.y, endPos.z, deltaPos.SqMagnitude(),
+            diamond->LinearVelocity.SqMagnitude(), diamond->AngularVelocity.SqMagnitude(), frameCount);
+#endif
 
     EndTemporaryMemory(MemoryFlush);
 }
@@ -405,12 +458,14 @@ shoora_scene::Draw(b32 Wireframe)
 #endif
     }
 
+#if 0
     for (i32 cIndex = 0; cIndex < Constraints2D.size(); ++cIndex)
     {
         auto *c = Constraints2D[cIndex];
         auto pos = c->A->LocalToWorldSpace(shu::Vec3f(c->AnchorPointLS_A));
         shoora_graphics::DrawCircle(pos.xy, 5, colorU32::Red);
     }
+#endif
 }
 
 void
