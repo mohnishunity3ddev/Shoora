@@ -700,6 +700,7 @@ InitScene()
 #endif
 #endif
 
+#if 0
 #if GJK_STEPTHROUGH
     InitializeGJKDebugTest();
 #else
@@ -710,6 +711,27 @@ InitScene()
     shoora_body *SphereBody = Scene->AddSphereBody(shu::Vec3f(10, 8, 10), colorU32::White, .5f, 1.0f, .5f);
     SphereBody->LinearVelocity = shu::Vec3f(-10, 0, 0);
     SphereBody->FrictionCoeff = .5f;
+#endif
+#endif
+
+#if 1
+    shoora_body *bodyA = Scene->AddCubeBody(shu::Vec3f(0, 5, 5), shu::Vec3f(0.5f), colorU32::White, 0.0f, .5f);
+    shoora_body *bodyB = Scene->AddCubeBody(shu::Vec3f(1, 5, 5), shu::Vec3f(0.5f), colorU32::White, 1.0f, .5f);
+    bodyB->LinearVelocity = shu::Vec3f(0, 0, 5);
+
+    shu::vec3f JointAnchorWS = bodyA->Position;
+
+    joint_constraint_3d *Joint = ShuAllocateStruct(joint_constraint_3d, MEMTYPE_GLOBAL);
+    new (Joint) joint_constraint_3d();
+
+    Joint->A = bodyA;
+    Joint->AnchorPointLS_A = Joint->A->WorldToLocalSpace(JointAnchorWS);
+    Joint->B = bodyB;
+    Joint->AnchorPointLS_B = Joint->B->WorldToLocalSpace(JointAnchorWS);
+    Scene->Constraints3D.emplace_back(Joint);
+
+    AddStandardSandBox();
+
 #endif
 
 #if 0

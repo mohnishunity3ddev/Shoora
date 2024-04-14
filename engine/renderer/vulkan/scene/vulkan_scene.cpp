@@ -26,6 +26,11 @@ shoora_scene::shoora_scene()
     Bodies.SetAllocator(MEMTYPE_FREELISTGLOBAL);
     Constraints2D.SetAllocator(MEMTYPE_FREELISTGLOBAL);
     PenetrationConstraints2D.SetAllocator(MEMTYPE_FREELISTGLOBAL);
+
+    Constraints3D.SetAllocator(MEMTYPE_FREELISTGLOBAL);
+
+    Bodies.reserve(32);
+    Constraints3D.reserve(32);
 }
 
 shoora_scene::~shoora_scene()
@@ -65,6 +70,8 @@ shoora_scene::AddBody(shoora_body &&Body)
     // ASSERT(!"Not tested!");
     Bodies.emplace_back((shoora_body &&)Body);
 
+    // TODO: if the body array gets moved to a new area of memory, whoever received this pointer will have old
+    // data.
     shoora_body *b = Bodies.get(Bodies.size() - 1);
     return b;
 }
@@ -80,6 +87,8 @@ shoora_scene::AddCubeBody(const shu::vec3f &Pos, const shu::vec3f &Scale, u32 Co
     shoora_body Body{GetColor(ColorU32), Pos, Mass, Restitution, CubeShape, EulerAngles};
     Bodies.emplace_back(std::move(Body));
 
+    // TODO: if the body array gets moved to a new area of memory, whoever received this pointer will have old
+    // data.
     shoora_body *b = Bodies.get(Bodies.size() - 1);
     return b;
 }
@@ -94,6 +103,8 @@ shoora_scene::AddSphereBody(const shu::vec3f &Pos, u32 ColorU32, f32 Radius, f32
     shoora_body Body{GetColor(ColorU32), Pos, Mass, Restitution, SphereShape, EulerAngles};
     Bodies.emplace_back(std::move(Body));
 
+    // TODO: if the body array gets moved to a new area of memory, whoever received this pointer will have old
+    // data.
     shoora_body *b = Bodies.get(Bodies.size() - 1);
     return b;
 }
@@ -109,6 +120,8 @@ shoora_scene::AddCircleBody(const shu::vec2f Pos, u32 ColorU32, f32 Radius, f32 
     shoora_body Body{GetColor(ColorU32), shu::Vec3f(Pos, 1.0f), Mass, Restitution, CircleShape, EulerAngles};
     Bodies.emplace_back(std::move(Body));
 
+    // TODO: if the body array gets moved to a new area of memory, whoever received this pointer will have old
+    // data.
     shoora_body *b = Bodies.get(Bodies.size() - 1);
     return b;
 }
@@ -140,6 +153,8 @@ shoora_scene::AddDiamondBody(const shu::vec3f &Pos, const shu::vec3f &Scale, u32
     shoora_body Body{GetColor(ColorU32), Pos, Mass, Restitution, DiamondShape, EulerAngles};
     Bodies.emplace_back(std::move(Body));
 
+    // TODO: if the body array gets moved to a new area of memory, whoever received this pointer will have old
+    // data.
     shoora_body *b = Bodies.get(Bodies.size() - 1);
     return b;
 }
@@ -155,6 +170,8 @@ shoora_scene::AddBoxBody(const shu::vec2f Pos, u32 ColorU32, f32 Width, f32 Heig
     shoora_body Body{GetColor(ColorU32), shu::Vec3f(Pos, 1.0f), Mass, Restitution, BoxShape, EulerAngles};
     Bodies.emplace_back(std::move(Body));
 
+    // TODO: if the body array gets moved to a new area of memory, whoever received this pointer will have old
+    // data.
     shoora_body *b = Bodies.get(Bodies.size() - 1);
     return b;
 }
@@ -170,6 +187,8 @@ shoora_scene::AddPolygonBody(const u32 MeshId, const shu::vec2f Pos, u32 ColorU3
     shoora_body body{GetColor(ColorU32), shu::Vec3f(Pos, 1.0f), Mass, Restitution, PolygonShape, EulerAngles};
     Bodies.emplace_back(std::move(body));
 
+    // TODO: if the body array gets moved to a new area of memory, whoever received this pointer will have old
+    // data.
     shoora_body *b = Bodies.get(Bodies.size() - 1);
     return b;
 }
@@ -318,6 +337,24 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
     {
         QuicksortRecursive(Contacts, 0, NumContacts, CompareContacts);
     }
+
+    // NOTE: Solve Constraints
+    i32 NumConstraints = this->Constraints3D.size();
+    for (i32 i = 0; i < NumConstraints; ++i)
+    {
+        this->Constraints3D[i]->PreSolve(dt);
+    }
+
+    for (i32 i = 0; i < NumConstraints; ++i)
+    {
+        this->Constraints3D[i]->Solve();
+    }
+
+    for (i32 i = 0; i < NumConstraints; ++i)
+    {
+        this->Constraints3D[i]->PostSolve();
+    }
+
 
     // NOTE: This is where we breakup the update routine for resolving the contacts.
     // The toi's have been sorted above from earliest to latest. So the first contact in "Contacts" will have the

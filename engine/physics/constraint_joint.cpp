@@ -1,5 +1,62 @@
 #include "constraint.h"
 
+
+void
+joint_constraint_3d::PreSolve(const f32 dt)
+{
+    // NOTE: World Space Position of the hinge from A's Local Space.
+    shu::vec3f r1 = A->LocalToWorldSpace(this->AnchorPointLS_A);
+
+    // NOTE: World Space Position of the hinge from B's Local Space.
+    shu::vec3f r2 = B->LocalToWorldSpace(this->AnchorPointLS_B);
+
+    shu::vec3f r2MinusR1 = r2 - r1;
+    // LogInfo("R2 - R1 = {%f, %f, %f}.\n", r2MinusR1.x, r2MinusR1.y, r2MinusR1.z);
+
+    shu::vec3f rA = r1 - A->GetCenterOfMassWS();
+    shu::vec3f rB = r2 - B->GetCenterOfMassWS();
+
+    this->Jacobian.Zero();
+
+    shu::vec3f J1 = -2.0f * r2MinusR1;
+    this->Jacobian.Rows[0][0] = J1.x;
+    this->Jacobian.Rows[0][1] = J1.y;
+    this->Jacobian.Rows[0][2] = J1.z;
+
+    shu::vec3f J2 = -2.0f * rA.Cross(r2MinusR1);
+    this->Jacobian.Rows[0][3] = J2.x;
+    this->Jacobian.Rows[0][4] = J2.y;
+    this->Jacobian.Rows[0][5] = J2.z;
+
+    shu::vec3f J3 = 2.0f * r2MinusR1;
+    this->Jacobian.Rows[0][6] = J3.x;
+    this->Jacobian.Rows[0][7] = J3.y;
+    this->Jacobian.Rows[0][8] = J3.z;
+
+    shu::vec3f J4 = 2.0f * rB.Cross(r2MinusR1);
+    this->Jacobian.Rows[0][9] = J4.x;
+    this->Jacobian.Rows[0][10] = J4.y;
+    this->Jacobian.Rows[0][11] = J4.z;
+}
+
+void
+joint_constraint_3d::Solve()
+{
+    shu::matMN<f32, 12, 1> JacobianTranspose = this->Jacobian.Transposed();
+
+    auto V = GetVelocities();
+    auto InvM = GetInverseMassMatrix();
+
+    auto J_invM_Jt = this->Jacobian * InvM * JacobianTranspose;
+    auto Rhs = this->Jacobian * V * -1.0f;
+
+    auto LagrangeLambda = shu::LCP_GaussSeidel(J_invM_Jt, Rhs);
+
+    auto Impulses = JacobianTranspose * LagrangeLambda;
+
+    this->ApplyImpulses(Impulses);
+}
+
 joint_constraint_2d::joint_constraint_2d() : constraint_2d(), Bias(0.0f)
 {
     // Default Constructor. Not implemented yet!

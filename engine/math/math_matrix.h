@@ -247,7 +247,7 @@ namespace shu
 
     // N X N Matrix
 #include "math_vector.h"
-
+    
     template<typename T, size_t N>
     struct matN
     {

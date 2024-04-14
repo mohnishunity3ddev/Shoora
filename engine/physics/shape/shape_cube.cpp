@@ -1,7 +1,7 @@
 #include "shape.h"
 
 // *NOTE: Cube Stuff
-shoora_shape_cube::shoora_shape_cube(u32 Width, u32 Height, u32 Depth) : shoora_shape(shoora_mesh_type::CUBE)
+shoora_shape_cube::shoora_shape_cube(f32 Width, f32 Height, f32 Depth) : shoora_shape(shoora_mesh_type::CUBE)
 {
     this->Width = Width;
     this->Height = Height;
@@ -75,8 +75,8 @@ shoora_shape_cube::InertiaTensor() const
 
     shu::mat3f Tensor = shu::Mat3f(0.0f);
     Tensor.m00 = (dy*dy + dz*dz) / 12.0f;
-    Tensor.m01 = (dx*dx + dz*dz) / 12.0f;
-    Tensor.m02 = (dx*dx + dy*dy) / 12.0f;
+    Tensor.m11 = (dx*dx + dz*dz) / 12.0f;
+    Tensor.m22 = (dx*dx + dy*dy) / 12.0f;
 
     // Parallel Axis theorem to get moi tensor around an axis not passing through center of mass. The origin is the
     // center of mass for this shape. Since this is in model space.

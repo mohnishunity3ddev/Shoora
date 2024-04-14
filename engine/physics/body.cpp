@@ -202,7 +202,7 @@ shoora_body::ApplyImpulseAngular(const shu::vec3f &AngularImpulse)
     // NOTE: This Impulse is in WS, so we need the inertia tensor also in WS.
     this->AngularVelocity += AngularImpulse * this->GetInverseInertiaTensorWS();
 
-    // NOTE: Clamping the angular velocity due to performance issues if not done.
+    // NOTE: Clamping the angular velocity due to performance issues.
     const f32 MaxAngularSpeed = 30.0f;
     if(this->AngularVelocity.SqMagnitude() > MaxAngularSpeed*MaxAngularSpeed)
     {

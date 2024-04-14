@@ -5,6 +5,35 @@
 #include "body.h"
 #include "contact.h"
 
+struct constraint_3d
+{
+  public:
+    // NOTE: Calculate the Jacobian.
+    virtual void PreSolve(const f32 dt) {}
+    virtual void Solve() {}
+    virtual void PostSolve() {}
+
+    constraint_3d() = default;
+    virtual ~constraint_3d() = default;
+
+  protected:
+    shu::matN<f32, 12> GetInverseMassMatrix() const;
+    shu::vecN<f32, 12> GetVelocities() const;
+    void ApplyImpulses(const shu::vecN<f32, 12> &Impulses);
+
+
+  public:
+    // NOTE: The anchor point where the bodies are to be fixed at in the local space of the corresponding rigid
+    // bodies.
+    shu::vec3f AnchorPointLS_A; // The anchor point in A's Local Space
+    shu::vec3f AnchorPointLS_B; // The anchor point in B's Local Space
+    shoora_body *A;
+    shoora_body *B;
+
+    shu::vec3f rA; // The axis of the the anchor point in A.
+    shu::vec3f rB; // The axis of the the anchor point in B.
+};
+
 struct constraint_2d
 {
     shoora_body *A;
@@ -25,6 +54,19 @@ struct constraint_2d
     virtual void Solve() {}
     virtual void PostSolve() {}
 };
+
+struct joint_constraint_3d : public constraint_3d
+{
+    joint_constraint_3d() : constraint_3d() { this->Jacobian.Zero(); }
+
+    void PreSolve(const f32 dt) override;
+    void Solve() override;
+
+  private:
+    shu::matMN<f32, 1, 12> Jacobian;
+};
+
+
 
 struct joint_constraint_2d : public constraint_2d
 {

@@ -139,7 +139,7 @@ struct shoora_shape_cube : shoora_shape
 {
   public:
     shoora_shape_cube() = delete;
-    explicit shoora_shape_cube(u32 Width, u32 Height, u32 Depth);
+    explicit shoora_shape_cube(f32 Width, f32 Height, f32 Depth);
     explicit shoora_shape_cube(const shu::vec3f *Points, const i32 Num);
     virtual void Build(const shu::vec3f *Points, const i32 Num, memory_arena *Arena = nullptr) override;
 
@@ -161,7 +161,7 @@ struct shoora_shape_cube : shoora_shape
     virtual f32 FastestLinearSpeed(const shu::vec3f &AngularVelocity, const shu::vec3f &Direction) const override;
 
   public:
-    u32 Width, Height, Depth;
+    f32 Width, Height, Depth;
     shu::vec3f mPoints[8];
     shoora_bounds mBounds;
 };

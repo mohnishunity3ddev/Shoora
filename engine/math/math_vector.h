@@ -942,7 +942,7 @@ namespace shu
         T Result = sqrtf(this->x*this->x + this->y*this->y + this->z*this->z);
         return Result;
     }
-    
+
     template <typename T>
     void
     vec3<T>::Normalize()

@@ -17,6 +17,7 @@ struct shoora_scene
     shoora_dynamic_array<shoora_body> Bodies;
     shoora_dynamic_array<constraint_2d *> Constraints2D;
     shoora_dynamic_array<penetration_constraint_2d> PenetrationConstraints2D;
+    shoora_dynamic_array<constraint_3d *> Constraints3D;
 
   public:
     shoora_scene();
