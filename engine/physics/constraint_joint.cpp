@@ -42,6 +42,17 @@ joint_constraint_3d::PreSolve(const f32 dt)
     auto Impulses = this->Jacobian.Transposed() * this->PreviousFrameLambda;
     this->ApplyImpulses(Impulses);
 #endif
+
+    // NOTE: Baumgarte Stabilization Factor.
+    // The Error is the amount the constraint is getting violated by. Dividing by dt is the velocity which corrects
+    // the error in a single time step. Since this adds to the energy of the system, so we multiply the whole thing
+    // with a factor between 0 and 1.
+    f32 ConstraintError = r2MinusR1.Dot(r2MinusR1);
+    // NOTE: Slop, we dont want to add a bias(since it adds to the enegy of the system) if the constraint error is
+    // more than a threshold of 0.01f.
+    ConstraintError = MAX(0.0f, ConstraintError - 0.01f);
+    const f32 Beta = 0.05f;
+    this->Baumgarte = -(Beta / dt) * ConstraintError;
 }
 
 void
@@ -51,9 +62,10 @@ joint_constraint_3d::Solve()
 
     auto V = GetVelocities();
     auto InvM = GetInverseMassMatrix();
-    
+
     auto J_invM_Jt = this->Jacobian * InvM * JacobianTranspose;
     auto Rhs = this->Jacobian * V * -1.0f;
+    Rhs[0] += this->Baumgarte;
 
     auto LagrangeLambda = shu::LCP_GaussSeidel(J_invM_Jt, Rhs);
 
@@ -63,6 +75,26 @@ joint_constraint_3d::Solve()
 #if WARM_STARTING
     this->PreviousFrameLambda += LagrangeLambda;
 #endif
+}
+
+void
+joint_constraint_3d::PostSolve()
+{
+    // NOTE: Limit warm starting to reasonable limits.
+    if(this->PreviousFrameLambda[0] * 0.0f != this->PreviousFrameLambda[0] * 0.0f)
+    {
+        this->PreviousFrameLambda[0] = 0.0f;
+    }
+
+    const f32 Limit = 1e3f;
+    if(this->PreviousFrameLambda[0] > Limit)
+    {
+        this->PreviousFrameLambda[0] = Limit;
+    }
+    else if(this->PreviousFrameLambda[0] < -Limit)
+    {
+        this->PreviousFrameLambda[0] = -Limit;
+    }
 }
 
 joint_constraint_2d::joint_constraint_2d() : constraint_2d(), Bias(0.0f)

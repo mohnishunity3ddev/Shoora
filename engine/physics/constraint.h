@@ -65,16 +65,20 @@ struct joint_constraint_3d : public constraint_3d
 #if WARM_STARTING
         this->PreviousFrameLambda.Zero();
 #endif
+        this->Baumgarte = 0.0f;
     }
 
     void PreSolve(const f32 dt) override;
     void Solve() override;
+    void PostSolve() override;
 
   private:
     shu::matMN<f32, 1, 12> Jacobian;
 #if WARM_STARTING
     shu::vecN<f32, 1> PreviousFrameLambda;
 #endif
+    // NOTE: The Stabilization Factor. Bias to correct positional error(constraint error).
+    f32 Baumgarte;
 };
 
 struct joint_constraint_2d : public constraint_2d

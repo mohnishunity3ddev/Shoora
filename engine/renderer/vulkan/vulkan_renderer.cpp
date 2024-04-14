@@ -724,9 +724,9 @@ InitScene()
         shoora_body *JointAnchorBody = Scene->GetBody(i - 1);
 
         // shu::vec3f Delta = shu::Vec3f((f32)i * .5f, -(f32)i * 1.5f, 0.0f);
-        shu::vec3f Delta = shu::Vec3f(i, -(f32)i, 0.0f);
+        shu::vec3f Delta = shu::Vec3f(0, -(f32)i, 0.0f);
         shoora_body *Body = Scene->AddCubeBody(AnchorPos + Delta, shu::Vec3f(0.5f), colorU32::White, 1.0f, .5f);
-        Body->LinearVelocity = shu::Vec3f(0.0f, 0.0f, 0.0f);
+        Body->LinearVelocity = shu::Vec3f(10.0f, 0.0f, 0.0f);
 
         shu::vec3f JointAnchorWS = JointAnchorBody->Position;
 
