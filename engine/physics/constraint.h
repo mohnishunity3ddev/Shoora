@@ -5,6 +5,8 @@
 #include "body.h"
 #include "contact.h"
 
+#define WARM_STARTING 1
+
 struct constraint_3d
 {
   public:
@@ -57,16 +59,23 @@ struct constraint_2d
 
 struct joint_constraint_3d : public constraint_3d
 {
-    joint_constraint_3d() : constraint_3d() { this->Jacobian.Zero(); }
+    joint_constraint_3d() : constraint_3d()
+    {
+        this->Jacobian.Zero();
+#if WARM_STARTING
+        this->PreviousFrameLambda.Zero();
+#endif
+    }
 
     void PreSolve(const f32 dt) override;
     void Solve() override;
 
   private:
     shu::matMN<f32, 1, 12> Jacobian;
+#if WARM_STARTING
+    shu::vecN<f32, 1> PreviousFrameLambda;
+#endif
 };
-
-
 
 struct joint_constraint_2d : public constraint_2d
 {

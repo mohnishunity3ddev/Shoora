@@ -1,6 +1,5 @@
 #include "constraint.h"
 
-
 void
 joint_constraint_3d::PreSolve(const f32 dt)
 {
@@ -37,6 +36,12 @@ joint_constraint_3d::PreSolve(const f32 dt)
     this->Jacobian.Rows[0][9] = J4.x;
     this->Jacobian.Rows[0][10] = J4.y;
     this->Jacobian.Rows[0][11] = J4.z;
+
+#if WARM_STARTING
+    // NOTE: Warm starting the bodies using previous frame's Lagrange Lambda.
+    auto Impulses = this->Jacobian.Transposed() * this->PreviousFrameLambda;
+    this->ApplyImpulses(Impulses);
+#endif
 }
 
 void
@@ -46,15 +51,18 @@ joint_constraint_3d::Solve()
 
     auto V = GetVelocities();
     auto InvM = GetInverseMassMatrix();
-
+    
     auto J_invM_Jt = this->Jacobian * InvM * JacobianTranspose;
     auto Rhs = this->Jacobian * V * -1.0f;
 
     auto LagrangeLambda = shu::LCP_GaussSeidel(J_invM_Jt, Rhs);
 
     auto Impulses = JacobianTranspose * LagrangeLambda;
-
     this->ApplyImpulses(Impulses);
+
+#if WARM_STARTING
+    this->PreviousFrameLambda += LagrangeLambda;
+#endif
 }
 
 joint_constraint_2d::joint_constraint_2d() : constraint_2d(), Bias(0.0f)

@@ -290,7 +290,7 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
 
     i32 NumContacts = 0;
     const int MaxContacts = BodyCount * BodyCount;
-
+    
     size_t contactsMemSize = sizeof(contact) * FinalPairsCount;
     contact *Contacts = (contact *)_alloca(contactsMemSize);
     memset(Contacts, 0, contactsMemSize);
@@ -345,7 +345,7 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
         this->Constraints3D[i]->PreSolve(dt);
     }
 
-    const i32 NumIterations = 50;
+    const i32 NumIterations = 10;
     for(i32 i = 0; i < NumIterations; ++i)
     {
         for(i32 j = 0; j < NumConstraints; ++j)
