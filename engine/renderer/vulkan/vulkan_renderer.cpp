@@ -715,20 +715,30 @@ InitScene()
 #endif
 
 #if 1
-    shoora_body *bodyA = Scene->AddCubeBody(shu::Vec3f(0, 5, 5), shu::Vec3f(0.5f), colorU32::White, 0.0f, .5f);
-    shoora_body *bodyB = Scene->AddCubeBody(shu::Vec3f(1, 5, 5), shu::Vec3f(0.5f), colorU32::White, 1.0f, .5f);
-    bodyB->LinearVelocity = shu::Vec3f(0, 0, 5);
+    i32 NumJoints = 5;
 
-    shu::vec3f JointAnchorWS = bodyA->Position;
+    shu::vec3f AnchorPos = shu::Vec3f(0, 10, 5);
+    shoora_body *anchor = Scene->AddCubeBody(AnchorPos, shu::Vec3f(0.5f), colorU32::White, 0.0f, .5f);
+    for(i32 i = 1; i < NumJoints; ++i)
+    {
+        shoora_body *JointAnchorBody = Scene->GetBody(i - 1);
 
-    joint_constraint_3d *Joint = ShuAllocateStruct(joint_constraint_3d, MEMTYPE_GLOBAL);
-    new (Joint) joint_constraint_3d();
+        // shu::vec3f Delta = shu::Vec3f((f32)i * .5f, -(f32)i * 1.5f, 0.0f);
+        shu::vec3f Delta = shu::Vec3f(0, -(f32)i, 0.0f);
+        shoora_body *Body = Scene->AddCubeBody(AnchorPos + Delta, shu::Vec3f(0.5f), colorU32::White, 1.0f, .5f);
+        Body->LinearVelocity = shu::Vec3f(20.0f, 0.0f, 0.0f);
 
-    Joint->A = bodyA;
-    Joint->AnchorPointLS_A = Joint->A->WorldToLocalSpace(JointAnchorWS);
-    Joint->B = bodyB;
-    Joint->AnchorPointLS_B = Joint->B->WorldToLocalSpace(JointAnchorWS);
-    Scene->Constraints3D.emplace_back(Joint);
+        shu::vec3f JointAnchorWS = JointAnchorBody->Position;
+
+        joint_constraint_3d *Joint = ShuAllocateStruct(joint_constraint_3d, MEMTYPE_GLOBAL);
+        new (Joint) joint_constraint_3d();
+
+        Joint->A = JointAnchorBody;
+        Joint->AnchorPointLS_A = Joint->A->WorldToLocalSpace(JointAnchorWS);
+        Joint->B = Body;
+        Joint->AnchorPointLS_B = Joint->B->WorldToLocalSpace(JointAnchorWS);
+        Scene->Constraints3D.emplace_back(Joint);
+    }
 
     AddStandardSandBox();
 

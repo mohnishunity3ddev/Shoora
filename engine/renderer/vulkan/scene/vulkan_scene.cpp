@@ -345,9 +345,13 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
         this->Constraints3D[i]->PreSolve(dt);
     }
 
-    for (i32 i = 0; i < NumConstraints; ++i)
+    const i32 NumIterations = 50;
+    for(i32 i = 0; i < NumIterations; ++i)
     {
-        this->Constraints3D[i]->Solve();
+        for(i32 j = 0; j < NumConstraints; ++j)
+        {
+            this->Constraints3D[j]->Solve();
+        }
     }
 
     for (i32 i = 0; i < NumConstraints; ++i)
