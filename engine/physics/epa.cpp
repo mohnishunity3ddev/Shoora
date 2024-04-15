@@ -137,7 +137,7 @@ EPADebug_Visualize()
 
 #endif
 
-#if 0
+#if 1
 shu::vec3f
 BarycentricCoords(const shu::vec3f &v1, const shu::vec3f &v2, const shu::vec3f &v3, const shu::vec3f &Point)
 {
@@ -147,77 +147,59 @@ BarycentricCoords(const shu::vec3f &v1, const shu::vec3f &v2, const shu::vec3f &
 
     shu::vec3f Normal = (s2 - s1).Cross(s3 - s1);
     // NOTE: "Point" projected on the Triangle ABC Plane.
-    shu::vec3f pProj = Normal * (s1.Dot(Normal) / Normal.SqMagnitude());
+    shu::vec3f p0 = Normal * (s1.Dot(Normal) / Normal.SqMagnitude());
 
     // NOTE: Find the axes with the greatest projected area.
-    i32 Axes = -1;
-    f32 MaxArea = 0.0f;
+    i32 idx = 0;
+    f32 areaMax = 0;
+    for (i32 i = 0; i < 3; ++i)
+    {
+        i32 j = (i + 1) % 3;
+        i32 k = (i + 2) % 3;
 
-    f32 nx = SHU_ABSOLUTE(Normal.x);
-    f32 ny = SHU_ABSOLUTE(Normal.y);
-    f32 nz = SHU_ABSOLUTE(Normal.z);
-    i32 a0, a1;
+        shu::vec2f a = shu::Vec2f(s1[j], s1[k]);
+        shu::vec2f b = shu::Vec2f(s2[j], s2[k]);
+        shu::vec2f c = shu::Vec2f(s3[j], s3[k]);
+        shu::vec2f ab = b - a;
+        shu::vec2f ac = c - a;
 
-    // NOTE: The Highest Normal component is the axis of maximum projected triangle area.
-    if((nx > ny) && (nx > nz))
-    {
-        Axes = 0;
-        a0 = 1;
-        a1 = 2;
-    }
-    else if((ny > nx) && (ny > nz))
-    {
-        Axes = 1;
-        a0 = 0;
-        a1 = 2;
-    }
-    else if((nz > nx) && (nz > ny))
-    {
-        Axes = 2;
-        a0 = 0;
-        a1 = 1;
+        f32 area = ab.x * ac.y - ab.y * ac.x;
+        if(area * area > areaMax * areaMax)
+        {
+            idx = i;
+            areaMax = area;
+        }
     }
 
-    if(Axes == -1)
+    i32 x = (idx + 1) % 3;
+    i32 y = (idx + 2) % 3;
+    shu::vec2f s[3];
+    s[0] = shu::Vec2f(s1[x], s1[y]);
+    s[1] = shu::Vec2f(s2[x], s2[y]);
+    s[2] = shu::Vec2f(s3[x], s3[y]);
+    shu::vec2f p = shu::Vec2f(p0[x], p0[y]);
+
+    shu::vec3f areas;
+    for (i32 i = 0; i < 3; ++i)
     {
-        return shu::Vec3f(1, 0, 0);
+        i32 j = (i + 1) % 3;
+        i32 k = (i + 2) % 3;
+
+        shu::vec2f a = p;
+        shu::vec2f b = s[j];
+        shu::vec2f c = s[k];
+        shu::vec2f ab = b - a;
+        shu::vec2f ac = c - a;
+
+        areas[i] = ab.x * ac.y - ab.y * ac.x;
     }
-    // ASSERT(Axes != -1);
-    // ASSERT((a0 != a1) && (a0 >= 0) && (a0 <= 2) && (a1 >= 0) && (a1 <= 2));
 
-    shu::vec2f pProj2D = shu::Vec2f(pProj[a0], pProj[a1]);
-    shu::vec2f aProj2D = shu::Vec2f(s1[a0], s1[a1]);
-    shu::vec2f bProj2D = shu::Vec2f(s2[a0], s2[a1]);
-    shu::vec2f cProj2D = shu::Vec2f(s3[a0], s3[a1]);
-    shu::vec2f abProj = bProj2D - aProj2D;
-    shu::vec2f acProj = cProj2D - aProj2D;
-
-    MaxArea = abProj.x*acProj.y - abProj.y*acProj.x; // ab X ac
-    if(NearlyEqual(MaxArea, 0.0f, 0.0001f))
+    shu::vec3f Lambdas = areas / areaMax;
+    if(!Lambdas.IsValid())
     {
-        return shu::Vec3f(1, 0, 0);
+        Lambdas = shu::Vec3f(1, 0, 0);
     }
-
-    // NOTE: Areas of projected triangles PAB, PBC, PCA.
-    shu::vec2f pa = aProj2D - pProj2D;
-    shu::vec2f pb = bProj2D - pProj2D;
-    shu::vec2f pc = cProj2D - pProj2D;
-    f32 areaPAB = pa.x*pb.y - pa.y*pb.x; // pa X pb
-    f32 areaPBC = pb.x*pc.y - pb.y*pc.x; // pb X pc
-    f32 areaPCA = pc.x*pa.y - pc.y*pa.x; // pc X pa
-    f32 OneOverAreaABC = 1.0f / MaxArea;
-
-    shu::vec3f bary = shu::Vec3f(areaPBC, areaPCA, areaPAB);
-    bary *= OneOverAreaABC;
-
-    // TODO: Check why this is failing in the EPA Routine!
-#if 0
-    ASSERT(NearlyEqual((bary.x + bary.y + bary.z), 1.0f, 0.0001f));
-    auto test = ((bary.x * v1) + (bary.y * v2) + (bary.z * v3));
-    ASSERT(test == Point);
-#endif
-
-    return bary;
+    return Lambdas;
 }
 #endif
 
@@ -553,7 +535,8 @@ EPA_Expand(const shoora_body *A, const shoora_body *B, const f32 Bias, const gjk
     shu::vec3f PtA_W = PtA.MinkowskiPoint;
     shu::vec3f PtB_W = PtB.MinkowskiPoint;
     shu::vec3f PtC_W = PtC.MinkowskiPoint;
-    shu::vec3f OriginBaryCoords = ClosestPtPointTriangle(shu::Vec3f(0.0f), PtA_W, PtB_W, PtC_W);
+    // shu::vec3f OriginBaryCoords = ClosestPtPointTriangle(shu::Vec3f(0.0f), PtA_W, PtB_W, PtC_W);
+    shu::vec3f OriginBaryCoords = BarycentricCoords(PtA_W, PtB_W, PtC_W, shu::Vec3f(0.0f));
 
 #if EPA_DEBUG
     shu::vec3f ProjectedPoint = OriginBaryCoords.x * PtA_W + OriginBaryCoords.y * PtB_W +
