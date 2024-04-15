@@ -535,7 +535,16 @@ EPA_Expand(const shoora_body *A, const shoora_body *B, const f32 Bias, const gjk
     shu::vec3f PtA_W = PtA.MinkowskiPoint;
     shu::vec3f PtB_W = PtB.MinkowskiPoint;
     shu::vec3f PtC_W = PtC.MinkowskiPoint;
-    // shu::vec3f OriginBaryCoords = ClosestPtPointTriangle(shu::Vec3f(0.0f), PtA_W, PtB_W, PtC_W);
+
+    // ***********************************************************************************************************
+    // IMPORTANT: NOTE: The ClosestPtPointTriangle - returns the barycentric coordinates of the CLOSEST point ON
+    // THE TRIANGLE which is closest to the point projected on the TRIANGLE PLANE which is wrong here since if EPA
+    // chooses a wrong triangle(in case there 2 or more triangles with the smae distance from the origin in its
+    // ClosestTriangle routine).
+
+    //shu::vec3f OriginBaryCoords = ClosestPtPointTriangle(shu::Vec3f(0.0f), PtA_W, PtB_W, PtC_W);
+    // ***********************************************************************************************************
+
     shu::vec3f OriginBaryCoords = BarycentricCoords(PtA_W, PtB_W, PtC_W, shu::Vec3f(0.0f));
 
 #if EPA_DEBUG
