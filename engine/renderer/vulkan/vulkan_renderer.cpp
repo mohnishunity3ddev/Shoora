@@ -744,16 +744,28 @@ InitScene()
 #endif
 
 #if 1
-    f32 startY = 1;
+    f32 startY = 5;
     auto *Body = Scene->AddCubeBody(shu::Vec3f(0, startY, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
     Body->FrictionCoeff = .5f;
     Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 1, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
     Body->FrictionCoeff = .5f;
-    // Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 2, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
-    // Body->FrictionCoeff = .5f;
-    // Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 3, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
-    // Body->FrictionCoeff = .5f;
-    
+    Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 2, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
+    Body->FrictionCoeff = .5f;
+    Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 3, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
+    Body->FrictionCoeff = .5f;
+    Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 4, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
+    Body->FrictionCoeff = .5f;
+    Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 5, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
+    Body->FrictionCoeff = .5f;
+    Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 6, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
+    Body->FrictionCoeff = .5f;
+    Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 7, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
+    Body->FrictionCoeff = .5f;
+    Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 8, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
+    Body->FrictionCoeff = .5f;
+    Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 9, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
+    Body->FrictionCoeff = .5f;
+
     AddStandardSandBox();
 #endif
 
