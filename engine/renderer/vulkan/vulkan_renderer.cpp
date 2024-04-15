@@ -546,7 +546,7 @@ AddStandardSandBox()
     body.AngularVelocity = shu::Vec3f(0.0f);
     body.InvMass = 0.0f;
     body.CoeffRestitution = 0.5f;
-    body.FrictionCoeff = 0.0f;
+    body.FrictionCoeff = 0.5f;
     BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
     body.Shape = new (BoxShape) shoora_shape_cube(g_boxWall0, ARRAY_SIZE(g_boxWall0));
     body.Scale = body.Shape->GetDim();
@@ -560,7 +560,7 @@ AddStandardSandBox()
     body.AngularVelocity = shu::Vec3f(0.0f);
     body.InvMass = 0.0f;
     body.CoeffRestitution = 0.5f;
-    body.FrictionCoeff = 0.0f;
+    body.FrictionCoeff = 0.5f;
     BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
     body.Shape = new (BoxShape) shoora_shape_cube(g_boxWall0, ARRAY_SIZE(g_boxWall0));
     body.Scale = body.Shape->GetDim();
@@ -574,7 +574,7 @@ AddStandardSandBox()
     body.AngularVelocity = shu::Vec3f(0.0f);
     body.InvMass = 0.0f;
     body.CoeffRestitution = 0.5f;
-    body.FrictionCoeff = 0.0f;
+    body.FrictionCoeff = 0.5f;
     BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
     body.Shape = new (BoxShape) shoora_shape_cube(g_boxWall1, ARRAY_SIZE(g_boxWall1));
     body.Scale = body.Shape->GetDim();
@@ -588,7 +588,7 @@ AddStandardSandBox()
     body.AngularVelocity = shu::Vec3f(0.0f);
     body.InvMass = 0.0f;
     body.CoeffRestitution = 0.5f;
-    body.FrictionCoeff = 0.0f;
+    body.FrictionCoeff = 0.5f;
     BoxShape = ShuAllocateStruct(shoora_shape_cube, MEMTYPE_GLOBAL);
     body.Shape = new (BoxShape) shoora_shape_cube(g_boxWall1, ARRAY_SIZE(g_boxWall1));
     body.Scale = body.Shape->GetDim();
@@ -714,7 +714,7 @@ InitScene()
 #endif
 #endif
 
-#if 1
+#if 0
     i32 NumJoints = 10;
 
     shu::vec3f AnchorPos = shu::Vec3f(0, 15, 5);
@@ -741,7 +741,20 @@ InitScene()
     }
 
     AddStandardSandBox();
+#endif
 
+#if 1
+    f32 startY = 1;
+    auto *Body = Scene->AddCubeBody(shu::Vec3f(0, startY, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
+    Body->FrictionCoeff = .5f;
+    Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 1, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
+    Body->FrictionCoeff = .5f;
+    // Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 2, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
+    // Body->FrictionCoeff = .5f;
+    // Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 3, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
+    // Body->FrictionCoeff = .5f;
+    
+    AddStandardSandBox();
 #endif
 
 #if 0

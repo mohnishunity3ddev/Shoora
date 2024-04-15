@@ -260,6 +260,13 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
     auto startPos = diamond->Position;
     shu::vec3f endPos, deltaPos;
 #endif
+    memory_arena *FrameArena = GetArena(MEMTYPE_FRAME);
+    temporary_memory MemoryFlush = BeginTemporaryMemory(FrameArena);
+
+    // TODO: Make this array Dynamic.
+    penetration_constraint_3d PenetrationConstraints3D[32];
+    i32 PenetrationConstraintCount = 0;
+
     // Sum all the external forces to the body
     for(i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
     {
@@ -278,8 +285,6 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
     }
 
     // Broadphase
-    memory_arena *FrameArena = GetArena(MEMTYPE_FRAME);
-    temporary_memory MemoryFlush = BeginTemporaryMemory(FrameArena);
     collision_pair *CollisionPairs = ShuAllocateArray(collision_pair, BodyCount * BodyCount, MEMTYPE_FRAME);
     SHU_MEMZERO(CollisionPairs, BodyCount * BodyCount * sizeof(collision_pair));
     i32 FinalPairsCount = 0;
@@ -290,7 +295,7 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
 
     i32 NumContacts = 0;
     const int MaxContacts = BodyCount * BodyCount;
-    
+
     size_t contactsMemSize = sizeof(contact) * FinalPairsCount;
     contact *Contacts = (contact *)_alloca(contactsMemSize);
     memset(Contacts, 0, contactsMemSize);
@@ -308,11 +313,34 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
         if(collision::IsColliding(BodyA, BodyB, dt, _Contacts, ContactCount))
         {
             ASSERT(ContactCount > 0 && ContactCount <= MaxContactCountPerPair);
-            for(i32 i = 0; i < ContactCount; ++i)
+            for (i32 i = 0; i < ContactCount; ++i)
             {
-                // TODO)): If this assert gets hit, maybe change MaxContacts to include MaxContactCountPerPair // there.
-                ASSERT(NumContacts != (MaxContacts-1));
-                Contacts[NumContacts++] = _Contacts[i];
+                // TODO)): If this assert gets hit, maybe change MaxContacts to include MaxContactCountPerPair //
+                // there.
+                ASSERT(NumContacts != (MaxContacts - 1));
+                const contact &Contact = _Contacts[i];
+                if (Contact.TimeOfImpact == 0.0f)
+                {
+                    // NOTE: Static contact
+                    penetration_constraint_3d PenConstraint;
+                    PenConstraint.A = BodyA;
+                    PenConstraint.B = BodyB;
+
+                    PenConstraint.AnchorPointLS_A = Contact.ReferenceHitPointA_LocalSpace;
+                    PenConstraint.AnchorPointLS_B = Contact.IncidentHitPointB_LocalSpace;
+
+                    // NOTE: Normal in body A's local space.
+                    shu::vec3f Normal = shu::QuatRotateVec(shu::QuatConjugate(PenConstraint.A->Rotation), -Contact.Normal);
+                    PenConstraint.Normal_LocalSpaceA = shu::Normalize(Normal);
+
+                    ASSERT(PenetrationConstraintCount <= 30);
+                    PenetrationConstraints3D[PenetrationConstraintCount++] = PenConstraint;
+                }
+                else
+                {
+                    // NOTE: Intra-Frame Contact.
+                    Contacts[NumContacts++] = Contact;
+                }
                 if (DebugMode)
                 {
                     shoora_graphics::DrawSphere(Contacts[i].ReferenceHitPointA, .1f, colorU32::Cyan);
@@ -344,6 +372,10 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
     {
         this->Constraints3D[i]->PreSolve(dt);
     }
+    for (i32 i = 0; i < PenetrationConstraintCount; ++i)
+    {
+        PenetrationConstraints3D[i].PreSolve(dt);
+    }
 
     const i32 NumIterations = 10;
     for(i32 i = 0; i < NumIterations; ++i)
@@ -352,13 +384,20 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
         {
             this->Constraints3D[j]->Solve();
         }
+        for (i32 i = 0; i < PenetrationConstraintCount; ++i)
+        {
+            PenetrationConstraints3D[i].Solve();
+        }
     }
 
     for (i32 i = 0; i < NumConstraints; ++i)
     {
         this->Constraints3D[i]->PostSolve();
     }
-
+    for (i32 i = 0; i < PenetrationConstraintCount; ++i)
+    {
+        PenetrationConstraints3D[i].PostSolve();
+    }
 
     // NOTE: This is where we breakup the update routine for resolving the contacts.
     // The toi's have been sorted above from earliest to latest. So the first contact in "Contacts" will have the

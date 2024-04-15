@@ -1,5 +1,154 @@
 #include "constraint.h"
 
+void
+penetration_constraint_3d::PreSolve(const f32 dt)
+{
+    shu::vec3f r1 = A->LocalToWorldSpace(this->AnchorPointLS_A);
+    shu::vec3f r2 = B->LocalToWorldSpace(this->AnchorPointLS_B);
+
+    shu::vec3f rA = r1 - A->GetCenterOfMassWS();
+    shu::vec3f rB = r2 - B->GetCenterOfMassWS();
+
+    f32 FrictionA = A->FrictionCoeff;
+    f32 FrictionB = B->FrictionCoeff;
+    this->Friction = FrictionA * FrictionB;
+
+    shu::vec3f FrictionDirection1, FrictionDirection2;
+    this->Normal_LocalSpaceA.GetOrtho(FrictionDirection1, FrictionDirection2);
+
+    // NOTE: Normal in world space.
+    shu::vec3f Normal = shu::QuatRotateVec(A->Rotation, this->Normal_LocalSpaceA);
+    // NOTE: Friction Directions relative to the orientation of A.
+    FrictionDirection1 = shu::QuatRotateVec(A->Rotation, FrictionDirection1);
+    FrictionDirection2 = shu::QuatRotateVec(A->Rotation, FrictionDirection2);
+
+    this->Jacobian.Zero();
+
+    // NOTE: Penetration Jacobians.
+    shu::vec3f J1 = -Normal;
+    this->Jacobian.Rows[0][0] = J1.x;
+    this->Jacobian.Rows[0][1] = J1.y;
+    this->Jacobian.Rows[0][2] = J1.z;
+
+    shu::vec3f J2 = -rA.Cross(Normal);
+    this->Jacobian.Rows[0][3] = J2.x;
+    this->Jacobian.Rows[0][4] = J2.y;
+    this->Jacobian.Rows[0][5] = J2.z;
+
+    shu::vec3f J3 = Normal;
+    this->Jacobian.Rows[0][6] = J3.x;
+    this->Jacobian.Rows[0][7] = J3.y;
+    this->Jacobian.Rows[0][8] = J3.z;
+
+    shu::vec3f J4 = rB.Cross(Normal);
+    this->Jacobian.Rows[0][9] = J4.x;
+    this->Jacobian.Rows[0][10] = J4.y;
+    this->Jacobian.Rows[0][11] = J4.z;
+
+    // NOTE: Friction Jacobians.
+    if(this->Friction > 0.0f)
+    {
+        shu::vec3f J1 = -FrictionDirection1;
+        this->Jacobian.Rows[1][0] = J1.x;
+        this->Jacobian.Rows[1][1] = J1.y;
+        this->Jacobian.Rows[1][2] = J1.z;
+
+        shu::vec3f J2 = -rA.Cross(FrictionDirection1);
+        this->Jacobian.Rows[1][3] = J2.x;
+        this->Jacobian.Rows[1][4] = J2.y;
+        this->Jacobian.Rows[1][5] = J2.z;
+
+        shu::vec3f J3 = FrictionDirection1;
+        this->Jacobian.Rows[1][6] = J3.x;
+        this->Jacobian.Rows[1][7] = J3.y;
+        this->Jacobian.Rows[1][8] = J3.z;
+
+        shu::vec3f J4 = rB.Cross(FrictionDirection1);
+        this->Jacobian.Rows[1][9] = J4.x;
+        this->Jacobian.Rows[1][10] = J4.y;
+        this->Jacobian.Rows[1][11] = J4.z;
+    }
+    if(this->Friction > 0.0f)
+    {
+        shu::vec3f J1 = -FrictionDirection2;
+        this->Jacobian.Rows[2][0] = J1.x;
+        this->Jacobian.Rows[2][1] = J1.y;
+        this->Jacobian.Rows[2][2] = J1.z;
+
+        shu::vec3f J2 = -rA.Cross(FrictionDirection2);
+        this->Jacobian.Rows[2][3] = J2.x;
+        this->Jacobian.Rows[2][4] = J2.y;
+        this->Jacobian.Rows[2][5] = J2.z;
+
+        shu::vec3f J3 = FrictionDirection2;
+        this->Jacobian.Rows[2][6] = J3.x;
+        this->Jacobian.Rows[2][7] = J3.y;
+        this->Jacobian.Rows[2][8] = J3.z;
+
+        shu::vec3f J4 = rB.Cross(FrictionDirection2);
+        this->Jacobian.Rows[2][9] = J4.x;
+        this->Jacobian.Rows[2][10] = J4.y;
+        this->Jacobian.Rows[2][11] = J4.z;
+    }
+
+    // NOTE: Apply Warm starting using previous frame's Lambda.
+    const shu::vecN<f32, 12> Impulses = this->Jacobian.Transposed() * this->PreviousFrameLambdas;
+    this->ApplyImpulses(Impulses);
+
+    // NOTE: Baumgarte Stabilization
+    f32 ConstraintError = (r2 - r1).Dot(Normal);
+    ConstraintError = MIN(0.0f, ConstraintError + 0.02f);
+    f32 Beta = 0.25f;
+    this->Baumgarte = -(Beta / dt) * ConstraintError;
+}
+
+void
+penetration_constraint_3d::Solve()
+{
+    auto JacobianTranspose = this->Jacobian.Transposed();
+
+    auto V = GetVelocities();
+    auto InvM = GetInverseMassMatrix();
+    auto J_InvM_Jt = this->Jacobian * InvM * JacobianTranspose;
+
+    auto Rhs = this->Jacobian * V * -1.0f;
+    Rhs += this->Baumgarte;
+
+    auto LagrangeLambdas = shu::LCP_GaussSeidel(J_InvM_Jt, Rhs);
+
+    auto OldLambdas = this->PreviousFrameLambdas;
+    this->PreviousFrameLambdas += LagrangeLambdas;
+    const f32 LambdaLimit = 0.0f;
+    if(this->PreviousFrameLambdas[0] < LambdaLimit)
+    {
+        this->PreviousFrameLambdas[0] = LambdaLimit;
+    }
+    if(this->Friction > 0.0f)
+    {
+        f32 FrictionForce = this->Friction * 9.8f * 1.0f / (A->InvMass + B->InvMass);
+        f32 NormalForce = SHU_ABSOLUTE(LagrangeLambdas[0] * this->Friction);
+        f32 MaxForce = (FrictionForce > NormalForce) ? FrictionForce : NormalForce;
+
+        if(PreviousFrameLambdas[1] > MaxForce) {
+            PreviousFrameLambdas[1] = MaxForce;
+        }
+        if(PreviousFrameLambdas[1] < -MaxForce) {
+            PreviousFrameLambdas[1] = -MaxForce;
+        }
+
+        if(PreviousFrameLambdas[2] > MaxForce) {
+            PreviousFrameLambdas[2] = MaxForce;
+        }
+        if(PreviousFrameLambdas[2] < -MaxForce) {
+            PreviousFrameLambdas[2] = -MaxForce;
+        }
+    }
+    LagrangeLambdas = this->PreviousFrameLambdas - OldLambdas;
+
+    auto Impulses = JacobianTranspose * LagrangeLambdas;
+    this->ApplyImpulses(Impulses);
+}
+
 penetration_constraint_2d::penetration_constraint_2d() : constraint_2d()
 {
     Jacobian.Zero();

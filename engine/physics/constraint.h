@@ -36,27 +36,6 @@ struct constraint_3d
     shu::vec3f rB; // The axis of the the anchor point in B.
 };
 
-struct constraint_2d
-{
-    shoora_body *A;
-    shoora_body *B;
-
-    // NOTE: The anchor point where the bodies are to be fixed at in the local space of the corresponding rigid
-    // bodies.
-    shu::vec2f AnchorPointLS_A; // The anchor point in A's Local Space
-    shu::vec2f AnchorPointLS_B; // The anchor point in B's Local Space
-
-    constraint_2d() = default;
-    virtual ~constraint_2d() = default;
-
-    shu::matN<f32, 6> GetInverseMassMatrix() const;
-    shu::vecN<f32, 6> GetVelocities() const;
-
-    virtual void PreSolve(const f32 dt) {}
-    virtual void Solve() {}
-    virtual void PostSolve() {}
-};
-
 struct joint_constraint_3d : public constraint_3d
 {
     joint_constraint_3d() : constraint_3d()
@@ -80,6 +59,50 @@ struct joint_constraint_3d : public constraint_3d
     // NOTE: The Stabilization Factor. Bias to correct positional error(constraint error).
     f32 Baumgarte;
 };
+
+struct penetration_constraint_3d : public constraint_3d
+{
+    penetration_constraint_3d() : constraint_3d()
+    {
+        this->Jacobian.Zero();
+        this->PreviousFrameLambdas.Zero();
+
+        this->Baumgarte = 0.0f;
+        this->Friction = 0.0f;
+        this->Normal_LocalSpaceA = shu::Vec3f(0.0f);
+    }
+
+    void PreSolve(const f32 dt) override;
+    void Solve() override;
+
+    shu::vec3f Normal_LocalSpaceA;
+    shu::matMN<f32, 3, 12> Jacobian;
+    shu::vecN<f32, 3> PreviousFrameLambdas;
+    f32 Baumgarte;
+    f32 Friction;
+};
+
+struct constraint_2d
+{
+    shoora_body *A;
+    shoora_body *B;
+
+    // NOTE: The anchor point where the bodies are to be fixed at in the local space of the corresponding rigid
+    // bodies.
+    shu::vec2f AnchorPointLS_A; // The anchor point in A's Local Space
+    shu::vec2f AnchorPointLS_B; // The anchor point in B's Local Space
+
+    constraint_2d() = default;
+    virtual ~constraint_2d() = default;
+
+    shu::matN<f32, 6> GetInverseMassMatrix() const;
+    shu::vecN<f32, 6> GetVelocities() const;
+
+    virtual void PreSolve(const f32 dt) {}
+    virtual void Solve() {}
+    virtual void PostSolve() {}
+};
+
 
 struct joint_constraint_2d : public constraint_2d
 {

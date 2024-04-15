@@ -30,7 +30,7 @@ constraint_3d::GetInverseMassMatrix() const
         InverseMassMatrix.Rows[9 + i][9 + 1] = InverseInertiaB.Rows[i][1];
         InverseMassMatrix.Rows[9 + i][9 + 2] = InverseInertiaB.Rows[i][2];
     }
-    
+
     return InverseMassMatrix;
 }
 
@@ -75,6 +75,12 @@ constraint_3d::ApplyImpulses(const shu::vecN<f32, 12> &Impulses)
     AngularImpulseB.x = Impulses[9];
     AngularImpulseB.y = Impulses[10];
     AngularImpulseB.z = Impulses[11];
+
+    // LogDebug("Impulse Magnitude: %f.\n", LinearImpulseB.Magnitude());
+    if(LinearImpulseB.Magnitude() > 10.0f)
+    {
+        int x = 0;
+    }
 
     A->ApplyImpulseLinear(LinearImpulseA);
     A->ApplyImpulseAngular(AngularImpulseA);
