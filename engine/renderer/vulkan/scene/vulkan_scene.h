@@ -6,6 +6,7 @@
 #include <physics/body.h>
 #include <physics/broadphase.h>
 #include <physics/constraint.h>
+#include <physics/contact_manifold.h>
 
 
 struct shoora_scene
@@ -18,7 +19,8 @@ struct shoora_scene
     shoora_dynamic_array<constraint_2d *> Constraints2D;
     shoora_dynamic_array<penetration_constraint_2d> PenetrationConstraints2D;
     shoora_dynamic_array<constraint_3d *> Constraints3D;
-
+    manifold_collector Manifolds;
+  
   public:
     shoora_scene();
     ~shoora_scene();

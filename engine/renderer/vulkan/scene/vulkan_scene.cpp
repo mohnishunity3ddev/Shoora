@@ -31,6 +31,9 @@ shoora_scene::shoora_scene()
 
     Bodies.reserve(32);
     Constraints3D.reserve(32);
+
+    Manifolds.Manifolds.SetAllocator(MEMTYPE_FREELISTGLOBAL);
+    Manifolds.Manifolds.reserve(128);
 }
 
 shoora_scene::~shoora_scene()
@@ -239,7 +242,6 @@ shoora_scene::UpdateInput(const shu::vec2f &CurrentMouseWorldPos)
 }
 #endif
 
-static i32 frameCount = 0;
 void
 shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
 {
@@ -250,7 +252,8 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
         dt = (1.0f / 29.0f);
     }
 #endif
-    ++frameCount;
+    Manifolds.RemoveExpired();
+
     i32 BodyCount = GetBodyCount();
     auto *Bodies = GetBodies();
     ASSERT(Bodies != nullptr);
@@ -308,55 +311,47 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
 
         if(BodyA->IsStatic() && BodyB->IsStatic()) { continue; }
 
+        // TODO: No need for MaxContactCounts here since Contact Manifolds have been added.
         contact _Contacts[MaxContactCountPerPair];
         i32 ContactCount = 0;
         if(collision::IsColliding(BodyA, BodyB, dt, _Contacts, ContactCount))
         {
-            ASSERT(ContactCount > 0 && ContactCount <= MaxContactCountPerPair);
-            for (i32 i = 0; i < ContactCount; ++i)
+            // ASSERT(ContactCount > 0 && ContactCount <= MaxContactCountPerPair);
+            ASSERT(ContactCount == 1);
+            // TODO)): If this assert gets hit, maybe change MaxContacts to include MaxContactCountPerPair there.
+            // ASSERT(NumContacts != (MaxContacts - 1));
+            const contact &Contact = _Contacts[0];
+            if (Contact.TimeOfImpact == 0.0f)
             {
-                // TODO)): If this assert gets hit, maybe change MaxContacts to include MaxContactCountPerPair //
-                // there.
-                ASSERT(NumContacts != (MaxContacts - 1));
-                const contact &Contact = _Contacts[i];
-                if (Contact.TimeOfImpact == 0.0f)
-                {
-                    // NOTE: Static contact
-                    penetration_constraint_3d PenConstraint;
-                    PenConstraint.A = BodyA;
-                    PenConstraint.B = BodyB;
-
-                    PenConstraint.AnchorPointLS_A = Contact.ReferenceHitPointA_LocalSpace;
-                    PenConstraint.AnchorPointLS_B = Contact.IncidentHitPointB_LocalSpace;
-
-                    // NOTE: Normal in body A's local space.
-                    shu::vec3f Normal = shu::QuatRotateVec(shu::QuatConjugate(PenConstraint.A->Rotation), -Contact.Normal);
-                    PenConstraint.Normal_LocalSpaceA = shu::Normalize(Normal);
-
-                    ASSERT(PenetrationConstraintCount <= 30);
-                    PenetrationConstraints3D[PenetrationConstraintCount++] = PenConstraint;
-                }
-                else
-                {
-                    // NOTE: Intra-Frame Contact.
-                    Contacts[NumContacts++] = Contact;
-                }
-                if (DebugMode)
-                {
-                    shoora_graphics::DrawSphere(Contacts[i].ReferenceHitPointA, .1f, colorU32::Cyan);
-                    shoora_graphics::DrawSphere(Contacts[i].IncidentHitPointB, .1f, colorU32::Green);
-                }
-            }
-
+                // NOTE: Static contact
 #if 0
-            if(ContactCount == 1 && SHU_ABSOLUTE(_Contacts[0].Depth) > 4.0f)
-            {
-                if(BodyA->Shape->GetType() == CONVEX && BodyB->IsStatic())
-                {
-                    LogWarn("Contact Depth: %f.\n", _Contacts[0].Depth);
-                }
-            }
+                penetration_constraint_3d PenConstraint;
+                PenConstraint.A = BodyA;
+                PenConstraint.B = BodyB;
+
+                PenConstraint.AnchorPointLS_A = Contact.ReferenceHitPointA_LocalSpace;
+                PenConstraint.AnchorPointLS_B = Contact.IncidentHitPointB_LocalSpace;
+
+                // NOTE: Normal in body A's local space.
+                shu::vec3f Normal = shu::QuatRotateVec(shu::QuatConjugate(PenConstraint.A->Rotation),
+                                                       -Contact.Normal);
+                PenConstraint.Normal_LocalSpaceA = shu::Normalize(Normal);
+
+                ASSERT(PenetrationConstraintCount <= 30);
+                PenetrationConstraints3D[PenetrationConstraintCount++] = PenConstraint;
 #endif
+                Manifolds.AddContact(Contact);
+            }
+            else
+            {
+                // NOTE: Intra-Frame Contact.
+                Contacts[NumContacts++] = Contact;
+            }
+            if (DebugMode)
+            {
+                shoora_graphics::DrawSphere(Contacts[i].ReferenceHitPointA, .1f, colorU32::Cyan);
+                shoora_graphics::DrawSphere(Contacts[i].IncidentHitPointB, .1f, colorU32::Green);
+            }
         }
     }
 
@@ -372,32 +367,42 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
     {
         this->Constraints3D[i]->PreSolve(dt);
     }
+
+#if 0
     for (i32 i = 0; i < PenetrationConstraintCount; ++i)
     {
         PenetrationConstraints3D[i].PreSolve(dt);
     }
+#endif
+    this->Manifolds.PreSolve(dt);
 
-    const i32 NumIterations = 10;
+    const i32 NumIterations = 5;
     for(i32 i = 0; i < NumIterations; ++i)
     {
         for(i32 j = 0; j < NumConstraints; ++j)
         {
             this->Constraints3D[j]->Solve();
         }
+#if 0
         for (i32 i = 0; i < PenetrationConstraintCount; ++i)
         {
             PenetrationConstraints3D[i].Solve();
         }
+#endif
+        this->Manifolds.Solve();
     }
 
     for (i32 i = 0; i < NumConstraints; ++i)
     {
         this->Constraints3D[i]->PostSolve();
     }
+#if 0
     for (i32 i = 0; i < PenetrationConstraintCount; ++i)
     {
         PenetrationConstraints3D[i].PostSolve();
     }
+#endif
+    this->Manifolds.PostSolve();
 
     // NOTE: This is where we breakup the update routine for resolving the contacts.
     // The toi's have been sorted above from earliest to latest. So the first contact in "Contacts" will have the

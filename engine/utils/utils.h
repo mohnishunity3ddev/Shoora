@@ -24,6 +24,7 @@ struct colorU32
 
 u32 GetMaxValueIndex(u32 *NumsArray, u32 NumsCount);
 u32 LogBase2(u32 Num);
+u32 GetDebugColor(i32 Index);
 
 u32 StringLength(const char *A);
 void StringConcat(const char *A, const char *B, char *Out);

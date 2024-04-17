@@ -20,6 +20,7 @@
 #include <physics/collision.h>
 #include <physics/bounds.h>
 #include <utils/utils.h>
+#include <utils/random/random.h>
 
 #ifdef WIN32
 #include "platform/windows/win_platform.h"
@@ -744,27 +745,17 @@ InitScene()
 #endif
 
 #if 1
-    f32 startY = 5;
-    auto *Body = Scene->AddCubeBody(shu::Vec3f(0, startY, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
-    Body->FrictionCoeff = .5f;
-    Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 1, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
-    Body->FrictionCoeff = .5f;
-    Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 2, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
-    Body->FrictionCoeff = .5f;
-    Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 3, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
-    Body->FrictionCoeff = .5f;
-    Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 4, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
-    Body->FrictionCoeff = .5f;
-    Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 5, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
-    Body->FrictionCoeff = .5f;
-    Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 6, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
-    Body->FrictionCoeff = .5f;
-    Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 7, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
-    Body->FrictionCoeff = .5f;
-    Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 8, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
-    Body->FrictionCoeff = .5f;
-    Body = Scene->AddCubeBody(shu::Vec3f(0, startY + 9, 0), shu::Vec3f(1.0f), colorU32::White, 1.0f, .5f);
-    Body->FrictionCoeff = .5f;
+    f32 startY = 1;
+    shu::rand Rand;
+    shoora_body *Body;
+    i32 StackSize = 10;
+    for(i32 i = 0; i < StackSize; ++i)
+    {
+        Body = Scene->AddCubeBody(shu::Vec3f(0, startY + (f32)i, 0), shu::Vec3f(1.0f),
+                                  GetDebugColor(Rand.NextUInt32()), 1.0f, .5f,
+                                  shu::Vec3f(0.0f, Rand.RangeBetweenF32(-360.0f, 360.0f), 0.0f));
+        Body->FrictionCoeff = .5f;
+    }
 
     AddStandardSandBox();
 #endif

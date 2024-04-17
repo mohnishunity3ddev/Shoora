@@ -57,7 +57,7 @@ main()
     finalColor.rgb = colorMultiplier.rgb;
     finalColor.a = 1.0;
 
-    FragColor = vec4(ModelNormal, 1.);
+    // FragColor = vec4(ModelNormal, 1.);
     // FragColor = finalColor;
-    // FragColor = vec4(InColor, 0.5);
+    FragColor = vec4(InColor, 0.5);
 }

@@ -5,6 +5,7 @@
 #include "body.h"
 #include "contact.h"
 
+// TODO: Remove this since I have added contact manifolds which keeps track of multiple contacts.
 #define MaxContactCountPerPair 2
 
 struct collision

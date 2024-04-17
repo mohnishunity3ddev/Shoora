@@ -1,4 +1,19 @@
 #include "utils.h"
+static const u32 DebugColors[] = {
+    0xffff0000, // Red
+    0xff00ff00, // Green
+    0xff0000ff, // Blue
+    0xff00ffff, // Cyan
+    0xffff00ff, // Magenta
+    0xffffff00, // Yellow
+    0xffffffff, // White
+    0xff313131, // Gray
+    0xffFB8621, // Proto_Orange
+    0xffFFB900, // Proto_Yellow
+    0xff6DA174, // Proto_Green
+    0xffBD4334, // Proto_Red
+    0xff697FC4 // Proto_Blue
+};
 
 shu::vec3f
 GetColor(u32 Col)
@@ -11,6 +26,13 @@ GetColor(u32 Col)
 
     shu::vec3f Result = shu::Vec3f(r, g, b) * m;
     return Result;
+}
+
+u32
+GetDebugColor(i32 Index)
+{
+    i32 i = Index % ARRAY_SIZE(DebugColors);
+    return DebugColors[i];
 }
 
 u32
