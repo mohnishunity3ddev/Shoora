@@ -751,9 +751,10 @@ InitScene()
     i32 StackSize = 10;
     for(i32 i = 0; i < StackSize; ++i)
     {
+        // shu::vec3f RandRotation = shu::Vec3f(0.0f, Rand.RangeBetweenF32(-360.0f, 360.0f), 0.0f);
+        shu::vec3f RandRotation = shu::Vec3f(0.0f, 0.0f, 0.0f);
         Body = Scene->AddCubeBody(shu::Vec3f(0, startY + (f32)i, 0), shu::Vec3f(1.0f),
-                                  GetDebugColor(Rand.NextUInt32()), 1.0f, .5f,
-                                  shu::Vec3f(0.0f, Rand.RangeBetweenF32(-360.0f, 360.0f), 0.0f));
+                                  GetDebugColor(Rand.NextUInt32()), 1.0f, .5f, RandRotation);
         Body->FrictionCoeff = .5f;
     }
 
@@ -1104,6 +1105,9 @@ DrawCoordinateAxes()
     shoora_graphics::DrawLine3D(shu::Vec3f(0, 0, -1000), shu::Vec3f(0, 0, 1000), colorU32::Proto_Blue);
 }
 
+static i32 NumPhysicsTicks = 60;
+static f32 FixedDeltaTime = 1.0f / (f32)NumPhysicsTicks;
+static f32 _dt = 0.0f;
 void
 DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 {
@@ -1293,7 +1297,13 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 #else
         // Scene->UpdateInput(CurrentMouseWorldPos);
         f32 pDt = GlobalPausePhysics ? 0.0f : GlobalDeltaTime;
-        Scene->PhysicsUpdate(pDt, GlobalDebugMode);
+        _dt += GlobalDeltaTime;
+        if(_dt >= FixedDeltaTime)
+        {
+            // LogInfo("FDT: %f.\n", FixedDeltaTime);
+            Scene->PhysicsUpdate(FixedDeltaTime, GlobalDebugMode);
+            _dt = 0.0f;
+        }
 #endif
         DrawScene(DrawCmdBuffer);
 
