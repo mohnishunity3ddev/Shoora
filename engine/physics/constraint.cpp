@@ -75,13 +75,7 @@ constraint_3d::ApplyImpulses(const shu::vecN<f32, 12> &Impulses)
     AngularImpulseB.x = Impulses[9];
     AngularImpulseB.y = Impulses[10];
     AngularImpulseB.z = Impulses[11];
-
-    // LogDebug("Impulse Magnitude: %f.\n", LinearImpulseB.Magnitude());
-    if(LinearImpulseB.Magnitude() > 10.0f)
-    {
-        int x = 0;
-    }
-
+    
     A->ApplyImpulseLinear(LinearImpulseA);
     A->ApplyImpulseAngular(AngularImpulseA);
     B->ApplyImpulseLinear(LinearImpulseB);
