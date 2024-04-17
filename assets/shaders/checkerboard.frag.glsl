@@ -9,6 +9,8 @@ layout(set = 1, binding = 0) uniform sampler2D DiffuseMap;
 
 layout(location = 0) out vec4 FragColor;
 
+vec3 lightDir = vec3(1, 1, 1);
+
 vec3
 GetColorFromPositionAndNormal(in vec3 worldPosition, in vec3 normal)
 {
@@ -41,6 +43,7 @@ GetColorFromPositionAndNormal(in vec3 worldPosition, in vec3 normal)
 void
 main()
 {
+#if 0
     float dx = 0.25;
     float dy = 0.25;
     vec3 colorMultiplier = vec3(0.0, 0.0, 0.0);
@@ -56,8 +59,13 @@ main()
     vec4 finalColor;
     finalColor.rgb = colorMultiplier.rgb;
     finalColor.a = 1.0;
+#endif
+
+    vec3 ld = normalize(lightDir);
+    float d = dot(ModelNormal, ld);
+    vec3 c = d*InColor;
 
     // FragColor = vec4(ModelNormal, 1.);
     // FragColor = finalColor;
-    FragColor = vec4(InColor, 0.5);
+    FragColor = vec4(c, 0.5);
 }
