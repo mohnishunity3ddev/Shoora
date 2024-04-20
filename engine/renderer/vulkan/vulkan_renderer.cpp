@@ -701,6 +701,16 @@ InitScene()
 #endif
 #endif
 
+#if 1
+    auto *Body = Scene->AddCubeBody(shu::Vec3f(25, 10, 0), shu::Vec3f(2.0f), colorU32::Proto_Blue, 1.0f, 1.0f, shu::Vec3f(0.0f));
+    Body->LinearVelocity = shu::Vec3f(-300.0f, 0, 0);
+
+    Scene->AddCubeBody(shu::Vec3f(-5.0f, 5.0f, 0.0f), shu::Vec3f(.01f, 50, 50), colorU32::Red, 0.0f, 1.0f);
+
+    AddStandardSandBox();
+
+#endif
+
 #if 0
 #if GJK_STEPTHROUGH
     InitializeGJKDebugTest();
@@ -715,7 +725,7 @@ InitScene()
 #endif
 #endif
 
-#if 1
+#if 0
     i32 NumJoints = 10;
 
     shu::vec3f AnchorPos = shu::Vec3f(0, 15, 5);
@@ -964,6 +974,13 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     shoora_camera *pCamera = &VulkanContext->Camera;
     SetupCamera(pCamera, shoora_projection::PROJECTION_PERSPECTIVE, 0.1f, 1000.0f, 16.0f / 9.0f,
                 GlobalWindowSize.y, 45.0f, shu::Vec3f(0, 4, -10));
+    pCamera->Pos = shu::Vec3f(1.42f, 30.42, -60.19f);
+    pCamera->Front = shu::Vec3f(-0.0573437512f, -0.423883229, 0.903899729f);
+    pCamera->Right = shu::Vec3f(0.997993648f, 0.0f, 0.0633131042f);
+    pCamera->Up = shu::Vec3f(-0.0268373638f, 0.905716836f, 0.423032761f);
+    pCamera->Yaw = 93.6300049f;
+    pCamera->Pitch = -25.0799961;
+
 #if 0
     pCamera->Pos = shu::Vec3f(14.1368380f, 106.438675f, -40.9848938f);
     pCamera->Front = shu::Vec3f(-0.332412988f, -0.475319535f, -0.814599872f);
@@ -1107,7 +1124,7 @@ DrawCoordinateAxes()
     shoora_graphics::DrawLine3D(shu::Vec3f(0, 0, -1000), shu::Vec3f(0, 0, 1000), colorU32::Proto_Blue);
 }
 
-static i32 NumPhysicsTicks = 300;
+static i32 NumPhysicsTicks = 60;
 static f32 FixedDeltaTime = 1.0f / (f32)NumPhysicsTicks;
 static f32 _dt = 0.0f;
 void

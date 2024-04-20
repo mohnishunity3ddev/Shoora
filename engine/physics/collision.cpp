@@ -2,7 +2,7 @@
 #include <mesh/database/mesh_database.h>
 #include "gjk.h"
 
-#define SHU_CCD_ON 1
+#define ENABLE_CCD 1
 
 b32
 collision::IsColliding(shoora_body *A, shoora_body *B, const f32 DeltaTime, contact *Contacts, i32 &ContactCount)
@@ -24,7 +24,7 @@ collision::IsColliding(shoora_body *A, shoora_body *B, const f32 DeltaTime, cont
     b32 isBodyBSphere = (B->Shape->GetType() == shoora_mesh_type::SPHERE);
     b32 isBodyBConvex = (B->Shape->GetType() == shoora_mesh_type::CONVEX ||
                          B->Shape->GetType() == shoora_mesh_type::CONVEX_DIAMOND || A->Shape->GetType() == CUBE);
-    
+
     if(isBodyACircle && isBodyBCircle)
     {
         Result = IsCollidingCircleCircle(A, B, Contacts, ContactCount);
@@ -241,7 +241,7 @@ GJK_ConservativeAdvance(shoora_body *A, shoora_body *B, f32 DeltaTime, contact &
         }
 
         // NOTE: Get the vector from the closest point on A to the closest point on B.
-        shu::vec3f AB = shu::Normalize(Contact.ReferenceHitPointA - Contact.IncidentHitPointB);
+        shu::vec3f AB = shu::Normalize(Contact.IncidentHitPointB - Contact.ReferenceHitPointA);
 
         // NOTE: Project the relative velocity onto the ray in the direction of shortest distance between the two.
         shu::vec3f RelativeVelocity = A->LinearVelocity - B->LinearVelocity;
@@ -256,6 +256,10 @@ GJK_ConservativeAdvance(shoora_body *A, shoora_body *B, f32 DeltaTime, contact &
             break;
         }
 
+        // NOTE: The Contact Depth in this case means the shortest distance between the two bodies. Here we are
+        // getting the time that will take the bodies to cover this distance. And of this time is more than the
+        // deltaTime for this frame, then the collision(if it happens) happens after the frame and so we dont need
+        // to do anything on this frame.
         f32 TimeToGo = Contact.Depth / OrthoSpeed;
         if(TimeToGo > DeltaTime) {
             break;
@@ -281,7 +285,7 @@ collision::IsCollidingConvex(shoora_body *A, shoora_body *B, f32 DeltaTime, cont
 
     contact Contact;
 
-#if SHU_CCD_ON
+#if ENABLE_CCD
     Result = GJK_ConservativeAdvance(A, B, DeltaTime, Contact);
 #else
     Result = GJK_Intersect(A, B, Contact);
@@ -306,7 +310,7 @@ collision::IsCollidingSphereSphere(shoora_body *A, shoora_body *B, const f32 Del
     contact *Contact = &Contacts[0];
     *Contact = {};
 
-#if SHU_CCD_ON
+#if ENABLE_CCD
     shu::vec3f PosA = A->Position;
     shu::vec3f PosB = B->Position;
 
