@@ -715,7 +715,7 @@ InitScene()
 #endif
 #endif
 
-#if 0
+#if 1
     i32 NumJoints = 10;
 
     shu::vec3f AnchorPos = shu::Vec3f(0, 15, 5);
@@ -727,7 +727,7 @@ InitScene()
         // shu::vec3f Delta = shu::Vec3f((f32)i * .5f, -(f32)i * 1.5f, 0.0f);
         shu::vec3f Delta = shu::Vec3f(0, -(f32)i, 0.0f);
         shoora_body *Body = Scene->AddCubeBody(AnchorPos + Delta, shu::Vec3f(0.5f), colorU32::White, 1.0f, .5f);
-        Body->LinearVelocity = shu::Vec3f(10.0f, 0.0f, 0.0f);
+        Body->LinearVelocity = shu::Vec3f(5.0f, 0.0f, 0.0f);
 
         shu::vec3f JointAnchorWS = JointAnchorBody->Position;
 
@@ -741,10 +741,12 @@ InitScene()
         Scene->Constraints3D.emplace_back(Joint);
     }
 
+    Scene->AddCubeBody(shu::Vec3f(1, 10, 5), shu::Vec3f(0.5f), colorU32::Proto_Orange, 0.0f, 1.0f);
+
     AddStandardSandBox();
 #endif
 
-#if 1
+#if 0
     f32 startY = 1;
     shu::rand Rand;
     shoora_body *Body;
@@ -1105,7 +1107,7 @@ DrawCoordinateAxes()
     shoora_graphics::DrawLine3D(shu::Vec3f(0, 0, -1000), shu::Vec3f(0, 0, 1000), colorU32::Proto_Blue);
 }
 
-static i32 NumPhysicsTicks = 60;
+static i32 NumPhysicsTicks = 300;
 static f32 FixedDeltaTime = 1.0f / (f32)NumPhysicsTicks;
 static f32 _dt = 0.0f;
 void

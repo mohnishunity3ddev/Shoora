@@ -29,11 +29,11 @@ shoora_scene::shoora_scene()
 
     Constraints3D.SetAllocator(MEMTYPE_FREELISTGLOBAL);
 
-    Bodies.reserve(32);
-    Constraints3D.reserve(32);
+    Bodies.reserve(64);
+    Constraints3D.reserve(64);
 
     Manifolds.Manifolds.SetAllocator(MEMTYPE_FREELISTGLOBAL);
-    Manifolds.Manifolds.reserve(128);
+    Manifolds.Manifolds.reserve(256);
 }
 
 shoora_scene::~shoora_scene()
@@ -376,7 +376,7 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
 #endif
     this->Manifolds.PreSolve(dt);
 
-    const i32 NumIterations = 6;
+    const i32 NumIterations = 10;
     for(i32 i = 0; i < NumIterations; ++i)
     {
         for(i32 j = 0; j < NumConstraints; ++j)
