@@ -25,7 +25,7 @@ contact::ResolvePenetration()
     shu::vec3f rA = this->ReferenceHitPointA - ReferenceBodyA->GetCenterOfMassWS();
     shu::vec3f rB = this->IncidentHitPointB - IncidentBodyB->GetCenterOfMassWS();
 
-    // factors due to rotation.
+    // NOTE: Angular Impulse factor in denominator.
     const shu::vec3f angularJA = (rA.Cross(n) * invWorldInertiaA).Cross(rA);
     const shu::vec3f angularJB = (rB.Cross(n) * invWorldInertiaB).Cross(rB);
     f32 angularFactor = (angularJA + angularJB).Dot(n);
@@ -82,6 +82,7 @@ contact::ResolvePenetration()
         IncidentBodyB->ApplyImpulseAtPoint(-ImpulseFriction, IncidentHitPointB);
     }
 
+#if 1
     // NOTE: Manually Move out bodies so that they are not colliding using the projection method ONLY when the
     // timeOfImpact is zero.
     // IMPORTANT: Explanation of above statement:
@@ -115,6 +116,7 @@ contact::ResolvePenetration()
         ReferenceBodyA->UpdateWorldVertices();
         IncidentBodyB->UpdateWorldVertices();
     }
+#endif
 }
 
 void

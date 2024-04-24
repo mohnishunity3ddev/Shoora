@@ -345,7 +345,11 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
             else
             {
                 // NOTE: Intra-Frame Contact.
+                // TODO: Handling Intra-Frame Contacts using Projection method and not using penetration
+                // TODO: constraints. Not getting good results for intra-frame contacts using penetration
+                // TODO: constraints.
                 Contacts[NumContacts++] = Contact;
+                // Manifolds.AddContact(Contact);
             }
             if (DebugMode)
             {

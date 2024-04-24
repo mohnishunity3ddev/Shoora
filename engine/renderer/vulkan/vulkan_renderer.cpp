@@ -705,10 +705,9 @@ InitScene()
     auto *Body = Scene->AddCubeBody(shu::Vec3f(25, 10, 0), shu::Vec3f(2.0f), colorU32::Proto_Blue, 1.0f, 1.0f, shu::Vec3f(0.0f));
     Body->LinearVelocity = shu::Vec3f(-300.0f, 0, 0);
 
-    Scene->AddCubeBody(shu::Vec3f(-5.0f, 5.0f, 0.0f), shu::Vec3f(.01f, 50, 50), colorU32::Red, 0.0f, 1.0f);
+    Scene->AddCubeBody(shu::Vec3f(-5.0f, 5.0f, 0.0f), shu::Vec3f(1.0f, 50, 50), colorU32::Red, 0.0f, 1.0f);
 
     AddStandardSandBox();
-
 #endif
 
 #if 0
@@ -760,7 +759,7 @@ InitScene()
     f32 startY = 1;
     shu::rand Rand;
     shoora_body *Body;
-    i32 StackSize = 10;
+    i32 StackSize = 20;
     for(i32 i = 0; i < StackSize; ++i)
     {
         // shu::vec3f RandRotation = shu::Vec3f(0.0f, Rand.RangeBetweenF32(-360.0f, 360.0f), 0.0f);
