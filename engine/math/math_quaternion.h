@@ -35,6 +35,11 @@ namespace shu
         vec3f ToEuler() const;
         mat3f ToMat3f() const;
         mat4f ToMat4f() const;
+        vec4f ToVec4f() const;
+        mat4f LeftOp() const;
+        mat4f RightOp() const;
+
+        shu::quat Inverse() const;
 
         static quat Identity()
         {

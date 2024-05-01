@@ -247,7 +247,7 @@ namespace shu
 
     // N X N Matrix
 #include "math_vector.h"
-    
+
     template<typename T, size_t N>
     struct matN
     {
@@ -1030,10 +1030,10 @@ namespace shu
     {
         vec4<T> Result;
 
-        Result.x = M.m00*V.x + M.m10*V.y + M.m20*V.z + M.m30*V.w;
-        Result.y = M.m01*V.x + M.m11*V.y + M.m21*V.z + M.m31*V.w;
-        Result.z = M.m02*V.x + M.m12*V.y + M.m22*V.z + M.m32*V.w;
-        Result.w = M.m03*V.x + M.m13*V.y + M.m23*V.z + M.m33*V.w;
+        Result.x = shu::Dot(M.Row0, V);
+        Result.y = shu::Dot(M.Row1, V);
+        Result.z = shu::Dot(M.Row2, V);
+        Result.w = shu::Dot(M.Row3, V);
 
         return Result;
     }
@@ -1056,11 +1056,15 @@ namespace shu
     vec4<T>
     operator*(const mat4<T> &M, const vec3<T> &V)
     {
+        vec4<T> v4 = shu::Vec4f(V, 1.0f);
+
         vec4<T> Result;
-        Result.x = M.m00*V.x + M.m10*V.y + M.m20*V.z + M.m30;
-        Result.y = M.m01*V.x + M.m11*V.y + M.m21*V.z + M.m31;
-        Result.z = M.m02*V.x + M.m12*V.y + M.m22*V.z + M.m32;
-        Result.w = M.m03*V.x + M.m13*V.y + M.m23*V.z + M.m33;
+
+        Result.x = shu::Dot(M.Row0, v4);
+        Result.y = shu::Dot(M.Row1, v4);
+        Result.z = shu::Dot(M.Row2, v4);
+        Result.w = shu::Dot(M.Row3, v4);
+
         return Result;
     }
 

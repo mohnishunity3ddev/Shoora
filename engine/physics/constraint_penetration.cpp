@@ -23,7 +23,7 @@ penetration_constraint_3d::PreSolve(const f32 dt)
     FrictionDirection2 = shu::QuatRotateVec(A->Rotation, FrictionDirection2);
 
     this->Jacobian.Zero();
-
+    
     // NOTE: Penetration Jacobians.
     shu::vec3f J1 = -Normal;
     this->Jacobian.Rows[0][0] = J1.x;

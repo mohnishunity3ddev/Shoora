@@ -166,6 +166,8 @@ namespace shu
         inline vec4<T> operator*=(T A);
         inline vec4<T> operator/=(const vec4<T>& A);
         inline vec4<T> operator/=(T A);
+        inline b32 operator==(const vec4<T>& rhs) const;
+
         inline T &operator[](size_t Index);
         inline T operator[](size_t Index) const;
         inline void ZeroOut();
@@ -1131,6 +1133,17 @@ namespace shu
     {
         *this = *this / A;
         return *this;
+    }
+
+    template <typename T>
+    b32
+    vec4<T>::operator==(const vec4<T> &rhs) const
+    {
+        b32 Result = false;
+        Result = NearlyEqual(x, rhs.x) && NearlyEqual(y, rhs.y) &&
+                 NearlyEqual(z, rhs.z) && NearlyEqual(w, rhs.w);
+
+        return Result;
     }
 
     template <typename T>

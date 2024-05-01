@@ -409,6 +409,49 @@ namespace shu
         return Result;
     }
 
+    vec4f
+    quat::ToVec4f() const
+    {
+        vec4f Result = shu::Vec4f(w, vx, vy, vz);
+        return Result;
+    }
+
+    quat
+    quat::Inverse() const
+    {
+        return QuatInverse(*this);
+    }
+
+    mat4f
+    quat::LeftOp() const
+    {
+        shu::mat4f M;
+
+        M.Row0 = shu::Vec4f(w,  -vx, -vy, -vz);
+        M.Row1 = shu::Vec4f(vx,   w, -vz,  vy);
+        M.Row2 = shu::Vec4f(vy,  vz,   w, -vx);
+        M.Row3 = shu::Vec4f(vz, -vy,  vx,   w);
+        M.Transposed();
+
+        return M;
+    }
+
+    mat4f
+    quat::RightOp() const
+    {
+        shu::mat4f M;
+
+        M.Row0 = shu::Vec4f(w,  -vx, -vy, -vz);
+        M.Row1 = shu::Vec4f(vx,   w,  vz, -vy);
+        M.Row2 = shu::Vec4f(vy, -vz,   w,  vx);
+        M.Row3 = shu::Vec4f(vz,  vy, -vx,  w);
+        M.Transposed();
+
+        return M;
+
+    }
+
+
     // Returns rotation in YXZ sequence
     quat
     QuatFromEuler(f32 xDegrees, f32 yDegrees, f32 zDegrees)

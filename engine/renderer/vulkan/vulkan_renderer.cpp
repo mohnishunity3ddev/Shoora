@@ -167,6 +167,7 @@ enum FpsOptions
 static shu::vec3f diamondEulerAngles = shu::Vec3f(0.0f);
 #endif
 
+static shu::vec3f Pos = shu::Vec3f(0, 5, 0);
 void
 ImGuiNewFrame()
 {
@@ -198,6 +199,7 @@ ImGuiNewFrame()
             SHU_INVALID_DEFAULT;
         }
     }
+    ImGui::DragFloat3("Pos", Pos.E, 1.0f, -100, 100);
 
 #if GJK_STEPTHROUGH
     shoora_body *a = &Scene->Bodies[0];
@@ -702,6 +704,30 @@ InitScene()
 #endif
 
 #if 1
+    auto *bA = Scene->AddCubeBody(Pos, shu::Vec3f(1, 1, 1), colorU32::Proto_Red, 0.0f, .5f,
+                                  shu::Vec3f(0, 0, 0));
+
+    auto *bB = Scene->AddCubeBody(Pos - shu::Vec3f(0, 5, 0), shu::Vec3f(1, 3, 1), colorU32::Proto_Red, 1.0f, .5f);
+
+    hinge_constraint_3d *Hinge = ShuAllocateStruct(hinge_constraint_3d, MEMTYPE_GLOBAL);
+    new (Hinge) hinge_constraint_3d();
+
+    Hinge->A = bA;
+    Hinge->B = bB;
+    Hinge->AnchorPointLS_A = bA->WorldToLocalSpace(bA->Position);
+    Hinge->AnchorPointLS_B = bB->WorldToLocalSpace(bA->Position);
+
+    Hinge->q0 = shu::QuatInverse(bA->Rotation) * bB->Rotation;
+
+    shu::vec3f RotationAxis = shu::Vec3f(1, 0, 0);
+    Hinge->rA = shu::QuatRotateVec(shu::QuatInverse(bA->Rotation), RotationAxis);
+    Hinge->rB = shu::QuatRotateVec(shu::QuatInverse(bB->Rotation), RotationAxis);
+
+    Scene->Constraints3D.emplace_back(Hinge);
+
+#endif
+
+#if 0
     auto *Body = Scene->AddCubeBody(shu::Vec3f(25, 10, 0), shu::Vec3f(2.0f), colorU32::Proto_Blue, 1.0f, 1.0f, shu::Vec3f(0.0f));
     Body->LinearVelocity = shu::Vec3f(-300.0f, 0, 0);
 
@@ -926,6 +952,25 @@ InitializeLightData()
 void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
 {
+    shu::quat q0 = shu::Quat(1, 2, 3, 4);
+    shu::quat q1 = shu::Quat(5, 6, 7, 8);
+    shu::quat q2 = shu::Quat(9, 10, 11, 12);
+    shu::quat q3 = shu::Quat(13, 14, 15, 16);
+
+    shu::vec4f qProd = (q0 * q1 * q2 * q3).ToVec4f();
+    shu::vec4f qProd_0 = q0.LeftOp() * (q2 * q3).RightOp() * q1.ToVec4f();
+
+    shu::mat4f P;
+    P.Row0 = shu::Vec4f(0, 0, 0, 0);
+    P.Row1 = shu::Vec4f(0, 1, 0, 0);
+    P.Row2 = shu::Vec4f(0, 0, 1, 0);
+    P.Row3 = shu::Vec4f(0, 0, 0, 1);
+    shu::mat4f Pt = P.Transposed();
+
+    auto qv = P * qProd;
+
+    ASSERT(qProd == qProd_0);
+
     platform_memory GameMemory = AppInfo->GameMemory;
     InitializeMemory(GameMemory.PermSize, GameMemory.PermMemory, GameMemory.FrameMemorySize, GameMemory.FrameMemory);
 
@@ -1123,7 +1168,7 @@ DrawCoordinateAxes()
     shoora_graphics::DrawLine3D(shu::Vec3f(0, 0, -1000), shu::Vec3f(0, 0, 1000), colorU32::Proto_Blue);
 }
 
-static i32 NumPhysicsTicks = 60;
+static i32 NumPhysicsTicks = 500;
 static f32 FixedDeltaTime = 1.0f / (f32)NumPhysicsTicks;
 static f32 _dt = 0.0f;
 void
@@ -1135,6 +1180,8 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         int x = 0;
     }
 #endif
+
+    Scene->Bodies[0].Position = Pos;
 
     // VK_CHECK(vkQueueWaitIdle(Context->Device.GraphicsQueue));
     shu::vec2f CurrentMousePos = shu::Vec2f(FramePacket->MouseXPos, FramePacket->MouseYPos);
