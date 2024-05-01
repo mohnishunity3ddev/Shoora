@@ -707,7 +707,7 @@ InitScene()
     auto *bA = Scene->AddCubeBody(Pos, shu::Vec3f(1, 1, 1), colorU32::Proto_Red, 0.0f, .5f,
                                   shu::Vec3f(0, 0, 0));
 
-    auto *bB = Scene->AddCubeBody(Pos - shu::Vec3f(0, 5, 0), shu::Vec3f(1, 3, 1), colorU32::Proto_Red, 1.0f, .5f);
+    auto *bB = Scene->AddCubeBody(Pos - shu::Vec3f(0, 5, 0), shu::Vec3f(1, 1, 1), colorU32::Proto_Red, 1.0f, .5f);
 
     hinge_constraint_3d *Hinge = ShuAllocateStruct(hinge_constraint_3d, MEMTYPE_GLOBAL);
     new (Hinge) hinge_constraint_3d();
@@ -720,8 +720,10 @@ InitScene()
     Hinge->q0 = shu::QuatInverse(bA->Rotation) * bB->Rotation;
 
     shu::vec3f RotationAxis = shu::Vec3f(1, 0, 0);
-    Hinge->rA = shu::QuatRotateVec(shu::QuatInverse(bA->Rotation), RotationAxis);
-    Hinge->rB = shu::QuatRotateVec(shu::QuatInverse(bB->Rotation), RotationAxis);
+    Hinge->AxisA = shu::QuatRotateVec(shu::QuatInverse(bA->Rotation), RotationAxis);
+    Hinge->AxisB = shu::QuatRotateVec(shu::QuatInverse(bB->Rotation), RotationAxis);
+
+    bB->AngularVelocity = shu::Vec3f(0, 0, 1000);
 
     Scene->Constraints3D.emplace_back(Hinge);
 
@@ -1168,7 +1170,7 @@ DrawCoordinateAxes()
     shoora_graphics::DrawLine3D(shu::Vec3f(0, 0, -1000), shu::Vec3f(0, 0, 1000), colorU32::Proto_Blue);
 }
 
-static i32 NumPhysicsTicks = 500;
+static i32 NumPhysicsTicks = 60;
 static f32 FixedDeltaTime = 1.0f / (f32)NumPhysicsTicks;
 static f32 _dt = 0.0f;
 void

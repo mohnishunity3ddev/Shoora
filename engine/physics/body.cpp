@@ -303,7 +303,7 @@ shoora_body::Update(const f32 deltaTime)
     // Update Rotation Quaternion
     shu::vec3f dAngle = this->AngularVelocity * deltaTime;
     shu::quat dq = shu::QuatAngleAxisDeg(dAngle.Magnitude()*RAD_TO_DEG, this->AngularVelocity);
-    this->Rotation = (dq * Rotation);
+    this->Rotation = (dq * this->Rotation);
     shu::QuatNormalize(this->Rotation);
 
     // NOTE: We are doing this because the quaternion(rotation) is around the center of mass not the position of

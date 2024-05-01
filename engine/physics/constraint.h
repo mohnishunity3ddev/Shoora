@@ -32,8 +32,8 @@ struct constraint_3d
     shoora_body *A;
     shoora_body *B;
 
-    shu::vec3f rA; // The axis of the the anchor point in A.
-    shu::vec3f rB; // The axis of the the anchor point in B.
+    shu::vec3f AxisA; // The axis of the the anchor point in A.
+    shu::vec3f AxisB; // The axis of the the anchor point in B.
 };
 
 struct joint_constraint_3d : public constraint_3d
@@ -70,6 +70,7 @@ struct hinge_constraint_3d : public constraint_3d
         this->PreviousFrameLambda.Zero();
 #endif
         this->Baumgarte = 0.0f;
+        this->RotBaumgarte = shu::Vec2f(0.0f, 0.0f);
     }
 
     void PreSolve(const f32 dt) override;
@@ -87,6 +88,7 @@ struct hinge_constraint_3d : public constraint_3d
 #endif
     // NOTE: The Stabilization Factor. Bias to correct positional error(constraint error).
     f32 Baumgarte;
+    shu::vec2f RotBaumgarte;
 };
 
 struct penetration_constraint_3d : public constraint_3d

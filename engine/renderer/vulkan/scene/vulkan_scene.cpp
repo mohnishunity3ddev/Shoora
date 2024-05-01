@@ -380,7 +380,7 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
 #endif
     this->Manifolds.PreSolve(dt);
 
-    const i32 NumIterations = 10;
+    const i32 NumIterations = 100;
     for(i32 i = 0; i < NumIterations; ++i)
     {
         for(i32 j = 0; j < NumConstraints; ++j)
