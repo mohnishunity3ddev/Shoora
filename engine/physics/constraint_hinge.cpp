@@ -10,32 +10,12 @@ hinge_constraint_3d::PreSolve(const f32 dt)
     shu::vec3f rA = r1 - this->A->GetCenterOfMassWS();
     shu::vec3f rB = r2 - this->B->GetCenterOfMassWS();
 
-    shu::quat q1 = this->A->Rotation;
-    shu::quat q2 = this->B->Rotation;
-    shu::quat q0_inv = shu::QuatInverse(this->q0);
-    shu::quat q1_inv = shu::QuatInverse(q1);
+    shu::vec3f world_w1 = shu::QuatRotateVec(this->A->Rotation, this->AxisA);
+    world_w1.Normalize();
 
-    shu::vec3f u_AxisA, v_AxisA;
-    shu::vec3f AxisAInW = shu::QuatRotateVec(this->A->Rotation, this->AxisA);
-    AxisAInW.GetOrtho(u_AxisA, v_AxisA);
-
-    shu::vec3f AxisBInW = shu::QuatRotateVec(this->B->Rotation, this->AxisB);
-    shu::vec3f u_AxisB, v_AxisB;
-    AxisBInW.GetOrtho(u_AxisB, v_AxisB);
-
-    shu::vec3f a1 = AxisAInW;
-    shu::vec3f b2 = u_AxisB;
-    shu::vec3f c2 = v_AxisB;
-
-    shu::mat4f P;
-    P.Row0 = shu::Vec4f(0, 0, 0, 0);
-    P.Row1 = shu::Vec4f(0, 1, 0, 0);
-    P.Row2 = shu::Vec4f(0, 0, 1, 0);
-    P.Row3 = shu::Vec4f(0, 0, 0, 1);
-    shu::mat4f Pt = P.Transposed();
-
-    const shu::mat4f MatA = P * ((q1_inv).LeftOp() * (q2 * q0_inv).RightOp()) * -0.5f;
-    const shu::mat4f MatB = P * ((q1_inv).LeftOp() * (q2 * q0_inv).RightOp()) * 0.5f;
+    shu::vec3f world_w2 = shu::QuatRotateVec(this->B->Rotation, this->AxisA);
+    shu::vec3f world_u2, world_v2;
+    world_w2.GetOrtho(world_u2, world_v2);
 
     this->Jacobian.Zero();
 
@@ -59,62 +39,44 @@ hinge_constraint_3d::PreSolve(const f32 dt)
     this->Jacobian.Rows[0][10] = J4.y;
     this->Jacobian.Rows[0][11] = J4.z;
 
-    shu::vec4f Temp;
-    shu::vec3f t2;
+    // shu::vec3f u2_cross_w1 = shu::Normalize(world_u2.Cross(world_w1));
+    shu::vec3f u2_cross_w1 = world_u2.Cross(world_w1);
     {
-        J1.Zero();
-        this->Jacobian.Rows[1][0] = J1.x;
-        this->Jacobian.Rows[1][1] = J1.y;
-        this->Jacobian.Rows[1][2] = J1.z;
+        this->Jacobian.Rows[1][0] = 0.0f;
+        this->Jacobian.Rows[1][1] = 0.0f;
+        this->Jacobian.Rows[1][2] = 0.0f;
 
-        Temp = MatA * shu::Vec4f(0, u_AxisA.x, u_AxisA.y, u_AxisA.z);
-        t2 = -b2.Cross(a1);
-        // J2 = shu::Vec3f(Temp.y, Temp.z, Temp.w);
-        J2 = shu::Normalize(t2);
-        this->Jacobian.Rows[1][3] = J2.x;
-        this->Jacobian.Rows[1][4] = J2.y;
-        this->Jacobian.Rows[1][5] = J2.z;
+        this->Jacobian.Rows[1][3] = -u2_cross_w1.x;
+        this->Jacobian.Rows[1][4] = -u2_cross_w1.y;
+        this->Jacobian.Rows[1][5] = -u2_cross_w1.z;
 
-        J3.Zero();
-        this->Jacobian.Rows[1][6] = J3.x;
-        this->Jacobian.Rows[1][7] = J3.y;
-        this->Jacobian.Rows[1][8] = J3.z;
+        this->Jacobian.Rows[1][6] = 0.0f;
+        this->Jacobian.Rows[1][7] = 0.0f;
+        this->Jacobian.Rows[1][8] = 0.0f;
 
-
-        Temp = MatB * shu::Vec4f(0, u_AxisA.x, u_AxisA.y, u_AxisA.z);
-        t2 = b2.Cross(a1);
-        // J4 = shu::Vec3f(Temp.y, Temp.z, Temp.w);
-        J4 = shu::Normalize(t2);
-        this->Jacobian.Rows[1][9]  = J4.x;
-        this->Jacobian.Rows[1][10] = J4.y;
-        this->Jacobian.Rows[1][11] = J4.z;
+        this->Jacobian.Rows[1][9] = u2_cross_w1.x;
+        this->Jacobian.Rows[1][10] = u2_cross_w1.y;
+        this->Jacobian.Rows[1][11] = u2_cross_w1.z;
     }
+
+    // shu::vec3f v2_cross_w1 = shu::Normalize(world_v2.Cross(world_w1));
+    shu::vec3f v2_cross_w1 = world_v2.Cross(world_w1);
     {
-        J1.Zero();
-        this->Jacobian.Rows[2][0] = J1.x;
-        this->Jacobian.Rows[2][1] = J1.y;
-        this->Jacobian.Rows[2][2] = J1.z;
+        this->Jacobian.Rows[2][0] = 0.0f;
+        this->Jacobian.Rows[2][1] = 0.0f;
+        this->Jacobian.Rows[2][2] = 0.0f;
 
-        Temp = MatA * shu::Vec4f(0, v_AxisA.x, v_AxisA.y, v_AxisA.z);
-        t2 = -c2.Cross(a1);
-        // J2 = shu::Vec3f(Temp.y, Temp.z, Temp.w);
-        J2 = shu::Normalize(t2);
-        this->Jacobian.Rows[2][3] = J2.x;
-        this->Jacobian.Rows[2][4] = J2.y;
-        this->Jacobian.Rows[2][5] = J2.z;
+        this->Jacobian.Rows[2][3] = -v2_cross_w1.x;
+        this->Jacobian.Rows[2][4] = -v2_cross_w1.y;
+        this->Jacobian.Rows[2][5] = -v2_cross_w1.z;
 
-        J3.Zero();
-        this->Jacobian.Rows[2][6] = J3.x;
-        this->Jacobian.Rows[2][7] = J3.y;
-        this->Jacobian.Rows[2][8] = J3.z;
+        this->Jacobian.Rows[2][6] = 0.0f;
+        this->Jacobian.Rows[2][7] = 0.0f;
+        this->Jacobian.Rows[2][8] = 0.0f;
 
-
-        Temp = MatB * shu::Vec4f(0, v_AxisA.x, v_AxisA.y, v_AxisA.z);
-        t2 = c2.Cross(a1);
-        J4 = shu::Normalize(t2);
-        this->Jacobian.Rows[2][9]  = J4.x;
-        this->Jacobian.Rows[2][10] = J4.y;
-        this->Jacobian.Rows[2][11] = J4.z;
+        this->Jacobian.Rows[2][9] = v2_cross_w1.x;
+        this->Jacobian.Rows[2][10] = v2_cross_w1.y;
+        this->Jacobian.Rows[2][11] = v2_cross_w1.z;
     }
 
 #if WARM_STARTING
@@ -125,14 +87,14 @@ hinge_constraint_3d::PreSolve(const f32 dt)
 
     f32 ConstraintError = r2MinusR1.Dot(r2MinusR1);
     ConstraintError = MAX(0.0f, ConstraintError - 0.01f);
-    const f32 Beta = 0.05f;
+    f32 Beta = 0.05f;
     this->Baumgarte = -(Beta / dt) * ConstraintError;
 
-    shu::vec2f RotationError = shu::Vec2f(a1.Dot(b2), a1.Dot(c2));
-    RotationError.x = MAX(0.0f, RotationError.x - 0.01f);
-    RotationError.y = MAX(0.0f, RotationError.y - 0.01f);
-    const f32 Beta2 = 0.05f;
-    this->RotBaumgarte = -(Beta2 / dt) * RotationError;
+    f32 C1 = world_u2.Dot(world_w1);
+    f32 C2 = world_v2.Dot(world_w1);
+    shu::vec2f RotationError = shu::Vec2f(C1, C2);
+    Beta = 0.2f;
+    this->RotBaumgarte = -(Beta / dt) * RotationError;
 }
 
 void
@@ -151,6 +113,23 @@ hinge_constraint_3d::Solve()
 
     auto LagrangeLambda = shu::LCP_GaussSeidel(J_invM_Jt, Rhs);
 
+    for (i32 i = 0; i < 3; ++i)
+    {
+        if (LagrangeLambda[i] * 0.0f != LagrangeLambda[i] * 0.0f)
+        {
+            LagrangeLambda[i] = 0.0f;
+        }
+        const f32 Limit = 4.0f;
+        if (LagrangeLambda[i] > Limit)
+        {
+            LagrangeLambda[i] = Limit;
+        }
+        else if (LagrangeLambda[i] < -Limit)
+        {
+            LagrangeLambda[i] = -Limit;
+        }
+    }
+
     auto Impulses = JacobianTranspose * LagrangeLambda;
     this->ApplyImpulses(Impulses);
 
@@ -162,6 +141,7 @@ hinge_constraint_3d::Solve()
 void
 hinge_constraint_3d::PostSolve()
 {
+#if WARM_STARTING
     // NOTE: Limit warm starting to reasonable limits.
     for (i32 i = 0; i < 3; ++i)
     {
@@ -180,5 +160,6 @@ hinge_constraint_3d::PostSolve()
             this->PreviousFrameLambda[i] = -Limit;
         }
     }
+#endif
 }
 

@@ -86,6 +86,7 @@ namespace shu
     template <typename T> SHU_EXPORT mat3<T> operator/(const mat3<T> &M1, T B);
     template <typename T> SHU_EXPORT mat3<T> operator/(const mat3<T> &M1, const mat3<T> &M2);
     template <typename T> SHU_EXPORT mat3<T> Transpose(const mat3<T> &M1);
+    template <typename T> SHU_EXPORT mat3<T> CrossProductMatrix(const vec3<T> &V);
 
     typedef mat3<i32> mat3i;
     typedef mat3<u32> mat3u;
@@ -847,6 +848,17 @@ namespace shu
                                  M.m01, M.m11, M.m21,
                                  M.m02, M.m12, M.m22);
 
+        return Result;
+    }
+
+    template <typename T>
+    mat3<T>
+    CrossProductMatrix(const vec3<T> &V)
+    {
+        mat3<T> Result;
+        Result.Rows[0] = Vec3<T>(   0, -V.z,  V.y);
+        Result.Rows[1] = Vec3<T>( V.z,    0, -V.x);
+        Result.Rows[2] = Vec3<T>(-V.y,  V.x,    0);
         return Result;
     }
 

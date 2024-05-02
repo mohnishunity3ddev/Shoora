@@ -80,6 +80,7 @@ joint_constraint_3d::Solve()
 void
 joint_constraint_3d::PostSolve()
 {
+#if WARM_STARTING
     // NOTE: Limit warm starting to reasonable limits.
     if(this->PreviousFrameLambda[0] * 0.0f != this->PreviousFrameLambda[0] * 0.0f)
     {
@@ -95,6 +96,7 @@ joint_constraint_3d::PostSolve()
     {
         this->PreviousFrameLambda[0] = -Limit;
     }
+#endif
 }
 
 joint_constraint_2d::joint_constraint_2d() : constraint_2d(), Bias(0.0f)

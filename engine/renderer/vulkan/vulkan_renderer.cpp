@@ -209,18 +209,20 @@ ImGuiNewFrame()
     ImGui::DragFloat3("Floor Position", b->Position.E, .05f, -100, 100);
 #endif
 
-    i32 bodyCount = Scene->GetBodyCount();
-    if(bodyCount > 0)
-    {
-        const shu::vec3f &aPos = Scene->Bodies[0].Position;
-        ImGui::Text("DiamondPos: {%f, %f, %f}", aPos.x, aPos.y, aPos.z);
-    }
-
     ImGui::SliderFloat("Test Scale", &TestCameraScale, 0.5f, 100.0f);
     ImGui::Checkbox("Toggle Wireframe", (bool *)&WireframeMode);
 
     ImGui::Spacing();
     ImGui::Text("Body Count: %d", Scene->GetBodyCount());
+
+    if(Scene->GetBodyCount() > 1)
+    {
+        const shoora_body *b = &Scene->Bodies[1];
+        const shu::vec3f v = b->LinearVelocity;
+        const shu::vec3f w = b->AngularVelocity;
+        ImGui::Text("B Linear Vel: [%.3f, %.3f, %.3f].", v.x, v.y, v.z);
+        ImGui::Text("B Angular Vel: [%.3f, %.3f, %.3f].", w.x, w.y, w.z);
+    }
 
 #if CREATE_WIREFRAME_PIPELINE
     ImGui::Checkbox("Toggle Wireframe", (bool *)&GlobalRenderState.WireframeMode);
@@ -709,23 +711,24 @@ InitScene()
 
     auto *bB = Scene->AddCubeBody(Pos - shu::Vec3f(0, 5, 0), shu::Vec3f(1, 1, 1), colorU32::Proto_Red, 1.0f, .5f);
 
-    hinge_constraint_3d *Hinge = ShuAllocateStruct(hinge_constraint_3d, MEMTYPE_GLOBAL);
-    new (Hinge) hinge_constraint_3d();
+    hinge_constraint_3d *HingeJoint = ShuAllocateStruct(hinge_constraint_3d, MEMTYPE_GLOBAL);
+    new (HingeJoint) hinge_constraint_3d();
 
-    Hinge->A = bA;
-    Hinge->B = bB;
-    Hinge->AnchorPointLS_A = bA->WorldToLocalSpace(bA->Position);
-    Hinge->AnchorPointLS_B = bB->WorldToLocalSpace(bA->Position);
+    HingeJoint->A = bA;
+    HingeJoint->B = bB;
+    HingeJoint->AnchorPointLS_A = bA->WorldToLocalSpace(bA->Position);
+    HingeJoint->AnchorPointLS_B = bB->WorldToLocalSpace(bA->Position);
 
-    Hinge->q0 = shu::QuatInverse(bA->Rotation) * bB->Rotation;
+    // HingeJoint->q0 = shu::QuatInverse(bA->Rotation) * bB->Rotation;
 
     shu::vec3f RotationAxis = shu::Vec3f(1, 0, 0);
-    Hinge->AxisA = shu::QuatRotateVec(shu::QuatInverse(bA->Rotation), RotationAxis);
-    Hinge->AxisB = shu::QuatRotateVec(shu::QuatInverse(bB->Rotation), RotationAxis);
+    HingeJoint->AxisA = shu::QuatRotateVec(shu::QuatInverse(bA->Rotation), RotationAxis);
+    HingeJoint->AxisB = shu::QuatRotateVec(shu::QuatInverse(bB->Rotation), RotationAxis);
 
-    bB->AngularVelocity = shu::Vec3f(0, 0, 1000);
-
-    Scene->Constraints3D.emplace_back(Hinge);
+    // bB->LinearVelocity = shu::Vec3f(10,  0,  0);
+    // bB->LinearVelocity = shu::Vec3f( 0, 10,  0);
+    // bB->LinearVelocity = shu::Vec3f( 0, 0, 10);
+    Scene->Constraints3D.emplace_back(HingeJoint);
 
 #endif
 
@@ -1170,7 +1173,7 @@ DrawCoordinateAxes()
     shoora_graphics::DrawLine3D(shu::Vec3f(0, 0, -1000), shu::Vec3f(0, 0, 1000), colorU32::Proto_Blue);
 }
 
-static i32 NumPhysicsTicks = 60;
+static i32 NumPhysicsTicks = 1000;
 static f32 FixedDeltaTime = 1.0f / (f32)NumPhysicsTicks;
 static f32 _dt = 0.0f;
 void

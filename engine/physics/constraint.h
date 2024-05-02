@@ -5,7 +5,7 @@
 #include "body.h"
 #include "contact.h"
 
-#define WARM_STARTING 1
+#define WARM_STARTING 0
 
 struct constraint_3d
 {
@@ -56,6 +56,31 @@ struct joint_constraint_3d : public constraint_3d
 
 #if WARM_STARTING
     shu::vecN<f32, 1> PreviousFrameLambda;
+#endif
+    // NOTE: The Stabilization Factor. Bias to correct positional error(constraint error).
+    f32 Baumgarte;
+};
+
+struct ball_constraint_3d : public constraint_3d
+{
+    ball_constraint_3d() : constraint_3d()
+    {
+        this->Jacobian.Zero();
+#if WARM_STARTING
+        this->PreviousFrameLambda.Zero();
+#endif
+        this->Baumgarte = 0.0f;
+    }
+
+    void PreSolve(const f32 dt) override;
+    void Solve() override;
+    void PostSolve() override;
+
+  private:
+    shu::matMN<f32, 3, 12> Jacobian;
+
+#if WARM_STARTING
+    shu::vecN<f32, 3> PreviousFrameLambda;
 #endif
     // NOTE: The Stabilization Factor. Bias to correct positional error(constraint error).
     f32 Baumgarte;
