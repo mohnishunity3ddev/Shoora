@@ -5,7 +5,7 @@
 #include "body.h"
 #include "contact.h"
 
-#define WARM_STARTING 0
+#define WARM_STARTING 1
 
 struct constraint_3d
 {

@@ -93,7 +93,7 @@ hinge_constraint_3d::PreSolve(const f32 dt)
     f32 C1 = world_u2.Dot(world_w1);
     f32 C2 = world_v2.Dot(world_w1);
     shu::vec2f RotationError = shu::Vec2f(C1, C2);
-    Beta = 0.2f;
+    Beta = 0.05f;
     this->RotBaumgarte = -(Beta / dt) * RotationError;
 }
 
@@ -112,23 +112,6 @@ hinge_constraint_3d::Solve()
     Rhs[2] += this->RotBaumgarte.y;
 
     auto LagrangeLambda = shu::LCP_GaussSeidel(J_invM_Jt, Rhs);
-
-    for (i32 i = 0; i < 3; ++i)
-    {
-        if (LagrangeLambda[i] * 0.0f != LagrangeLambda[i] * 0.0f)
-        {
-            LagrangeLambda[i] = 0.0f;
-        }
-        const f32 Limit = 4.0f;
-        if (LagrangeLambda[i] > Limit)
-        {
-            LagrangeLambda[i] = Limit;
-        }
-        else if (LagrangeLambda[i] < -Limit)
-        {
-            LagrangeLambda[i] = -Limit;
-        }
-    }
 
     auto Impulses = JacobianTranspose * LagrangeLambda;
     this->ApplyImpulses(Impulses);

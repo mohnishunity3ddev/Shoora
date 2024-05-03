@@ -1173,7 +1173,7 @@ DrawCoordinateAxes()
     shoora_graphics::DrawLine3D(shu::Vec3f(0, 0, -1000), shu::Vec3f(0, 0, 1000), colorU32::Proto_Blue);
 }
 
-static i32 NumPhysicsTicks = 1000;
+static i32 NumPhysicsTicks = 60;
 static f32 FixedDeltaTime = 1.0f / (f32)NumPhysicsTicks;
 static f32 _dt = 0.0f;
 void
