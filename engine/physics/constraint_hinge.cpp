@@ -144,7 +144,7 @@ hinge_constraint_3d::Solve()
 void
 hinge_constraint_3d::PostSolve()
 {
-#if 0
+#if WARM_STARTING
     // NOTE: Limit warm starting to reasonable limits.
     for (i32 i = 0; i < 3; ++i)
     {
