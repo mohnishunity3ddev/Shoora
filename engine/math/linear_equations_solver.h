@@ -51,7 +51,7 @@ namespace shu
         T YMat[2][2] = {CoeffMatrix[0][0], ConstantVec.x, CoeffMatrix[1][0], ConstantVec.y};
         T YDeter = YMat[0][0]*YMat[1][1] - YMat[0][1]*YMat[1][0];
         ASSERT(!NearlyEqual(YDeter, 0.0f));
-        
+
         Result.x = XDeter / CoeffDet;
         Result.y = YDeter / CoeffDet;
 
@@ -140,7 +140,7 @@ namespace shu
             Result.Data[vecIndex] = (T)numer / (T)denom;
         }
 
-    #if _SHU_DEBUG
+    #if 0
         vecN<T, N> cmp = A.Transposed() * Result;
         for (i32 i = 0; i < N; ++i)
         {

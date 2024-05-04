@@ -94,7 +94,7 @@ struct hinge_constraint_3d : public constraint_3d
 #if WARM_STARTING
         this->PreviousFrameLambda.Zero();
 #endif
-        this->Baumgarte = 0.0f;
+        this->Baumgarte = shu::Vec3f(0.0f);
         this->RotBaumgarte = shu::Vec2f(0.0f, 0.0f);
     }
 
@@ -103,16 +103,16 @@ struct hinge_constraint_3d : public constraint_3d
     void PostSolve() override;
 
     // NOTE: q1_inv * q2 inital.
-    shu::quat q0;
+    // shu::quat q0;
 
   private:
-    shu::matMN<f32, 3, 12> Jacobian;
+    shu::matMN<f32, 5, 12> Jacobian;
 
 #if WARM_STARTING
-    shu::vecN<f32, 3> PreviousFrameLambda;
+    shu::vecN<f32, 5> PreviousFrameLambda;
 #endif
     // NOTE: The Stabilization Factor. Bias to correct positional error(constraint error).
-    f32 Baumgarte;
+    shu::vec3f Baumgarte;
     shu::vec2f RotBaumgarte;
 };
 

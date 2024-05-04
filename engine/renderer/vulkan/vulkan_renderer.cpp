@@ -167,7 +167,7 @@ enum FpsOptions
 static shu::vec3f diamondEulerAngles = shu::Vec3f(0.0f);
 #endif
 
-static shu::vec3f Pos = shu::Vec3f(0, 5, 0);
+static shu::vec3f Pos = shu::Vec3f(0, 2.5f, 0);
 void
 ImGuiNewFrame()
 {
@@ -706,26 +706,26 @@ InitScene()
 #endif
 
 #if 1
-    auto *bA = Scene->AddCubeBody(Pos, shu::Vec3f(1, 1, 1), colorU32::Proto_Red, 0.0f, .5f,
-                                  shu::Vec3f(0, 0, 0));
-
-    auto *bB = Scene->AddCubeBody(Pos - shu::Vec3f(0, 5, 0), shu::Vec3f(1, 1, 1), colorU32::Proto_Red, 1.0f, .5f);
+    auto *bA = Scene->AddCubeBody(Pos, shu::Vec3f(5), colorU32::Proto_Red, 0.0f, .5f, shu::Vec3f(0, 0, 0));
+    auto *bB = Scene->AddCubeBody(shu::Vec3f(0, -2.5f, 0), shu::Vec3f(5), colorU32::Proto_Blue, 1.0f, .5f);
 
     hinge_constraint_3d *HingeJoint = ShuAllocateStruct(hinge_constraint_3d, MEMTYPE_GLOBAL);
     new (HingeJoint) hinge_constraint_3d();
 
     HingeJoint->A = bA;
     HingeJoint->B = bB;
-    HingeJoint->AnchorPointLS_A = bA->WorldToLocalSpace(bA->Position);
-    HingeJoint->AnchorPointLS_B = bB->WorldToLocalSpace(bA->Position);
+    HingeJoint->AnchorPointLS_A = shu::Vec3f(-0.5f, -0.5f, -0.5f);
+    HingeJoint->AnchorPointLS_B = shu::Vec3f(-0.5f,  0.5f, -0.5f);
 
-    // HingeJoint->q0 = shu::QuatInverse(bA->Rotation) * bB->Rotation;
+    // HingeJoint->q0 =
+    // shu::QuatInverse(bA->Rotation)
+    // * bB->Rotation;
 
     shu::vec3f RotationAxis = shu::Vec3f(1, 0, 0);
     HingeJoint->AxisA = shu::QuatRotateVec(shu::QuatInverse(bA->Rotation), RotationAxis);
     HingeJoint->AxisB = shu::QuatRotateVec(shu::QuatInverse(bB->Rotation), RotationAxis);
 
-    // bB->LinearVelocity = shu::Vec3f(10,  0,  0);
+    // bB->LinearVelocity = shu::Vec3f(100,  0,  0);
     // bB->LinearVelocity = shu::Vec3f( 0, 10,  0);
     // bB->LinearVelocity = shu::Vec3f( 0, 0, 10);
     Scene->Constraints3D.emplace_back(HingeJoint);
