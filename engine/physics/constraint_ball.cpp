@@ -59,10 +59,9 @@ ball_constraint_3d::PreSolve(const f32 dt)
     this->ApplyImpulses(Impulses);
 #endif
 
-    f32 ConstraintError = r2MinusR1.Dot(r2MinusR1);
-    ConstraintError = MAX(0.0f, ConstraintError - 0.01f);
-    const f32 Beta = 0.05f;
-    this->Baumgarte = -(Beta / dt) * ConstraintError;
+    shu::vec3f PositionError = -r2MinusR1;
+    const f32 Beta = 0.2f;
+    this->Baumgarte = -(Beta / dt) * PositionError;
 }
 
 void
@@ -75,9 +74,9 @@ ball_constraint_3d::Solve()
 
     auto J_invM_Jt = this->Jacobian * InvM * JacobianTranspose;
     auto Rhs = this->Jacobian * V * -1.0f;
-    // Rhs[0] += this->Baumgarte;
-    // Rhs[1] += this->Baumgarte;
-    // Rhs[2] += this->Baumgarte;
+    Rhs[0] += this->Baumgarte.x;
+    Rhs[1] += this->Baumgarte.y;
+    Rhs[2] += this->Baumgarte.z;
 
     auto LagrangeLambda = shu::LCP_GaussSeidel(J_invM_Jt, Rhs);
 

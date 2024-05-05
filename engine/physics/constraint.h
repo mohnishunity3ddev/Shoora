@@ -69,7 +69,7 @@ struct ball_constraint_3d : public constraint_3d
 #if WARM_STARTING
         this->PreviousFrameLambda.Zero();
 #endif
-        this->Baumgarte = 0.0f;
+        this->Baumgarte = shu::Vec3f(0.0f);
     }
 
     void PreSolve(const f32 dt) override;
@@ -83,8 +83,10 @@ struct ball_constraint_3d : public constraint_3d
     shu::vecN<f32, 3> PreviousFrameLambda;
 #endif
     // NOTE: The Stabilization Factor. Bias to correct positional error(constraint error).
-    f32 Baumgarte;
+    shu::vec3f Baumgarte;
 };
+
+/////////////////////////////////////////////////////////////////////////////////////////////
 
 struct hinge_constraint_3d : public constraint_3d
 {
@@ -115,6 +117,38 @@ struct hinge_constraint_3d : public constraint_3d
     shu::vec3f Baumgarte;
     shu::vec2f RotBaumgarte;
 };
+
+struct hinge_quat_constraint_3d : public constraint_3d
+{
+    hinge_quat_constraint_3d() : constraint_3d()
+    {
+        this->Jacobian.Zero();
+#if WARM_STARTING
+        this->PreviousFrameLambda.Zero();
+#endif
+        this->Baumgarte = shu::Vec3f(0.0f);
+        this->RotBaumgarte = shu::Vec2f(0.0f, 0.0f);
+    }
+
+    void PreSolve(const f32 dt) override;
+    void Solve() override;
+    void PostSolve() override;
+
+    // NOTE: q1_inv * q2 inital.
+    shu::quat q0;
+
+  private:
+    shu::matMN<f32, 5, 12> Jacobian;
+
+#if WARM_STARTING
+    shu::vecN<f32, 5> PreviousFrameLambda;
+#endif
+    // NOTE: The Stabilization Factor. Bias to correct positional error(constraint error).
+    shu::vec3f Baumgarte;
+    shu::vec2f RotBaumgarte;
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////
 
 struct penetration_constraint_3d : public constraint_3d
 {

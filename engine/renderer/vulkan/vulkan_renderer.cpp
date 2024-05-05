@@ -709,8 +709,8 @@ InitScene()
     auto *bA = Scene->AddCubeBody(Pos, shu::Vec3f(5), colorU32::Proto_Red, 0.0f, .5f, shu::Vec3f(0, 0, 0));
     auto *bB = Scene->AddCubeBody(shu::Vec3f(0, -2.5f, 0), shu::Vec3f(5), colorU32::Proto_Blue, 1.0f, .5f);
 
-    hinge_constraint_3d *HingeJoint = ShuAllocateStruct(hinge_constraint_3d, MEMTYPE_GLOBAL);
-    new (HingeJoint) hinge_constraint_3d();
+    ball_constraint_3d *HingeJoint = ShuAllocateStruct(ball_constraint_3d, MEMTYPE_GLOBAL);
+    new (HingeJoint) ball_constraint_3d();
 
     HingeJoint->A = bA;
     HingeJoint->B = bB;
