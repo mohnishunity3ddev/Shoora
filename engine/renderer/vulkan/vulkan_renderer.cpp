@@ -680,7 +680,7 @@ InitScene()
     FillDiamond();
 
     shoora_shape_convex *ConvexShapeMemory = ShuAllocateStruct(shoora_shape_convex, MEMTYPE_GLOBAL);
-
+    
     memory_arena ConvexArena{};
     size_t ConvexMemSize = shoora_shape_convex::GetRequiredSizeForConvexBuild(ARRAY_SIZE(g_diamond));
     SubArena(&ConvexArena, MEMTYPE_GLOBAL, ConvexMemSize);

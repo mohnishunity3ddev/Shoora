@@ -54,6 +54,7 @@ hinge_quat_constraint_3d::PreSolve(const f32 dt)
     this->Jacobian.Rows[2][11] = -skewPB.Rows[2][2];
 
     // NOTE: The Jacobians are all in A's Frame.
+    // IMPORTANT: NOTE: check engine/physics/concepts/constraints/quaternion_constraints for Jacobian Derivation
     shu::vec3f local_w1 = this->AxisLS_A;
     local_w1.Normalize();
 
