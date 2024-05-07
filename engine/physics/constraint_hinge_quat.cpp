@@ -54,7 +54,7 @@ hinge_quat_constraint_3d::PreSolve(const f32 dt)
     this->Jacobian.Rows[2][11] = -skewPB.Rows[2][2];
 
     // NOTE: The Jacobians are all in A's Frame.
-    shu::vec3f local_w1 = shu::QuatRotateVec(this->A->Rotation, this->AxisA);
+    shu::vec3f local_w1 = this->AxisLS_A;
     local_w1.Normalize();
 
     shu::vec3f local_u1, local_v1;
@@ -67,19 +67,19 @@ hinge_quat_constraint_3d::PreSolve(const f32 dt)
 
     shu::vec3f JacobianU1 = local_u1 * R1TimesEta;
     {
-        this->Jacobian.Rows[3][0] = 0.0f;
-        this->Jacobian.Rows[3][1] = 0.0f;
-        this->Jacobian.Rows[3][2] = 0.0f;
+        this->Jacobian.Rows[3][0]  = 0.0f;
+        this->Jacobian.Rows[3][1]  = 0.0f;
+        this->Jacobian.Rows[3][2]  = 0.0f;
 
-        this->Jacobian.Rows[3][3] = -JacobianU1.x;
-        this->Jacobian.Rows[3][4] = -JacobianU1.y;
-        this->Jacobian.Rows[3][5] = -JacobianU1.z;
+        this->Jacobian.Rows[3][3]  = -JacobianU1.x;
+        this->Jacobian.Rows[3][4]  = -JacobianU1.y;
+        this->Jacobian.Rows[3][5]  = -JacobianU1.z;
 
-        this->Jacobian.Rows[3][6] = 0.0f;
-        this->Jacobian.Rows[3][7] = 0.0f;
-        this->Jacobian.Rows[3][8] = 0.0f;
+        this->Jacobian.Rows[3][6]  = 0.0f;
+        this->Jacobian.Rows[3][7]  = 0.0f;
+        this->Jacobian.Rows[3][8]  = 0.0f;
 
-        this->Jacobian.Rows[3][9] = JacobianU1.x;
+        this->Jacobian.Rows[3][9]  = JacobianU1.x;
         this->Jacobian.Rows[3][10] = JacobianU1.y;
         this->Jacobian.Rows[3][11] = JacobianU1.z;
     }

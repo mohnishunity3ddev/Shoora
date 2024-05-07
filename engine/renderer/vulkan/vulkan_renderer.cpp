@@ -168,6 +168,7 @@ static shu::vec3f diamondEulerAngles = shu::Vec3f(0.0f);
 #endif
 
 static shu::vec3f Pos = shu::Vec3f(0, 2.5f, 0);
+static shu::vec3f EulerAngles = shu::Vec3f(0, 0, 0);
 void
 ImGuiNewFrame()
 {
@@ -222,6 +223,7 @@ ImGuiNewFrame()
         const shu::vec3f w = b->AngularVelocity;
         ImGui::Text("B Linear Vel: [%.3f, %.3f, %.3f].", v.x, v.y, v.z);
         ImGui::Text("B Angular Vel: [%.3f, %.3f, %.3f].", w.x, w.y, w.z);
+        ImGui::DragFloat3("Euler Angles", EulerAngles.E);
     }
 
 #if CREATE_WIREFRAME_PIPELINE
@@ -706,7 +708,7 @@ InitScene()
 #endif
 
 #if 1
-    auto *bA = Scene->AddCubeBody(Pos, shu::Vec3f(5), colorU32::Proto_Red, 0.0f, .5f, shu::Vec3f(0, 0, 0));
+    auto *bA = Scene->AddCubeBody(Pos, shu::Vec3f(5), colorU32::Proto_Red, 0.0f, .5f, EulerAngles);
     auto *bB = Scene->AddCubeBody(shu::Vec3f(0, -2.5f, 0), shu::Vec3f(5), colorU32::Proto_Blue, 1.0f, .5f);
 
     hinge_quat_constraint_3d *HingeJoint = ShuAllocateStruct(hinge_quat_constraint_3d, MEMTYPE_GLOBAL);
@@ -720,8 +722,8 @@ InitScene()
     // HingeJoint->q0 = shu::QuatInverse(bA->Rotation) * bB->Rotation;
 
     shu::vec3f RotationAxis = shu::Vec3f(1, 0, 0);
-    HingeJoint->AxisA = shu::QuatRotateVec(shu::QuatInverse(bA->Rotation), RotationAxis);
-    HingeJoint->AxisB = shu::QuatRotateVec(shu::QuatInverse(bB->Rotation), RotationAxis);
+    HingeJoint->AxisLS_A = shu::QuatRotateVec(shu::QuatInverse(bA->Rotation), RotationAxis);
+    HingeJoint->AxisLS_B = shu::QuatRotateVec(shu::QuatInverse(bB->Rotation), RotationAxis);
 
     // bB->LinearVelocity = shu::Vec3f(100,  0,  0);
     // bB->LinearVelocity = shu::Vec3f( 0, 10,  0);
@@ -1175,6 +1177,7 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 #endif
 
     Scene->Bodies[0].Position = Pos;
+    Scene->Bodies[0].Rotation = shu::QuatFromEuler(EulerAngles.x, EulerAngles.y, EulerAngles.z);
 
     // VK_CHECK(vkQueueWaitIdle(Context->Device.GraphicsQueue));
     shu::vec2f CurrentMousePos = shu::Vec2f(FramePacket->MouseXPos, FramePacket->MouseYPos);

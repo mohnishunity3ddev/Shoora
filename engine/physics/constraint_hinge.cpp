@@ -53,10 +53,10 @@ hinge_constraint_3d::PreSolve(const f32 dt)
     this->Jacobian.Rows[2][10] = -skewPB.Rows[2][1];
     this->Jacobian.Rows[2][11] = -skewPB.Rows[2][2];
 
-    shu::vec3f world_w1 = shu::QuatRotateVec(this->A->Rotation, this->AxisA);
+    shu::vec3f world_w1 = shu::QuatRotateVec(this->A->Rotation, this->AxisLS_A);
     world_w1.Normalize();
 
-    shu::vec3f world_w2 = shu::QuatRotateVec(this->B->Rotation, this->AxisA);
+    shu::vec3f world_w2 = shu::QuatRotateVec(this->B->Rotation, this->AxisLS_A);
     shu::vec3f world_u2, world_v2;
     world_w2.GetOrtho(world_u2, world_v2);
 

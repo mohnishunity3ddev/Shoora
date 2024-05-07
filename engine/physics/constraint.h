@@ -34,8 +34,8 @@ struct constraint_3d
     shoora_body *A;
     shoora_body *B;
 
-    shu::vec3f AxisA; // The axis of the the anchor point in A.
-    shu::vec3f AxisB; // The axis of the the anchor point in B.
+    shu::vec3f AxisLS_A; // The axis of the the anchor point in A.
+    shu::vec3f AxisLS_B; // The axis of the the anchor point in B.
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////
