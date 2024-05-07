@@ -61,6 +61,25 @@ namespace shu
         return Mat;
     }
 
+    mat3f
+    QuatRotationMatrix_Left(const quat &Q)
+    {
+        quat Quat = QuatNormalize(Q);
+        f32 w = Q.real; // cos(theta / 2)
+        f32 x = Q.complex.x; // nx*sin(theta / 2)
+        f32 y = Q.complex.y; // ny*sin(theta / 2)
+        f32 z = Q.complex.z; // nz*sin(theta / 2)
+
+        shu::vec3f Row0 = shu::Vec3f(1.0f - 2.0f*y*y - 2.0f*z*z,    2.0f*x*y + 2.0f*w*z,            2.0f*x*z - 2.0f*w*y);
+        shu::vec3f Row1 = shu::Vec3f(2.0f*x*y - 2.0f*w*z,           1.0f - 2.0f*x*x - 2.0f*z*z,     2.0f*y*z + 2.0f*w*x);
+        shu::vec3f Row2 = shu::Vec3f(2.0f*x*z + 2.0f*w*y,           2.0f*y*z - 2.0f*w*x,            1.0f - 2.0f*x*x - 2.0f*y*y);
+
+        shu::mat3f M = shu::Mat3f(Row0, Row1, Row2);
+        M = M.Transposed();
+
+        return M;
+    }
+
     mat4f
     RotateGimbalLock(mat4f &Mat, const vec3f &Axis, f32 AngleInDegrees)
     {

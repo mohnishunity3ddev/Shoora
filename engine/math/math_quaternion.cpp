@@ -283,11 +283,11 @@ namespace shu
     vec3f
     QuatRotateVec(const quat &Q, const vec3f &V)
     {
-        f32 Mag = QuatMagnitude(Q);
+        shu::quat qNormalized = shu::QuatNormalize(Q);
 
-        quat InvQ = QuatConjugate(Q);
+        quat InvQ = QuatConjugate(qNormalized);
         quat qVec = Quat(0.0f, V.x, V.y, V.z);
-        quat qProduct = (Q*qVec)*InvQ;
+        quat qProduct = (qNormalized*qVec)*InvQ;
 
         vec3f Result = qProduct.complex;
         return Result;

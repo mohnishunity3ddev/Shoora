@@ -82,6 +82,7 @@ namespace shu
     template <typename T> SHU_EXPORT mat3<T> operator-(const mat3<T> &M1, const mat3<T> &M2);
     template <typename T> SHU_EXPORT mat3<T> operator*(const mat3<T> &M1, T B);
     template <typename T> SHU_EXPORT mat3<T> operator*(const mat3<T> &M1, const mat3<T> &M2);
+    template <typename T> SHU_EXPORT vec3<T> operator*(const mat3<T> &M, const vec3<T> &V);
     template <typename T> SHU_EXPORT vec3<T> operator*(const vec3<T> &V, const mat3<T> &M1);
     template <typename T> SHU_EXPORT mat3<T> operator/(const mat3<T> &M1, T B);
     template <typename T> SHU_EXPORT mat3<T> operator/(const mat3<T> &M1, const mat3<T> &M2);
@@ -439,6 +440,19 @@ namespace shu
                 }
             }
         }
+
+        return Result;
+    }
+
+    template <typename T>
+    vec3<T>
+    operator*(const mat3<T> &M, const vec3<T> &V)
+    {
+        vec3<T> Result;
+
+        Result.x = M.r0.Dot(V);
+        Result.y = M.r1.Dot(V);
+        Result.z = M.r2.Dot(V);
 
         return Result;
     }

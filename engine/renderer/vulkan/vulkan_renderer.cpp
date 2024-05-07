@@ -709,17 +709,15 @@ InitScene()
     auto *bA = Scene->AddCubeBody(Pos, shu::Vec3f(5), colorU32::Proto_Red, 0.0f, .5f, shu::Vec3f(0, 0, 0));
     auto *bB = Scene->AddCubeBody(shu::Vec3f(0, -2.5f, 0), shu::Vec3f(5), colorU32::Proto_Blue, 1.0f, .5f);
 
-    ball_constraint_3d *HingeJoint = ShuAllocateStruct(ball_constraint_3d, MEMTYPE_GLOBAL);
-    new (HingeJoint) ball_constraint_3d();
+    hinge_quat_constraint_3d *HingeJoint = ShuAllocateStruct(hinge_quat_constraint_3d, MEMTYPE_GLOBAL);
+    new (HingeJoint) hinge_quat_constraint_3d();
 
     HingeJoint->A = bA;
     HingeJoint->B = bB;
     HingeJoint->AnchorPointLS_A = shu::Vec3f(-0.5f, -0.5f, -0.5f);
     HingeJoint->AnchorPointLS_B = shu::Vec3f(-0.5f,  0.5f, -0.5f);
 
-    // HingeJoint->q0 =
-    // shu::QuatInverse(bA->Rotation)
-    // * bB->Rotation;
+    // HingeJoint->q0 = shu::QuatInverse(bA->Rotation) * bB->Rotation;
 
     shu::vec3f RotationAxis = shu::Vec3f(1, 0, 0);
     HingeJoint->AxisA = shu::QuatRotateVec(shu::QuatInverse(bA->Rotation), RotationAxis);
@@ -957,24 +955,14 @@ InitializeLightData()
 void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
 {
-    shu::quat q0 = shu::Quat(1, 2, 3, 4);
-    shu::quat q1 = shu::Quat(5, 6, 7, 8);
-    shu::quat q2 = shu::Quat(9, 10, 11, 12);
-    shu::quat q3 = shu::Quat(13, 14, 15, 16);
+    shu::vec3f v0 = shu::Vec3f(31.12f, 43.12f, 57.213f);
+    shu::quat q0 = shu::Quat(1, 2, 6, 7);
+    shu::QuatNormalize(q0);
 
-    shu::vec4f qProd = (q0 * q1 * q2 * q3).ToVec4f();
-    shu::vec4f qProd_0 = q0.LeftOp() * (q2 * q3).RightOp() * q1.ToVec4f();
+    shu::vec3f v0Proj = shu::QuatRotateVec(q0, v0);
 
-    shu::mat4f P;
-    P.Row0 = shu::Vec4f(0, 0, 0, 0);
-    P.Row1 = shu::Vec4f(0, 1, 0, 0);
-    P.Row2 = shu::Vec4f(0, 0, 1, 0);
-    P.Row3 = shu::Vec4f(0, 0, 0, 1);
-    shu::mat4f Pt = P.Transposed();
-
-    auto qv = P * qProd;
-
-    ASSERT(qProd == qProd_0);
+    shu::mat3f R = shu::QuatRotationMatrix_Left(q0);
+    shu::vec3f v0Proj_2 = R * v0;
 
     platform_memory GameMemory = AppInfo->GameMemory;
     InitializeMemory(GameMemory.PermSize, GameMemory.PermMemory, GameMemory.FrameMemorySize, GameMemory.FrameMemory);

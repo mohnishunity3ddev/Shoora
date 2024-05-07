@@ -7,6 +7,8 @@
 
 #define WARM_STARTING 1
 
+/////////////////////////////////////////////////////////////////////////////////////////////
+
 struct constraint_3d
 {
   public:
@@ -36,6 +38,8 @@ struct constraint_3d
     shu::vec3f AxisB; // The axis of the the anchor point in B.
 };
 
+/////////////////////////////////////////////////////////////////////////////////////////////
+
 struct joint_constraint_3d : public constraint_3d
 {
     joint_constraint_3d() : constraint_3d()
@@ -60,6 +64,8 @@ struct joint_constraint_3d : public constraint_3d
     // NOTE: The Stabilization Factor. Bias to correct positional error(constraint error).
     f32 Baumgarte;
 };
+
+/////////////////////////////////////////////////////////////////////////////////////////////
 
 struct ball_constraint_3d : public constraint_3d
 {
@@ -118,6 +124,8 @@ struct hinge_constraint_3d : public constraint_3d
     shu::vec2f RotBaumgarte;
 };
 
+/////////////////////////////////////////////////////////////////////////////////////////////
+
 struct hinge_quat_constraint_3d : public constraint_3d
 {
     hinge_quat_constraint_3d() : constraint_3d()
@@ -172,6 +180,9 @@ struct penetration_constraint_3d : public constraint_3d
     f32 Friction;
 };
 
+/////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
+
 struct constraint_2d
 {
     shoora_body *A;
@@ -193,6 +204,7 @@ struct constraint_2d
     virtual void PostSolve() {}
 };
 
+/////////////////////////////////////////////////////////////////////////////////////////////
 
 struct joint_constraint_2d : public constraint_2d
 {
@@ -214,6 +226,8 @@ struct joint_constraint_2d : public constraint_2d
     virtual void Solve() override;
     virtual void PostSolve() override;
 };
+
+/////////////////////////////////////////////////////////////////////////////////////////////
 
 struct penetration_constraint_2d : public constraint_2d
 {
@@ -242,6 +256,8 @@ struct penetration_constraint_2d : public constraint_2d
     virtual void Solve() override;
     virtual void PostSolve() override;
 };
+
+/////////////////////////////////////////////////////////////////////////////////////////////
 
 #define CONSTRAINT_H
 #endif // CONSTRAINT_H
