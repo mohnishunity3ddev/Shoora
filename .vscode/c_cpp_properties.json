@@ -10,7 +10,10 @@
                 "${CPP_LIBRARIES}\\volk",
                 "${CPP_LIBRARIES}\\stb",
                 "${CPP_LIBRARIES}\\meshoptimizer\\src",
-                "${workspaceFolder}/engine"
+                "${workspaceFolder}/engine",
+                "${workspaceFolder}\\python_stuff\\extern\\pybind11\\include",
+                "${workspaceFolder}\\python_stuff\\extern\\eigen",
+                "${PYTHON_INCLUDE_DIR}"
             ],
             "defines": [
                 "WIN32",

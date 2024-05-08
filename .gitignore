@@ -3,3 +3,8 @@ bin_dbgFiles/*
 *.spv
 imgui.ini
 app_dump.txt
+
+python_stuff/extern/*
+python_stuff/bin
+python_stuff/numpy-practice/__pycache__/*
+

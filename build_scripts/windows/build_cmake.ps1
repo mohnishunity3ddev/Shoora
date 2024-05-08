@@ -6,6 +6,12 @@ b_shader
 
 $arg = $args[0]
 $arg2 = $args[1]
+if([bool]$arg -and (($arg -eq "py") -or  ($arg -eq "python") )) {
+    Set-Location $PROJECT_ROOT_DIR_PATH\python_stuff
+    .\build.ps1
+    return
+}
+
 if([bool]$arg -and (($arg -eq "ms") -or  ($arg -eq "msvc") )) {
     if([bool]$arg2 -and (($arg2 -eq "start") -or ($arg2 -eq "s") -or ($arg2 -eq "1") )) {
         Invoke-Expression "& msvc b start"

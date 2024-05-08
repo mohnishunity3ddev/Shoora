@@ -22,6 +22,18 @@
             "cwd": "${workspaceRoot}/assets",
             "environment": [],
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Debug Python C++ Example",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/extern/python_integration/bin/Debug/python_example.exe",
+            "args": ["vscode"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}/extern/python_integration/bin/Debug",
+            "environment": [],
+            "console": "integratedTerminal",
+            "preLaunchTask": "python-build"
         }
     ]
 }

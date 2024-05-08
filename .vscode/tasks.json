@@ -96,6 +96,30 @@
                 "showReuseMessage": true,
                 "clear": false
             }
+        },
+        {
+            "label": "python-build",
+            "type": "shell",
+            "command": "${workspaceFolder}\\python_stuff\\build.ps1",
+            "windows": {
+                "options": {
+                    "shell": {
+                        "executable": "pwsh",
+                        "args": [
+                            "-File"
+                        ]
+                    }
+                }
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
         }
     ]
 }
