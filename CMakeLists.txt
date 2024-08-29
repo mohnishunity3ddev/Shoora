@@ -87,10 +87,6 @@ set(LIBRARY_DIR ${CMAKE_SOURCE_DIR}/libs)
 # set_property(TARGET glad            PROPERTY FOLDER "ThirdPartyLibraries")
 # set_property(TARGET assimp          PROPERTY FOLDER "ThirdPartyLibraries")
 
-include_directories(extern/pybind11/include)
-add_subdirectory(extern/pybind11)
-pybind11_add_module(example extern/python_example.cpp)
-
 # Include Common SharedUtils
 add_subdirectory(game)
 add_subdirectory(engine)
