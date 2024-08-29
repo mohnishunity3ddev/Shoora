@@ -247,7 +247,7 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
 {
     // NOTE: If I am debugging, the frametime is going to be huge. So hence, clamping here.
 #if _SHU_DEBUG
-    if(dt > (1.0f/29.0f))
+    if (dt > (1.0f / 29.0f))
     {
         dt = (1.0f / 29.0f);
     }
@@ -271,12 +271,12 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
     i32 PenetrationConstraintCount = 0;
 
     // Sum all the external forces to the body
-    for(i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
+    for (i32 BodyIndex = 0; BodyIndex < BodyCount; ++BodyIndex)
     {
         ASSERT(BodyIndex < BodyCount);
         shoora_body *Body = Bodies + BodyIndex;
 
-        shu::vec3f WeightForce = shu::Vec3f(0.0f, -9.8f*Body->Mass, 0.0f);
+        shu::vec3f WeightForce = shu::Vec3f(0.0f, -9.8f * Body->Mass, 0.0f);
         Body->AddForce(WeightForce);
     }
 
@@ -303,64 +303,66 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
     contact *Contacts = (contact *)_alloca(contactsMemSize);
     memset(Contacts, 0, contactsMemSize);
 
-//     for(i32 i = 0; i < FinalPairsCount; ++i)
-//     {
-//         const collision_pair &Pair = CollisionPairs[i];
-//         shoora_body *BodyA = &Bodies[Pair.A];
-//         shoora_body *BodyB = &Bodies[Pair.B];
+// #define DISABLE_COLLISIONS
+#ifndef DISABLE_COLLISIONS
+    for (i32 i = 0; i < FinalPairsCount; ++i)
+    {
+        const collision_pair &Pair = CollisionPairs[i];
+        shoora_body *BodyA = &Bodies[Pair.A];
+        shoora_body *BodyB = &Bodies[Pair.B];
 
-//         if(BodyA->IsStatic() && BodyB->IsStatic()) { continue; }
+        if (BodyA->IsStatic() && BodyB->IsStatic())
+        {
+            continue;
+        }
 
-//         // TODO: No need for MaxContactCounts here since Contact Manifolds have been added.
-//         contact _Contacts[MaxContactCountPerPair];
-//         i32 ContactCount = 0;
-//         if(collision::IsColliding(BodyA, BodyB, dt, _Contacts, ContactCount))
-//         {
-//             // ASSERT(ContactCount > 0 && ContactCount <= MaxContactCountPerPair);
-//             ASSERT(ContactCount == 1);
-//             // TODO)): If this assert gets hit, maybe change MaxContacts to include MaxContactCountPerPair there.
-//             // ASSERT(NumContacts != (MaxContacts - 1));
-//             const contact &Contact = _Contacts[0];
-//             if (Contact.TimeOfImpact == 0.0f)
-//             {
-//                 // NOTE: Static contact
-// #if 0
-//                 penetration_constraint_3d PenConstraint;
-//                 PenConstraint.A = BodyA;
-//                 PenConstraint.B = BodyB;
+        // TODO: No need for MaxContactCounts here since Contact Manifolds have been added.
+        contact _Contacts[MaxContactCountPerPair];
+        i32 ContactCount = 0;
+        if (collision::IsColliding(BodyA, BodyB, dt, _Contacts, ContactCount))
+        {
+            // ASSERT(ContactCount > 0 && ContactCount <= MaxContactCountPerPair);
+            ASSERT(ContactCount == 1);
+            // TODO)): If this assert gets hit, maybe change MaxContacts to include MaxContactCountPerPair there.
+            // ASSERT(NumContacts != (MaxContacts - 1));
+            const contact &Contact = _Contacts[0];
+            if (Contact.TimeOfImpact == 0.0f)
+            {
+                // NOTE: Static contact
+#if 0
+                penetration_constraint_3d PenConstraint;
+                PenConstraint.A = BodyA;
+                PenConstraint.B = BodyB;
 
-//                 PenConstraint.AnchorPointLS_A = Contact.ReferenceHitPointA_LocalSpace;
-//                 PenConstraint.AnchorPointLS_B = Contact.IncidentHitPointB_LocalSpace;
+                PenConstraint.AnchorPointLS_A = Contact.ReferenceHitPointA_LocalSpace;
+                PenConstraint.AnchorPointLS_B = Contact.IncidentHitPointB_LocalSpace;
 
-//                 // NOTE: Normal in body A's local space.
-//                 shu::vec3f Normal = shu::QuatRotateVec(shu::QuatConjugate(PenConstraint.A->Rotation),
-//                                                        -Contact.Normal);
-//                 PenConstraint.Normal_LocalSpaceA = shu::Normalize(Normal);
+                // NOTE: Normal in body A's local space.
+                shu::vec3f Normal = shu::QuatRotateVec(shu::QuatConjugate(PenConstraint.A->Rotation),
+                                                       -Contact.Normal);
+                PenConstraint.Normal_LocalSpaceA = shu::Normalize(Normal);
 
-//                 ASSERT(PenetrationConstraintCount <= 30);
-//                 PenetrationConstraints3D[PenetrationConstraintCount++] = PenConstraint;
-// #endif
-//                 Manifolds.AddContact(Contact);
-//             }
-//             else
-//             {
-//                 // NOTE: Intra-Frame Contact.
-//                 // TODO: Handling Intra-Frame Contacts using Projection method and not using penetration
-//                 // TODO: constraints. Not getting good results for intra-frame contacts using penetration
-//                 // TODO: constraints.
-//                 Contacts[NumContacts++] = Contact;
-//                 // Manifolds.AddContact(Contact);
-//             }
-//             if (DebugMode)
-//             {
-//                 shoora_graphics::DrawSphere(Contacts[i].ReferenceHitPointA, .1f, colorU32::Cyan);
-//                 shoora_graphics::DrawSphere(Contacts[i].IncidentHitPointB, .1f, colorU32::Green);
-//             }
-//         }
-//     }
+                ASSERT(PenetrationConstraintCount <= 30);
+                PenetrationConstraints3D[PenetrationConstraintCount++] = PenConstraint;
+#endif
+                Manifolds.AddContact(Contact);
+            }
+            else
+            {
+                // NOTE: Intra-Frame Contact.
+                Contacts[NumContacts++] = Contact;
+            }
+            if (DebugMode)
+            {
+                shoora_graphics::DrawSphere(Contacts[i].ReferenceHitPointA, .1f, colorU32::Cyan);
+                shoora_graphics::DrawSphere(Contacts[i].IncidentHitPointB, .1f, colorU32::Green);
+            }
+        }
+    }
+#endif
 
     // NOTE: Sort the timeofImpacts from earliest to latest.
-    if(NumContacts > 1)
+    if (NumContacts > 1)
     {
         QuicksortRecursive(Contacts, 0, NumContacts, CompareContacts);
     }
@@ -381,9 +383,9 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
     this->Manifolds.PreSolve(dt);
 
     const i32 NumIterations = 6;
-    for(i32 i = 0; i < NumIterations; ++i)
+    for (i32 i = 0; i < NumIterations; ++i)
     {
-        for(i32 j = 0; j < NumConstraints; ++j)
+        for (i32 j = 0; j < NumConstraints; ++j)
         {
             this->Constraints3D[j]->Solve();
         }
@@ -423,15 +425,20 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
     // handling correctly using Continuous Collision Detection data that we did earlier by only advancing the frame
     // by toi instead of advancing by its Full DeltaTime which is in the dt variable passed to this function.
     f32 AccumulatedTime = 0.0f;
+#if ENABLE_CCD
     for (i32 i = 0; i < NumContacts; ++i)
     {
         contact &Contact = Contacts[i];
+        LogWarn("toi: %f.\n", Contact.TimeOfImpact);
         const f32 local_dt = Contact.TimeOfImpact - AccumulatedTime;
 
         shoora_body *BodyA = Contact.ReferenceBodyA;
         shoora_body *BodyB = Contact.IncidentBodyB;
 
-        if(BodyA->IsStatic() && BodyB->IsStatic()) { continue; }
+        if (BodyA->IsStatic() && BodyB->IsStatic())
+        {
+            continue;
+        }
 
         // Velocity + Position Update.
         for (i32 j = 0; j < BodyCount; ++j)
@@ -459,11 +466,16 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
 #endif
         AccumulatedTime += local_dt;
     }
+#endif
 
     // NOTE: Making sure that we advance all the bodies by the full dt time passed in here. They have already
     // advanced by the "AccumulatedTime" amount, doing the remaining time here.
     const f32 TimeRemaining = dt - AccumulatedTime;
-    if(TimeRemaining > 0.0f)
+    // LogDebug("TimeRemaining: %f\n", TimeRemaining);
+    // LogDebug("dt: %f\n", dt);
+    // LogDebug("AccumulatedTime: %f\n", AccumulatedTime);
+
+    if (TimeRemaining > 0.0f)
     {
         for (i32 j = 0; j < BodyCount; ++j)
         {
@@ -480,7 +492,7 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
         }
     }
 
-    if(DebugMode)
+    if (DebugMode)
     {
         for (i32 i = 0; i < BodyCount; ++i)
         {
@@ -500,6 +512,7 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
 #endif
 
     EndTemporaryMemory(MemoryFlush);
+
 }
 
 void

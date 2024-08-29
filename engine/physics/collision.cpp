@@ -2,7 +2,7 @@
 #include <mesh/database/mesh_database.h>
 #include "gjk.h"
 
-#define ENABLE_CCD 1
+#define ENABLE_CCD 0
 
 b32
 collision::IsColliding(shoora_body *A, shoora_body *B, const f32 DeltaTime, contact *Contacts, i32 &ContactCount)
@@ -227,6 +227,7 @@ GJK_ConservativeAdvance(shoora_body *A, shoora_body *B, f32 DeltaTime, contact &
         // NOTE: Check for Intersection
         b32 DidIntersect = GJK_Intersect(A, B, Contact);
         if(DidIntersect) {
+            ASSERT(timeOfImpact >= 0.0f);
             Contact.TimeOfImpact = timeOfImpact;
             A->Update(-timeOfImpact);
             B->Update(-timeOfImpact);

@@ -142,9 +142,6 @@ struct hinge_quat_constraint_3d : public constraint_3d
     void Solve() override;
     void PostSolve() override;
 
-    // NOTE: q1_inv * q2 inital.
-    shu::quat q0;
-
   private:
     shu::matMN<f32, 5, 12> Jacobian;
 

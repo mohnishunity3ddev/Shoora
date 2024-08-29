@@ -218,12 +218,12 @@ ImGuiNewFrame()
 
     if(Scene->GetBodyCount() > 1)
     {
-        const shoora_body *b = &Scene->Bodies[1];
-        const shu::vec3f v = b->LinearVelocity;
-        const shu::vec3f w = b->AngularVelocity;
-        ImGui::Text("B Linear Vel: [%.3f, %.3f, %.3f].", v.x, v.y, v.z);
-        ImGui::Text("B Angular Vel: [%.3f, %.3f, %.3f].", w.x, w.y, w.z);
-        ImGui::DragFloat3("Euler Angles", EulerAngles.E);
+        // const shoora_body *b = &Scene->Bodies[1];
+        // const shu::vec3f v = b->LinearVelocity;
+        // const shu::vec3f w = b->AngularVelocity;
+        // ImGui::Text("B Linear Vel: [%.3f, %.3f, %.3f].", v.x, v.y, v.z);
+        // ImGui::Text("B Angular Vel: [%.3f, %.3f, %.3f].", w.x, w.y, w.z);
+        // ImGui::DragFloat3("Euler Angles", EulerAngles.E);
     }
 
 #if CREATE_WIREFRAME_PIPELINE
@@ -680,7 +680,7 @@ InitScene()
     FillDiamond();
 
     shoora_shape_convex *ConvexShapeMemory = ShuAllocateStruct(shoora_shape_convex, MEMTYPE_GLOBAL);
-    
+
     memory_arena ConvexArena{};
     size_t ConvexMemSize = shoora_shape_convex::GetRequiredSizeForConvexBuild(ARRAY_SIZE(g_diamond));
     SubArena(&ConvexArena, MEMTYPE_GLOBAL, ConvexMemSize);
@@ -707,7 +707,7 @@ InitScene()
 #endif
 #endif
 
-#if 1
+#if 0
     auto *bA = Scene->AddCubeBody(Pos, shu::Vec3f(5), colorU32::Proto_Red, 0.0f, .5f, EulerAngles);
     auto *bB = Scene->AddCubeBody(shu::Vec3f(0, -2.5f, 0), shu::Vec3f(5), colorU32::Proto_Blue, 1.0f, .5f);
 
@@ -786,7 +786,7 @@ InitScene()
     AddStandardSandBox();
 #endif
 
-#if 0
+#if 1
     f32 startY = 1;
     shu::rand Rand;
     shoora_body *Body;
@@ -1176,8 +1176,8 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     }
 #endif
 
-    Scene->Bodies[0].Position = Pos;
-    Scene->Bodies[0].Rotation = shu::QuatFromEuler(EulerAngles.x, EulerAngles.y, EulerAngles.z);
+    // Scene->Bodies[0].Position = Pos;
+    // Scene->Bodies[0].Rotation = shu::QuatFromEuler(EulerAngles.x, EulerAngles.y, EulerAngles.z);
 
     // VK_CHECK(vkQueueWaitIdle(Context->Device.GraphicsQueue));
     shu::vec2f CurrentMousePos = shu::Vec2f(FramePacket->MouseXPos, FramePacket->MouseYPos);
