@@ -944,6 +944,81 @@ void platform_mutex::Unlock()
     }
 }
 
+void
+Platform_FreeFileMemory(platform_read_file_result *File)
+{
+    if (File->Data)
+    {
+        VirtualFree(File->Data, 0, MEM_RELEASE);
+        File->Size = 0;
+    }
+
+    File->Path = nullptr;
+}
+
+platform_read_file_result
+Platform_ReadFile(const char *Path)
+{
+    platform_read_file_result Result = {};
+    ASSERT(Path != nullptr);
+
+    HANDLE FileHandle = CreateFileA(Path, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+
+    if (FileHandle != INVALID_HANDLE_VALUE)
+    {
+        LARGE_INTEGER FileSize;
+        if (GetFileSizeEx(FileHandle, &FileSize))
+        {
+            ASSERT(FileSize.QuadPart <= 0xffffffff);
+            u32 FileSize32 = (u32)FileSize.QuadPart;
+
+            Result.Data = (u8 *)VirtualAlloc(0, FileSize32, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+            if (Result.Data)
+            {
+                    DWORD BytesRead = 100;
+                    if (ReadFile(FileHandle, Result.Data, FileSize32, &BytesRead, 0))
+                    {
+                        ASSERT(BytesRead == FileSize32);
+                        Result.Size = FileSize32;
+                        Result.Path = const_cast<char *>(Path);
+                    }
+                    else
+                    {
+                        Platform_FreeFileMemory(&Result);
+                    }
+            }
+        }
+
+        CloseHandle(FileHandle);
+    }
+
+    return Result;
+}
+
+b32
+Platform_WriteFile(char *Filename, u32 Size, void *Data)
+{
+    b32 Result = false;
+    HANDLE FileHandle = CreateFileA(Filename, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
+
+    if (FileHandle != INVALID_HANDLE_VALUE)
+    {
+        DWORD BytesWritten;
+        if (WriteFile(FileHandle, Data, Size, &BytesWritten, 0))
+        {
+            ASSERT(Size == BytesWritten);
+            Result = true;
+        }
+        else
+        {
+            Result = false;
+        }
+        CloseHandle(FileHandle);
+    }
+
+    return Result;
+}
+
 // TODO)): Right now this is the only entry point since win32 is the only platform right now.
 // TODO)): Have to implement multiple entrypoints for all platforms.
 i32 WINAPI

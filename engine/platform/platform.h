@@ -98,6 +98,13 @@ struct platform_mutex
     void Unlock();
 };
 
+struct platform_read_file_result
+{
+    char *Path;
+    u32 Size;
+    u8 *Data;
+};
+
 SHU_EXPORT void LogOutput(LogType LogType, const char *Format, ...);
 SHU_EXPORT void LogInfo(const char *Format, ...);
 SHU_EXPORT void LogDebug(const char *Format, ...);
@@ -119,7 +126,12 @@ SHU_EXPORT void LogString(const char *String);
 SHU_EXPORT void Platform_GenerateString(char *Buffer, u32 BufferSize, const char *Format, ...);
 SHU_EXPORT void Platform_FreeMemory(void *Memory);
 
-SHU_EXPORT void Platform_ExitApplication(const char *Reason);
+SHU_EXPORT platform_read_file_result Platform_ReadFile(const char *Path);
+SHU_EXPORT void Platform_FreeFileMemory(platform_read_file_result *File);
+SHU_EXPORT b32 Platform_WriteFile(char *Filename, u32 Size, void *Data);
+
+SHU_EXPORT
+void Platform_ExitApplication(const char *Reason);
 SHU_EXPORT void Platform_Sleep(u32 ms);
 SHU_EXPORT b8 Platform_GetKeyInputState(u8 KeyCode, KeyState State);
 SHU_EXPORT void Platform_ToggleFPSCap();
