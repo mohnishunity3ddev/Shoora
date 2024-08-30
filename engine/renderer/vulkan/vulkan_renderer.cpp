@@ -167,7 +167,7 @@ enum FpsOptions
 static shu::vec3f diamondEulerAngles = shu::Vec3f(0.0f);
 #endif
 
-static shu::vec3f Pos = shu::Vec3f(0, 2.5f, 0);
+static shu::vec3f Pos = shu::Vec3f(0, 0, 0);
 static shu::vec3f EulerAngles = shu::Vec3f(0, 0, 0);
 void
 ImGuiNewFrame()
@@ -218,12 +218,12 @@ ImGuiNewFrame()
 
     if(Scene->GetBodyCount() > 1)
     {
-        // const shoora_body *b = &Scene->Bodies[1];
-        // const shu::vec3f v = b->LinearVelocity;
-        // const shu::vec3f w = b->AngularVelocity;
-        // ImGui::Text("B Linear Vel: [%.3f, %.3f, %.3f].", v.x, v.y, v.z);
-        // ImGui::Text("B Angular Vel: [%.3f, %.3f, %.3f].", w.x, w.y, w.z);
-        // ImGui::DragFloat3("Euler Angles", EulerAngles.E);
+        const shoora_body *b = &Scene->Bodies[1];
+        const shu::vec3f v = b->LinearVelocity;
+        const shu::vec3f w = b->AngularVelocity;
+        ImGui::Text("B Linear Vel: [%.3f, %.3f, %.3f].", v.x, v.y, v.z);
+        ImGui::Text("B Angular Vel: [%.3f, %.3f, %.3f].", w.x, w.y, w.z);
+        ImGui::DragFloat3("Euler Angles", EulerAngles.E);
     }
 
 #if CREATE_WIREFRAME_PIPELINE
@@ -707,19 +707,18 @@ InitScene()
 #endif
 #endif
 
-#if 0
+#if 0 // Hinge Joint
+    Pos = shu::Vec3f(0, -2.5f, 0);
     auto *bA = Scene->AddCubeBody(Pos, shu::Vec3f(5), colorU32::Proto_Red, 0.0f, .5f, EulerAngles);
-    auto *bB = Scene->AddCubeBody(shu::Vec3f(0, -2.5f, 0), shu::Vec3f(5), colorU32::Proto_Blue, 1.0f, .5f);
+    auto *bB = Scene->AddCubeBody(shu::Vec3f(0, 2.5f, 0), shu::Vec3f(5), colorU32::Proto_Blue, 1.0f, .5f);
 
     hinge_quat_constraint_3d *HingeJoint = ShuAllocateStruct(hinge_quat_constraint_3d, MEMTYPE_GLOBAL);
     new (HingeJoint) hinge_quat_constraint_3d();
 
     HingeJoint->A = bA;
     HingeJoint->B = bB;
-    HingeJoint->AnchorPointLS_A = shu::Vec3f(-0.5f, -0.5f, -0.5f);
-    HingeJoint->AnchorPointLS_B = shu::Vec3f(-0.5f,  0.5f, -0.5f);
-
-    // HingeJoint->q0 = shu::QuatInverse(bA->Rotation) * bB->Rotation;
+    HingeJoint->AnchorPointLS_A = shu::Vec3f(-0.5f, 0.5f, -0.5f);
+    HingeJoint->AnchorPointLS_B = shu::Vec3f(-0.5f, -0.5f, -0.5f);
 
     shu::vec3f RotationAxis = shu::Vec3f(1, 0, 0);
     HingeJoint->AxisLS_A = shu::QuatRotateVec(shu::QuatInverse(bA->Rotation), RotationAxis);
@@ -729,6 +728,50 @@ InitScene()
     // bB->LinearVelocity = shu::Vec3f( 0, 10,  0);
     // bB->LinearVelocity = shu::Vec3f( 0, 0, 10);
     Scene->Constraints3D.emplace_back(HingeJoint);
+
+#endif
+
+#if 0 // Slider Joint
+    Pos = shu::Vec3f(0, -2.5f, 0);
+    auto *bA = Scene->AddCubeBody(Pos, shu::Vec3f(5), colorU32::Proto_Red, 0.0f, .5f, EulerAngles); // body A is the slider.
+    auto *bB = Scene->AddCubeBody(shu::Vec3f(0, -2.5f, 0), shu::Vec3f(5), colorU32::Proto_Blue, 1.0f, .5f);
+
+    slider_constraint_3d *SliderJoint = ShuAllocateStruct(slider_constraint_3d, MEMTYPE_GLOBAL);
+    new (SliderJoint) slider_constraint_3d();
+
+    SliderJoint->A = bA;
+    SliderJoint->B = bB;
+    SliderJoint->AnchorPointLS_A = shu::Vec3f(0,  0.5f, 0);
+    SliderJoint->AnchorPointLS_B = shu::Vec3f(0, -0.5f, 0);
+
+    shu::vec3f SliderAxisLS_A = shu::Vec3f(1, 0, 0);
+    SliderJoint->AxisLS_A  = SliderAxisLS_A;
+    SliderJoint->AxisLS_B = shu::QuatRotateVec(shu::QuatInverse(bB->Rotation), SliderAxisLS_A);
+
+    Scene->Constraints3D.emplace_back(SliderJoint);
+
+#endif
+
+#if 1 // Slider Joint Limited
+    Pos = shu::Vec3f(0, -2.5f, 0);
+    auto *bA = Scene->AddCubeBody(Pos, shu::Vec3f(90.0f, 2.5f, 2.5f), colorU32::Proto_Red, 0.0f, .5f, EulerAngles); // body A is the slider.
+    auto *bB = Scene->AddCubeBody(shu::Vec3f(0, 1.25f, 0), shu::Vec3f(2.5f), colorU32::Proto_Blue, 1.0f, .5f);
+
+    slider_constraint_limit_3d *SliderJoint = ShuAllocateStruct(slider_constraint_limit_3d, MEMTYPE_GLOBAL);
+    new (SliderJoint) slider_constraint_limit_3d();
+
+    SliderJoint->A = bA;
+    SliderJoint->B = bB;
+    SliderJoint->AnchorPointLS_A = shu::Vec3f(0,  0.5f, 0);
+    SliderJoint->AnchorPointLS_B = shu::Vec3f(0, -0.5f, 0);
+    SliderJoint->MinLimit = -45;
+    SliderJoint->MaxLimit =  45;
+
+    shu::vec3f SliderAxisLS_A = shu::Vec3f(1, 0, 0);
+    SliderJoint->AxisLS_A  = SliderAxisLS_A;
+    SliderJoint->AxisLS_B = shu::QuatRotateVec(shu::QuatInverse(bB->Rotation), SliderAxisLS_A);
+
+    Scene->Constraints3D.emplace_back(SliderJoint);
 
 #endif
 
@@ -786,7 +829,7 @@ InitScene()
     AddStandardSandBox();
 #endif
 
-#if 1
+#if 0
     f32 startY = 1;
     shu::rand Rand;
     shoora_body *Body;
@@ -1176,8 +1219,8 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
     }
 #endif
 
-    // Scene->Bodies[0].Position = Pos;
-    // Scene->Bodies[0].Rotation = shu::QuatFromEuler(EulerAngles.x, EulerAngles.y, EulerAngles.z);
+    Scene->Bodies[0].Position = Pos;
+    Scene->Bodies[0].Rotation = shu::QuatFromEuler(EulerAngles.x, EulerAngles.y, EulerAngles.z);
 
     // VK_CHECK(vkQueueWaitIdle(Context->Device.GraphicsQueue));
     shu::vec2f CurrentMousePos = shu::Vec2f(FramePacket->MouseXPos, FramePacket->MouseYPos);

@@ -94,7 +94,7 @@ shoora_body::WorldToLocalSpace(const shu::vec3f &PointWS) const
 shu::vec3f
 shoora_body::LocalToWorldSpace(const shu::vec3f &PointLS) const
 {
-    shu::vec3f Scaled = this->Scale * PointLS;
+    shu::vec3f Scaled = (this->Scale) * PointLS;
     shu::vec3f Rotated = shu::QuatRotateVec(this->Rotation, Scaled);
     shu::vec3f Translated = Rotated + this->Position;
 

@@ -27,6 +27,8 @@ struct constraint_3d
 
 
   public:
+
+    // TODO: Move these Local Space Axis and Anchor Points to the specialized derived classes for constraints.
     // NOTE: The anchor point where the bodies are to be fixed at in the local space of the corresponding rigid
     // bodies.
     shu::vec3f AnchorPointLS_A; // The anchor point in A's Local Space
@@ -63,6 +65,35 @@ struct joint_constraint_3d : public constraint_3d
 #endif
     // NOTE: The Stabilization Factor. Bias to correct positional error(constraint error).
     f32 Baumgarte;
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+struct fixed_constraint_3d : public constraint_3d
+{
+    fixed_constraint_3d() : constraint_3d()
+    {
+        this->Jacobian.Zero();
+#if WARM_STARTING
+        this->PreviousFrameLambda.Zero();
+#endif
+        this->TransBaumgarte = shu::Vec3f(0.0f);
+        this->RotBaumgarte = shu::Vec3f(0.0f);
+    }
+
+    void PreSolve(const f32 dt) override;
+    void Solve() override;
+    void PostSolve() override;
+
+  private:
+    shu::matMN<f32, 6, 12> Jacobian;
+
+#if WARM_STARTING
+    shu::vecN<f32, 6> PreviousFrameLambda;
+#endif
+    // NOTE: The Stabilization Factor. Bias to correct positional error(constraint error).
+    shu::vec3f TransBaumgarte;
+    shu::vec3f RotBaumgarte;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -151,6 +182,72 @@ struct hinge_quat_constraint_3d : public constraint_3d
     // NOTE: The Stabilization Factor. Bias to correct positional error(constraint error).
     shu::vec3f Baumgarte;
     shu::vec2f RotBaumgarte;
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+struct slider_constraint_3d : public constraint_3d
+{
+    slider_constraint_3d() : constraint_3d()
+    {
+        this->Jacobian.Zero();
+#if WARM_STARTINGscene
+        this->PreviousFrameLambda.Zero();
+#endif
+        this->TransBaumgarte = shu::Vec2f(0.0f);
+        this->RotBaumgarte = shu::Vec3f(0.0f);
+    }
+
+    void PreSolve(const f32 dt) override;
+    void Solve() override;
+    void PostSolve() override;
+
+  private:
+    shu::matMN<f32, 5, 12> Jacobian;
+
+#if WARM_STARTING
+    shu::vecN<f32, 5> PreviousFrameLambda;
+#endif
+    // NOTE: The Stabilization Factor. Bias to correct positional error(constraint error).
+    shu::vec2f TransBaumgarte;
+    shu::vec3f RotBaumgarte;
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+struct slider_constraint_limit_3d : public constraint_3d
+{
+    slider_constraint_limit_3d() : constraint_3d()
+    {
+        this->Jacobian.Zero();
+#if WARM_STARTINGscene
+        this->PreviousFrameLambda.Zero();
+#endif
+        this->TransBaumgarte = shu::Vec2f(0.0f);
+        this->LimitBaumgarte = 0.0f;
+        this->RotBaumgarte = shu::Vec3f(0.0f);
+    }
+
+    void PreSolve(const f32 dt) override;
+    void Solve() override;
+    void PostSolve() override;
+
+    shu::vec3f sliderAxisLS_A;
+    f32 MinLimit, MaxLimit;
+
+
+  private:
+    shu::matMN<f32, 5, 12> Jacobian;
+    shu::matMN<f32, 1, 12> LimitJacobian;
+    b32 EnforceLimits = false;
+
+#if WARM_STARTING
+    shu::vecN<f32, 5> PreviousFrameLambda;
+#endif
+    // NOTE: The Stabilization Factor. Bias to correct positional error(constraint error).
+    shu::vec2f TransBaumgarte;
+    f32 LimitBaumgarte;
+    shu::vec3f RotBaumgarte;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////

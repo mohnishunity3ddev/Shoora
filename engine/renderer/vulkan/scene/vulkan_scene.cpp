@@ -303,7 +303,7 @@ shoora_scene::PhysicsUpdate(f32 dt, b32 DebugMode)
     contact *Contacts = (contact *)_alloca(contactsMemSize);
     memset(Contacts, 0, contactsMemSize);
 
-// #define DISABLE_COLLISIONS
+#define DISABLE_COLLISIONS
 #ifndef DISABLE_COLLISIONS
     for (i32 i = 0; i < FinalPairsCount; ++i)
     {

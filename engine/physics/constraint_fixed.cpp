@@ -1,7 +1,7 @@
 #include "constraint.h"
 
 void
-ball_constraint_3d::PreSolve(const f32 dt)
+fixed_constraint_3d::PreSolve(const f32 dt)
 {
     this->Jacobian.Zero();
 
@@ -53,6 +53,53 @@ ball_constraint_3d::PreSolve(const f32 dt)
     this->Jacobian.Rows[2][10] = -skewPB.Rows[2][1];
     this->Jacobian.Rows[2][11] = -skewPB.Rows[2][2];
 
+    // NOTE: Rotation Jacobian
+    shu::quat q = shu::QuatInverse(this->A->Rotation) * this->B->Rotation;
+    shu::mat3f R1 = shu::QuatRotationMatrix_Left(this->A->Rotation);
+    shu::mat3f Eta = shu::Mat3f(1.0f) * q.w + shu::CrossProductMatrix(q.complex);
+    shu::mat3f R1TimesEta = (R1 * Eta).Transposed() * 0.5f;
+    {
+        this->Jacobian.Rows[3][0] = 0.0f;
+        this->Jacobian.Rows[3][1] = 0.0f;
+        this->Jacobian.Rows[3][2] = 0.0f;
+        this->Jacobian.Rows[3][3] = -R1TimesEta.m00;
+        this->Jacobian.Rows[3][4] = -R1TimesEta.m01;
+        this->Jacobian.Rows[3][5] = -R1TimesEta.m02;
+        this->Jacobian.Rows[3][6] = 0.0f;
+        this->Jacobian.Rows[3][7] = 0.0f;
+        this->Jacobian.Rows[3][8] = 0.0f;
+        this->Jacobian.Rows[3][9] = R1TimesEta.m00;
+        this->Jacobian.Rows[3][10] = R1TimesEta.m01;
+        this->Jacobian.Rows[3][11] = R1TimesEta.m02;
+    }
+    {
+        this->Jacobian.Rows[4][0] = 0.0f;
+        this->Jacobian.Rows[4][1] = 0.0f;
+        this->Jacobian.Rows[4][2] = 0.0f;
+        this->Jacobian.Rows[4][3] = -R1TimesEta.m10;
+        this->Jacobian.Rows[4][4] = -R1TimesEta.m11;
+        this->Jacobian.Rows[4][5] = -R1TimesEta.m12;
+        this->Jacobian.Rows[4][6] = 0.0f;
+        this->Jacobian.Rows[4][7] = 0.0f;
+        this->Jacobian.Rows[4][8] = 0.0f;
+        this->Jacobian.Rows[4][9] = R1TimesEta.m10;
+        this->Jacobian.Rows[4][10] = R1TimesEta.m11;
+        this->Jacobian.Rows[4][11] = R1TimesEta.m12;
+    }
+    {
+        this->Jacobian.Rows[5][0] = 0.0f;
+        this->Jacobian.Rows[5][1] = 0.0f;
+        this->Jacobian.Rows[5][2] = 0.0f;
+        this->Jacobian.Rows[5][3] = -R1TimesEta.m20;
+        this->Jacobian.Rows[5][4] = -R1TimesEta.m21;
+        this->Jacobian.Rows[5][5] = -R1TimesEta.m22;
+        this->Jacobian.Rows[5][6] = 0.0f;
+        this->Jacobian.Rows[5][7] = 0.0f;
+        this->Jacobian.Rows[5][8] = 0.0f;
+        this->Jacobian.Rows[5][9] = R1TimesEta.m20;
+        this->Jacobian.Rows[5][10] = R1TimesEta.m21;
+        this->Jacobian.Rows[5][11] = R1TimesEta.m22;
+    }
 #if WARM_STARTING
     // NOTE: Warm starting the bodies using previous frame's Lagrange Lambda.
     auto Impulses = this->Jacobian.Transposed() * this->PreviousFrameLambda;
@@ -60,23 +107,31 @@ ball_constraint_3d::PreSolve(const f32 dt)
 #endif
 
     shu::vec3f PositionError = r2MinusR1;
-    const f32 Beta = 0.2f;
-    this->Baumgarte = -(Beta / dt) * PositionError;
+    f32 Beta = 0.5f;
+    this->TransBaumgarte = -(Beta / dt) * PositionError;
+
+    // NOTE: Relative Quaternion Qr = (q1^-1)*q2.
+    shu::vec3f RotationError = q.complex;
+    Beta = 0.5f;
+    this->RotBaumgarte = -(Beta / dt) * RotationError;
 }
 
 void
-ball_constraint_3d::Solve()
+fixed_constraint_3d::Solve()
 {
-    shu::matMN<f32, 12, 3> JacobianTranspose = this->Jacobian.Transposed();
+    shu::matMN<f32, 12, 6> JacobianTranspose = this->Jacobian.Transposed();
 
     auto V = GetVelocities();
     auto InvM = GetInverseMassMatrix();
 
     auto J_invM_Jt = this->Jacobian * InvM * JacobianTranspose;
     auto Rhs = this->Jacobian * V * -1.0f;
-    Rhs[0] += this->Baumgarte.x;
-    Rhs[1] += this->Baumgarte.y;
-    Rhs[2] += this->Baumgarte.z;
+    Rhs[0] += this->TransBaumgarte.x;
+    Rhs[1] += this->TransBaumgarte.y;
+    Rhs[2] += this->TransBaumgarte.z;
+    Rhs[3] += this->RotBaumgarte.x;
+    Rhs[4] += this->RotBaumgarte.y;
+    Rhs[5] += this->RotBaumgarte.z;
 
     auto LagrangeLambda = shu::LCP_GaussSeidel(J_invM_Jt, Rhs);
 
@@ -89,7 +144,7 @@ ball_constraint_3d::Solve()
 }
 
 void
-ball_constraint_3d::PostSolve()
+fixed_constraint_3d::PostSolve()
 {
 #if WARM_STARTING
     // NOTE: Limit warm starting to reasonable limits.

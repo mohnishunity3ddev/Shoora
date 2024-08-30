@@ -346,7 +346,7 @@ namespace shu
 
         return Result;
     }
-
+    
     vec3f quat::
     ToEuler() const
     {
