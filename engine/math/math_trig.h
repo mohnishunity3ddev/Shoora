@@ -6,7 +6,7 @@
 namespace shu
 {
     inline f32
-    Sin(f32 Degrees)
+    SinDeg(f32 Degrees)
     {
         f32 Result = sinf(Degrees*DEG_TO_RAD);
         return Result;
@@ -70,7 +70,7 @@ namespace shu
     inline f32
     Cosec(f32 Degrees)
     {
-        f32 Result = 1.0f / Sin(Degrees);
+        f32 Result = 1.0f / SinDeg(Degrees);
         return Result;
     }
 

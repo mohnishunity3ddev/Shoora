@@ -47,7 +47,7 @@ namespace shu
         Result.real = shu::CosDeg(AngleInDegrees*0.5f);
 
         shu::vec3f axis = Normalize(Axis);
-        Result.complex = axis*shu::Sin(AngleInDegrees*0.5f);
+        Result.complex = axis*shu::SinDeg(AngleInDegrees*0.5f);
 
         return Result;
     }
@@ -135,7 +135,7 @@ namespace shu
         return Result;
     }
 
-
+    // TODO: QuatLog is Incomplete!
     quat
     QuatLog(const quat &A)
     {
@@ -146,6 +146,7 @@ namespace shu
         return Result;
     }
 
+    // TODO: QuatExp is Incomplete!
     quat
     QuatExp(const quat &A)
     {
@@ -156,7 +157,7 @@ namespace shu
 
         quat Result;
         Result.real = CosDeg(Angle * RAD_TO_DEG);
-        Result.complex = AxisNormalized * Sin(Angle * RAD_TO_DEG);
+        Result.complex = AxisNormalized * SinDeg(Angle * RAD_TO_DEG);
 
         return Result;
     }
@@ -282,11 +283,7 @@ namespace shu
     vec3f quat::
     AxisNormalized() const
     {
-        QuatNormalize(*this);
-
-        f32 Angle = CosInverse(this->real)*RAD_TO_DEG;
-        vec3f Result = this->complex / Sin(Angle);
-
+        shu::vec3f Result = shu::Normalize(this->complex);
         return Result;
     }
 
@@ -548,9 +545,9 @@ namespace shu
     {
         shu::vec3f HalfAngles = shu::Vec3f(xDegrees*0.5f, yDegrees*0.5f, zDegrees*0.5f);
 
-        f32 CosXBy2 = CosDeg(HalfAngles.x); f32 SinXBy2 = Sin(HalfAngles.x);
-        f32 CosYBy2 = CosDeg(HalfAngles.y); f32 SinYBy2 = Sin(HalfAngles.y);
-        f32 CosZBy2 = CosDeg(HalfAngles.z); f32 SinZBy2 = Sin(HalfAngles.z);
+        f32 CosXBy2 = CosDeg(HalfAngles.x); f32 SinXBy2 = SinDeg(HalfAngles.x);
+        f32 CosYBy2 = CosDeg(HalfAngles.y); f32 SinYBy2 = SinDeg(HalfAngles.y);
+        f32 CosZBy2 = CosDeg(HalfAngles.z); f32 SinZBy2 = SinDeg(HalfAngles.z);
 
         quat Result;
 
@@ -607,7 +604,6 @@ namespace shu
         shu::quat q2 = shu::Quat(0.11593f, 0.04829f, 0.64212f, 0.75625f);
         shu::vec3f localN1 = shu::Vec3f(1, 0, 0); // n1_worldSpace = (-0.78, 0.11, 0.61)
         shu::vec3f localN2 = shu::Vec3f(1, 0, 0); // n2_worldSpace = (-0.97, 0.24, -0.08)
-        // Swing should be
         shu::quat swingQuat, twistQuat;
         shu::DecomposeSwingTwist(q1, q2, localN1, localN2, swingQuat, twistQuat);
         shu::quat expectSwing = shu::Quat(0.93159f, -0.08278f, -0.35139f, -0.04266f);

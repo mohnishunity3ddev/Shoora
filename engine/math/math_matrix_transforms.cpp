@@ -85,7 +85,7 @@ namespace shu
     {
         f32 Cos = shu::CosDeg(AngleInDegrees);
         f32 InvCos = 1.0f - Cos;
-        f32 Sin = shu::Sin(AngleInDegrees);
+        f32 Sin = shu::SinDeg(AngleInDegrees);
         f32 InvSin = 1.0f - Sin;
 
         vec3f AxisNorm = Normalize(Axis);

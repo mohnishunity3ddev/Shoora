@@ -53,8 +53,8 @@ UpdateCameraVectors()
 {
     shu::vec3f Front;
     Front.x = shu::CosDeg(Yaw) * shu::CosDeg(Pitch);
-    Front.y = shu::Sin(Pitch);
-    Front.z = shu::Sin(Yaw) * shu::CosDeg(Pitch);
+    Front.y = shu::SinDeg(Pitch);
+    Front.z = shu::SinDeg(Yaw) * shu::CosDeg(Pitch);
 
     this->Front = shu::Normalize(Front);
 
