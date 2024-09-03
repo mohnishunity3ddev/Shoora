@@ -405,7 +405,7 @@ NearlyEqualUlps(T n, T expected, i64 maxUlps = 2)
                 }
                 Result = (diff <= maxUlps);
                 if(!Result) {
-                    int x = 0;
+                    LogWarnUnformatted("Worth inspecting this!\n");
                 }
             };
             Diff = diff;
@@ -418,7 +418,7 @@ NearlyEqualUlps(T n, T expected, i64 maxUlps = 2)
 
     if(!Result)
     {
-        int x = 0;
+        LogWarnUnformatted("Worth inspecting this!\n");
     }
 
     return Result;

@@ -52,9 +52,9 @@ void shoora_camera::
 UpdateCameraVectors()
 {
     shu::vec3f Front;
-    Front.x = shu::Cos(Yaw) * shu::Cos(Pitch);
+    Front.x = shu::CosDeg(Yaw) * shu::CosDeg(Pitch);
     Front.y = shu::Sin(Pitch);
-    Front.z = shu::Sin(Yaw) * shu::Cos(Pitch);
+    Front.z = shu::Sin(Yaw) * shu::CosDeg(Pitch);
 
     this->Front = shu::Normalize(Front);
 

@@ -106,10 +106,47 @@ namespace shu
         inline b32 IsZero() const;
 
         inline void ZeroOut();
-        static vec3<T> Zero()
+        static vec3<T>
+        Zero()
         {
             vec3<T> Result = {(T)0, (T)0, (T)0};
             return Result;
+        }
+
+        static vec3<T>
+        Project(const vec3<T> &ProjV, const vec3<T> &Axis)
+        {
+            T dot = ProjV.Dot(Axis);
+            vec3<T> n = shu::Normalize(Axis);
+            return dot * n;
+        }
+
+        static f32
+        Angle(const shu::vec3<T> &v1, const shu::vec3<T> &v2)
+        {
+            f32 cosTheta = v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
+            f32 magnitudeMult = sqrtf(v1.SqMagnitude() * v2.SqMagnitude());
+
+            if (NearlyEqual(magnitudeMult, 0.0f, 1e-6))
+            {
+                return 0.0f;
+            }
+
+            cosTheta = ClampToRange(cosTheta / magnitudeMult, -1.0f, 1.0f);
+
+            f32 Result = CosInverse(cosTheta);
+            return Result;
+        }
+
+        static f32
+        SignedAngle(const vec3<T> &from, const vec3<T> &to, const vec3<T> axis)
+        {
+            f32 uAngle = Angle(from, to);
+            f32 crossX = from.y * to.z - from.z * to.y;
+            f32 crossY = from.z * to.x - from.x * to.z;
+            f32 crossZ = from.x * to.y - from.y * to.x;
+            f32 sign = SIGN(axis.x*crossX + axis.y*crossY + axis.z*crossZ);
+            return uAngle * sign;
         }
     };
     typedef vec3<i32> vec3i;

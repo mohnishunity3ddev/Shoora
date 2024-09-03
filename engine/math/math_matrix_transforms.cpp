@@ -83,7 +83,7 @@ namespace shu
     mat4f
     RotateGimbalLock(mat4f &Mat, const vec3f &Axis, f32 AngleInDegrees)
     {
-        f32 Cos = shu::Cos(AngleInDegrees);
+        f32 Cos = shu::CosDeg(AngleInDegrees);
         f32 InvCos = 1.0f - Cos;
         f32 Sin = shu::Sin(AngleInDegrees);
         f32 InvSin = 1.0f - Sin;

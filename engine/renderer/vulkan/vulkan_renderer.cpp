@@ -32,6 +32,7 @@
 #endif
 
 #define UNLIT_PIPELINE 1
+using shu::vec3f;
 
 static shoora_vulkan_context *Context = nullptr;
 
@@ -686,7 +687,6 @@ InitScene()
     SubArena(&ConvexArena, MEMTYPE_GLOBAL, ConvexMemSize);
     BuildConvexThreaded(GlobalJobQueue, ConvexShapeMemory, g_diamond, ARRAY_SIZE(g_diamond), OnConvexBodyReady,
                         &ConvexArena);
-    int x = 0;
 #else
     shoora_body body = {};
     body.Position = shu::Vec3f(0, 0, 10);
@@ -772,7 +772,6 @@ InitScene()
     SliderJoint->AxisLS_B = shu::QuatRotateVec(shu::QuatInverse(bB->Rotation), SliderAxisLS_A);
 
     Scene->Constraints3D.emplace_back(SliderJoint);
-
 #endif
 
 #if 0
@@ -1212,13 +1211,6 @@ static f32 _dt = 0.0f;
 void
 DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
 {
-#if 0
-    if(Platform_GetKeyInputState(VirtualKeyCodes::SU_LEFTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
-    {
-        int x = 0;
-    }
-#endif
-
     Scene->Bodies[0].Position = Pos;
     Scene->Bodies[0].Rotation = shu::QuatFromEuler(EulerAngles.x, EulerAngles.y, EulerAngles.z);
 

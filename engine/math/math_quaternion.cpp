@@ -44,7 +44,7 @@ namespace shu
     {
         quat Result;
 
-        Result.real = shu::Cos(AngleInDegrees*0.5f);
+        Result.real = shu::CosDeg(AngleInDegrees*0.5f);
 
         shu::vec3f axis = Normalize(Axis);
         Result.complex = axis*shu::Sin(AngleInDegrees*0.5f);
@@ -155,7 +155,7 @@ namespace shu
         f32 Angle = A.complex.Magnitude();
 
         quat Result;
-        Result.real = Cos(Angle * RAD_TO_DEG);
+        Result.real = CosDeg(Angle * RAD_TO_DEG);
         Result.complex = AxisNormalized * Sin(Angle * RAD_TO_DEG);
 
         return Result;
@@ -258,15 +258,25 @@ namespace shu
     f32 quat::
     AngleDegrees() const
     {
-        f32 Result = 2.0f*(CosInverse(this->real)*RAD_TO_DEG);
+        f32 Result = AngleRadians() * RAD_TO_DEG;
         return Result;
     }
 
     f32 quat::
     AngleRadians() const
     {
-        f32 Result = CosInverse(this->real);
-        return Result;
+        shu::quat q = *this;
+
+        f32 cosTheta = q.w;
+        f32 sinTheta = sqrtf(1.0f - cosTheta * cosTheta);
+
+        if (NearlyEqual(cosTheta, 0.0f, 1e-5))
+            return SHU_PI_BY_2;
+        else if (NearlyEqual(sinTheta, 0.0f, 1e-5))
+            return 0.0f;
+
+        f32 angle = 2.0f * atan2f(sinTheta, cosTheta);
+        return angle;
     }
 
     vec3f quat::
@@ -276,6 +286,87 @@ namespace shu
 
         f32 Angle = CosInverse(this->real)*RAD_TO_DEG;
         vec3f Result = this->complex / Sin(Angle);
+
+        return Result;
+    }
+
+    void
+    DecomposeSwingTwist(const quat &q1, const quat &q2,
+                        const vec3f &localN1, const vec3f &localN2,
+                        quat &swingQuat, quat &twistQuat)
+    {
+        quat relQuat = q2 * QuatInverse(q1);
+
+        vec3f n1 = QuatRotateVec(q1, localN1);
+        vec3f n2 = QuatRotateVec(q2, localN2);
+
+        float d = n1.Dot(n2);
+        float c = 1.0f / (sqrtf(2.0f * (1.0f + d)));
+        float qw = (1 + d) * c;
+        vec3f qv = Cross(n1, n2) * c;
+
+        // IMPORTANT: NOTE: First we swing, then twist
+        // qt * qs = qr = q2 * q^-1
+        // q2 = qr * q1
+        // q2 = qt*qs * q1
+        swingQuat = Quat(qw, qv.x, qv.y, qv.z);
+        twistQuat = relQuat * QuatInverse(swingQuat);
+    }
+
+    void
+    DecomposeSwingTwist(const quat &relativeQuat, const vec3f twistAxis_WS,
+                        quat &swingQuat, quat &twistQuat)
+    {
+        shu::vec3f rotatedTwistAxis_WS = shu::QuatRotateVec(relativeQuat, twistAxis_WS);
+
+        swingQuat = QuatFromToRotation(twistAxis_WS, rotatedTwistAxis_WS);
+        twistQuat = relativeQuat * QuatInverse(swingQuat);
+    }
+
+    quat
+    QuatFromToRotation(const vec3f &from, const vec3f &to)
+    {
+        quat Result;
+        vec3f vec1 = from, vec2 = to;
+        if (from.SqMagnitude() > 1.0f) {  vec1 =  shu::Normalize(from); }
+        if (to.SqMagnitude() > 1.0f) {  vec2 =  shu::Normalize(to); }
+
+        f32 d = vec1.Dot(vec2);
+        vec3f cross = vec1.Cross(to);
+
+        // vec1 and vec2 are parallel
+        if (NearlyEqual(cross.SqMagnitude(), 0.0f, 1e-6))
+        {
+            if (NearlyEqual(d, 1.0f, 1e-4))
+            {
+                Result = QuatIdentity();
+            }
+            else if(NearlyEqual(d, -1.0f, 1e-4)) // 180 degree rotation
+            {
+                shu::vec3f rotAxis = shu::Cross(Vec3f(1, 0, 0), vec1);
+                if (NearlyEqual(rotAxis.SqMagnitude(), 0.0f, 1e-4))
+                {
+                    rotAxis = shu::Cross(Vec3f(0, 1, 0), vec1);
+                    if (NearlyEqual(rotAxis.SqMagnitude(), 0.0f, 1e-4))
+                    {
+                        rotAxis = shu::Cross(Vec3f(0, 0, 1), vec1);
+                    }
+                }
+
+                ASSERT(!NearlyEqual(rotAxis.SqMagnitude(), 0.0f, 1e-4));
+                rotAxis.Normalize();
+
+                Result = shu::Quat(0.0f, rotAxis);
+            }
+        }
+        else
+        {
+            f32 c = 1.0f / (sqrtf(2.0f*(1.0f + d)));
+            f32 w = (1 + d) * c;
+            vec3f v = cross * c;
+
+            Result = shu::Quat(w, v);
+        }
 
         return Result;
     }
@@ -346,7 +437,7 @@ namespace shu
 
         return Result;
     }
-    
+
     vec3f quat::
     ToEuler() const
     {
@@ -451,16 +542,15 @@ namespace shu
 
     }
 
-
     // Returns rotation in YXZ sequence
     quat
     QuatFromEuler(f32 xDegrees, f32 yDegrees, f32 zDegrees)
     {
         shu::vec3f HalfAngles = shu::Vec3f(xDegrees*0.5f, yDegrees*0.5f, zDegrees*0.5f);
 
-        f32 CosXBy2 = Cos(HalfAngles.x); f32 SinXBy2 = Sin(HalfAngles.x);
-        f32 CosYBy2 = Cos(HalfAngles.y); f32 SinYBy2 = Sin(HalfAngles.y);
-        f32 CosZBy2 = Cos(HalfAngles.z); f32 SinZBy2 = Sin(HalfAngles.z);
+        f32 CosXBy2 = CosDeg(HalfAngles.x); f32 SinXBy2 = Sin(HalfAngles.x);
+        f32 CosYBy2 = CosDeg(HalfAngles.y); f32 SinYBy2 = Sin(HalfAngles.y);
+        f32 CosZBy2 = CosDeg(HalfAngles.z); f32 SinZBy2 = Sin(HalfAngles.z);
 
         quat Result;
 
@@ -510,6 +600,27 @@ namespace shu
         Shu::mat4f QuatMat1 = Shu::RotateGimbalLock(Identity, SlerpedAxis, SlerpedAngle);
 #endif
 
+        // NOTE: Swing-Twist Quaternion
+
+        // Swing Decomposition Test
+        shu::quat q1 = shu::Quat(0.06148f, 0.32513f, -0.01026f, 0.94361f);
+        shu::quat q2 = shu::Quat(0.11593f, 0.04829f, 0.64212f, 0.75625f);
+        shu::vec3f localN1 = shu::Vec3f(1, 0, 0); // n1_worldSpace = (-0.78, 0.11, 0.61)
+        shu::vec3f localN2 = shu::Vec3f(1, 0, 0); // n2_worldSpace = (-0.97, 0.24, -0.08)
+        // Swing should be
+        shu::quat swingQuat, twistQuat;
+        shu::DecomposeSwingTwist(q1, q2, localN1, localN2, swingQuat, twistQuat);
+        shu::quat expectSwing = shu::Quat(0.93159f, -0.08278f, -0.35139f, -0.04266f);
+        shu::quat expectTwist = shu::Quat(0.78345f, -0.60186f, 0.14751f, -0.04713f);
+        ASSERT(swingQuat == expectSwing);
+        ASSERT(twistQuat == expectTwist);
+
+        shu::vec3f twistAxis_WS = shu::Vec3f(-0.781017f, 0.1093521f, 0.6148615f);
+        shu::quat relativeQuat = q2 * shu::QuatInverse(q1);
+        shu::DecomposeSwingTwist(relativeQuat, twistAxis_WS, swingQuat, twistQuat);
+        ASSERT(swingQuat == expectSwing);
+        ASSERT(twistQuat == expectTwist);
+
 #if 1
         shu::vec3f RotatedVec3s[20];
         shu::quat SlerpedQuats[20];
@@ -533,13 +644,20 @@ namespace shu
         shu::quat qX = shu::QuatAngleAxisDeg(30, shu::Vec3f(1, 0, 0)); // X-Axis
         shu::quat qY = shu::QuatAngleAxisDeg(30, shu::Vec3f(0, 1, 0)); // Y-Axis
         shu::quat qZ = shu::QuatAngleAxisDeg(30, shu::Vec3f(0, 0, 1)); // Z-Axis
+
         // NOTE: How Unity rotates a point. First around Y then X then Z
-        shu::quat FinalQuat = qY*qX*qZ;
-        shu::quat FinalQuat1 = shu::QuatFromEuler(30, 30, 30);
-        shu::vec3f RotateVec = shu::QuatRotateVec(FinalQuat, shu::Vec3f(1, 0, 0));
-        shu::vec3f Euler = FinalQuat.ToEuler();
-        f32 FinalAngle = FinalQuat.AngleDegrees();
-        shu::vec3f FinalAxis = FinalQuat.AxisNormalized();
+        shu::quat   FinalQuat   = qY*qX*qZ;
+        shu::quat   FinalQuat1  = shu::QuatFromEuler(30, 30, 30);
+        shu::vec3f  RotateVec   = shu::QuatRotateVec(FinalQuat, shu::Vec3f(1, 0, 0));
+        shu::vec3f  Euler       = FinalQuat.ToEuler();
+        f32         FinalAngle  = FinalQuat.AngleDegrees();
+        shu::vec3f  FinalAxis   = FinalQuat.AxisNormalized();
+
+        // NOTE: FromToRotation
+        shu::vec3f n1 = shu::Vec3f(-0.781017f, 0.1093521f, 0.6148615f);
+        shu::vec3f n2 = shu::Vec3f(-0.18811208f, 0.9740919f, 0.12553495f);
+        // q = (-0.35873, -0.01080, -0.45375, 0.81567)
+        shu::quat Q = shu::QuatFromToRotation(n1, n2);
 #endif
     }
 }

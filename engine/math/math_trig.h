@@ -20,7 +20,7 @@ namespace shu
     }
 
     inline f32
-    Cos(f32 Degrees)
+    CosDeg(f32 Degrees)
     {
         f32 Result = cosf(Degrees*DEG_TO_RAD);
         if(abs(Result) < 0.001f)
@@ -77,7 +77,7 @@ namespace shu
     inline f32
     Sec(f32 Degrees)
     {
-        f32 Result = 1.0f / Cos(Degrees);
+        f32 Result = 1.0f / CosDeg(Degrees);
         return Result;
     }
 
