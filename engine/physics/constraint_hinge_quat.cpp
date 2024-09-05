@@ -98,7 +98,7 @@ hinge_quat_constraint_3d::PreSolve(const f32 dt)
         this->Jacobian.Rows[4][6]  =  0.0f;
         this->Jacobian.Rows[4][7]  =  0.0f;
         this->Jacobian.Rows[4][8]  =  0.0f;
-
+        
         this->Jacobian.Rows[4][9]  =  JacobianV1.x;
         this->Jacobian.Rows[4][10] =  JacobianV1.y;
         this->Jacobian.Rows[4][11] =  JacobianV1.z;

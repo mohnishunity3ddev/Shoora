@@ -752,7 +752,7 @@ InitScene()
 
 #endif
 
-#if 1 // Slider Joint Limited
+#if 0 // Slider Joint Limited
     Pos = shu::Vec3f(0, -2.5f, 0);
     auto *bA = Scene->AddCubeBody(Pos, shu::Vec3f(90.0f, 2.5f, 2.5f), colorU32::Proto_Red, 0.0f, .5f, EulerAngles); // body A is the slider.
     auto *bB = Scene->AddCubeBody(shu::Vec3f(0, 1.25f, 0), shu::Vec3f(2.5f), colorU32::Proto_Blue, 1.0f, .5f);
@@ -772,6 +772,33 @@ InitScene()
     SliderJoint->AxisLS_B = shu::QuatRotateVec(shu::QuatInverse(bB->Rotation), SliderAxisLS_A);
 
     Scene->Constraints3D.emplace_back(SliderJoint);
+    shu::QuaternionTest();
+#endif
+
+#if 1 // Hinge Swing Twist Limited Constraint
+    Pos = shu::Vec3f(0, 2.5f, 0);
+    auto *bA = Scene->AddCubeBody(Pos, shu::Vec3f(5), colorU32::Proto_Red, 0.0f, .5f, EulerAngles);
+    auto *bB = Scene->AddCubeBody(shu::Vec3f(0, -10, 0), shu::Vec3f(5, 20, 5), colorU32::Proto_Blue, 1.0f, .5f);
+
+    hinge_swing_twist_constraint_3d *HingeSwingTwist = ShuAllocateStruct(hinge_swing_twist_constraint_3d,
+                                                                         MEMTYPE_GLOBAL);
+    new (HingeSwingTwist) hinge_swing_twist_constraint_3d();
+
+    HingeSwingTwist->A = bA;
+    HingeSwingTwist->B = bB;
+    HingeSwingTwist->AnchorPointLS_A = shu::Vec3f(0 , -0.6f, 0);
+    HingeSwingTwist->AnchorPointLS_B = shu::Vec3f(0,  0.6f, 0);
+    HingeSwingTwist->SwingLimit1 = shu::Vec2f(-45, 45);
+    HingeSwingTwist->SwingLimit2 = shu::Vec2f(-45, 45);
+    HingeSwingTwist->TwistLimit =  shu::Vec2f(-45, 45);
+
+    shu::vec3f local_n1 = shu::Vec3f(0, 1, 0);
+    HingeSwingTwist->AxisLS_A  = local_n1;
+    shu::vec3f local_n2 = shu::Vec3f(0, 1, 0);
+    HingeSwingTwist->AxisLS_B = local_n2;
+    HingeSwingTwist->v2_local = shu::Vec3f(0, -1, 0);
+
+    Scene->Constraints3D.emplace_back(HingeSwingTwist);
 #endif
 
 #if 0

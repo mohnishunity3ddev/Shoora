@@ -23,7 +23,9 @@ struct constraint_3d
   protected:
     shu::matN<f32, 12> GetInverseMassMatrix() const;
     shu::vecN<f32, 12> GetVelocities() const;
+
     void ApplyImpulses(const shu::vecN<f32, 12> &Impulses);
+    void ApplyLinearImpulses(const shu::vecN<f32, 12> &Impulses);
 
 
   public:
@@ -186,12 +188,50 @@ struct hinge_quat_constraint_3d : public constraint_3d
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 
+struct hinge_swing_twist_constraint_3d : public constraint_3d
+{
+    hinge_swing_twist_constraint_3d() : constraint_3d()
+    {
+        this->Jacobian.Zero();
+#if WARM_STARTING
+        this->PreviousFrameLambda.Zero();
+#endif
+        this->TransBaumgarte = shu::Vec3f(0.0f);
+        this->RotBaumgarte = shu::Vec3f(0.0f);
+
+        this->SwingLimit1 = shu::Vec2f(0.0f);
+        this->SwingLimit2 = shu::Vec2f(0.0f);
+        this->TwistLimit = shu::Vec2f(0.0f);
+    }
+
+
+    shu::vec2f SwingLimit1, SwingLimit2;
+    shu::vec2f TwistLimit;
+    shu::vec3f v2_local;
+
+    void PreSolve(const f32 dt) override;
+    void Solve() override;
+    void PostSolve() override;
+
+  private:
+    shu::matMN<f32, 6, 12> Jacobian;
+
+#if WARM_STARTING
+    shu::vecN<f32, 6> PreviousFrameLambda;
+#endif
+    // NOTE: The Stabilization Factor. Bias to correct positional error(constraint error).
+    shu::vec3f TransBaumgarte;
+    shu::vec3f RotBaumgarte;
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+
 struct slider_constraint_3d : public constraint_3d
 {
     slider_constraint_3d() : constraint_3d()
     {
         this->Jacobian.Zero();
-#if WARM_STARTINGscene
+#if WARM_STARTING
         this->PreviousFrameLambda.Zero();
 #endif
         this->TransBaumgarte = shu::Vec2f(0.0f);

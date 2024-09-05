@@ -53,7 +53,7 @@ fixed_constraint_3d::PreSolve(const f32 dt)
     this->Jacobian.Rows[2][10] = -skewPB.Rows[2][1];
     this->Jacobian.Rows[2][11] = -skewPB.Rows[2][2];
 
-    // NOTE: Rotation Jacobian
+    // NOTE: Rotation Jacobian (Claude Lacoursiere Quaternion Lock Constraint)
     shu::quat q = shu::QuatInverse(this->A->Rotation) * this->B->Rotation;
     shu::mat3f R1 = shu::QuatRotationMatrix_Left(this->A->Rotation);
     shu::mat3f Eta = shu::Mat3f(1.0f) * q.w + shu::CrossProductMatrix(q.complex);

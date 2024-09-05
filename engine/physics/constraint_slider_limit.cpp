@@ -141,7 +141,7 @@ slider_constraint_limit_3d::PreSolve(const f32 dt)
             this->LimitJacobian.Rows[0][10] = j_w2_minLim0.y;
             this->LimitJacobian.Rows[0][11] = j_w2_minLim0.z;
         }
-
+        
         f32 beta = 0.3f;
         this->LimitBaumgarte = -(beta / dt) * (d - this->MinLimit);
     }

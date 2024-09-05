@@ -62,16 +62,16 @@ constraint_3d::ApplyImpulses(const shu::vecN<f32, 12> &Impulses)
     shu::vec3f LinearImpulseA, AngularImpulseA;
     shu::vec3f LinearImpulseB, AngularImpulseB;
 
-    LinearImpulseA.x = Impulses[0];
-    LinearImpulseA.y = Impulses[1];
-    LinearImpulseA.z = Impulses[2];
+    LinearImpulseA.x  = Impulses[0];
+    LinearImpulseA.y  = Impulses[1];
+    LinearImpulseA.z  = Impulses[2];
     AngularImpulseA.x = Impulses[3];
     AngularImpulseA.y = Impulses[4];
     AngularImpulseA.z = Impulses[5];
 
-    LinearImpulseB.x = Impulses[6];
-    LinearImpulseB.y = Impulses[7];
-    LinearImpulseB.z = Impulses[8];
+    LinearImpulseB.x  = Impulses[6];
+    LinearImpulseB.y  = Impulses[7];
+    LinearImpulseB.z  = Impulses[8];
     AngularImpulseB.x = Impulses[9];
     AngularImpulseB.y = Impulses[10];
     AngularImpulseB.z = Impulses[11];
@@ -80,6 +80,24 @@ constraint_3d::ApplyImpulses(const shu::vecN<f32, 12> &Impulses)
     A->ApplyImpulseAngular(AngularImpulseA);
     B->ApplyImpulseLinear(LinearImpulseB);
     B->ApplyImpulseAngular(AngularImpulseB);
+}
+
+void
+constraint_3d::ApplyLinearImpulses(const shu::vecN<f32, 12> &Impulses)
+{
+    shu::vec3f LinearImpulseA;
+    shu::vec3f LinearImpulseB;
+
+    LinearImpulseA.x  = Impulses[0];
+    LinearImpulseA.y  = Impulses[1];
+    LinearImpulseA.z  = Impulses[2];
+
+    LinearImpulseB.x  = Impulses[6];
+    LinearImpulseB.y  = Impulses[7];
+    LinearImpulseB.z  = Impulses[8];
+
+    A->ApplyImpulseLinear(LinearImpulseA);
+    B->ApplyImpulseLinear(LinearImpulseB);
 }
 
 shu::matN<f32, 6>

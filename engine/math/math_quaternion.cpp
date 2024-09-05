@@ -288,9 +288,8 @@ namespace shu
     }
 
     void
-    DecomposeSwingTwist(const quat &q1, const quat &q2,
-                        const vec3f &localN1, const vec3f &localN2,
-                        quat &swingQuat, quat &twistQuat)
+    DecomposeSwingTwist(const quat &q1, const quat &q2, const vec3f &localN1, const vec3f &localN2,
+                        quat &swingQuat, quat &twistQuat, f32 *swingAngle, f32 *twistAngle)
     {
         quat relQuat = q2 * QuatInverse(q1);
 
@@ -308,16 +307,38 @@ namespace shu
         // q2 = qt*qs * q1
         swingQuat = Quat(qw, qv.x, qv.y, qv.z);
         twistQuat = relQuat * QuatInverse(swingQuat);
+        shu::QuatNormalize(twistQuat);
+
+        if (swingAngle != nullptr) {
+            *swingAngle = 2.0f * CosInverse(sqrtf(0.5f * (1 + d))) * RAD_TO_DEG;
+        }
+        if (twistAngle != nullptr)
+        {
+            ASSERT( !NearlyEqual(twistQuat.w, 0.0f, 1e-5) );
+            // NOTE: n2.Dot(twistQuat.complex) will spit out sin(phi/2)
+            *twistAngle = (2 * TanInverse(n2.Dot(twistQuat.complex), twistQuat.w)) * RAD_TO_DEG;
+        }
     }
 
     void
-    DecomposeSwingTwist(const quat &relativeQuat, const vec3f twistAxis_WS,
-                        quat &swingQuat, quat &twistQuat)
+    DecomposeSwingTwist(const quat &relativeQuat, const vec3f &twistAxis_WS, quat &swingQuat, quat &twistQuat,
+                        f32 *swingAngle, f32 *twistAngle)
     {
         shu::vec3f rotatedTwistAxis_WS = shu::QuatRotateVec(relativeQuat, twistAxis_WS);
 
         swingQuat = QuatFromToRotation(twistAxis_WS, rotatedTwistAxis_WS);
         twistQuat = relativeQuat * QuatInverse(swingQuat);
+
+        if (swingAngle != nullptr) {
+            f32 d = twistAxis_WS.Dot(rotatedTwistAxis_WS);
+            *swingAngle = 2.0f * CosInverse(sqrtf(0.5f * (1 + d))) * RAD_TO_DEG;
+        }
+
+        if (twistAngle != nullptr) {
+            ASSERT( !NearlyEqual(twistQuat.w, 0.0f, 1e-5) );
+            *twistAngle = (2 * TanInverse(rotatedTwistAxis_WS.Dot(twistQuat.complex), twistQuat.w)) *
+                          RAD_TO_DEG;
+        }
     }
 
     quat
@@ -325,8 +346,8 @@ namespace shu
     {
         quat Result;
         vec3f vec1 = from, vec2 = to;
-        if (from.SqMagnitude() > 1.0f) {  vec1 =  shu::Normalize(from); }
-        if (to.SqMagnitude() > 1.0f) {  vec2 =  shu::Normalize(to); }
+        if (from.SqMagnitude() > 1.0f) { vec1 =  shu::Normalize(from); }
+        if (to.SqMagnitude() > 1.0f)   { vec2 =  shu::Normalize(to);   }
 
         f32 d = vec1.Dot(vec2);
         vec3f cross = vec1.Cross(to);
@@ -601,19 +622,20 @@ namespace shu
 
         // Swing Decomposition Test
         shu::quat q1 = shu::Quat(0.06148f, 0.32513f, -0.01026f, 0.94361f);
-        shu::quat q2 = shu::Quat(0.11593f, 0.04829f, 0.64212f, 0.75625f);
+        shu::quat q2 = shu::Quat(0.11593f, 0.04829f,  0.64212f, 0.75625f);
         shu::vec3f localN1 = shu::Vec3f(1, 0, 0); // n1_worldSpace = (-0.78, 0.11, 0.61)
         shu::vec3f localN2 = shu::Vec3f(1, 0, 0); // n2_worldSpace = (-0.97, 0.24, -0.08)
         shu::quat swingQuat, twistQuat;
-        shu::DecomposeSwingTwist(q1, q2, localN1, localN2, swingQuat, twistQuat);
+        f32 twistAngle, swingAngle;
+        DecomposeSwingTwist(q1, q2, localN1, localN2, swingQuat, twistQuat, &swingAngle, &twistAngle);
         shu::quat expectSwing = shu::Quat(0.93159f, -0.08278f, -0.35139f, -0.04266f);
-        shu::quat expectTwist = shu::Quat(0.78345f, -0.60186f, 0.14751f, -0.04713f);
+        shu::quat expectTwist = shu::Quat(0.78345f, -0.60186f,  0.14751f, -0.04713f);
         ASSERT(swingQuat == expectSwing);
         ASSERT(twistQuat == expectTwist);
 
         shu::vec3f twistAxis_WS = shu::Vec3f(-0.781017f, 0.1093521f, 0.6148615f);
         shu::quat relativeQuat = q2 * shu::QuatInverse(q1);
-        shu::DecomposeSwingTwist(relativeQuat, twistAxis_WS, swingQuat, twistQuat);
+        DecomposeSwingTwist(relativeQuat, twistAxis_WS, swingQuat, twistQuat, &swingAngle, &twistAngle);
         ASSERT(swingQuat == expectSwing);
         ASSERT(twistQuat == expectTwist);
 

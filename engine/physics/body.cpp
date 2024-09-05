@@ -101,12 +101,21 @@ shoora_body::LocalToWorldSpace(const shu::vec3f &PointLS) const
     return Translated;
 }
 
+shu::vec3f
+shoora_body::LocalToWorldSpaceDir(const shu::vec3f &DirLS) const
+{
+    auto v = shu::Normalize(DirLS);
+    shu::vec3f Rotated = shu::QuatRotateVec(this->Rotation, v);
+
+    return Rotated;
+}
+
 shu::mat3f
 shoora_body::GetInverseInertiaTensorWS() const
 {
     shu::mat3f Result;
 
-    shu::mat3f RotationMatrix = Rotation.ToMat3f();
+    shu::mat3f RotationMatrix = this->Rotation.ToMat3f();
     Result = ((RotationMatrix*InverseInertiaTensor)*RotationMatrix.Transposed());
 
     return Result;

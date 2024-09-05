@@ -60,6 +60,7 @@ struct shoora_body
 
     shu::vec3f WorldToLocalSpace(const shu::vec3f &PointWS) const;
     shu::vec3f LocalToWorldSpace(const shu::vec3f &PointLS) const;
+    shu::vec3f LocalToWorldSpaceDir(const shu::vec3f &DirLS) const;
     shu::mat3f GetInverseInertiaTensorWS() const;
 
     shu::vec3f GetCenterOfMassLS() const;

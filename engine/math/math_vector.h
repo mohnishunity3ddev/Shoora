@@ -91,6 +91,7 @@ namespace shu
         inline vec3<T> operator/=(const vec3<T>& A);
         inline vec3<T> operator/=(T A);
         inline b32 operator==(const vec3<T> &Rhs) const;
+        inline b32 operator!=(const vec3<T> &Rhs) const;
         inline T& operator[](size_t Index);
         inline T operator[](size_t Index) const;
         inline T SqMagnitude() const;
@@ -99,7 +100,7 @@ namespace shu
         inline T Dot(const vec3<T> &A) const;
         inline vec3<T> Cross(const vec3<T> &A) const;
         inline vec3<T> Reciprocal() const;
-        inline void GetOrtho(vec3<T> &U, vec3<T> &V) const;
+        inline void GetOrtho(vec3<T> &U, vec3<T> &V, vec3<T> up = {0, 1, 0}) const;
 
         inline b32 IsValid() const;
         inline b32 IsNormalized() const;
@@ -706,19 +707,25 @@ namespace shu
 
     template <typename T>
     inline void
-    vec3<T>::GetOrtho(vec3<T> &U, vec3<T> &V) const
+    vec3<T>::GetOrtho(vec3<T> &U, vec3<T> &V, vec3<T> up) const
     {
         vec3<T> n = *this;
         n.Normalize();
 
-        const shu::vec3<T> w = (n.z*n.z > .81f) ? Vec3<T>(1, 0, 0) : Vec3<T>(0, 0, 1);
-        U = w.Cross(n);
-        U.Normalize();
+        if (up == Vec3<T>(0, 1, 0))
+        {
+            const shu::vec3<T> w = (n.z*n.z > .81f) ? up : Vec3<T>(0, 0, 1);
+            U = w.Cross(n);
 
-        V = n.Cross(U);
-        V.Normalize();
-        U = V.Cross(n);
-        U.Normalize();
+            V = n.Cross(U);
+            U = V.Cross(n);
+        }
+        else
+        {
+            up.Normalize();
+            U = up.Cross(n);
+            V = up;
+        }
     }
 
     template <typename T>
@@ -930,6 +937,16 @@ namespace shu
         b32 Result = NearlyEqual(this->x, Rhs.x, 0.0001f) &&
                      NearlyEqual(this->y, Rhs.y, 0.0001f) &&
                      NearlyEqual(this->z, Rhs.z, 0.0001f);
+        return Result;
+    }
+
+    template <typename T>
+    b32
+    vec3<T>::operator!=(const vec3<T> &Rhs) const
+    {
+        b32 Result = !NearlyEqual(this->x, Rhs.x, 0.0001f) ||
+                     !NearlyEqual(this->y, Rhs.y, 0.0001f) ||
+                     !NearlyEqual(this->z, Rhs.z, 0.0001f);
         return Result;
     }
 

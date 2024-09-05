@@ -75,7 +75,6 @@ namespace shu
     SHU_EXPORT quat QuatConjugate(const quat &A);
     SHU_EXPORT quat QuatInverse(const quat &A);
     SHU_EXPORT f32 QuatAngleBetweenRadians(const quat &A, const quat &B);
-    SHU_EXPORT void DecomposeSwingTwist(const quat &Q, const vec3f TwistAxis, quat &SwingQuat, quat &TwistQuat);
     SHU_EXPORT f32 QuatAngleBetweenDegrees(const quat &A, const quat &B);
     SHU_EXPORT void QuatNormalize(quat &A);
     SHU_EXPORT quat QuatNormalize(const quat &A);
@@ -84,14 +83,17 @@ namespace shu
 
     SHU_EXPORT quat QuatFromToRotation(const vec3f &v1, const vec3f &v2);
     SHU_EXPORT void DecomposeSwingTwist(const quat &q1, const quat &q2, const vec3f &localN1, const vec3f &localN2,
-                                        quat &swingQuat, quat &twistQuat);
-    SHU_EXPORT void DecomposeSwingTwist(const quat &relativeQuat, const vec3f twistAxis_WS, quat &swingQuat,
-                                        quat &twistQuat);
+                                        quat &swingQuat, quat &twistQuat, f32 *swingAngle = nullptr,
+                                        f32 *twistAngle = nullptr);
+    SHU_EXPORT void DecomposeSwingTwist(const quat &relativeQuat, const vec3f &twistAxis_WS, quat &swingQuat,
+                                        quat &twistQuat, f32 *swingAngle = nullptr, f32 *twistAngle = nullptr);
 
     SHU_EXPORT vec3f QuatRotateVec(f32 AngleInDegrees, const vec3f &Axis, const vec3f &V);
     SHU_EXPORT vec3f QuatRotateVec(const quat &Q, const vec3f &V);
     SHU_EXPORT quat QuatSlerp(quat A, quat B, f32 T);
     SHU_EXPORT quat QuatFromEuler(f32 xDegrees, f32 yDegrees, f32 zDegrees);
+
+    void QuaternionTest();
     } // namespace shu
 
 #endif
