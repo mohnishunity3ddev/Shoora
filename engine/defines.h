@@ -227,6 +227,19 @@ enum shoora_quality
 
 void Shu_DebugBreak();
 
+inline i32
+StringLen(const char *s)
+{
+    const char *ptr = s;
+    i32 len = 0;
+    while (*ptr != '\0')
+    {
+        ++len;
+        ptr++;
+    }
+    return len + 1;
+}
+
 template <typename T>
 inline T
 ClampToRange(T Value, T Min, T Max)
@@ -240,7 +253,7 @@ ClampToRange(T Value, T Min, T Max)
 inline u64
 AlignAsPow2(u64 Number, u64 Alignment)
 {
-    u64 Result;
+    u64 Result = Number;
     u64 AlignmentMask = (u64)(Alignment - 1);
     if(Number & AlignmentMask)
     {
@@ -424,11 +437,11 @@ NearlyEqualUlps(T n, T expected, i64 maxUlps = 2)
     return Result;
 }
 
-#define ALIGN4(Number) AlignAs((Number), 4)
-#define ALIGN8(Number) AlignAs((Number), 8)
-#define ALIGN16(Number) AlignAs((Number), 16)
-#define ALIGN32(Number) AlignAs((Number), 32)
-#define ALIGN64(Number) AlignAs((Number), 64)
+#define ALIGN4(Number) AlignAsPow2((Number), 4)
+#define ALIGN8(Number) AlignAsPow2((Number), 8)
+#define ALIGN16(Number) AlignAsPow2((Number), 16)
+#define ALIGN32(Number) AlignAsPow2((Number), 32)
+#define ALIGN64(Number) AlignAsPow2((Number), 64)
 
 template<typename T>
 struct stack_array

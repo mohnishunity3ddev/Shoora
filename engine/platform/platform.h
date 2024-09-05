@@ -123,7 +123,7 @@ SHU_EXPORT void LogTraceUnformatted(const char *Message);
 
 SHU_EXPORT void LogString(const char *String);
 
-SHU_EXPORT void Platform_GenerateString(char *Buffer, u32 BufferSize, const char *Format, ...);
+SHU_EXPORT i32 Platform_GenerateString(char *Buffer, u32 BufferSize, const char *Format, ...);
 SHU_EXPORT void Platform_FreeMemory(void *Memory);
 
 SHU_EXPORT platform_read_file_result Platform_ReadFile(const char *Path);
