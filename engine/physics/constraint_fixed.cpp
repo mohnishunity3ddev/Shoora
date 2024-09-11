@@ -26,7 +26,7 @@ fixed_constraint_3d::PreSolve(const f32 dt)
     this->Jacobian.Rows[0][9] = -skewPB.Rows[0][0];
     this->Jacobian.Rows[0][10] = -skewPB.Rows[0][1];
     this->Jacobian.Rows[0][11] = -skewPB.Rows[0][2];
-
+    
     this->Jacobian.Rows[1][0] = 0.0f;
     this->Jacobian.Rows[1][1] = -1.0f;
     this->Jacobian.Rows[1][2] = 0.0f;

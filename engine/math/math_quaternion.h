@@ -93,6 +93,14 @@ namespace shu
     SHU_EXPORT quat QuatSlerp(quat A, quat B, f32 T);
     SHU_EXPORT quat QuatFromEuler(f32 xDegrees, f32 yDegrees, f32 zDegrees);
 
+    struct quat_st
+    {
+        quat swing, twist;
+        vec3f rotatedTwistAxis;
+        f32 swingAngle, twistAngle;
+    };
+
+    SHU_EXPORT quat_st DecomposeSwingTwist(const quat &relativeQuat, const vec3f &twistAxis_WS);
     void QuaternionTest();
     } // namespace shu
 

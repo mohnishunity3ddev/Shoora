@@ -41,7 +41,7 @@ namespace shu::interp
             start = current;
             scan_token();
         }
-
+        
         add_token(shox_token(shox_token_type::END_OF_FILE, "", line));
         return tokens;
     }
@@ -49,7 +49,7 @@ namespace shu::interp
     void
     shox_scanner::scan_token()
     {
-        
+
     }
 
 } // namespace shu::interp

@@ -60,7 +60,7 @@ hinge_quat_constraint_3d::PreSolve(const f32 dt)
 
     shu::vec3f local_u1, local_v1;
     local_w1.GetOrtho(local_u1, local_v1);
-
+    
     shu::quat q = shu::QuatInverse(this->A->Rotation) * this->B->Rotation;
     shu::mat3f R1 = shu::QuatRotationMatrix_Left(this->A->Rotation);
     shu::mat3f Eta = shu::Mat3f(1.0f)*q.w + shu::CrossProductMatrix(q.complex);
@@ -98,7 +98,7 @@ hinge_quat_constraint_3d::PreSolve(const f32 dt)
         this->Jacobian.Rows[4][6]  =  0.0f;
         this->Jacobian.Rows[4][7]  =  0.0f;
         this->Jacobian.Rows[4][8]  =  0.0f;
-        
+
         this->Jacobian.Rows[4][9]  =  JacobianV1.x;
         this->Jacobian.Rows[4][10] =  JacobianV1.y;
         this->Jacobian.Rows[4][11] =  JacobianV1.z;

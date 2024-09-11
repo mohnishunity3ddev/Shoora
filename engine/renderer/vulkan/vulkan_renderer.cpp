@@ -778,27 +778,24 @@ InitScene()
 #if 1 // Hinge Swing Twist Limited Constraint
     Pos = shu::Vec3f(0, 2.5f, 0);
     auto *bA = Scene->AddCubeBody(Pos, shu::Vec3f(5), colorU32::Proto_Red, 0.0f, .5f, EulerAngles);
-    auto *bB = Scene->AddCubeBody(shu::Vec3f(0, -10, 0), shu::Vec3f(5, 20, 5), colorU32::Proto_Blue, 1.0f, .5f);
+    auto *bB = Scene->AddCubeBody(Pos + shu::Vec3f(14, 0, 0), shu::Vec3f(20, 5, 5), colorU32::Proto_Blue, 1.0f, .5f);
 
-    hinge_swing_twist_constraint_3d *HingeSwingTwist = ShuAllocateStruct(hinge_swing_twist_constraint_3d,
-                                                                         MEMTYPE_GLOBAL);
-    new (HingeSwingTwist) hinge_swing_twist_constraint_3d();
+    cone_twist_constraint *ConeTwist = ShuAllocateStruct(cone_twist_constraint, MEMTYPE_GLOBAL);
+    new (ConeTwist) cone_twist_constraint();
 
-    HingeSwingTwist->A = bA;
-    HingeSwingTwist->B = bB;
-    HingeSwingTwist->AnchorPointLS_A = shu::Vec3f(0 , -0.6f, 0);
-    HingeSwingTwist->AnchorPointLS_B = shu::Vec3f(0,  0.6f, 0);
-    HingeSwingTwist->SwingLimit1 = shu::Vec2f(-45, 45);
-    HingeSwingTwist->SwingLimit2 = shu::Vec2f(-45, 45);
-    HingeSwingTwist->TwistLimit =  shu::Vec2f(-45, 45);
+    ConeTwist->A = bA;
+    ConeTwist->B = bB;
+    ConeTwist->AnchorPointLS_A = shu::Vec3f( .55f, 0, 0);
+    ConeTwist->AnchorPointLS_B = shu::Vec3f(-.55f,  0, 0);
+    ConeTwist->ConeLimit = 45;
+    ConeTwist->TwistLimit =  30;
 
-    shu::vec3f local_n1 = shu::Vec3f(0, 1, 0);
-    HingeSwingTwist->AxisLS_A  = local_n1;
-    shu::vec3f local_n2 = shu::Vec3f(0, 1, 0);
-    HingeSwingTwist->AxisLS_B = local_n2;
-    HingeSwingTwist->v2_local = shu::Vec3f(0, -1, 0);
+    shu::vec3f local_n1 = shu::Vec3f(1, 0, 0);
+    ConeTwist->AxisLS_A  = local_n1;
+    shu::vec3f local_n2 = shu::Vec3f(1, 0, 0);
+    ConeTwist->AxisLS_B = local_n2;
 
-    Scene->Constraints3D.emplace_back(HingeSwingTwist);
+    Scene->Constraints3D.emplace_back(ConeTwist);
 #endif
 
 #if 0

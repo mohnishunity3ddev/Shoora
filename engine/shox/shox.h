@@ -48,7 +48,7 @@ namespace shu::interp
     struct shox_scanner
     {
       private:
-        static const i32 maxTokenCount = 2048;
+        static const i32 maxTokenCount = 4096;
 
         char *source;
 

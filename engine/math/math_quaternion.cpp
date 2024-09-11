@@ -266,10 +266,11 @@ namespace shu
     f32 quat::
     AngleRadians() const
     {
+        QuatNormalize(*this);
         shu::quat q = *this;
 
         f32 cosTheta = q.w;
-        f32 sinTheta = sqrtf(1.0f - cosTheta * cosTheta);
+        f32 sinTheta = q.complex.Dot(q.complex) / q.complex.SqMagnitude();
 
         if (NearlyEqual(cosTheta, 0.0f, 1e-5))
             return SHU_PI_BY_2;
@@ -341,13 +342,33 @@ namespace shu
         }
     }
 
+    quat_st
+    DecomposeSwingTwist(const quat &relativeQuat, const vec3f &twistAxis)
+    {
+        quat_st Result;
+        Result.rotatedTwistAxis = shu::QuatRotateVec(relativeQuat, twistAxis);
+
+        Result.swing = QuatFromToRotation(twistAxis, Result.rotatedTwistAxis);
+        Result.twist = relativeQuat * QuatInverse(Result.swing);
+
+        f32 d = twistAxis.Dot(Result.rotatedTwistAxis);
+        Result.swingAngle = 2.0f * CosInverse(sqrtf(0.5f * (1 + d))) * RAD_TO_DEG;
+
+        ASSERT(!NearlyEqual(Result.twist.w, 0.0f, 1e-5f));
+        Result.twistAngle = (2 * TanInverse(Result.rotatedTwistAxis.Dot(Result.twist.complex), Result.twist.w)) *
+                            RAD_TO_DEG;
+        // Result.twistAngle = Result.twist.AngleDegrees();
+        // ASSERT(NearlyEqual(Result.twistAngle, Result.twist.AngleRadians(), 1e-4f));
+        return Result;
+    }
+    
     quat
     QuatFromToRotation(const vec3f &from, const vec3f &to)
     {
         quat Result;
         vec3f vec1 = from, vec2 = to;
-        if (from.SqMagnitude() > 1.0f) { vec1 =  shu::Normalize(from); }
-        if (to.SqMagnitude() > 1.0f)   { vec2 =  shu::Normalize(to);   }
+        if (from.SqMagnitude() > (1.0f + SHU_EPSILON))  { vec1 =  shu::Normalize(from); }
+        if (to.SqMagnitude()   > (1.0f + SHU_EPSILON))  { vec2 =  shu::Normalize(to);   }
 
         f32 d = vec1.Dot(vec2);
         vec3f cross = vec1.Cross(to);
@@ -355,23 +376,23 @@ namespace shu
         // vec1 and vec2 are parallel
         if (NearlyEqual(cross.SqMagnitude(), 0.0f, 1e-6))
         {
-            if (NearlyEqual(d, 1.0f, 1e-4))
+            if (NearlyEqual(d, 1.0f, 1e-4f))
             {
                 Result = QuatIdentity();
             }
-            else if(NearlyEqual(d, -1.0f, 1e-4)) // 180 degree rotation
+            else if(NearlyEqual(d, -1.0f, 1e-4f)) // 180 degree rotation
             {
                 shu::vec3f rotAxis = shu::Cross(Vec3f(1, 0, 0), vec1);
-                if (NearlyEqual(rotAxis.SqMagnitude(), 0.0f, 1e-4))
+                if (NearlyEqual(rotAxis.SqMagnitude(), 0.0f, 1e-4f))
                 {
                     rotAxis = shu::Cross(Vec3f(0, 1, 0), vec1);
-                    if (NearlyEqual(rotAxis.SqMagnitude(), 0.0f, 1e-4))
+                    if (NearlyEqual(rotAxis.SqMagnitude(), 0.0f, 1e-4f))
                     {
                         rotAxis = shu::Cross(Vec3f(0, 0, 1), vec1);
                     }
                 }
 
-                ASSERT(!NearlyEqual(rotAxis.SqMagnitude(), 0.0f, 1e-4));
+                ASSERT(!NearlyEqual(rotAxis.SqMagnitude(), 0.0f, 1e-4f));
                 rotAxis.Normalize();
 
                 Result = shu::Quat(0.0f, rotAxis);

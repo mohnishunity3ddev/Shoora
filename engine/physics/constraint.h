@@ -188,40 +188,38 @@ struct hinge_quat_constraint_3d : public constraint_3d
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 
-struct hinge_swing_twist_constraint_3d : public constraint_3d
+#define ENABLE_TWIST_CONSTRAINT 1
+struct cone_twist_constraint : public constraint_3d
 {
-    hinge_swing_twist_constraint_3d() : constraint_3d()
+    cone_twist_constraint() : constraint_3d()
     {
         this->Jacobian.Zero();
 #if WARM_STARTING
         this->PreviousFrameLambda.Zero();
 #endif
         this->TransBaumgarte = shu::Vec3f(0.0f);
-        this->RotBaumgarte = shu::Vec3f(0.0f);
+        this->RotBaumgarte = shu::Vec2f(0.0f);
 
-        this->SwingLimit1 = shu::Vec2f(0.0f);
-        this->SwingLimit2 = shu::Vec2f(0.0f);
-        this->TwistLimit = shu::Vec2f(0.0f);
+        this->ConeLimit = 0.0f;
+        this->TwistLimit = 0.0f;
     }
 
-
-    shu::vec2f SwingLimit1, SwingLimit2;
-    shu::vec2f TwistLimit;
-    shu::vec3f v2_local;
+    f32 ConeLimit;
+    f32 TwistLimit;
 
     void PreSolve(const f32 dt) override;
     void Solve() override;
     void PostSolve() override;
 
   private:
-    shu::matMN<f32, 6, 12> Jacobian;
+    shu::matMN<f32, 5, 12> Jacobian;
 
 #if WARM_STARTING
-    shu::vecN<f32, 6> PreviousFrameLambda;
+    shu::vecN<f32, 5> PreviousFrameLambda;
 #endif
     // NOTE: The Stabilization Factor. Bias to correct positional error(constraint error).
     shu::vec3f TransBaumgarte;
-    shu::vec3f RotBaumgarte;
+    shu::vec2f RotBaumgarte;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////
