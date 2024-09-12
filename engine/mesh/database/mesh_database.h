@@ -11,7 +11,7 @@
 
 enum shoora_mesh_type
 {
-    NONE,
+    MESH_INVALID,
     LINE,
     POLYGON_2D,
     RECT_2D,

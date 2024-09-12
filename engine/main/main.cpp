@@ -1030,6 +1030,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     shu::interp::shox_lexer s{};
     s.read_file("debug.txt");
 
+
     platform_work_queue HighPriorityQueue = {};
     Win32MakeWorkQueue(&HighPriorityQueue, 7);
 

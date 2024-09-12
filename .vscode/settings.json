@@ -133,7 +133,11 @@
         "openglsupport": "cpp",
         "specialfunctions": "cpp",
         "splines": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "complex": "cpp",
+        "future": "cpp",
+        "*.inc": "cpp",
+        "matrixfunctions": "cpp"
     },
 
     "files.trimTrailingWhitespace": true,
