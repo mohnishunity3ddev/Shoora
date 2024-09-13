@@ -529,7 +529,7 @@ shoora_random::shoora_random(u32 RandomSeed)
 }
 
 u32
-shoora_random::Seed()
+shoora_random::GetSeed()
 {
     u32 Seed = RandomNumberTable[this->Index++];
     return Seed;
@@ -625,7 +625,7 @@ shoora_random_std::shoora_random_std(u32 RandomSeed)
 }
 
 u32
-shoora_random_std::GetRandomSeed()
+shoora_random_std::GetSeed()
 {
     u32 Seed = (u32)std::chrono::system_clock::now().time_since_epoch().count();
     return Seed;

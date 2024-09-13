@@ -476,7 +476,7 @@ Platform_GenerateString(char *Buffer, u32 BufferSize, const char *Format, ...)
     va_start(VarArgs, Format);
 
     i32 len = vsnprintf(Buffer, BufferSize, Format, VarArgs);
-
+    
     va_end(VarArgs);
     return len;
 }
@@ -1022,13 +1022,54 @@ Platform_WriteFile(char *Filename, u32 Size, void *Data)
     return Result;
 }
 
+u64
+GetTimeSinceEpoch()
+{
+    FILETIME Filetime;
+    GetSystemTimeAsFileTime(&Filetime);
+
+    ULARGE_INTEGER ULI;
+    ULI.LowPart = Filetime.dwLowDateTime;
+    ULI.HighPart = Filetime.dwHighDateTime;
+
+    return ULI.QuadPart;
+}
+
+u64
+GetPerfCounterValue()
+{
+    LARGE_INTEGER PerfCounter;
+    QueryPerformanceCounter(&PerfCounter);
+
+    return PerfCounter.QuadPart;
+}
+
+u32
+Platform_GetRandomSeed()
+{
+    u64 Time = GetTimeSinceEpoch();
+    u64 PerfCounter = GetPerfCounterValue();
+    u32 ProcessId = GetCurrentProcessId();
+    u32 ThreadId = GetCurrentThreadId();
+
+    // Combine them all
+    u64 CombinedSeed = Time ^ PerfCounter ^ ((u64)ProcessId << 32) ^ ThreadId;
+
+    CombinedSeed = (CombinedSeed ^ (CombinedSeed >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    CombinedSeed = (CombinedSeed ^ (CombinedSeed >> 27)) * 0x94d049bb133111ebULL;
+    CombinedSeed = CombinedSeed ^ (CombinedSeed >> 31);
+
+    u32 Result = (u32)(CombinedSeed & 0xffffffff);
+    return Result;
+}
+
 // TODO)): Right now this is the only entry point since win32 is the only platform right now.
 // TODO)): Have to implement multiple entrypoints for all platforms.
 i32 WINAPI
 wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdShow)
 {
     shu::interp::shox_lexer s{};
-    s.read_file("debug.txt");
+    s.ReadFile("debug.txt");
 
 
     platform_work_queue HighPriorityQueue = {};

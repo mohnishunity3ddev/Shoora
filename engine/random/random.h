@@ -40,7 +40,7 @@
         shoora_random();
         shoora_random(u32 RandomSeed);
 
-        u32 Seed();
+        u32 GetSeed();
         u32 NextU32();
         f32 R01();
         f32 Bilateral();

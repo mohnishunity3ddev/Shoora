@@ -126,6 +126,8 @@ SHU_EXPORT void LogString(const char *String);
 SHU_EXPORT i32 Platform_GenerateString(char *Buffer, u32 BufferSize, const char *Format, ...);
 SHU_EXPORT void Platform_FreeMemory(void *Memory);
 
+SHU_EXPORT u32 Platform_GetRandomSeed();
+
 SHU_EXPORT platform_read_file_result Platform_ReadFile(const char *Path);
 SHU_EXPORT void Platform_FreeFileMemory(platform_read_file_result *File);
 SHU_EXPORT b32 Platform_WriteFile(char *Filename, u32 Size, void *Data);

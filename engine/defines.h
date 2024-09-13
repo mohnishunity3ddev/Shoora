@@ -244,7 +244,8 @@ StringLen(const char *s)
     return (len + 1);
 }
 
-inline b32 StringIsEmpty(const char *str)
+inline b32
+StringIsEmpty(const char *str)
 {
     b32 result = false;
 
@@ -252,6 +253,15 @@ inline b32 StringIsEmpty(const char *str)
         result = true;
 
     return result;
+}
+
+inline char
+ToLower(char c)
+{
+    char Result = c;
+    if (Result >= 'A' && Result <= 'Z')
+        Result += 32;
+    return Result;
 }
 
 inline b32
@@ -276,7 +286,46 @@ StringCompare(const char *a, const char *b)
         a++;
     }
 
-    return m == 0;
+    b32 Result = (m == 0);
+    return Result;
+}
+
+inline b32
+StringLowerCaseCompare(const char *a, const char *b)
+{
+    if (!a || !b)
+        return false;
+
+    int m = 0;
+    const char *c = a;
+    while(*a != '\0')
+    {
+        char ca = ToLower(*a);
+        char cb = ToLower(*b);
+
+        m |= ca ^ cb;
+
+        if (*b != '\0')
+            b++;
+
+        // NOTE: To keep the function constant time.
+        if (*b == '\0')
+            c++;
+
+        a++;
+    }
+
+    b32 Result = (m == 0);
+    return Result;
+}
+
+inline char *
+StringDuplicateMalloc(const char *In)
+{
+    i32 len = StringLen((const char *)In);
+    char *Duplicate = (char *)malloc(len);
+    SHU_MEMCOPY(In, Duplicate, len);
+    return Duplicate;
 }
 
 inline void
