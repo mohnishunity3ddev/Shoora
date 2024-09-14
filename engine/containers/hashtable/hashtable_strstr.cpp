@@ -55,7 +55,7 @@ HashTable_StringEqualsFunc(const void *A, const void *B)
 }
 
 static b32
-HashTable_StringCaseEqualsFunc(const void *A, const void *B)
+HashTable_StringLowerCaseEqualsFunc(const void *A, const void *B)
 {
     b32 Result = StringLowerCaseCompare((const char *)A, (const char *)B);
     return Result;
@@ -70,7 +70,8 @@ HashTableCreate_StrStr(unsigned int Flags)
 {
     htable_hash HashFunction = HashFunc_StrCaseSensitive_FNV1A;
     htable_key_equals EqualsFunction = HashTable_StringEqualsFunc;
-
+    // (NOTE: void *(*)(void *))StringDuplicateMalloc casts the function pointer as something
+    // which returns a void * and takes in a void *.
     htable_callbacks Callbacks = {.KeyCopy   = (void *(*)(void *))StringDuplicateMalloc,
                                   .KeyFree   = free,
                                   .ValueCopy = (void *(*)(void *))StringDuplicateMalloc,
@@ -79,7 +80,7 @@ HashTableCreate_StrStr(unsigned int Flags)
     if (Flags & HTABLE_STR_NOCASECMP)
     {
         HashFunction = HashFunc_StrNoCaseSensitive_FNV1A;
-        EqualsFunction = HashTable_StringCaseEqualsFunc;
+        EqualsFunction = HashTable_StringLowerCaseEqualsFunc;
     }
 
     htable_strstr *Result = (htable_strstr *)HashTableCreate(HashFunction, EqualsFunction, &Callbacks);

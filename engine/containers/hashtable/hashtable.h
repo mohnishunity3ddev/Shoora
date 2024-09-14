@@ -18,7 +18,6 @@ struct htable_callbacks
     htable_key_copy   KeyCopy;
     htable_key_free   KeyFree;
     htable_value_copy ValueCopy;
-
     htable_value_free ValueFree;
 };
 
