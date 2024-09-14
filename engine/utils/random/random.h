@@ -1,35 +1,53 @@
-#if !defined(RANDOM_H)
+#ifndef SHOORA_RANDOM_H
+#define SHOORA_RANDOM_H
 
 #include <defines.h>
+#if IMPLEMENT_STD_RANDOM
+    #include <random>
+    #include <chrono>
 
-namespace shu
-{
-    struct rand
+    struct shoora_random_std
     {
-      public:
-        rand();
-        rand(u32 SeedValue);
-
-        void Seed(u32 SeedValue);
-
-        f32 Range01();
-        f32 RangeMinus1To1();
-
-        f32 RangeBetweenF32(f32 Low, f32 High);
-        i32 RangeBetweenInt32(i32 Low, i32 High);
-        u32 RangeBetweenUInt32(u32 Low, u32 High);
-
-        u32 NextUInt32();
-        i32 NextInt32();
-
       private:
-        u32 Index;
+        std::mt19937 MT;
+        // uniform distribution for integers
+        std::uniform_int_distribution<u32> UniformDistribution;
+        // uniform distribution for floats
+        std::uniform_real_distribution<f32> NormalDistribution;
 
-        u32 GetNext();
+      public:
+        shoora_random_std();
+        shoora_random_std(u32 RandomSeed);
+
+        static u32 GetRandomSeed();
+        u32 NextU32();
+        f32 R01();
+        f32 Bilateral();
+        u32 Between(u32 Min, u32 Max);
+        f32 Between(f32 Min, f32 Max);
     };
 
-    // void getInfo();
-}
+    void RandomTestSTD();
+#endif
 
-#define RANDOM_H
+#define MaxRandomNumber 0x05f5c21f
+#define MinRandomNumber 0x000025a0
+
+    struct shoora_random
+    {
+        u32 Index;
+
+        shoora_random();
+        shoora_random(u32 RandomSeed);
+
+        u32 GetSeed();
+        u32 NextU32();
+        f32 R01();
+        f32 Bilateral();
+        u32 Between(u32 Min, u32 Max);
+        f32 Between(f32 Min, f32 Max);
+    };
+
+    // void RandomTest();
+
 #endif

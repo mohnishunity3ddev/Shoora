@@ -18,13 +18,13 @@ namespace shu::interp
     }
 
     char *
-    shox_token::to_string(char *str)
+    shox_token::ToString(char *str)
     {
         char Buffer[4096];
         const char *Format = "Type: %d(%s);  Lexeme: %s.\n";
 
         char t[64];
-        token_string(t);
+        TokenString(t);
         Platform_GenerateString(Buffer, ARRAY_SIZE(Buffer), Format, type, t, lexeme);
         i32 len = StringLen(Buffer);
 
@@ -41,15 +41,15 @@ namespace shu::interp
     }
 
     void
-    shox_token::log_string()
+    shox_token::LogString() const noexcept
     {
         char t[64];
-        this->token_string(t);
-        LogDebug("Type: %d(%s);  Lexeme: %s.\n", type, t, lexeme);
+        this->TokenString(t);
+        LogDebug("TokenType::%s  Lexeme: '%s'\n", t, lexeme);
     }
 
     void
-    shox_token::token_string(char c[64])
+    shox_token::TokenString(char c[64]) const noexcept
     {
         switch(type)
         {

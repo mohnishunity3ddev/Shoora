@@ -1,1 +1,7 @@
 var language = "shox";
+var pi = 3.14159;
+if (pi != 3.432)
+{
+    print "Hello, World.\n";
+}
+return;

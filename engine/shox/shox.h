@@ -5,10 +5,10 @@ namespace shu::interp
 {
     struct shox_lexer
     {
-        void read_file(const char *path);
+        void ReadFile(const char *path);
 
-        static void report(i32 line, const char *where, const char *message);
-        static void error(i32 line, const char *message);
+        static void Report(i32 line, const char *where, const char *message);
+        static void Error(i32 line, const char *message);
 
       private:
         static b32 hadError;
@@ -55,11 +55,11 @@ namespace shu::interp
         i32 line;
         shox_token_data data;
 
-        char *to_string(char *str);
-        void log_string();
+        char *ToString(char *str);
+        void LogString() const noexcept;
 
       private:
-        void token_string(char c[64]);
+        void TokenString(char c[64]) const noexcept;
     };
 
     struct shox_scanner
@@ -72,34 +72,33 @@ namespace shu::interp
         shox_token tokens[maxTokenCount];
         i32 tokenCount = 0;
 
-        void add_token(const shox_token &token);
-        void add_token(shox_token_type type);
-        void add_token(shox_token_type type, const char *literal);
-        void add_token(shox_token_type type, const char *lexemeStr, const shox_token_data &data);
+        void AddToken(const shox_token &token);
+        void AddToken(shox_token_type type);
+        void AddToken(shox_token_type type, const char *literal);
+        void AddToken(shox_token_type type, const char *lexemeStr, const shox_token_data &data);
 
         // Are we at the end of the string?
-        b32 is_at_end();
+        b32 IsAtEnd();
         // Scan the current potential token in the source string.
-        void scan_token();
+        void ScanToken();
         // Advance one character in the source string.
-        char advance();
+        char Advance();
         // Does the current unseen character in the source match the character sent in here.
-        b32 match(char expected);
+        b32 Match(char expected);
         // Just see what the character is and consume it
-        char peek();
+        char Peek();
         // Just see what the character is and consume it
-        char peek_next();
+        char PeekNext();
         // Process string literals
-        void process_string();
+        void ProcessString();
         // Process Number Literals
-        void process_number();
-        void process_identifier();
+        void ProcessNumber();
+        void ProcessIdentifierOrReserved();
 
       public:
         shox_scanner(const char *source);
 
-        const shox_token *scan_tokens();
-
-        void scanner_free();
+        const shox_token *ScanTokens();
+        i32 getTokenCount() { return tokenCount; }
     };
 }

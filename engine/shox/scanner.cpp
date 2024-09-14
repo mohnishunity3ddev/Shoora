@@ -2,84 +2,85 @@
 
 namespace shu::interp
 {
+    static shox_token_type
+    GetTokenType(const char *TokenString)
+    {
+        shox_token_type Result = shox_token_type::INVALID;
+
+        if      (StringCompare(TokenString, "and"))    Result = shox_token_type::AND;
+        else if (StringCompare(TokenString, "class"))  Result = shox_token_type::CLASS;
+        else if (StringCompare(TokenString, "else"))   Result = shox_token_type::ELSE;
+        else if (StringCompare(TokenString, "false"))  Result = shox_token_type::_FALSE;
+        else if (StringCompare(TokenString, "for"))    Result = shox_token_type::FOR;
+        else if (StringCompare(TokenString, "fun"))    Result = shox_token_type::FUN;
+        else if (StringCompare(TokenString, "if"))     Result = shox_token_type::IF;
+        else if (StringCompare(TokenString, "nil"))    Result = shox_token_type::NIL;
+        else if (StringCompare(TokenString, "or"))     Result = shox_token_type::OR;
+        else if (StringCompare(TokenString, "print"))  Result = shox_token_type::PRINT;
+        else if (StringCompare(TokenString, "return")) Result = shox_token_type::RETURN;
+        else if (StringCompare(TokenString, "super"))  Result = shox_token_type::SUPER;
+        else if (StringCompare(TokenString, "this"))   Result = shox_token_type::THIS;
+        else if (StringCompare(TokenString, "true"))   Result = shox_token_type::_TRUE;
+        else if (StringCompare(TokenString, "var"))    Result = shox_token_type::VAR;
+        else if (StringCompare(TokenString, "while"))  Result = shox_token_type::WHILE;
+
+        return Result;
+    }
+
     shox_scanner::shox_scanner(const char *source)
     {
-        i32 size = ALIGN32(StringLen(source));
-        this->source = (char *)malloc(size);
-        SHU_MEMCOPY(source, this->source, size);
+        this->source = (char *)source;
+        ASSERT(this->source != nullptr);
     }
 
     void
-    shox_scanner::scanner_free()
-    {
-        if (this->source != nullptr)
-        {
-            free(this->source);
-            this->source = nullptr;
-        }
-    }
-
-    void
-    shox_scanner::add_token(const shox_token &token)
+    shox_scanner::AddToken(const shox_token &token)
     {
         ASSERT(tokenCount + 1 <= maxTokenCount);
         this->tokens[tokenCount++] = token;
     }
 
     void
-    shox_scanner::add_token(shox_token_type type)
+    shox_scanner::AddToken(shox_token_type type)
     {
         char temp[128];
         SubString(this->source, this->start, this->current, temp);
 
         shox_token token(type, temp, this->line);
-        this->add_token(token);
+        this->AddToken(token);
     }
 
     void
-    shox_scanner::add_token(shox_token_type type, const char *lexemeStr)
+    shox_scanner::AddToken(shox_token_type type, const char *lexemeStr)
     {
         shox_token token(type, lexemeStr, this->line);
-        this->add_token(token);
+        this->AddToken(token);
     }
 
     void
-    shox_scanner::add_token(shox_token_type type, const char *lexemeStr, const shox_token_data &data)
+    shox_scanner::AddToken(shox_token_type type, const char *lexemeStr, const shox_token_data &data)
     {
         shox_token token(type, lexemeStr, data, this->line);
-        this->add_token(token);
+        this->AddToken(token);
     }
 
-    b32 shox_scanner::is_at_end()
+    b32 shox_scanner::IsAtEnd()
     {
         b32 result = current >= StringLen(source);
         return result;
     }
 
-    const shox_token *
-    shox_scanner::scan_tokens()
-    {
-        while(!is_at_end())
-        {
-            start = current;
-            scan_token();
-        }
-
-        add_token(shox_token(shox_token_type::END_OF_FILE, "", line));
-        return tokens;
-    }
-
     char
-    shox_scanner::advance()
+    shox_scanner::Advance()
     {
         char result = this->source[this->current++];
         return result;
     }
 
     b32
-    shox_scanner::match(char expected)
+    shox_scanner::Match(char expected)
     {
-        if (this->is_at_end()) return false;
+        if (this->IsAtEnd()) return false;
         if (CharAt(this->source, this->current) != expected) return false;
 
         ++this->current;
@@ -87,10 +88,10 @@ namespace shu::interp
     }
 
     char
-    shox_scanner::peek()
+    shox_scanner::Peek()
     {
         char result;
-        if (is_at_end())
+        if (IsAtEnd())
             result = '\0';
         else
             result = CharAt(this->source, this->current);
@@ -99,7 +100,7 @@ namespace shu::interp
     }
 
     char
-    shox_scanner::peek_next()
+    shox_scanner::PeekNext()
     {
         char result;
         if ((current + 1) >= StringLen(source))
@@ -111,102 +112,125 @@ namespace shu::interp
     }
 
     void
-    shox_scanner::process_string()
+    shox_scanner::ProcessString()
     {
-        while (this->peek() != '"' && !this->is_at_end())
+        while (this->Peek() != '"' && !this->IsAtEnd())
         {
-            if (peek() == '\n') ++this->line;
-            this->advance();
+            if (Peek() == '\n') ++this->line;
+            this->Advance();
         }
 
-        if (is_at_end())
+        if (IsAtEnd())
         {
-            shox_lexer::error(line, "Unterminated string.");
+            shox_lexer::Error(line, "Unterminated string.");
             return;
         }
 
         // consume the closing " of the string.
-        advance();
+        Advance();
 
         // Trim the surrounding quotes.
         char string[128];
+        // TODO: Don't need to create new memory to store this. I can just startIndex and endIndex which represents
+        // the start and end of the lexeme directly in the source file.
         SubString(this->source, start + 1, current - 1, string);
 
-        this->add_token(shox_token_type::STRING, string);
+        this->AddToken(shox_token_type::STRING, string);
     }
 
     void
-    shox_scanner::process_number()
+    shox_scanner::ProcessNumber()
     {
         // Keep advancing till you see a number
-        while ( IsDigit(peek()) )
-            advance();
+        while ( IsDigit(Peek()) )
+            Advance();
 
         // Is this a decimal number
-        if (peek() == '.' && IsDigit(peek_next()))
+        if (Peek() == '.' && IsDigit(PeekNext()))
         {
             // consume the . (decimal point)
-            advance();
+            Advance();
 
             // Consume the rest of the number
-            while (IsDigit(peek()))
-                advance();
+            while (IsDigit(Peek()))
+                Advance();
         }
 
         char numStr[128];
+        // TODO: Don't need to create new memory to store this. I can just startIndex and endIndex which represents
+        // the start and end of the lexeme directly in the source file.
         SubString(this->source, start, current, numStr);
         shox_token_data data = {.dData = StringToDouble(numStr)};
-        this->add_token(shox_token_type::NUMBER, numStr, data);
+        this->AddToken(shox_token_type::NUMBER, numStr, data);
     }
 
     void
-    shox_scanner::process_identifier()
+    shox_scanner::ProcessIdentifierOrReserved()
     {
-        while (IsAlphaNumeric(peek()))
-            advance();
+        while (IsAlphaNumeric(Peek()))
+            Advance();
 
-        
-        shox_token_type type;
-        this->add_token(type);
+
+        char t[128];
+        SubString(source, start, current, t);
+
+        shox_token_type type = GetTokenType(t);
+        if (type == INVALID)
+            type = shox_token_type::IDENTIFIER;
+
+        this->AddToken(type);
+    }
+
+    const shox_token *
+    shox_scanner::ScanTokens()
+    {
+        while (!IsAtEnd())
+        {
+            start = current;
+            ScanToken();
+        }
+
+        AddToken(shox_token(shox_token_type::END_OF_FILE, "", line));
+        return tokens;
     }
 
     void
-    shox_scanner::scan_token()
+    shox_scanner::ScanToken()
     {
-        char c = advance();
+        char c = Advance();
         switch(c)
         {
-            case '(': { this->add_token(shox_token_type::LEFT_PAREN); } break;
-            case ')': { this->add_token(shox_token_type::RIGHT_PAREN); } break;
-            case '{': { this->add_token(shox_token_type::LEFT_BRACE); } break;
-            case '}': { this->add_token(shox_token_type::RIGHT_BRACE); } break;
-            case ',': { this->add_token(shox_token_type::COMMA); } break;
-            case '.': { this->add_token(shox_token_type::DOT); } break;
-            case '-': { this->add_token(shox_token_type::MINUS); } break;
-            case '+': { this->add_token(shox_token_type::PLUS); } break;
-            case ';': { this->add_token(shox_token_type::SEMICOLON); } break;
-            case '*': { this->add_token(shox_token_type::STAR); } break;
+            case '(': { this->AddToken(shox_token_type::LEFT_PAREN); } break;
+            case ')': { this->AddToken(shox_token_type::RIGHT_PAREN); } break;
+            case '{': { this->AddToken(shox_token_type::LEFT_BRACE); } break;
+            case '}': { this->AddToken(shox_token_type::RIGHT_BRACE); } break;
+            case ',': { this->AddToken(shox_token_type::COMMA); } break;
+            case '.': { this->AddToken(shox_token_type::DOT); } break;
+            case '-': { this->AddToken(shox_token_type::MINUS); } break;
+            case '+': { this->AddToken(shox_token_type::PLUS); } break;
+            case ';': { this->AddToken(shox_token_type::SEMICOLON); } break;
+            case '*': { this->AddToken(shox_token_type::STAR); } break;
 
-            case '!': { this->add_token(match('=') ? BANG_EQUAL : BANG); } break;
-            case '=': { this->add_token(match('=') ? EQUAL_EQUAL : EQUAL); } break;
-            case '<': { this->add_token(match('=') ? LESS_EQUAL : LESS); } break;
-            case '>': { this->add_token(match('=') ? GREATER_EQUAL : GREATER); } break;
+            case '!': { this->AddToken(Match('=') ? BANG_EQUAL : BANG); } break;
+            case '=': { this->AddToken(Match('=') ? EQUAL_EQUAL : EQUAL); } break;
+            case '<': { this->AddToken(Match('=') ? LESS_EQUAL : LESS); } break;
+            case '>': { this->AddToken(Match('=') ? GREATER_EQUAL : GREATER); } break;
 
             case '/':
             {
                 // Is it a single line comment?
-                if (match('/'))
+                if (Match('/'))
                 {
                     // A comment goes till the end of the current line.
-                    while(peek() != '\n' && !is_at_end())
+                    while(Peek() != '\n' && !IsAtEnd())
                     {
                         // Just advance without processing the character returned by advance.
-                        advance();
+                        Advance();
                     }
                 }
                 else
                 {
-                    add_token(shox_token_type::SLASH);
+                    AddToken(shox_token_type::SLASH);
                 }
             } break;
 
@@ -217,14 +241,14 @@ namespace shu::interp
             case '\n': { this->line++; } break;
 
             // Strings
-            case '"': { process_string(); } break;
+            case '"': { ProcessString(); } break;
 
             // reserved identifiers
             case 'o':
             {
-                if (match('r'))
+                if (Match('r'))
                 {
-                    this->add_token(shox_token_type::OR);
+                    this->AddToken(shox_token_type::OR);
                 }
             }
 
@@ -232,18 +256,17 @@ namespace shu::interp
             {
                 if (IsDigit(c))
                 {
-                    process_number();
+                    ProcessNumber();
                 }
                 else if (IsAlpha(c))
                 {
-                    process_identifier();
+                    ProcessIdentifierOrReserved();
                 }
                 else
                 {
-                    shox_lexer::error(this->line, "Unexpected Character.");
+                    shox_lexer::Error(this->line, "Unexpected Character.");
                 }
             } break;
         }
     }
-
 } // namespace shu::interp

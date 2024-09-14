@@ -5,27 +5,31 @@ namespace shu::interp
     b32 shox_lexer::hadError = false;
 
     void
-    shox_lexer::read_file(const char *path)
+    shox_lexer::ReadFile(const char *path)
     {
         platform_read_file_result Result = Platform_ReadFile(path);
-        
-        shox_token s = shox_token(shox_token_type::LEFT_BRACE, "My Literal", 1244);
 
-        s.log_string();
+        shox_scanner scanner((const char *)Result.Data);
+        const shox_token *tokens = scanner.ScanTokens();
+        for (i32 i = 0; i < scanner.getTokenCount(); ++i)
+        {
+            tokens[i].LogString();
+        }
+
         int x = 0;
+        Platform_FreeFileMemory(&Result);
     }
 
     void
-    shox_lexer::error(i32 line, const char *message)
+    shox_lexer::Error(i32 line, const char *message)
     {
-        report(line, "", message);
+        Report(line, "", message);
     }
 
     void
-    shox_lexer::report(i32 line, const char *where, const char *message)
+    shox_lexer::Report(i32 line, const char *where, const char *message)
     {
         LogError("[line: %d] Error(%s): %s.\n", line, where, message);
-
         shox_lexer::hadError = true;
     }
 }

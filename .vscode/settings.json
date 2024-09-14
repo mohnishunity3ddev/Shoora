@@ -1,5 +1,5 @@
 {
-    "editor.fontFamily": "'pragmatapro mono liga', 'maple mono nf', 'sf mono', 'iosevkaterm nerd font mono', 'jetbrainsmono nf', 'caskaydiacove nf mono',  'agave nerd font mono r', 'JetBrainsMono nerd font mono'",
+    "editor.fontFamily": "'comic code ligatures regular', 'maple mono nf', 'caskaydiacove nf mono', 'pragmatapro mono liga', 'sf mono', 'iosevkaterm nerd font mono', 'jetbrainsmono nf', 'agave nerd font mono r', 'JetBrainsMono nerd font mono'",
     "editor.fontSize": 16,
     // "editor.lineHeight": 25,
     // "editor.letterSpacing": 0.5,
@@ -137,7 +137,10 @@
         "complex": "cpp",
         "future": "cpp",
         "*.inc": "cpp",
-        "matrixfunctions": "cpp"
+        "matrixfunctions": "cpp",
+        "coroutine": "cpp",
+        "resumable": "cpp",
+        "typeindex": "cpp"
     },
 
     "files.trimTrailingWhitespace": true,

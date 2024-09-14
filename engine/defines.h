@@ -74,7 +74,7 @@ typedef double f64;
 #define TEST_STR_FUNCTIONS 0
 #if _DEBUG
     #define _SHU_DEBUG 1
-    #define SHU_CRASH_DUMP_ENABLE 1
+    #define SHU_CRASH_DUMP_ENABLE 0
     #undef TEST_STR_FUNCTIONS
     #define TEST_STR_FUNCTIONS 1
 #else
@@ -334,7 +334,7 @@ SubString(const char *str, i32 start, i32 end, char mem[128])
     i32 len = end - start;
     ASSERT(len <= 128);
     SHU_MEMCOPY(str + start, mem, len);
-    mem[len + 1] = 0;
+    mem[len] = '\0';
 }
 
 inline b32

@@ -427,10 +427,17 @@ void
 OutputToConsole(LogType LogType, const char *Message)
 {
 #if SHU_CRASH_DUMP_ENABLE
-    WriteFp = fopen("app_dump.txt", "a");
-    fprintf(WriteFp, "%s", Message);
-    fclose(WriteFp);
-    WriteFp = nullptr;
+    // TODO: Make this thread-safe.
+    if (WriteFp == nullptr)
+    {
+        WriteFp = fopen("app_dump.txt", "a");
+        if (WriteFp != nullptr)
+        {
+            fprintf(WriteFp, "%s", Message);
+            fclose(WriteFp);
+            WriteFp = nullptr;
+        }
+    }
 #endif
 
     HANDLE Console = GlobalWin32WindowContext.ConsoleHandle;
@@ -476,7 +483,7 @@ Platform_GenerateString(char *Buffer, u32 BufferSize, const char *Format, ...)
     va_start(VarArgs, Format);
 
     i32 len = vsnprintf(Buffer, BufferSize, Format, VarArgs);
-    
+
     va_end(VarArgs);
     return len;
 }
@@ -793,8 +800,11 @@ struct platform_work_queue_entry
 
 struct platform_work_queue
 {
+    // How many entries of the worker should be completed.
     u32 volatile CompletionGoal;
+    // How manyu tasks have been completed.
     u32 volatile CompletionCount;
+    // If a new work entry, which index in the queue array should it go to?
     u32 volatile NextEntryToWrite;
     u32 volatile NextEntryToRead;
     HANDLE SemaphoreHandle;
@@ -808,29 +818,51 @@ Win32DoNextWorkQueueEntry(platform_work_queue *Queue)
 {
     b32 WeShouldSleep = false;
 
-    // Circular buffer.
+    // Work queue is a Circular buffer.
+    // NOTE: we do not want two threads to read the same entry (in other words, we dont want two threads
+    // doing the same work).
+    // What is the next index in queue array that we should pick to complete using a thread?
     u32 OriginalNextEntryToRead = Queue->NextEntryToRead;
+    // What will be the next index of the work to pick after the thread has picked the original one?
     u32 NewNextEntryToRead = ((OriginalNextEntryToRead + 1) % ARRAY_SIZE(Queue->Entries));
 
-    // NOTE: We want to read an entry which has not already been written or is in the process of writing to. In
-    // this case, we want to sleep the thread so that there are entries which have been written already that we can
-    // read.
+    // NextEntryToRead is the index of work entries which need to be picked up by threads for completion.
+    // Next Entry to Write is the index where new work if requested will be added to.
+    // We dont want a thread to pick up work that we are or will be writing to.
+    // Either it is in the process of being written to
     if (OriginalNextEntryToRead != Queue->NextEntryToWrite)
     {
+        // Compare the value of NextEntryToRead with OriginalNextEntryToRead, if its different then replace it with
+        // NewNextEntryToRead and return the original expected value, otherwise do nothing.
+        //
+        // NOTE: Take this scenario where this will fail.
+        // Let's say thread A reached here, it had an idea of what the OriginalNextEntryToRead was.
+        // Then our OS scheduled another thread B which did the same thing, got the same value for OriginalNextEntryToRead.
+        // It exchanged it and set Queue's NextEntryToRead value to Original+1.
+        //
+        // Now let's say thread A again got scheduled and it started from this line. Now, Queue's NextEntryRead has
+        // changed to Original+1, and it had the old Original value. In this case InterlockedCompareExchange will
+        // tell thread A that it was changed since the last time you stored Original's value. thread B now knows
+        // some other thread already updated the value, in which case it should not pick the same work again to
+        // complete that thread B already picked up. so it will do nothing and continue checking for more qork from
+        // the queue.
         u32 Index = InterlockedCompareExchange((LONG volatile *)&Queue->NextEntryToRead, NewNextEntryToRead,
                                                OriginalNextEntryToRead);
-        // above returned the original value meaning this is the entry to read. And so we read it.
-        // If its not, then that means our expected was not the case, meaning some other thread beat us to it. in
-        // which case, we do nothing.
+        // Index will be the Original value since the original value will be returned if the exchange did happen
+        // safely above.
         if (Index == OriginalNextEntryToRead)
         {
             platform_work_queue_entry Entry = Queue->Entries[Index];
             Entry.Callback(Queue, Entry.Args);
+            // Thread Safe way to increment CompletionCount.
             InterlockedIncrement((LONG volatile *)&Queue->CompletionCount);
         }
     }
     else
     {
+        // This will come when OriginalNextEntryToRead will be equal to that of Write.
+        // which essentially means there is no work left in the queue. In which case the thread is instructed to
+        // sleep until some new work gets added to the queue.
         WeShouldSleep = true;
     }
 
@@ -848,11 +880,13 @@ ThreadProc(LPVOID lpParameter)
     // ConstructWideString(Buffer, ArrayCount(Buffer), L"Thread %d", ThreadInfo->LogicalThreadIndex);
     // HRESULT r = SetThreadDescription(GetCurrentThread(), (PCWSTR)Buffer);
 #endif
-
+    
     for (;;)
     {
         if (Win32DoNextWorkQueueEntry(Queue))
         {
+            // Sleep Infinitely until the semaphore is released.
+            // Semaphore is released when there is work in the queue to be completed.
             WaitForSingleObjectEx(Queue->SemaphoreHandle, INFINITE, FALSE);
         }
     }
@@ -882,20 +916,29 @@ Platform_AddWorkEntry(platform_work_queue *Queue, platform_work_queue_callback *
 {
     // The Thread Work Queue is a circular buffer. Write pointer can get
     // ahead of the read as it wraps areound the entries array.
+    //
+    // if some new work comes in, which index should we choose to store the work related info. That's the
+    // NextEntryToWrite.
     u32 NewNextEntryToWrite = ((Queue->NextEntryToWrite + 1) % ARRAY_SIZE(Queue->Entries));
+    // NextEntryToRead is where the next available thread will pick from to complete.
+    // We dont want to write data to the same place and simulataneously have a thread picking it to complete.
     ASSERT(NewNextEntryToWrite != Queue->NextEntryToRead);
 
     platform_work_queue_entry *Entry = Queue->Entries + Queue->NextEntryToWrite;
 
+    // Data related to the work entry
     Entry->Args = Data;
     Entry->Callback = Callback;
 
+    // Thread safe way of incrementing completion goal.
     InterlockedIncrement(&Queue->CompletionGoal);
 
     CompletePastWritesBeforeFutureWrites;
 
     // Circular buffer.
     Queue->NextEntryToWrite = NewNextEntryToWrite;
+    // Release 1 count for the semaphore so that sleeping threads are woken up to start doing work for this newly
+    // added entry.
     ReleaseSemaphore(Queue->SemaphoreHandle, 1, 0);
 }
 
