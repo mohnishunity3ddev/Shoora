@@ -27,7 +27,7 @@ namespace shu::interp
         LESS, LESS_EQUAL,
 
         IDENTIFIER, STRING, NUMBER,
-
+        
         AND, CLASS, ELSE, _FALSE, FUN, FOR, IF, NIL, OR,
         PRINT, RETURN, SUPER, THIS, _TRUE, VAR, WHILE,
 
@@ -71,6 +71,7 @@ namespace shu::interp
         i32 start = 0, current = 0, line = 1;
         shox_token tokens[maxTokenCount];
         i32 tokenCount = 0;
+        b32 MultiLineCommentEncountered = false;
 
         void AddToken(const shox_token &token);
         void AddToken(shox_token_type type);
@@ -84,10 +85,10 @@ namespace shu::interp
         // Advance one character in the source string.
         char Advance();
         // Does the current unseen character in the source match the character sent in here.
-        b32 Match(char expected);
-        // Just see what the character is and consume it
+        b32 DoesCurrentMatch(char expected);
+        // Just see what the character is at the current pointer without consuming it.
         char Peek();
-        // Just see what the character is and consume it
+        // Just see what the character is at the current + 1 position without consuming it.
         char PeekNext();
         // Process string literals
         void ProcessString();

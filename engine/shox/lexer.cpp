@@ -15,8 +15,7 @@ namespace shu::interp
         {
             tokens[i].LogString();
         }
-
-        int x = 0;
+        
         Platform_FreeFileMemory(&Result);
     }
 

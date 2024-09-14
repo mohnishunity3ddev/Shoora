@@ -78,7 +78,7 @@ namespace shu::interp
     }
 
     b32
-    shox_scanner::Match(char expected)
+    shox_scanner::DoesCurrentMatch(char expected)
     {
         if (this->IsAtEnd()) return false;
         if (CharAt(this->source, this->current) != expected) return false;
@@ -169,7 +169,7 @@ namespace shu::interp
     {
         while (IsAlphaNumeric(Peek()))
             Advance();
-
+        // Hello there my friend.
 
         char t[128];
         SubString(source, start, current, t);
@@ -211,21 +211,45 @@ namespace shu::interp
             case ';': { this->AddToken(shox_token_type::SEMICOLON); } break;
             case '*': { this->AddToken(shox_token_type::STAR); } break;
 
-            case '!': { this->AddToken(Match('=') ? BANG_EQUAL : BANG); } break;
-            case '=': { this->AddToken(Match('=') ? EQUAL_EQUAL : EQUAL); } break;
-            case '<': { this->AddToken(Match('=') ? LESS_EQUAL : LESS); } break;
-            case '>': { this->AddToken(Match('=') ? GREATER_EQUAL : GREATER); } break;
+            case '!': { this->AddToken(DoesCurrentMatch('=') ? BANG_EQUAL : BANG); } break;
+            case '=': { this->AddToken(DoesCurrentMatch('=') ? EQUAL_EQUAL : EQUAL); } break;
+            case '<': { this->AddToken(DoesCurrentMatch('=') ? LESS_EQUAL : LESS); } break;
+            case '>': { this->AddToken(DoesCurrentMatch('=') ? GREATER_EQUAL : GREATER); } break;
 
             case '/':
             {
                 // Is it a single line comment?
-                if (Match('/'))
+                if (DoesCurrentMatch('/'))
                 {
-                    // A comment goes till the end of the current line.
+                    // NOTE: A comment goes till the end of the current line.
+                    // so we "peek" the source till we encounter the end of the current line.
+                    // if it does, we break out from here, and this->current now points to \n
+                    // The next time scan token runs, it encounters the \n character and increment the line number.
                     while(Peek() != '\n' && !IsAtEnd())
                     {
                         // Just advance without processing the character returned by advance.
                         Advance();
+                    }
+                }
+                // Multi-line comments.
+                else if (DoesCurrentMatch('*'))
+                {
+                    // Consume the star(*)
+                    Advance();
+                    this->MultiLineCommentEncountered = true;
+                    while ((Peek() != '*' || (Peek() == '*' && PeekNext() != '/')) &&
+                           !IsAtEnd())
+                    {
+                        if (Peek() == '\n')
+                            this->line++;
+                        Advance();
+                    }
+
+                    if (!IsAtEnd())
+                    {
+                        ASSERT(Peek() == '*' && PeekNext() == '/');
+                        this->current += 2;
+                        this->MultiLineCommentEncountered = false;
                     }
                 }
                 else
@@ -246,7 +270,7 @@ namespace shu::interp
             // reserved identifiers
             case 'o':
             {
-                if (Match('r'))
+                if (DoesCurrentMatch('r'))
                 {
                     this->AddToken(shox_token_type::OR);
                 }
@@ -262,7 +286,7 @@ namespace shu::interp
                 {
                     ProcessIdentifierOrReserved();
                 }
-                else
+                else if (c != '\0')
                 {
                     shox_lexer::Error(this->line, "Unexpected Character.");
                 }

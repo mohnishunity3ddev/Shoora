@@ -1,5 +1,10 @@
 var language = "shox";
 var pi = 3.14159;
+// This is a single line comment.
+/*
+THIS Is
+A MULTI-line
+comment */
 if (pi != 3.432)
 {
     print "Hello, World.\n";

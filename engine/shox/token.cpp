@@ -45,7 +45,7 @@ namespace shu::interp
     {
         char t[64];
         this->TokenString(t);
-        LogDebug("TokenType::%s  Lexeme: '%s'\n", t, lexeme);
+        LogDebug("TokenType::%s  Lexeme: '%s' Line: %d\n", t, lexeme, line);
     }
 
     void
