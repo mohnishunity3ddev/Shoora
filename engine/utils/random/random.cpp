@@ -569,6 +569,16 @@ shoora_random::Between(u32 Min, u32 Max)
     return Result;
 }
 
+i32
+shoora_random::Between(i32 Min, i32 Max)
+{
+    ASSERT(Max > Min);
+    i32 d = (i32)((f32)(Max - Min) * R01());
+    i32 Result = Min + d;
+
+    return Result;
+}
+
 f32
 shoora_random::Between(f32 Min, f32 Max)
 {

@@ -127,7 +127,7 @@ namespace shu
         {
             f32 cosTheta = v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
             f32 magnitudeMult = sqrtf(v1.SqMagnitude() * v2.SqMagnitude());
-
+            
             if (NearlyEqual(magnitudeMult, 0.0f, 1e-6))
             {
                 return 0.0f;

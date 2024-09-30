@@ -16,8 +16,6 @@
 // TODO)): Get a different strategy for waiting times. TimeBeginPeriod decreases system performance as per spec.
 #include <timeapi.h>
 
-#include <shox/shox.h>
-
 struct win32_window_context
 {
     HWND Handle;
@@ -880,7 +878,7 @@ ThreadProc(LPVOID lpParameter)
     // ConstructWideString(Buffer, ArrayCount(Buffer), L"Thread %d", ThreadInfo->LogicalThreadIndex);
     // HRESULT r = SetThreadDescription(GetCurrentThread(), (PCWSTR)Buffer);
 #endif
-    
+
     for (;;)
     {
         if (Win32DoNextWorkQueueEntry(Queue))
@@ -1066,7 +1064,7 @@ Platform_WriteFile(char *Filename, u32 Size, void *Data)
 }
 
 u64
-GetTimeSinceEpoch()
+Platform_GetFileTime()
 {
     FILETIME Filetime;
     GetSystemTimeAsFileTime(&Filetime);
@@ -1090,7 +1088,7 @@ GetPerfCounterValue()
 u32
 Platform_GetRandomSeed()
 {
-    u64 Time = GetTimeSinceEpoch();
+    u64 Time = Platform_GetFileTime();
     u64 PerfCounter = GetPerfCounterValue();
     u32 ProcessId = GetCurrentProcessId();
     u32 ThreadId = GetCurrentThreadId();
@@ -1111,10 +1109,6 @@ Platform_GetRandomSeed()
 i32 WINAPI
 wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdShow)
 {
-    shu::interp::shox_lexer s{};
-    s.ReadFile("debug.txt");
-
-
     platform_work_queue HighPriorityQueue = {};
     Win32MakeWorkQueue(&HighPriorityQueue, 7);
 

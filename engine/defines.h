@@ -108,8 +108,14 @@ enum shoora_quality
     Quality_Count
 };
 
-#define SHU_ABSOLUTE(Val) (((Val) < 0) ? -(Val) : (Val))
-#define SIGN(Val) (((Val) < 0) ? (-1) : (1))
+struct type32 {
+    union
+    {
+        f32 f;
+        i32 i;
+        u32 u;
+    };
+};
 
 // #if _SHU_DEBUG
 #define ASSERT(Expression)                                                                                        \
@@ -120,6 +126,33 @@ enum shoora_quality
 // #else
 // #define ASSERT(Expression)
 // #endif
+
+inline i32
+shuAbsi(i32 val)
+{
+    // overflow.
+    ASSERT(val != SHU_INT_MIN);
+    // 0xffffffff(-1) if negative 0 if positive. signed extension shift arithmetic right.
+    i32 mask = val >> 31;
+    // for negative: subtract 1 (val + mask); flip all bits ( ^ mask) mask is all 1's -> this is reversing 2's
+    // complement which is flip bits then add 1.
+    // for positive: unchanged since mask is 0.
+    i32 result = (val + mask) ^ mask;
+    return result;
+}
+
+inline f32
+shuAbsf(f32 f)
+{
+    type32 t;
+    t.f = f;
+    t.u &= 0x7fffffff;
+    return t.f;
+}
+
+#define SHU_ABSOLUTE(Val) (((Val) < 0) ? -(Val) : (Val))
+#define SIGN(Val) (((Val) < 0) ? (-1) : (1))
+#define SHU_IS_NEG(Val) ((Val) >> 31 & 1)
 
 #define OFFSET_OF(Var, Member) (u64)(&(((Var *)0)->Member))
 #define SHU_INVALID_DEFAULT                                                                                       \
@@ -229,416 +262,6 @@ enum shoora_quality
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
 
 void Shu_DebugBreak();
-
-inline i32
-StringLen(const char *s)
-{
-    const char *ptr = s;
-    i32 len = 0;
-    while (*ptr != '\0')
-    {
-        ++len;
-        ptr++;
-    }
-
-    return (len + 1);
-}
-
-inline b32
-StringIsEmpty(const char *str)
-{
-    b32 result = false;
-
-    if (StringLen(str) == 1 && str[0] == '\0')
-        result = true;
-
-    return result;
-}
-
-inline char
-ToLower(char c)
-{
-    char Result = c;
-    if (Result >= 'A' && Result <= 'Z')
-        Result += 32;
-    return Result;
-}
-
-inline b32
-StringCompare(const char *a, const char *b)
-{
-    if (!a || !b)
-        return false;
-
-    int m = 0;
-    const char *c = a;
-    while(*a != '\0')
-    {
-        m |= *a ^ *b;
-
-        if (*b != '\0')
-            b++;
-
-        // NOTE: To keep the function constant time.
-        if (*b == '\0')
-            c++;
-
-        a++;
-    }
-
-    b32 Result = (m == 0);
-    return Result;
-}
-
-inline b32
-StringLowerCaseCompare(const char *a, const char *b)
-{
-    if (!a || !b)
-        return false;
-
-    int m = 0;
-    const char *c = a;
-    while(*a != '\0')
-    {
-        char ca = ToLower(*a);
-        char cb = ToLower(*b);
-
-        m |= ca ^ cb;
-
-        if (*b != '\0')
-            b++;
-
-        // NOTE: To keep the function constant time.
-        if (*b == '\0')
-            c++;
-
-        a++;
-    }
-
-    b32 Result = (m == 0);
-    return Result;
-}
-
-inline char *
-StringDuplicateMalloc(const char *In)
-{
-    i32 len = StringLen((const char *)In);
-    char *Duplicate = (char *)malloc(len);
-    SHU_MEMCOPY(In, Duplicate, len);
-    return Duplicate;
-}
-
-inline void
-SubString(const char *str, i32 start, i32 end, char mem[128])
-{
-    i32 len = end - start;
-    ASSERT(len <= 128);
-    SHU_MEMCOPY(str + start, mem, len);
-    mem[len] = '\0';
-}
-
-inline b32
-IsDigit(char c)
-{
-    b32 result = false;
-
-    if (c >= '0' && c <= '9')
-        result = true;
-
-    return result;
-}
-
-inline b32
-IsAlpha(char c)
-{
-    b32 result = ((c >= 'a' && c <= 'z') ||
-                  (c >= 'A' && c <= 'Z') ||
-                  (c == '_'));
-    return result;
-}
-
-inline b32
-IsAlphaNumeric(char c)
-{
-    b32 result = IsAlpha(c) || IsDigit(c);
-    return result;
-}
-
-inline b32
-StringIsBoolean(const char *str)
-{
-    ASSERT(str != nullptr);
-    if (StringIsEmpty(str))
-        return false;
-
-    b32 result = false;
-    if (StringCompare(str, "false") || StringCompare(str, "true"))
-        result = true;
-
-    return result;
-}
-
-inline b32
-StringIsInt(const char *str)
-{
-    ASSERT(str != nullptr);
-    if (StringIsEmpty(str))
-        return false;
-
-    const char *p = str;
-    if (*p == '-' || *p == '+')
-        ++p;
-
-    while (*p != '\0')
-    {
-        if (!IsDigit(*p++))
-            return false;
-    }
-
-    return true;
-}
-
-inline b32
-StringIsDouble(const char *str)
-{
-    ASSERT(str != nullptr);
-    if (StringIsEmpty(str))
-        return false;
-
-    b32 in_exponent = false;
-    b32 in_fraction = false;
-
-    b32 result = true;
-    const char *p = str;
-    if (*p == '-' || *p == '+')
-        ++p;
-
-    while (*p != '\0')
-    {
-        char c = *p++;
-
-        if (!IsDigit(c)) {
-            if ((c == 'e' || c == 'E')) {
-                // two e's isnt allowed.
-                if (in_exponent) {
-                    result = false;
-                    break;
-                }
-
-                in_exponent = true;
-                continue;
-            }
-
-            if (c == '.') {
-                // Two decimal dots are not allowed.
-                if (in_fraction) {
-                    result = false;
-                    break;
-                }
-
-                in_fraction = true;
-                continue;
-            }
-
-            result = false;
-            break;
-        }
-    }
-
-    return result;
-}
-
-inline char
-CharAt(const char *str, i32 at)
-{
-    char result = str[at];
-    return result;
-}
-
-enum shoora_object_type
-{
-    OBJ_TYPE_NULL,
-    OBJ_TYPE_INT_32,
-    OBJ_TYPE_INT_64,
-    OBJ_TYPE_FLOAT,
-    OBJ_TYPE_DOUBLE,
-    OBJ_TYPE_BOOLEAN
-};
-
-inline shoora_object_type
-StringToObjType(const char *str)
-{
-    ASSERT(str != nullptr);
-
-    shoora_object_type result = shoora_object_type::OBJ_TYPE_NULL;
-    if (!StringIsEmpty(str))
-    {
-        if      (StringIsBoolean(str))  { result = shoora_object_type::OBJ_TYPE_BOOLEAN; }
-        else if (StringIsInt(str))      { result = shoora_object_type::OBJ_TYPE_INT_32; }
-        else if (StringIsDouble(str))   { result = shoora_object_type::OBJ_TYPE_DOUBLE; }
-    }
-
-    return result;
-}
-
-inline b32
-StringToBoolean(const char *str)
-{
-    ASSERT(str != nullptr);
-
-    b32 result = true;
-
-    if (StringCompare(str, "false"))
-        result = false;
-
-    return result;
-}
-
-inline i32
-StringToInteger(const char *str)
-{
-    i32 sign = 1;
-    i64 ans = 0;
-    i32 i = 0;
-
-    while (str[i] == ' ')
-    {
-        i++;
-    }
-
-    if ((str[i] == '-' || str[i] == '+'))
-    {
-        sign = (str[i] == '-') ? -1 : 1;
-        i++;
-    }
-
-    i32 result;
-    while (str[i] != '\0')
-    {
-        if (IsDigit(str[i]))
-        {
-            ans = ans * 10 + (str[i] - '0');
-            if (ans * sign <= SHU_INT_MIN)
-                return SHU_INT_MIN;
-            if (ans * sign >= SHU_INT_MAX)
-                return SHU_INT_MAX;
-            i++;
-        }
-        else
-        {
-            result = 0;
-        }
-    }
-
-    result = ans * sign;
-
-#if TEST_STR_FUNCTIONS
-    int atoi_test = atoi(str);
-    ASSERT(atoi_test == result);
-#endif
-
-    return result;
-}
-
-inline f64
-StringToDouble(const char *str)
-{
-#if 0
-    f64 result = 0.0;
-    f64 fraction = 1.0;
-    b32 negative = false;
-    b32 in_fraction = false;
-    b32 in_exponent = false;
-    i32 exponent_sign = 1;
-    i32 exponent_value = 0;
-
-    i32 i = 0;
-
-    // Skip leading whitespaces
-    while (str[i] == ' ') { i++; }
-
-    // Handle optional sign
-    if (str[i] == '-') {
-        negative = true;
-        i++;
-    }
-    else if (str[i] == '+') {
-        i++;
-    }
-
-    // Process the digits and decimal part
-    while (str[i] != '\0')
-    {
-        if (IsDigit(str[i])) {
-            if (in_exponent) {
-                exponent_value = exponent_value * 10 + (str[i] - '0');
-            }
-            else if (in_fraction) {
-                fraction /= 10.0;
-                result += (str[i] - '0') * fraction;
-            }
-            else {
-                result = result * 10.0 + (str[i] - '0');
-            }
-        }
-        else if (str[i] == '.' && !in_fraction && !in_exponent) {
-            in_fraction = true;
-        }
-        else if ((str[i] == 'e' || str[i] == 'E') && !in_exponent) {
-            in_exponent = true;
-            i++;
-            if (str[i] == '-')
-            {
-                exponent_sign = -1;
-                i++;
-            }
-            else if (str[i] == '+')
-            {
-                i++;
-            }
-            continue;
-        }
-        else {
-            // Invalid character found
-            break;
-        }
-
-        i++;
-    }
-
-    // Apply exponent if necessary
-    if (in_exponent) {
-        f64 exponent_multiplier = 1.0;
-
-        while (exponent_value > 0) {
-            exponent_multiplier *= 10.0;
-            exponent_value--;
-        }
-
-        if (exponent_sign == -1) {
-            result /= exponent_multiplier;
-        }
-        else {
-            result *= exponent_multiplier;
-        }
-    }
-
-    if (negative) { result = -result; }
-
-#if TEST_STR_FUNCTIONS
-    char *end;
-    double test = strtod(str, &end);
-    ASSERT(test == result);
-#endif
-#else
-    // TODO: Have to check for rounding errors. 1.213 gets parsed to 1.21299999999
-    // TODO: strtod returns 1.21300001 which is better
-    char *end;
-    f64 result = strtod(str, &end);
-#endif
-
-    return result;
-}
 
 template <typename T>
 inline T
@@ -879,88 +502,6 @@ struct stack_array
     clear()
     {
         SHU_MEMZERO(data, maxSize * sizeof(T));
-    }
-};
-
-struct shoora_object
-{
-    shoora_object_type type;
-    union
-    {
-        i32 i;
-        i64 ii;
-        f32 f;
-        f64 d;
-        b32 b;
-    };
-
-    shoora_object()
-    {
-        type = shoora_object_type::OBJ_TYPE_NULL;
-        d = 0.0;
-    }
-
-    shoora_object(i32 val)
-    {
-        this->type = shoora_object_type::OBJ_TYPE_INT_32;
-        this->i = val;
-    }
-
-    shoora_object(i64 val)
-    {
-        this->type = shoora_object_type::OBJ_TYPE_INT_64;
-        this->ii = val;
-    }
-
-    shoora_object(f32 val)
-    {
-        this->type = shoora_object_type::OBJ_TYPE_FLOAT;
-        this->f = val;
-    }
-
-    shoora_object(f64 val)
-    {
-        this->type = shoora_object_type::OBJ_TYPE_DOUBLE;
-        this->d = val;
-    }
-
-    shoora_object(bool val)
-    {
-        this->type = shoora_object_type::OBJ_TYPE_BOOLEAN;
-        this->b = val;
-    }
-
-    shoora_object(const char *str)
-    {
-        ASSERT(str != nullptr);
-
-        shoora_object_type t = StringToObjType(str);
-        switch (t)
-        {
-            case shoora_object_type::OBJ_TYPE_INT_32:
-            {
-                i32 Value = StringToInteger(str);
-                this->i = Value;
-            } break;
-
-            case shoora_object_type::OBJ_TYPE_DOUBLE:
-            {
-                f64 Value = StringToDouble(str);
-                this->d = Value;
-            } break;
-
-            case shoora_object_type::OBJ_TYPE_BOOLEAN:
-            {
-                b32 Value = StringToBoolean(str);
-                this->b = Value;
-            } break;
-
-            case shoora_object_type::OBJ_TYPE_NULL:
-            break;
-
-            SHU_INVALID_DEFAULT
-        }
-        this->type = t;
     }
 };
 

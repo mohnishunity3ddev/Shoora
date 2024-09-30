@@ -159,10 +159,10 @@ ShuAllocate_(size_t SizeInit, shoora_memory_type Type, size_t Alignment)
 char *
 ShuAllocateString(memory_arena *Arena, const char *Source)
 {
-    u32 Len = StringLength(Source) + 1;
+    u32 Len = shu::StringLength(Source);
 
     char *Dest = (char *)ShuAllocate_(Arena, Len);
-    StringCopy(Source, Dest);
+    shu::StringCopy(Source, Dest);
 
     return Dest;
 }
@@ -204,6 +204,7 @@ GetTaskMemory()
         task_with_memory *Task = ShuMemory.TaskMemories + i;
         if(!Task->BeingUsed)
         {
+            // TODO(mani): Make this thread safe.
             FreeTask = Task;
             ASSERT(FreeTask->Arena.Used == 0);
             FreeTask->TemporaryMemory = BeginTemporaryMemory(&FreeTask->Arena);

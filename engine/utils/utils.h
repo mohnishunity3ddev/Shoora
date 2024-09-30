@@ -4,6 +4,7 @@
 #include <defines.h>
 #include "sort/sort.h"
 #include <math/math.h>
+#include "string_utils.h"
 
 struct colorU32
 {
@@ -26,15 +27,7 @@ u32 GetMaxValueIndex(u32 *NumsArray, u32 NumsCount);
 u32 LogBase2(u32 Num);
 u32 GetDebugColor(i32 Index);
 
-u32 StringLength(const char *A);
-void StringConcat(const char *A, const char *B, char *Out);
-void StringConcat(char *A, const char *B);
-void StringNCopy(const char *Src, char *Dst, i32 Num);
-void StringCopy(const char *Src, char *Dst);
 
-u32 StringFindLastOf(const char *String, char Separator);
-void StringSubString(const char *SrcString, u32 StartIndex, u32 EndIndex, char *OutString);
-b32 StringsEqual(const char *A, const char *B);
 
 shu::vec3f GetColor(u32 Col);
 u32 GetColorU32(const shu::vec3f &Color);
@@ -80,8 +73,8 @@ struct templated_log_string
 
     templated_log_string& operator<<(const char *Rhs)
     {
-        StringConcat(Buffer + Index, Rhs);
-        Index += StringLength(Rhs);
+        shu::StringConcat(Buffer + Index, Rhs);
+        Index += shu::StringLength(Rhs);
         return *this;
     }
 
@@ -91,7 +84,7 @@ struct templated_log_string
         char FormatSpec[5];
         GetFormatSpecifier(FormatSpec, Rhs);
 
-        StringConcat(Buffer + Index, FormatSpec);
+        shu::StringConcat(Buffer + Index, FormatSpec);
         Index += StringLength(FormatSpec);
         return *this;
     }

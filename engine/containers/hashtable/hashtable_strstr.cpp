@@ -1,6 +1,6 @@
 #include "hashtable_strstr.h"
 #include "hashtable.h"
-
+#include <utils/string_utils.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // NOTE: Hash Functions
@@ -18,7 +18,7 @@ HashFunc_StrInt_FNV1A(const void *In, size_t Length, u32 Seed, b32 IgnoreCase)
         Character = ((const unsigned char *)In)[Index];
         if (IgnoreCase)
         {
-            Character = ToLower(Character);
+            Character = shu::ToLower(Character);
         }
 
         Result ^= Character;
@@ -31,7 +31,7 @@ HashFunc_StrInt_FNV1A(const void *In, size_t Length, u32 Seed, b32 IgnoreCase)
 static u32
 HashFunc_StrCaseSensitive_FNV1A(const void *In, u32 Seed)
 {
-    i32 len = StringLen((const char *)In) - 1;
+    i32 len = shu::StringLength((const char *)In) - 1;
     u32 Result = HashFunc_StrInt_FNV1A(In, len, Seed, false);
     return Result;
 }
@@ -39,7 +39,7 @@ HashFunc_StrCaseSensitive_FNV1A(const void *In, u32 Seed)
 static u32
 HashFunc_StrNoCaseSensitive_FNV1A(const void *In, u32 Seed)
 {
-    i32 len = StringLen((const char *)In) - 1;
+    i32 len = shu::StringLength((const char *)In) - 1;
     u32 Result = HashFunc_StrInt_FNV1A(In, len, Seed, true);
     return Result;
 }
@@ -50,14 +50,14 @@ HashFunc_StrNoCaseSensitive_FNV1A(const void *In, u32 Seed)
 static b32
 HashTable_StringEqualsFunc(const void *A, const void *B)
 {
-    b32 Result = StringCompare((const char *)A, (const char *)B);
+    b32 Result = shu::StringsEqual((const char *)A, (const char *)B);
     return Result;
 }
 
 static b32
 HashTable_StringLowerCaseEqualsFunc(const void *A, const void *B)
 {
-    b32 Result = StringLowerCaseCompare((const char *)A, (const char *)B);
+    b32 Result = shu::StringLowerCaseEqual((const char *)A, (const char *)B);
     return Result;
 }
 
@@ -72,9 +72,9 @@ HashTableCreate_StrStr(unsigned int Flags)
     htable_key_equals EqualsFunction = HashTable_StringEqualsFunc;
     // (NOTE: void *(*)(void *))StringDuplicateMalloc casts the function pointer as something
     // which returns a void * and takes in a void *.
-    htable_callbacks Callbacks = {.KeyCopy   = (void *(*)(void *))StringDuplicateMalloc,
+    htable_callbacks Callbacks = {.KeyCopy   = (void *(*)(void *))shu::StringDuplicateMalloc,
                                   .KeyFree   = free,
-                                  .ValueCopy = (void *(*)(void *))StringDuplicateMalloc,
+                                  .ValueCopy = (void *(*)(void *))shu::StringDuplicateMalloc,
                                   .ValueFree = free};
 
     if (Flags & HTABLE_STR_NOCASECMP)

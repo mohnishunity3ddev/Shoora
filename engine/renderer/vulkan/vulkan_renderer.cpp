@@ -1023,15 +1023,6 @@ InitializeLightData()
 void
 InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
 {
-    shu::vec3f v0 = shu::Vec3f(31.12f, 43.12f, 57.213f);
-    shu::quat q0 = shu::Quat(1, 2, 6, 7);
-    shu::QuatNormalize(q0);
-
-    shu::vec3f v0Proj = shu::QuatRotateVec(q0, v0);
-
-    shu::mat3f R = shu::QuatRotationMatrix_Left(q0);
-    shu::vec3f v0Proj_2 = R * v0;
-
     platform_memory GameMemory = AppInfo->GameMemory;
     InitializeMemory(GameMemory.PermSize, GameMemory.PermMemory, GameMemory.FrameMemorySize, GameMemory.FrameMemory);
 
@@ -1050,7 +1041,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     ShuraInstanceCreateInfo.ppRequiredInstanceLayers = RequiredInstanceLayers;
     ShuraInstanceCreateInfo.RequiredInstanceLayerCount = ARRAY_SIZE(RequiredInstanceLayers);
 #endif
-
+    
     CreateVulkanInstance(VulkanContext, &ShuraInstanceCreateInfo);
     volkLoadInstance(VulkanContext->Instance);
 

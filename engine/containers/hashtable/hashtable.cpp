@@ -358,7 +358,7 @@ HashTableGet(htable *HashTable, void *Key, void **Value)
     Index = HashTableBucketIndex(HashTable, Key);
     if (HashTable->Buckets[Index].Key == nullptr)
         return false;
-
+    
     // Traverse the bucket and its chain looking for the matching key.
     Current = HashTable->Buckets + Index;
     while (Current != nullptr)

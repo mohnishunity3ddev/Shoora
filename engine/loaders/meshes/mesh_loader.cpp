@@ -19,8 +19,8 @@
 void
 GetBasePath(const char *Path, char *BasePath)
 {
-    u32 Pos = StringFindLastOf(Path, '/');
-    StringSubString(Path, 0, Pos, BasePath);
+    u32 Pos = shu::StringFindLastOf(Path, '/');
+    shu::StringSubString(Path, 0, Pos, BasePath);
 }
 
 i32
@@ -34,7 +34,7 @@ GetImageIndex(const char *ImageFilename, shoora_model *Model)
     {
         const char *LoadedImageFilename = Model->Textures[Index].ImageFilename;
 
-        if(StringsEqual(ImageFilename, LoadedImageFilename))
+        if(shu::StringsEqual(ImageFilename, LoadedImageFilename))
         {
             Result = Index;
             break;
@@ -72,7 +72,7 @@ LoadTextureImages(cgltf_image *Images, u32 ImageCount, const char *BasePath, sho
             Tex->ImageFilename = Images[Index].uri;
 
             char ImagePath[512];
-            StringConcat(BasePath, Images[Index].uri, ImagePath);
+            shu::StringConcat(BasePath, Images[Index].uri, ImagePath);
 
             // TODO)): Load the Image Data.
             LogInfo("Image[%d]: %s \n", Index, ImagePath);

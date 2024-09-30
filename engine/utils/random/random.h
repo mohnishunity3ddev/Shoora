@@ -44,6 +44,7 @@
         u32 NextU32();
         f32 R01();
         f32 Bilateral();
+        i32 Between(i32 Min, i32 Max);
         u32 Between(u32 Min, u32 Max);
         f32 Between(f32 Min, f32 Max);
     };
