@@ -9,23 +9,10 @@ VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT MessageSeverityFlags,
 {
     switch(MessageSeverityFlags)
     {
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-        {
-            LogOutput(LogType_ValidationLayerInfo, "Validation Layer[VERBOSE]: %s\n", pCallbackData->pMessage);
-        } break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-        {
-            LogOutput(LogType_ValidationLayerInfo, "Validation Layer[INFO]: %s\n", pCallbackData->pMessage);
-        } break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-        {
-            LogOutput(LogType_Warn, "Validation Layer[WARN]: %s\n", pCallbackData->pMessage);
-        } break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-        {
-            LogOutput(LogType_Error, "Validation Layer[ERROR]: %s\n", pCallbackData->pMessage);
-        }
-        break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:   { LogOutput(LogType_ValidationLayerInfo, "Validation Layer[VERBOSE]: %s\n", pCallbackData->pMessage); } break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:      { LogOutput(LogType_ValidationLayerInfo, "Validation Layer[INFO]: %s\n", pCallbackData->pMessage); } break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:   { LogOutput(LogType_Warn, "Validation Layer[WARN]: %s\n", pCallbackData->pMessage); } break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:     { LogOutput(LogType_Error, "Validation Layer[ERROR]: %s\n", pCallbackData->pMessage); } break;
         default: {} break;
     }
 

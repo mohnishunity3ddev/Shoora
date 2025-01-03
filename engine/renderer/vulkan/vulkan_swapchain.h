@@ -22,8 +22,8 @@ struct shoora_vulkan_image_present_info
 };
 
 void CreatePresentationSurface(shoora_vulkan_context *Context, VkSurfaceKHR *Surface);
-void WindowResized(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, VkRenderPass RenderPass,
-                   shu::vec2u ScreenDim);
+void RecreateSwapchain(shoora_vulkan_context *VkContext, shu::vec2u ScreenDim,
+                   shoora_vulkan_swapchain_create_info *CreateInfo);
 
 void CreateSwapchain(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, shu::vec2u ScreenDim,
                      shoora_vulkan_swapchain_create_info *ShooraSwapchainInfo);

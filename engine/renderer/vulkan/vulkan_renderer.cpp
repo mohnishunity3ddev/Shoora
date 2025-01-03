@@ -1,5 +1,7 @@
 #include "loaders/meshes/mesh_loader.h"
 #include "loaders/image/png_loader.h"
+#include "renderer/vulkan/vulkan_input_info.h"
+#include "vulkan/vulkan_core.h"
 #include "vulkan_buffer.h"
 #include "vulkan_descriptor_sets.h"
 #include "vulkan_geometry.h"
@@ -142,17 +144,20 @@ static shu::vec2u GlobalWindowSize = {};
 static shoora_scene *Scene;
 
 void
-WindowResizedCallback(u32 Width, u32 Height)
+WindowWasResized()
 {
-    LogOutput(LogType_Debug, "Window Resized to {%d, %d}\n", Width, Height);
-
-    if(Context && (Width > 0 && Height > 0))
-    {
-        ASSERT(Context->IsInitialized);
-        WindowResized(&Context->Device, &Context->Swapchain, Context->GraphicsRenderPass,
-                      shu::vec2u{Width, Height});
-        ImGuiUpdateWindowSize(shu::vec2u{Width, Height});
-        GlobalWindowSize = {Width, Height};
+    if (Platform_IsWindowReady()) {
+        i32 Width, Height;
+        Platform_GetWindowSize(&Width, &Height);
+        if (Context && (Width > 0 && Height > 0))
+        {
+            ASSERT(Context->IsInitialized);
+            shu::vec2u Dimensions = {(u32)Width, (u32)Height};
+            GlobalWindowSize = {Dimensions.x, Dimensions.y};
+            RecreateSwapchain(Context, Dimensions, &SwapchainInfo);
+            Platform_Sleep(100);
+            ImGuiUpdateWindowSize(Dimensions);
+        }
     }
 }
 
@@ -1030,8 +1035,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_platform_a
 #if _SHU_DEBUG
     isDebug = true;
 #endif
-
-    GlobalWindowSize = {AppInfo->WindowWidth, AppInfo->WindowHeight};
+    Platform_GetWindowSize((i32 *)&GlobalWindowSize.x, (i32 *)&GlobalWindowSize.y);
     GlobalJobQueue = AppInfo->JobQueue;
     InitializeLightData();
 
@@ -1063,7 +1067,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_platform_a
     GenerateTangentInformation(CubeVertices, CubeIndices, ARRAY_SIZE(CubeIndices));
 #endif
 
-    shu::vec2u ScreenDim = shu::vec2u{AppInfo->WindowWidth, AppInfo->WindowHeight};
+    shu::vec2u ScreenDim = GlobalWindowSize;
     CreateSwapchain(&VulkanContext->Device, &VulkanContext->Swapchain, ScreenDim, &SwapchainInfo);
     CreateRenderPass(RenderDevice, Swapchain, &VulkanContext->GraphicsRenderPass);
     CreateSwapchainFramebuffers(RenderDevice, Swapchain, VulkanContext->GraphicsRenderPass);
@@ -1129,8 +1133,6 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_platform_a
 
     CreateSynchronizationPrimitives(&VulkanContext->Device, &VulkanContext->SyncHandles);
     PrepareImGui(RenderDevice, &VulkanContext->ImContext, ScreenDim, VulkanContext->GraphicsRenderPass);
-
-    AppInfo->WindowResizeCallback = &WindowResizedCallback;
 
 #if MATERIAL_VIEWER
     GetMaterial(MaterialType::BRONZE, &FragUniformData.Material);
@@ -1265,9 +1267,15 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         // Scene->AddPolygonBody(1, CurrentMouseWorldPos, colorU32::White, 1.0f, 1.0f, 0.0f, 1.0f);
     }
 #endif
-    if(Platform_GetKeyInputState(SU_SPACE, KeyState::SHU_KEYSTATE_PRESS)) { GlobalDebugMode = !GlobalDebugMode; }
-    if(Platform_GetKeyInputState('P', KeyState::SHU_KEYSTATE_PRESS)) { GlobalPausePhysics = !GlobalPausePhysics; }
-    if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS)) { GlobalLastFrameMousePos = {FramePacket->MouseXPos, FramePacket->MouseYPos}; }
+    if (Platform_GetKeyInputState(SU_SPACE, KeyState::SHU_KEYSTATE_PRESS)) {
+        GlobalDebugMode = !GlobalDebugMode;
+    }
+    if (Platform_GetKeyInputState('P', KeyState::SHU_KEYSTATE_PRESS)) {
+        GlobalPausePhysics = !GlobalPausePhysics;
+    }
+    if (Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS)) {
+        GlobalLastFrameMousePos = {FramePacket->MouseXPos, FramePacket->MouseYPos};
+    }
     if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_DOWN))
     {
         shoora_camera_input CameraInput = {};
@@ -1439,7 +1447,10 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         PresentInfo.swapchainCount = 1;
         PresentInfo.pSwapchains = &Context->Swapchain.Handle;
         PresentInfo.pImageIndices = &Context->Swapchain.CurrentImageIndex;
-        VK_CHECK(vkQueuePresentKHR(GraphicsQueue, &PresentInfo));
+        VkResult presentResult = vkQueuePresentKHR(GraphicsQueue, &PresentInfo);
+        if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR) {
+            WindowWasResized();
+        }
 
         AdvanceToNextFrame();
         ImGuiUpdateInputState(FramePacket->MouseXPos, FramePacket->MouseYPos, LMBDown);

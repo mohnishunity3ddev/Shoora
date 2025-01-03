@@ -1,6 +1,7 @@
 #ifndef UNICODE
 #define UNICODE
 // #include <winuser.h>
+// #include <winuser.h>
 #endif
 
 #include "defines.h"
@@ -48,17 +49,21 @@ struct win32_state
     b16 isInitialized;
     b8 Running;
     b8 IsFPSCap;
+    b8 IsResizing;
 };
 
 static win32_state Win32State;
 
-void DummyWinResize(u32 Width, u32 Height) {}
-
 static shoora_platform_app_info AppInfo =
 {
     .AppName = "Placeholder App Name",
-    .WindowResizeCallback = &DummyWinResize
 };
+
+b8
+Platform_IsWindowReady()
+{
+    return !Win32State.IsResizing;
+}
 
 RECT
 Win32GetWindowRect(HWND WindowHandle)
@@ -70,13 +75,26 @@ Win32GetWindowRect(HWND WindowHandle)
 }
 
 void
+Platform_GetWindowSize(i32 *Width, i32 *Height)
+{
+    RECT ScreenRect = Win32GetWindowRect(Win32State.WindowContext.Handle);
+    i32 w = ScreenRect.right - ScreenRect.left;
+    i32 h = ScreenRect.bottom - ScreenRect.top;
+    ASSERT(w > 0 && h > 0);
+
+    *Width = w;
+    *Height = h;
+}
+
+void
 Win32ToggleFullscreen(HWND Window)
 {
     // NOTE: This follows Raymond Chens prescription for fullscreen toggling.
     // see : https://devblogs.microsoft.com/oldnewthing/20100412-00/?p=14353
     DWORD Style = GetWindowLong(Window, GWL_STYLE);
-    if (Style & WS_OVERLAPPEDWINDOW)
-    {
+    if (Style & WS_OVERLAPPEDWINDOW) {
+        // NON-FullScreen mode. Caching the windowPosition before going fullcreen. When we toggle back to normal
+        // NON-Fullscreen mode in the else block, we will place the window using this cached windowPosition.
         MONITORINFO MonitorInfo = {sizeof(MonitorInfo)};
         if (GetWindowPlacement(Window, &Win32State.WindowPosition) &&
             GetMonitorInfo(MonitorFromWindow(Window, MONITOR_DEFAULTTOPRIMARY), &MonitorInfo))
@@ -87,9 +105,7 @@ Win32ToggleFullscreen(HWND Window)
                          MonitorInfo.rcMonitor.bottom - MonitorInfo.rcMonitor.top,
                          SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
         }
-    }
-    else
-    {
+    } else {
         SetWindowLong(Window, GWL_STYLE, Style | WS_OVERLAPPEDWINDOW);
         SetWindowPlacement(Window, &Win32State.WindowPosition);
         SetWindowPos(Window, NULL, 0, 0, 0, 0,
@@ -133,14 +149,22 @@ Win32WindowCallback(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LPara
         case WM_CLOSE:
         case WM_DESTROY: { Win32State.Running = false; } break;
 
-        case WM_SIZE:
-        {
-            i32 Width = LOWORD(LParam);
-            i32 Height = HIWORD(LParam);
-            AppInfo.WindowWidth = Width;
-            AppInfo.WindowHeight = Height;
-            AppInfo.WindowResizeCallback(Width, Height);
+        /*
+        // This is useful when we want to know if the user is resizing the window manually using drag.
+        case WM_ENTERSIZEMOVE: { Win32State.IsResizing = true; } break;
+        case WM_SIZE: {
+            if (Win32State.IsResizing) {
+                AppInfo.WindowWidth = LOWORD(LParam);
+                AppInfo.WindowHeight = HIWORD(LParam);
+                // AppInfo.WindowResizeCallback(AppInfo.WindowWidth, AppInfo.WindowHeight);
+            }
         } break;
+        case WM_EXITSIZEMOVE: {
+            if (Win32State.IsResizing) {
+                Win32State.IsResizing = false;
+            }
+        } break;
+        */
 
         case WM_SYSKEYDOWN:
         case WM_SYSKEYUP:
@@ -987,9 +1011,6 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     HWND WindowHandle = CreateWindowEx(0, CLASS_NAME, L"Shoora", Style, CW_USEDEFAULT, CW_USEDEFAULT,
                                        StartingWindowWidth, StartingWindowHeight, NULL, NULL, hInstance, NULL);
 
-    RECT WindowRect = Win32GetWindowRect(WindowHandle);
-    AppInfo.WindowWidth = WindowRect.right - WindowRect.left;
-    AppInfo.WindowHeight = WindowRect.bottom - WindowRect.top;
     AppInfo.JobQueue = &HighPriorityQueue;
 
 #if _SHU_DEBUG

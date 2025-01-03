@@ -1,5 +1,6 @@
 #include "vulkan_swapchain.h"
 #include "platform/platform.h"
+#include "vulkan/vulkan_core.h"
 #include "vulkan_image.h"
 #include "vulkan_descriptor_sets.h"
 #include "vulkan_pipeline.h"
@@ -222,8 +223,7 @@ void
 PrepareForSwapchainCreation(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain,
                             shoora_vulkan_swapchain_create_info *ShooraSwapchainInfo)
 {
-    if (!CheckSupportedPresentModes(RenderDevice, Swapchain, ShooraSwapchainInfo->DesiredPresentMode))
-    {
+    if (!CheckSupportedPresentModes(RenderDevice, Swapchain, ShooraSwapchainInfo->DesiredPresentMode)) {
         // NOTE: Vulkan Makes sure Atleast FIFO is supported!
         ShooraSwapchainInfo->DesiredPresentMode = VK_PRESENT_MODE_FIFO_KHR;
     }
@@ -447,73 +447,16 @@ FreeDrawCommandBuffers(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapcha
 }
 
 void
-WindowResized(shoora_vulkan_device *RenderDevice, shoora_vulkan_swapchain *Swapchain, VkRenderPass RenderPass,
-              shu::vec2u ScreenDim)
+RecreateSwapchain(shoora_vulkan_context *vkContext, shu::vec2u ScreenDim,
+                  shoora_vulkan_swapchain_create_info *CreateInfo)
 {
     // TODO)): Will it be better to wait for all device operations to finish? or queue wait will suffice?
-    VK_CHECK(vkQueueWaitIdle(GetQueueHandle(RenderDevice, QueueType_Graphics)));
+    // VK_CHECK(vkQueueWaitIdle(GetQueueHandle(RenderDevice, QueueType_Graphics)));
+    VK_CHECK(vkDeviceWaitIdle(vkContext->Device.LogicalDevice));
 
-    Swapchain->ImageDimensions = {ScreenDim.x, ScreenDim.y};
-
-    VkSwapchainCreateInfoKHR CreateInfo = {VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR};
-    CreateInfo.pNext = 0;
-    CreateInfo.flags = 0;
-    CreateInfo.surface = Swapchain->Surface;
-    CreateInfo.minImageCount = Swapchain->ImageCount;
-    CreateInfo.imageFormat = Swapchain->SurfaceFormat.format;
-    CreateInfo.imageColorSpace = Swapchain->SurfaceFormat.colorSpace;
-    CreateInfo.imageExtent = Swapchain->ImageDimensions;
-
-    // NOTE: More than 1 if we are doing layered/stereoscopic rendering
-    CreateInfo.imageArrayLayers = 1;
-
-    CreateInfo.imageUsage = Swapchain->ImageUsageFlags;
-    CreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    CreateInfo.queueFamilyIndexCount = 0;
-    CreateInfo.pQueueFamilyIndices = 0;
-    CreateInfo.preTransform = Swapchain->TransformFlagBits;
-
-    // TODO)): Read More about this!
-    CreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-
-    CreateInfo.presentMode = Swapchain->PresentMode;
-    CreateInfo.clipped = VK_TRUE;
-
-    VkSwapchainKHR OldSwapchain = Swapchain->Handle;
-    if(OldSwapchain != VK_NULL_HANDLE)
-    {
-        CreateInfo.oldSwapchain = OldSwapchain;
-    }
-
-    VK_CHECK(vkCreateSwapchainKHR(RenderDevice->LogicalDevice, &CreateInfo, 0, &Swapchain->Handle));
-
-    if(Swapchain->Handle == VK_NULL_HANDLE)
-    {
-        LogOutput(LogType_Error, "There was a problem creating the swapchain!\n");
-    }
-
-    // DestroySwapchainUniformResources(&Context->Device, &Context->Swapchain);
-    DestroyImage2D(RenderDevice, &Swapchain->MultiSampledColorImage);
-    DestroyImage2D(RenderDevice, &Swapchain->DepthStencilImage);
-    DestroySwapchainFramebuffers(RenderDevice, Swapchain);
-    DestroySwapchainImageViews(RenderDevice, Swapchain);
-    FreeDrawCommandBuffers(RenderDevice, Swapchain);
-    vkDestroySwapchainKHR(RenderDevice->LogicalDevice, OldSwapchain, 0);
-
-    LogOutput(LogType_Warn, "Destroyed Old Swapchain!\n");
-
-    GetSwapchainImageHandles(RenderDevice, Swapchain);
-    CreateSwapchainImageViews(RenderDevice, Swapchain);
-    ASSERT(RenderPass != VK_NULL_HANDLE);
-
-    SetupMultisampledColorResources(RenderDevice, Swapchain);
-    SetupDepthStencil(RenderDevice, Swapchain);
-
-    CreateSwapchainFramebuffers(RenderDevice, Swapchain, RenderPass);
-
-    AllocateDrawCommandBuffers(RenderDevice, Swapchain);
-
-    LogOutput(LogType_Info, "Swapchain Created!\n");
+    DestroySwapchain(vkContext);
+    CreateSwapchain(&vkContext->Device, &vkContext->Swapchain, ScreenDim, CreateInfo);
+    CreateSwapchainFramebuffers(&vkContext->Device, &vkContext->Swapchain, vkContext->GraphicsRenderPass);
 }
 
 void
@@ -595,6 +538,12 @@ AcquireNextSwapchainImage(shoora_vulkan_device *RenderDevice, shoora_vulkan_swap
     VkResult AcquireResult = vkAcquireNextImageKHR(RenderDevice->LogicalDevice,
                                                    Swapchain->Handle, NANOSECONDS(2),
                                                    SignalSemaphore->Handle, VK_NULL_HANDLE, &ImageIndex);
+    if (AcquireResult == VK_ERROR_OUT_OF_DATE_KHR) {
+        i32 Width, Height;
+        Platform_GetWindowSize(&Width, &Height);
+        if (Width > 0 && Height > 0) {
+        }
+    }
     if((AcquireResult != VK_SUCCESS) &&
        (AcquireResult != VK_SUBOPTIMAL_KHR))
     {

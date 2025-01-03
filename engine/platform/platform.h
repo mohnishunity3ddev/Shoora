@@ -35,7 +35,8 @@ enum KeyState
 
 typedef void func_window_resize(u32 Width, u32 Height);
 void Platform_GetWindowDetails(void **WindowHandle, void **WindowInstance);
-
+void Platform_GetWindowSize(i32 *Width, i32 *Height);
+b8 Platform_IsWindowReady();
 #if 0
 typedef void exit_application(const char *Reason);
 typedef b8 check_keyboard_input_state(u8 KeyCode, KeyState State);
@@ -54,10 +55,12 @@ struct shoora_platform_app_info
 {
     const char *AppName;
 
+    /*
     u32 WindowWidth;
     u32 WindowHeight;
-
     func_window_resize *WindowResizeCallback;
+    */
+
     platform_work_queue *JobQueue;
 
     platform_memory GameMemory;
