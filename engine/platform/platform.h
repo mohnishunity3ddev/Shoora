@@ -9,15 +9,6 @@
 extern "C" {
 #endif
 
-struct shoora_platform_presentation_surface
-{
-#ifdef SHU_RENDERER_BACKEND_VULKAN
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-    VkWin32SurfaceCreateInfoKHR *Win32SurfaceCreateInfo;
-#endif
-#endif
-};
-
 enum LogType
 {
     // FATAL, ERROR, WARN, INFO, DEBUG, TRACE
@@ -48,7 +39,8 @@ typedef void func_window_resize(u32 Width, u32 Height);
 typedef void exit_application(const char *Reason);
 typedef b8 check_keyboard_input_state(u8 KeyCode, KeyState State);
 #endif
-void FillVulkanWin32SurfaceCreateInfo(shoora_platform_presentation_surface *Surface);
+void Platform_GetWindowDetails(void **WindowHandle, void **WindowInstance);
+
 #endif
 
 struct platform_work_queue;
@@ -73,6 +65,7 @@ struct shoora_app_info
     platform_memory GameMemory;
 };
 
+/* this gets filled by the platform layer */
 struct shoora_platform_frame_packet
 {
     // b32 LeftMouseClicked;
@@ -132,8 +125,7 @@ SHU_EXPORT platform_read_file_result Platform_ReadFile(const char *Path);
 SHU_EXPORT void Platform_FreeFileMemory(platform_read_file_result *File);
 SHU_EXPORT b32 Platform_WriteFile(char *Filename, u32 Size, void *Data);
 
-SHU_EXPORT
-void Platform_ExitApplication(const char *Reason);
+SHU_EXPORT void Platform_ExitApplication(const char *Reason);
 SHU_EXPORT void Platform_Sleep(u32 ms);
 SHU_EXPORT b8 Platform_GetKeyInputState(u8 KeyCode, KeyState State);
 SHU_EXPORT void Platform_ToggleFPSCap();

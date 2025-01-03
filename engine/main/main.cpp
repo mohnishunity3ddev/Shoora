@@ -6,39 +6,47 @@
 #include "platform/platform.h"
 #include "platform/windows/win_platform.h"
 #include <Windows.h>
-#include <shellapi.h>
+#include <shellapi.h> /* external debug console */
 
-#include "renderer/renderer_frontend.h"
+// TODO: I don't like this. Maybe move the main entry point to game and use the platform layer as a helper class.
+#include <renderer/renderer_frontend.h>
 
 // TODO)): Remove this and implement your own!
 #include <stdio.h>
 
+#if FPS_CAPPING_ENABLED
 // TODO)): Get a different strategy for waiting times. TimeBeginPeriod decreases system performance as per spec.
 #include <timeapi.h>
+#endif
 
 struct win32_window_context
 {
     HWND Handle;
-    HBRUSH ClearColor;
+    HINSTANCE hInstance;
     HANDLE ConsoleHandle;
+    // TODO: This is unused now since clearing will be done by vulkan. keeping it here for mainting alignment.
+    HBRUSH ClearColor;
 };
 
 struct win32_state
 {
+    WINDOWPLACEMENT WindowPosition;
+    u32 MonitorRefreshRate;
     void *MemoryBlock;
     size_t MemoryBlockSize;
+    win32_window_context WindowContext;
+    struct platform_input_state *InputState;
+    int64 PerfFrequency;
+    i32 FPS;
+#if SHU_CRASH_DUMP_ENABLE
+    FILE *WriteFp = nullptr;
+#endif
+    b16 isInitialized;
+    b8 Running;
+    b8 IsFPSCap;
 };
 
-static win32_window_context GlobalWin32WindowContext = {};
-static WINDOWPLACEMENT GlobalWin32WindowPosition = {sizeof(GlobalWin32WindowPosition)};
-static b8 Win32GlobalRunning = false;
-static int64 Win32GlobalPerfFrequency = 0;
-static FILE *WriteFp = nullptr;
-static b32 GlobalIsFPSCap = false;
-static struct platform_input_state *GlobalInputState = nullptr;
-static u32 MonitorRefreshRate;
-static i32 GlobalFPS;
-static win32_state Win32State = {};
+static win32_state Win32State;
 
 void DummyWinResize(u32 Width, u32 Height) {}
 
@@ -66,7 +74,7 @@ Win32ToggleFullscreen(HWND Window)
     if (Style & WS_OVERLAPPEDWINDOW)
     {
         MONITORINFO MonitorInfo = {sizeof(MonitorInfo)};
-        if (GetWindowPlacement(Window, &GlobalWin32WindowPosition) &&
+        if (GetWindowPlacement(Window, &Win32State.WindowPosition) &&
             GetMonitorInfo(MonitorFromWindow(Window, MONITOR_DEFAULTTOPRIMARY), &MonitorInfo))
         {
             SetWindowLong(Window, GWL_STYLE, Style & ~WS_OVERLAPPEDWINDOW);
@@ -79,7 +87,7 @@ Win32ToggleFullscreen(HWND Window)
     else
     {
         SetWindowLong(Window, GWL_STYLE, Style | WS_OVERLAPPEDWINDOW);
-        SetWindowPlacement(Window, &GlobalWin32WindowPosition);
+        SetWindowPlacement(Window, &Win32State.WindowPosition);
         SetWindowPos(Window, NULL, 0, 0, 0, 0,
                      SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
     }
@@ -88,8 +96,8 @@ Win32ToggleFullscreen(HWND Window)
 struct platform_input_button_state
 {
     i32 ButtonTransitionsPerFrame;
-    b32 IsCurrentlyDown;
-    b32 IsReleased;
+    i16 IsCurrentlyDown;
+    i16 IsReleased;
 };
 
 enum platform_input_mouse_button
@@ -103,6 +111,8 @@ enum platform_input_mouse_button
     MouseButton_Count,
 };
 
+// TODO: All support for all keyboard keys. These are just a subset. Arrange them in sequence as given in
+// TODO: platform::VirtualKeyCodes.
 struct platform_input_state
 {
     f32 MouseXPos, MouseYPos;
@@ -153,10 +163,7 @@ Win32WindowCallback(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LPara
     {
         case WM_QUIT:
         case WM_CLOSE:
-        case WM_DESTROY:
-        {
-            Win32GlobalRunning = false;
-        } break;
+        case WM_DESTROY: { Win32State.Running = false; } break;
 
         case WM_SIZE:
         {
@@ -177,6 +184,8 @@ Win32WindowCallback(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LPara
         }
         break;
 
+        // TODO: Check since Vulkan is taking over drawing, I don't need to handle this event on my own
+        /*
         case WM_PAINT:
         {
             PAINTSTRUCT PaintStruct;
@@ -188,11 +197,9 @@ Win32WindowCallback(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LPara
             ReleaseDC(WindowHandle, DC);
             EndPaint(WindowHandle, &PaintStruct);
         } break;
+        */
 
-        default:
-        {
-            Result = DefWindowProc(WindowHandle, Message, WParam, LParam);
-        }
+        default: { Result = DefWindowProc(WindowHandle, Message, WParam, LParam); }
     }
 
     return Result;
@@ -228,16 +235,18 @@ Win32InputKeyReleased()
 void
 Platform_ToggleFPSCap()
 {
-    GlobalIsFPSCap = !GlobalIsFPSCap;
+    Win32State.IsFPSCap = !Win32State.IsFPSCap;
 }
 
 void
 Platform_SetFPS(i32 FPS)
 {
     ASSERT(FPS > 0);
-    GlobalFPS = FPS;
+    Win32State.FPS = FPS;
 }
 
+// TODO: Perf Issue here. Instead of all these if-else checks, pass in an index here and directly check against the
+// input array data.
 b8
 Platform_GetKeyInputState(u8 KeyCode, KeyState State)
 {
@@ -246,49 +255,49 @@ Platform_GetKeyInputState(u8 KeyCode, KeyState State)
     {
         case SHU_KEYSTATE_PRESS:
         {
-            if(KeyCode == SU_LEFTMOUSEBUTTON && Win32InputKeyPressed(&GlobalInputState->LeftMouseButton)) { Result = true; }
-            else if(KeyCode == SU_RIGHTMOUSEBUTTON && Win32InputKeyPressed(&GlobalInputState->RightMouseButton)) { Result = true; }
-            else if(KeyCode == SU_LEFTARROW && Win32InputKeyPressed(&GlobalInputState->Keyboard_LeftArrow)) { Result = true; }
-            else if(KeyCode == SU_RIGHTARROW && Win32InputKeyPressed(&GlobalInputState->Keyboard_RightArrow)) { Result = true; }
-            else if(KeyCode == SU_UPARROW && Win32InputKeyPressed(&GlobalInputState->Keyboard_UpArrow)) { Result = true; }
-            else if(KeyCode == SU_DOWNARROW && Win32InputKeyPressed(&GlobalInputState->Keyboard_DownArrow)) { Result = true; }
-            else if(KeyCode == SU_SPACE && Win32InputKeyPressed(&GlobalInputState->Keyboard_Space)) { Result = true; }
-            else if(KeyCode == 'F' && Win32InputKeyPressed(&GlobalInputState->Keyboard_F)) { Result = true; }
-            else if(KeyCode == 'P' && Win32InputKeyPressed(&GlobalInputState->Keyboard_P)) { Result = true; }
-            else if(KeyCode == 'M' && Win32InputKeyPressed(&GlobalInputState->Keyboard_M)) { Result = true; }
-            else if(KeyCode == 'N' && Win32InputKeyPressed(&GlobalInputState->Keyboard_N)) { Result = true; }
+            if(KeyCode == SU_LEFTMOUSEBUTTON && Win32InputKeyPressed(&Win32State.InputState->LeftMouseButton)) { Result = true; }
+            else if(KeyCode == SU_RIGHTMOUSEBUTTON && Win32InputKeyPressed(&Win32State.InputState->RightMouseButton)) { Result = true; }
+            else if(KeyCode == SU_LEFTARROW && Win32InputKeyPressed(&Win32State.InputState->Keyboard_LeftArrow)) { Result = true; }
+            else if(KeyCode == SU_RIGHTARROW && Win32InputKeyPressed(&Win32State.InputState->Keyboard_RightArrow)) { Result = true; }
+            else if(KeyCode == SU_UPARROW && Win32InputKeyPressed(&Win32State.InputState->Keyboard_UpArrow)) { Result = true; }
+            else if(KeyCode == SU_DOWNARROW && Win32InputKeyPressed(&Win32State.InputState->Keyboard_DownArrow)) { Result = true; }
+            else if(KeyCode == SU_SPACE && Win32InputKeyPressed(&Win32State.InputState->Keyboard_Space)) { Result = true; }
+            else if(KeyCode == 'F' && Win32InputKeyPressed(&Win32State.InputState->Keyboard_F)) { Result = true; }
+            else if(KeyCode == 'P' && Win32InputKeyPressed(&Win32State.InputState->Keyboard_P)) { Result = true; }
+            else if(KeyCode == 'M' && Win32InputKeyPressed(&Win32State.InputState->Keyboard_M)) { Result = true; }
+            else if(KeyCode == 'N' && Win32InputKeyPressed(&Win32State.InputState->Keyboard_N)) { Result = true; }
         } break;
 
         case SHU_KEYSTATE_DOWN:
         {
-            if(KeyCode == SU_RIGHTMOUSEBUTTON && GlobalInputState->RightMouseButton.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == SU_LEFTMOUSEBUTTON && GlobalInputState->LeftMouseButton.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == 'W' && GlobalInputState->Keyboard_W.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == 'A' && GlobalInputState->Keyboard_A.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == 'S' && GlobalInputState->Keyboard_S.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == 'D' && GlobalInputState->Keyboard_D.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == 'P' && GlobalInputState->Keyboard_P.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == 'M' && GlobalInputState->Keyboard_M.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == 'N' && GlobalInputState->Keyboard_N.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == SU_LEFTARROW && GlobalInputState->Keyboard_LeftArrow.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == SU_RIGHTARROW && GlobalInputState->Keyboard_RightArrow.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == SU_UPARROW && GlobalInputState->Keyboard_UpArrow.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == SU_DOWNARROW && GlobalInputState->Keyboard_DownArrow.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == SU_LEFTSHIFT && GlobalInputState->Keyboard_LeftShift.IsCurrentlyDown) { Result = true; }
+            if(KeyCode == SU_RIGHTMOUSEBUTTON && Win32State.InputState->RightMouseButton.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == SU_LEFTMOUSEBUTTON && Win32State.InputState->LeftMouseButton.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == 'W' && Win32State.InputState->Keyboard_W.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == 'A' && Win32State.InputState->Keyboard_A.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == 'S' && Win32State.InputState->Keyboard_S.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == 'D' && Win32State.InputState->Keyboard_D.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == 'P' && Win32State.InputState->Keyboard_P.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == 'M' && Win32State.InputState->Keyboard_M.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == 'N' && Win32State.InputState->Keyboard_N.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == SU_LEFTARROW && Win32State.InputState->Keyboard_LeftArrow.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == SU_RIGHTARROW && Win32State.InputState->Keyboard_RightArrow.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == SU_UPARROW && Win32State.InputState->Keyboard_UpArrow.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == SU_DOWNARROW && Win32State.InputState->Keyboard_DownArrow.IsCurrentlyDown) { Result = true; }
+            else if(KeyCode == SU_LEFTSHIFT && Win32State.InputState->Keyboard_LeftShift.IsCurrentlyDown) { Result = true; }
         } break;
 
         case SHU_KEYSTATE_RELEASE:
         {
-            if (KeyCode == 'W' && GlobalInputState->Keyboard_W.IsReleased) { Result = true; }
-            else if (KeyCode == 'A' && GlobalInputState->Keyboard_A.IsReleased) { Result = true; }
-            else if (KeyCode == 'S' && GlobalInputState->Keyboard_S.IsReleased) { Result = true; }
-            else if (KeyCode == 'D' && GlobalInputState->Keyboard_D.IsReleased) { Result = true; }
-            else if (KeyCode == 'P' && GlobalInputState->Keyboard_P.IsReleased) { Result = true; }
-            else if (KeyCode == 'M' && GlobalInputState->Keyboard_M.IsReleased) { Result = true; }
-            else if (KeyCode == 'N' && GlobalInputState->Keyboard_N.IsReleased) { Result = true; }
-            else if (KeyCode == SU_LEFTSHIFT && GlobalInputState->Keyboard_LeftShift.IsReleased) { Result = true; }
-            else if (KeyCode == SU_LEFTMOUSEBUTTON && GlobalInputState->LeftMouseButton.IsReleased) { Result = true; }
-            else if (KeyCode == SU_RIGHTMOUSEBUTTON && GlobalInputState->RightMouseButton.IsReleased) { Result = true; }
+            if (KeyCode == 'W' && Win32State.InputState->Keyboard_W.IsReleased) { Result = true; }
+            else if (KeyCode == 'A' && Win32State.InputState->Keyboard_A.IsReleased) { Result = true; }
+            else if (KeyCode == 'S' && Win32State.InputState->Keyboard_S.IsReleased) { Result = true; }
+            else if (KeyCode == 'D' && Win32State.InputState->Keyboard_D.IsReleased) { Result = true; }
+            else if (KeyCode == 'P' && Win32State.InputState->Keyboard_P.IsReleased) { Result = true; }
+            else if (KeyCode == 'M' && Win32State.InputState->Keyboard_M.IsReleased) { Result = true; }
+            else if (KeyCode == 'N' && Win32State.InputState->Keyboard_N.IsReleased) { Result = true; }
+            else if (KeyCode == SU_LEFTSHIFT && Win32State.InputState->Keyboard_LeftShift.IsReleased) { Result = true; }
+            else if (KeyCode == SU_LEFTMOUSEBUTTON && Win32State.InputState->LeftMouseButton.IsReleased) { Result = true; }
+            else if (KeyCode == SU_RIGHTMOUSEBUTTON && Win32State.InputState->RightMouseButton.IsReleased) { Result = true; }
         } break;
 
         default:
@@ -326,7 +335,7 @@ Win32LogLastError()
 void
 Win32SetConsoleHandle()
 {
-    HANDLE Console = GlobalWin32WindowContext.ConsoleHandle;
+    HANDLE Console = Win32State.WindowContext.ConsoleHandle;
 
     if(Console == 0)
     {
@@ -344,12 +353,12 @@ Win32SetConsoleHandle()
             }
             else
             {
-                GlobalWin32WindowContext.ConsoleHandle = Console;
+                Win32State.WindowContext.ConsoleHandle = Console;
             }
         }
         else
         {
-            GlobalWin32WindowContext.ConsoleHandle = Console;
+            Win32State.WindowContext.ConsoleHandle = Console;
         }
     }
 }
@@ -384,35 +393,15 @@ OutputDebugStringColor(LogType LogType, const char *message)
     COLORREF Color = Colors[4];
     switch(LogType)
     {
-        case LogType_DebugReportCallbackInfo:
-        {
-            Color = Colors[6];
-        } break;
+        case LogType_DebugReportCallbackInfo:   { Color = Colors[6]; } break;
         case LogType_Trace:
-        case LogType_ValidationLayerInfo:
-        {
-            Color = Colors[5];
-        } break;
+        case LogType_ValidationLayerInfo:       { Color = Colors[5]; } break;
         case LogType_Fatal:
-        case LogType_Error:
-        {
-            Color = Colors[0];
-        } break;
-        case LogType_Warn:
-        {
-            Color = Colors[ARRAY_SIZE(Colors) - 1];
-        } break;
-        case LogType_Info:
-        {
-            Color = Colors[1];
-        } break;
-        case LogType_Debug:
-        {
-            Color = RGB(0, 255, 255);
-        } break;
-        default:
-        {
-        } break;
+        case LogType_Error:                     { Color = Colors[0]; } break;
+        case LogType_Warn:                      { Color = Colors[ARRAY_SIZE(Colors) - 1]; } break;
+        case LogType_Info:                      { Color = Colors[1]; } break;
+        case LogType_Debug:                     { Color = RGB(0, 255, 255); } break;
+        default: { } break;
     }
 
     char buffer[8192];
@@ -438,7 +427,7 @@ OutputToConsole(LogType LogType, const char *Message)
     }
 #endif
 
-    HANDLE Console = GlobalWin32WindowContext.ConsoleHandle;
+    HANDLE Console = Win32State.WindowContext.ConsoleHandle;
 
     static u8 Levels[] = {64, 4, 6, 2, 1, 8, 8, 8};
     SetConsoleTextAttribute(Console, Levels[LogType]);
@@ -504,79 +493,27 @@ Log_(LogType Type, const char *Format, va_list VarArgs)
     va_start(VarArgs, Format);                                                                                    \
     Log_(Type, Format, VarArgs);                                                                                  \
     va_end(VarArgs);
-void
-LogInfo(const char *Format, ...)
-{
-    LOG_FORMAT(LogType_Info, Format);
-}
-void
-LogDebug(const char *Format, ...)
-{
-    LOG_FORMAT(LogType_Debug, Format);
-}
-void
-LogWarn(const char *Format, ...)
-{
-    LOG_FORMAT(LogType_Warn, Format);
-}
-void
-LogError(const char *Format, ...)
-{
-    LOG_FORMAT(LogType_Error, Format);
-}
-void
-LogFatal(const char *Format, ...)
-{
-    LOG_FORMAT(LogType_Fatal, Format);
-}
-void
-LogTrace(const char *Format, ...)
-{
-    LOG_FORMAT(LogType_Trace, Format);
-}
+void LogInfo(const char *Format, ...) { LOG_FORMAT(LogType_Info, Format); }
+void LogDebug(const char *Format, ...) { LOG_FORMAT(LogType_Debug, Format); }
+void LogWarn(const char *Format, ...) { LOG_FORMAT(LogType_Warn, Format); }
+void LogError(const char *Format, ...) { LOG_FORMAT(LogType_Error, Format); }
+void LogFatal(const char *Format, ...) { LOG_FORMAT(LogType_Fatal, Format); }
+void LogTrace(const char *Format, ...) { LOG_FORMAT(LogType_Trace, Format); }
 
-void
-LogUnformatted(const char *Message)
-{
-    OutputDebugStringA(Message);
-}
-void
-LogInfoUnformatted(const char *Message)
-{
-    OutputToConsole(LogType_Info, Message);
-}
-void
-LogDebugUnformatted(const char *Message)
-{
-    OutputToConsole(LogType_Debug, Message);
-}
-void
-LogWarnUnformatted(const char *Message)
-{
-    OutputToConsole(LogType_Warn, Message);
-}
-void
-LogErrorUnformatted(const char *Message)
-{
-    OutputToConsole(LogType_Error, Message);
-}
-void
-LogFatalUnformatted(const char *Message)
-{
-    OutputToConsole(LogType_Fatal, Message);
-}
-void
-LogTraceUnformatted(const char *Message)
-{
-    OutputToConsole(LogType_Trace, Message);
-}
+void LogUnformatted(const char *Message) { OutputDebugStringA(Message); }
+void LogInfoUnformatted(const char *Message) { OutputToConsole(LogType_Info, Message); }
+void LogDebugUnformatted(const char *Message) { OutputToConsole(LogType_Debug, Message); }
+void LogWarnUnformatted(const char *Message) { OutputToConsole(LogType_Warn, Message); }
+void LogErrorUnformatted(const char *Message) { OutputToConsole(LogType_Error, Message); }
+void LogFatalUnformatted(const char *Message) { OutputToConsole(LogType_Fatal, Message); }
+void LogTraceUnformatted(const char *Message) { OutputToConsole(LogType_Trace, Message); }
 
 void
 Platform_ExitApplication(const char *Reason)
 {
     LogOutput(LogType_Fatal, Reason);
 
-    Win32GlobalRunning = false;
+    Win32State.Running = false;
 }
 
 void
@@ -607,62 +544,20 @@ Win32ProcessWindowsMessageQueue(HWND WindowHandle, platform_input_state *Input)
                 b8 KeyIsPressed = (KeyIsCurrentlyDown) &
                                   (KeyIsCurrentlyDown != KeyWasPreviouslyDown);
 
-                if(KeyCode == SU_ESCAPE && KeyIsPressed)
-                {
-                    Win32GlobalRunning = false;
-                }
-                else if(KeyCode == 'W')
-                {
-                    Win32UpdateInputButtonState(&Input->Keyboard_W, KeyIsCurrentlyDown);
-                }
-                else if(KeyCode == 'A')
-                {
-                    Win32UpdateInputButtonState(&Input->Keyboard_A, KeyIsCurrentlyDown);
-                }
-                else if(KeyCode == 'S')
-                {
-                    Win32UpdateInputButtonState(&Input->Keyboard_S, KeyIsCurrentlyDown);
-                }
-                else if(KeyCode == 'D')
-                {
-                    Win32UpdateInputButtonState(&Input->Keyboard_D, KeyIsCurrentlyDown);
-                }
-                else if(KeyCode == 'F')
-                {
-                    Win32UpdateInputButtonState(&Input->Keyboard_F, KeyIsCurrentlyDown);
-                }
-                else if(KeyCode == 'P')
-                {
-                    Win32UpdateInputButtonState(&Input->Keyboard_P, KeyIsCurrentlyDown);
-                }
-                else if(KeyCode == 'M')
-                {
-                    Win32UpdateInputButtonState(&Input->Keyboard_M, KeyIsCurrentlyDown);
-                }
-                else if(KeyCode == 'N')
-                {
-                    Win32UpdateInputButtonState(&Input->Keyboard_N, KeyIsCurrentlyDown);
-                }
-                else if(KeyCode == SU_SPACE)
-                {
-                    Win32UpdateInputButtonState(&Input->Keyboard_Space, KeyIsCurrentlyDown);
-                }
-                else if(KeyCode == SU_UPARROW)
-                {
-                    Win32UpdateInputButtonState(&Input->Keyboard_UpArrow, KeyIsCurrentlyDown);
-                }
-                else if(KeyCode == SU_DOWNARROW)
-                {
-                    Win32UpdateInputButtonState(&Input->Keyboard_DownArrow, KeyIsCurrentlyDown);
-                }
-                else if(KeyCode == SU_LEFTARROW)
-                {
-                    Win32UpdateInputButtonState(&Input->Keyboard_LeftArrow, KeyIsCurrentlyDown);
-                }
-                else if(KeyCode == SU_RIGHTARROW)
-                {
-                    Win32UpdateInputButtonState(&Input->Keyboard_RightArrow, KeyIsCurrentlyDown);
-                }
+                if(KeyCode == SU_ESCAPE && KeyIsPressed) { Win32State.Running = false; }
+                else if(KeyCode == 'W')           { Win32UpdateInputButtonState(&Input->Keyboard_W, KeyIsCurrentlyDown); }
+                else if(KeyCode == 'A')           { Win32UpdateInputButtonState(&Input->Keyboard_A, KeyIsCurrentlyDown); }
+                else if(KeyCode == 'S')           { Win32UpdateInputButtonState(&Input->Keyboard_S, KeyIsCurrentlyDown); }
+                else if(KeyCode == 'D')           { Win32UpdateInputButtonState(&Input->Keyboard_D, KeyIsCurrentlyDown); }
+                else if(KeyCode == 'F')           { Win32UpdateInputButtonState(&Input->Keyboard_F, KeyIsCurrentlyDown); }
+                else if(KeyCode == 'P')           { Win32UpdateInputButtonState(&Input->Keyboard_P, KeyIsCurrentlyDown); }
+                else if(KeyCode == 'M')           { Win32UpdateInputButtonState(&Input->Keyboard_M, KeyIsCurrentlyDown); }
+                else if(KeyCode == 'N')           { Win32UpdateInputButtonState(&Input->Keyboard_N, KeyIsCurrentlyDown); }
+                else if(KeyCode == SU_SPACE)      { Win32UpdateInputButtonState(&Input->Keyboard_Space, KeyIsCurrentlyDown); }
+                else if(KeyCode == SU_UPARROW)    { Win32UpdateInputButtonState(&Input->Keyboard_UpArrow, KeyIsCurrentlyDown); }
+                else if(KeyCode == SU_DOWNARROW)  { Win32UpdateInputButtonState(&Input->Keyboard_DownArrow, KeyIsCurrentlyDown); }
+                else if(KeyCode == SU_LEFTARROW)  { Win32UpdateInputButtonState(&Input->Keyboard_LeftArrow, KeyIsCurrentlyDown); }
+                else if(KeyCode == SU_RIGHTARROW) { Win32UpdateInputButtonState(&Input->Keyboard_RightArrow, KeyIsCurrentlyDown); }
                 else
                 {
                     b32 ShiftKeyDown = (GetKeyState(SU_LEFTSHIFT) & (1 << 15));
@@ -674,21 +569,17 @@ Win32ProcessWindowsMessageQueue(HWND WindowHandle, platform_input_state *Input)
                     if(WasAltKeyDown && KeyIsPressed)
                     {
                         // Alt + F4
-                        if(KeyCode == SU_F4)
-                        {
-                            Win32GlobalRunning = false;
-                        }
-                        // Alt + Enter
-                        else if(KeyCode == SU_RETURN)
-                        {
+                        if(KeyCode == SU_F4) {
+                            Win32State.Running = false;
+                        } else
+                        if(KeyCode == SU_RETURN) {
+                            // Alt + Enter
                             Win32ToggleFullscreen(Message.hwnd);
                         }
                     }
 
-                    if(WasAltKeyDown && ShiftKeyDown && KeyIsPressed)
-                    {
-                        if(KeyCode == SU_KEY1)
-                        {
+                    if(WasAltKeyDown && ShiftKeyDown && KeyIsPressed) {
+                        if(KeyCode == SU_KEY1) {
                             LogErrorUnformatted("Shift + Alt + 1 was pressed!\n");
                         }
                     }
@@ -738,7 +629,7 @@ Win32GetWallClock()
 inline f32
 Win32GetSecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End)
 {
-    f32 Result = ((f32)(End.QuadPart - Start.QuadPart) / (f32)Win32GlobalPerfFrequency);
+    f32 Result = ((f32)(End.QuadPart - Start.QuadPart) / (f32)Win32State.PerfFrequency);
     return Result;
 }
 
@@ -772,6 +663,7 @@ Win32SetOutOfBoundsCursor(HWND Handle)
     SetCursorPos(MousePos.x, MousePos.y);
 }
 
+#if GET_STACK_LIMITS
 void
 Win32GetStackLimits()
 {
@@ -784,6 +676,7 @@ Win32GetStackLimits()
     else { stackSpace = (sB - sL); }
     LogInfo("Available stack space: %zu bytes.\n", stackSpace);
 }
+#endif
 
 void Platform_Sleep(u32 ms)
 {
@@ -996,7 +889,6 @@ Platform_FreeFileMemory(platform_read_file_result *File)
         VirtualFree(File->Data, 0, MEM_RELEASE);
         File->Size = 0;
     }
-
     File->Path = nullptr;
 }
 
@@ -1104,6 +996,13 @@ Platform_GetRandomSeed()
     return Result;
 }
 
+void
+Platform_GetWindowDetails(void **WindowHandle, void **WindowInstance)
+{
+    *WindowHandle = Win32State.WindowContext.Handle;
+    *WindowInstance = Win32State.WindowContext.hInstance;
+}
+
 // TODO)): Right now this is the only entry point since win32 is the only platform right now.
 // TODO)): Have to implement multiple entrypoints for all platforms.
 i32 WINAPI
@@ -1141,32 +1040,33 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     Platform_CompleteAllWork(&HighPriorityQueue);
 #endif
 
-    if (WriteFp == nullptr)
-    {
 #if SHU_CRASH_DUMP_ENABLE
+    if (Win32State.WriteFp == nullptr)
+    {
         WriteFp = fopen("app_dump.txt", "w");
         fclose(WriteFp);
-#endif
     }
+#endif
     // OutputToConsole(LogType_Info, "Inside WinMain\n");
 
     LARGE_INTEGER Frequency;
     QueryPerformanceFrequency(&Frequency);
-    Win32GlobalPerfFrequency = Frequency.QuadPart;
+    Win32State.PerfFrequency = Frequency.QuadPart;
 
     // TODO)): Re-Enable this after removing FPS Capping to specific values.
 #if 1
     DEVMODE DM;
     DM.dmSize = sizeof(DEVMODE);
     EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &DM);
-    MonitorRefreshRate = DM.dmDisplayFrequency;
-    GlobalFPS = MonitorRefreshRate;
-    f32 TargetMS = 1000.0f / (f32)GlobalFPS;
+    Win32State.MonitorRefreshRate = DM.dmDisplayFrequency;
+    Win32State.FPS = Win32State.MonitorRefreshRate;
+    f32 TargetMS = 1000.0f / (f32)Win32State.FPS;
 #endif
-
+#if FPS_CAPPING_ENABLED
     TIMECAPS TimeCaps;
     MMRESULT TimerResult = timeGetDevCaps(&TimeCaps, sizeof(TIMECAPS));
     u32 MinSleepGranularity = TimeCaps.wPeriodMin;
+#endif
 
     b32 CreateConsole = ShouldCreateConsole(pCmdLine);
 
@@ -1213,8 +1113,9 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     AppInfo.GameMemory.FrameMemory = (void *)((u8 *)AppInfo.GameMemory.PermMemory +
                                                           AppInfo.GameMemory.PermSize);
 
-    GlobalWin32WindowContext.Handle = WindowHandle;
-    GlobalWin32WindowContext.ClearColor = CreateSolidBrush(RGB(48, 10, 36));
+    Win32State.WindowContext.Handle = WindowHandle;
+    Win32State.WindowContext.ClearColor = CreateSolidBrush(RGB(48, 10, 36));
+    Win32State.WindowContext.hInstance = hInstance;
 
     ShowWindow(WindowHandle, CmdShow);
 
@@ -1226,13 +1127,13 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     // TODO)): Get the AppName from the game dll.
     InitializeRenderer(&RendererContext, &AppInfo);
 
-    Win32GlobalRunning = true;
+    Win32State.Running = true;
     LARGE_INTEGER FrameMarkerStart = Win32GetWallClock();
     LARGE_INTEGER FrameMarkerEnd = Win32GetWallClock();
 
-    while(Win32GlobalRunning)
+    while (Win32State.Running)
     {
-        GlobalInputState = NewInputState;
+        Win32State.InputState = NewInputState;
 
         // MOUSE
         u32 MouseButtonsKeyCodes[5] =
@@ -1276,7 +1177,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
             NewInputState->KeyboardButtons[ButtonIndex].IsReleased = false;
             NewInputState->KeyboardButtons[ButtonIndex].ButtonTransitionsPerFrame = 0;
         }
-        Win32ProcessWindowsMessageQueue(GlobalWin32WindowContext.Handle, NewInputState);
+        Win32ProcessWindowsMessageQueue(Win32State.WindowContext.Handle, NewInputState);
 
         shoora_platform_frame_packet FramePacket = {};
 
@@ -1284,11 +1185,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         FramePacket.MouseYPos = NewInputState->MouseYPos;
 
         f32 DeltaTime = Win32GetSecondsElapsed(FrameMarkerStart, FrameMarkerEnd);
-        if(DeltaTime <= 0.0f)
-        {
-            DeltaTime = 1.0f;
-        }
-
+        if(DeltaTime <= 0.0f) { DeltaTime = 1.0f; }
         u32 FPS = (u32)(1.0f / DeltaTime);
 
         FramePacket.DeltaTime = DeltaTime;
@@ -1304,10 +1201,10 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         FrameMarkerStart = FrameMarkerEnd;
         FrameMarkerEnd = Win32GetWallClock();
 
-        if(GlobalIsFPSCap && (DeltaTime > 0.0f))
+        if (Win32State.IsFPSCap && (DeltaTime > 0.0f))
         {
             f32 FrameMS = DeltaTime*1000.0f;
-            TargetMS = 1000.0f / (f32)GlobalFPS;
+            TargetMS = 1000.0f / (f32)Win32State.FPS;
 #if FPS_CAPPING_ENABLED
             // if(CreateConsole) LogInfo("FrameMS: %f, TargetMS: %f\n", FrameMS, TargetMS);
             if(TargetMS > FrameMS)
@@ -1326,7 +1223,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     }
 
     DestroyRenderer(&RendererContext);
-    CloseWindow(GlobalWin32WindowContext.Handle);
+    CloseWindow(Win32State.WindowContext.Handle);
 
     if(CreateConsole)
     {
@@ -1339,26 +1236,12 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         Win32State.MemoryBlock = nullptr;
     }
 
-    if (WriteFp != nullptr)
+#if SHU_CRASH_DUMP_ENABLE
+    if (Win32State.WriteFp != nullptr)
     {
-        fclose(WriteFp);
-        WriteFp = nullptr;
-        }
+        fclose(Win32State.WriteFp);
+        Win32State.WriteFp = nullptr;
+    }
+#endif
     return 0;
 }
-
-#ifdef SHU_RENDERER_BACKEND_VULKAN
-void
-FillVulkanWin32SurfaceCreateInfo(shoora_platform_presentation_surface *Surface)
-{
-#ifdef WIN32
-    VkWin32SurfaceCreateInfoKHR *SurfaceCreateInfo = Surface->Win32SurfaceCreateInfo;
-
-    SurfaceCreateInfo->sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-    SurfaceCreateInfo->pNext = 0;
-    SurfaceCreateInfo->flags = 0;
-    SurfaceCreateInfo->hinstance = GetModuleHandle(0);
-    SurfaceCreateInfo->hwnd = GlobalWin32WindowContext.Handle;
-#endif
-}
-#endif

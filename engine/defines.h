@@ -154,6 +154,9 @@ shuAbsf(f32 f)
 #define SIGN(Val) (((Val) < 0) ? (-1) : (1))
 #define SHU_IS_NEG(Val) ((Val) >> 31 & 1)
 
+#define SHU_LOG_ENUM(a) LogInfo("%s\n", #a)
+#define SHU_CASE_ENUM(a) case a: LOG_ENUM(a)
+
 #define OFFSET_OF(Var, Member) (u64)(&(((Var *)0)->Member))
 #define SHU_INVALID_DEFAULT                                                                                       \
     default:                                                                                                      \

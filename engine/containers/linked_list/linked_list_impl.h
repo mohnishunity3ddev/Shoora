@@ -200,11 +200,7 @@ singly_linked_list<T>::Remove(node *PreviousNode, node *ToDeleteNode)
 {
     if (PreviousNode == nullptr)
     {
-        if (ToDeleteNode->next == nullptr) {
-            head = nullptr;
-        } else {
-            head = ToDeleteNode->next;
-        }
+        head = ToDeleteNode->next;
     }
     else
     {

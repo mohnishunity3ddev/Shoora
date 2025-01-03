@@ -2,14 +2,11 @@
 
 #include "defines.h"
 #include "platform/platform.h"
-#if defined SHU_RENDERER_BACKEND_VULKAN
-#include "renderer/vulkan/vulkan_renderer.h"
-#endif
 
 struct renderer_context
 {
 #if defined SHU_RENDERER_BACKEND_VULKAN
-    shoora_vulkan_context VulkanContext;
+    struct shoora_vulkan_context *Context;
 #endif
 };
 

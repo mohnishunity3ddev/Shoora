@@ -842,15 +842,13 @@ namespace shu
     T &
     mat3<T>::operator()(size_t RowIndex, size_t ColumnIndex)
     {
-        if (RowIndex < 0 || RowIndex >= 3)
-        {
+        if (RowIndex < 0 || RowIndex >= 3) {
             ASSERT(!"Index Out of bounds");
         }
-        if (ColumnIndex < 0 || ColumnIndex >= 3)
-        {
+        if (ColumnIndex < 0 || ColumnIndex >= 3) {
             ASSERT(!"Index Out of bounds");
         }
-
+        
         return this->E[RowIndex*3 + ColumnIndex];
     }
 

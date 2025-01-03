@@ -65,26 +65,19 @@ UpdateCameraVectors()
 void shoora_camera::
 HandleInput(const shoora_camera_input *CameraInput)
 {
-    if(this->Type == PROJECTION_PERSPECTIVE)
-    {
+    if(this->Type == PROJECTION_PERSPECTIVE) {
         f32 Yaw = this->Yaw - this->MouseSensitivity*CameraInput->MouseDeltaX;
-        if(Yaw >= 360.0f)
-        {
+        if(Yaw >= 360.0f) {
             Yaw = 0.0f;
-        }
-        else if(Yaw <= 0.0f)
-        {
+        } else if(Yaw <= 0.0f) {
             Yaw = 360.0f;
         }
         this->Yaw = Yaw;
 
         f32 Pitch = this->Pitch - this->MouseSensitivity*CameraInput->MouseDeltaY;
-        if(Pitch >= 89.0f)
-        {
+        if(Pitch >= 89.0f) {
             Pitch = 89.0f;
-        }
-        if(Pitch <= -89.0f)
-        {
+        } else if(Pitch <= -89.0f) {
             Pitch = -89.0f;
         }
         this->Pitch = Pitch;
@@ -92,44 +85,35 @@ HandleInput(const shoora_camera_input *CameraInput)
 
         shu::vec3f MoveDirection = shu::Vec3f(0.0f);
         b32 Move = false;
-        if(CameraInput->MoveForwards)
-        {
+        if(CameraInput->MoveForwards) {
             Move = true;
             MoveDirection += this->Front;
-        }
-        if(CameraInput->MoveBackwards)
-        {
+        } else if(CameraInput->MoveBackwards) {
             Move = true;
             MoveDirection -= this->Front;
         }
-        if(CameraInput->MoveLeft)
-        {
+
+        if(CameraInput->MoveLeft) {
             Move = true;
             MoveDirection -= this->Right;
-        }
-        if(CameraInput->MoveRight)
-        {
+        } else if(CameraInput->MoveRight) {
             Move = true;
             MoveDirection += this->Right;
         }
 
-        if(Move)
-        {
+        if(Move) {
             f32 MovementSpeed = this->MovementSpeed;
-            if(CameraInput->MoveFaster)
-            {
+            if(CameraInput->MoveFaster) {
                 MovementSpeed *= 10.0f;
             }
 
             MoveDirection = shu::Normalize(MoveDirection);
-            if(MoveDirection.SqMagnitude() - FLT_EPSILON > 0.0f)
-            {
+            if(MoveDirection.SqMagnitude() - FLT_EPSILON > 0.0f) {
                 this->Pos += MoveDirection*MovementSpeed*CameraInput->DeltaTime;
             }
         }
-    }
-    else if(this->Type == PROJECTION_ORTHOGRAPHIC)
-    {
+    } else
+    if(this->Type == PROJECTION_ORTHOGRAPHIC) {
         shu::vec3f MoveDirection = shu::Vec3f(0.0f);
         if(CameraInput->MoveForwards) { MoveDirection.y = 1.0f; }
         if(CameraInput->MoveBackwards) { MoveDirection.y = -1.0f; }
@@ -153,14 +137,12 @@ HandleInput(const shoora_camera_input *CameraInput)
 shu::mat4f shoora_camera::
 GetViewMatrix(shu::mat4f &M)
 {
-    if(this->Type == PROJECTION_PERSPECTIVE)
-    {
+    if(this->Type == PROJECTION_PERSPECTIVE) {
         M = shu::LookAt(this->Pos, this->Pos + this->Front, this->GlobalUp, M);
-    }
-    else if(this->Type == PROJECTION_ORTHOGRAPHIC)
-    {
+    } else if(this->Type == PROJECTION_ORTHOGRAPHIC) {
         M = shu::Translate(M, shu::Vec3f(-this->Pos.x, -this->Pos.y, 0.0f));
     }
+
     return M;
 }
 
@@ -169,13 +151,10 @@ shoora_camera::GetProjectionMatrix()
 {
     shu::mat4f projection;
 
-    if(this->Type == PROJECTION_ORTHOGRAPHIC)
-    {
+    if(this->Type == PROJECTION_ORTHOGRAPHIC) {
         f32 Width = this->Aspect * this->Height;
         projection = shu::Orthographic(Width, this->Height, this->Near, this->Far);
-    }
-    else if (this->Type == PROJECTION_PERSPECTIVE)
-    {
+    } else if (this->Type == PROJECTION_PERSPECTIVE) {
         projection = shu::Perspective(this->halfFOV, this->Aspect, this->Near, this->Far);
     }
 

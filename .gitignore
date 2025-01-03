@@ -4,6 +4,9 @@ bin_dbgFiles/*
 imgui.ini
 app_dump.txt
 
+.cache/*
+compile_commands.json
+
 python_stuff/extern/*
 python_stuff/bin
 python_stuff/numpy-practice/__pycache__/*

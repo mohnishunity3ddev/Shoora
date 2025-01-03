@@ -1,275 +1,304 @@
 #include "string_utils.h"
+#include <platform/platform.h>
 
 namespace shu
 {
+    // 138478156
+    u32
+    string_table::GetHash(const char *InputString, size_t Length, b32 IgnoreCase)
+    {
+        u32 Result = this->Seed;
+
+        u32 Character;
+        size_t Index;
+
+        for (Index = 0; Index < Length; ++Index)
+        {
+            Character = InputString[Index];
+            if (IgnoreCase)
+            {
+                Character = shu::ToLower(Character);
+            }
+
+            Result ^= Character;
+            Result *= 16777619; // FNV Prime.
+        }
+
+        return Result;
+    }
+
+    void
+    string_table::Initialize(u32 InitCapacity, u32 Seed)
+    {
+        this->Seed = Seed;
+        this->Capacity = InitCapacity;
+        this->Entries = (const char **)stringCalloc(this->Capacity, sizeof(const char **));
+        this->Initialized = true;
+        this->EntryCount = 0;
+    }
+
+    b32
+    string_table::AddString(const char *String)
+    {
+
+        u32 Index = this->GetHash(String, StringLength(String)-1);
+        Index %= this->Capacity;
+        ASSERT(Index < this->Capacity);
+        if (Entries[Index] != nullptr)
+            return false;
+        Entries[Index] = StringDuplicateMalloc(String);
+        EntryCount++;
+        ASSERT(EntryCount <= Capacity);
+        return true;
+    }
+
+    void
+    string_table::Enumerate() const
+    {
+        LogDebugUnformatted("HashTable Entries: \n");
+        for (int i = 0; i < this->Capacity; ++i)
+        {
+            LogDebug("Entry %zu: %s.\n", i, this->Entries[i]);
+        }
+    }
+
+    void
+    string_table::Free()
+    {
+        for (int i = 0; i < this->EntryCount; ++i)
+        {
+            if (this->Entries[i] != nullptr) {
+                free((void *) this->Entries[i]);
+                this->Entries[i] = nullptr;
+            }
+        }
+        this->EntryCount = 0;
+        this->Capacity = 0;
+        this->Seed = 0;
+        this->Initialized = false;
+
+        if (this->Entries != nullptr) {
+            free(this->Entries);
+            this->Entries = nullptr;
+        }
+    }
+
+#if 0
+    constexpr u32 operator"" _sid(const char *str, size_t s) {
+        return GetHash(str, s, false);
+    }
+#endif
+
+    void
+    StringTableTest()
+    {
+        string_table t;
+#define TRY_ADD(Str) if (!t.AddString(#Str)) { t.Free(); continue; }
+
+        b32 success = false;
+        i32 attemptCount = 0;
+        while(true)
+        {
+            ++attemptCount;
+            if (attemptCount == INT32_MAX)
+                break;
+            t.Initialize(11, Platform_GetRandomSeed());
+            TRY_ADD("Mani");
+            TRY_ADD("Sharma");
+            TRY_ADD("Is");
+            TRY_ADD("A");
+            TRY_ADD("Nice");
+            TRY_ADD("Guy");
+            TRY_ADD("Bloody");
+            TRY_ADD("Hell");
+            TRY_ADD("Brother!");
+            TRY_ADD("Mohnish Sharma is my name. And dont call me Nice \"BOY\"!");
+            break;
+        }
+
+        LogInfo("Attempts: %d, Seed = %u.\n", attemptCount, t.GetSeed());
+        t.Enumerate();
+        t.Free();
+        int x = 0;
+#undef TRY_ADD
+    }
+
+
     string::~string()
     {
-        if (this->Data) stringFree(this->Data);
-        this->Data = nullptr;
-        this->Capacity = 0;
-    }
+        // if (!this->IsSSO && this->data.MemPtr) stringFree(this->data.MemPtr);
+        // this->data.MemPtr = nullptr;
+        // this->Capacity = 0;
+        // this->IsSSO = false;
+        // this->Len = 0;
 
-    string::string()
-    {
-        ASSERT(!this->Data);
-        this->Data = nullptr;
-        this->Capacity = 0;
-    }
-
-    string::string(size_t InitialCapacity)
-    {
-        ASSERT(!this->Data && InitialCapacity > 0);
-        size_t len = ALIGN32(InitialCapacity);
-        
-        this->Data = (char *)stringAlloc(len);
-        this->Capacity = len;
-        *this->Data = '\0';
-    }
-
-    string::string(const char *d, size_t InitialCapacity)
-    {
-        ASSERT(!this->Data);
-
-        size_t len = MAX(InitialCapacity, StringLength(d));
-        len = ALIGN32(len);
-        this->Data = (char *)stringAlloc(len);
-        this->Capacity = len;
-
-        size_t index = 0;
-        while (*d != '\0')
-        {
-            this->Data[index++] = *d++;
-        }
-        this->Data[index] = '\0';
-    }
-
-    string::string(const string &other)
-    {
-        size_t len = StringLength(other.Data);
-        len = ALIGN32(len);
-
-        if (!this->Data)
-        {
-            this->Data = (char *)stringAlloc(len);
-            this->Capacity = len;
-        }
-
-        if (this->Capacity < len)
-        {
-            if (this->Data)
-                stringFree(this->Data);
-
-            this->Data = (char *)stringAlloc(len);
-            this->Capacity = len;
-        }
-
-        SHU_MEMCOPY(other.Data, this->Data, len);
+        LogWarn("Attempting to free %s.\n", this->c_str());
     }
 
     string::string(const char *d)
     {
-        ASSERT(!this->Data);
+        ASSERT(!this->data.MemPtr);
 
         size_t len = StringLength(d);
-        len = ALIGN32(32);
-
-        this->Data = (char *)stringAlloc(len);
-        this->Capacity = len;
-
-        size_t index = 0;
-        while (*d != '\0')
-        {
-            this->Data[index++] = *d++;
-        }
-        this->Data[index] = '\0';
-    }
-
-    string &
-    string::operator=(const char *cString)
-    {
-        size_t len = StringLength(cString);
-        len = ALIGN32(len);
-
-        if (!this->Data)
-        {
-            this->Data = (char *)stringAlloc(len);
-            this->Capacity = len;
+        if (len > 8) {
+            size_t alignedLength = ALIGN32(len);
+            this->data.MemPtr = (char *)stringAlloc(alignedLength);
+            this->Capacity = alignedLength;
+            this->IsSSO = false;
+            SHU_MEMCOPY(d, this->data.MemPtr, len);
+        } else {
+            SHU_MEMCOPY(d, this->data.SmallStringArr, 8);
+            this->IsSSO = true;
+            this->Capacity = 8;
         }
 
-        if (this->Capacity < len)
-        {
-            if (this->Data)
-                stringFree(this->Data);
-
-            this->Data = (char *)stringAlloc(len);
-            this->Capacity = len;
-        }
-
-        SHU_MEMCOPY(cString, this->Data, len);
-        return *this;
+        this->Len = len;
     }
 
-    string &
-    string::operator=(const string &other)
+    void
+    string::Append(const char *AppendStr)
     {
-        if (&other != this)
-        {
-            if (other.Data && other.Capacity > 0)
-            {
-                size_t strlen = StringLength(other.Data);
-                strlen = ALIGN32(strlen);
-                if (!this->Data)
-                {
-                    this->Data = (char *)stringAlloc(strlen);
-                    this->Capacity = strlen;
-                }
-
-                if (this->Capacity < strlen)
-                {
-                    if (this->Data)
-                        stringFree(this->Data);
-
-                    this->Data = (char *)stringAlloc(strlen);
-                    this->Capacity = strlen;
-                }
-
-                SHU_MEMCOPY(other.Data, this->Data, strlen);
-            }
-        }
-
-        return *this;
-    }
-
-    string &
-    string::operator=(string &&other) noexcept
-    {
-        if (other.Data && other.Capacity > 0)
-        {
-            size_t strlen = StringLength(other.Data);
-            strlen = ALIGN32(strlen);
-            if (!this->Data)
-            {
-                this->Data = (char *)stringAlloc(strlen);
-                this->Capacity = strlen;
-            }
-
-            if (this->Capacity < strlen)
-            {
-                if (this->Data)
-                    stringFree(this->Data);
-
-                this->Data = (char *)stringAlloc(strlen);
-                this->Capacity = strlen;
-            }
-
-            SHU_MEMCOPY(other.Data, this->Data, strlen);
-
-            stringFree(other.Data);
-            other.Data = nullptr;
-            other.Capacity = 0;
-        }
-
-        return *this;
-    }
-
-    string &
-    string::operator+=(const char *str)
-    {
-        this->Append(str);
-        return *this;
-    }
-
-    string &
-    string::Append(const char *String)
-    {
-        i32 lenA = StringLength(this->Data) - 1;
+        i32 lenA = this->Len - 1;
         lenA = MAX(lenA, 0);
-        i32 lenB = StringLength(String) - 1;
+        ASSERT(lenA > 0);
+
+        i32 lenB = StringLength(AppendStr) - 1;
+        ASSERT(lenB > 0);
+
         i32 totalLength = lenA + lenB + 1;
-
-        if (this->Capacity < totalLength)
+        if (totalLength <= 8 && this->IsSSO)
         {
-            char *newLoc = (char *)stringAlloc(totalLength);
-            if (lenA > 0)
-                SHU_MEMCOPY(this->Data, newLoc, lenA);
-
-            if (this->Data)
-            {
-                stringFree(this->Data);
+            ASSERT(this->Len < 8);
+            for (i32 i = lenA, j = 0; i < totalLength; ++i, ++j) {
+                this->data.SmallStringArr[i] = AppendStr[j];
             }
-            this->Data = newLoc;
-            this->Capacity = totalLength;
+            this->Len = totalLength;
+            this->data.SmallStringArr[lenA + lenB] = '\0';
         }
+        else
+        {
+            size_t totalAligned = ALIGN32(totalLength);
+            ASSERT(totalAligned > 8);
+            char *stringMem = this->data.MemPtr;
 
-        SHU_MEMCOPY(String, this->Data + lenA, lenB);
-        this->Data[lenA + lenB] = '\0';
+            if (this->IsSSO) {
+                stringMem = (char *)stringAlloc(totalAligned);
+                SHU_MEMCOPY(this->data.SmallStringArr, stringMem, lenA);
+                this->IsSSO = false;
+            }
+            else if (this->Capacity < totalAligned)
+            {
+                stringMem = (char *)stringAlloc(totalAligned);
+                SHU_MEMCOPY(this->data.MemPtr, stringMem, lenA);
+                stringFree(this->data.MemPtr);
+            }
 
-        return *this;
+            this->data.MemPtr = stringMem;
+            this->Capacity = totalAligned;
+            this->Len = totalLength;
+
+            SHU_MEMCOPY(AppendStr, this->data.MemPtr + lenA, lenB);
+            this->data.MemPtr[lenA + lenB] = '\0';
+        }
+    }
+    
+    void
+    string::Modify(const char *str)
+    {
+        size_t len = StringLength(str);
+        if (len <= 8 && this->IsSSO)
+        {
+            SHU_MEMCOPY(str, data.SmallStringArr, len);
+        } else {
+            size_t lenAligned = ALIGN32(len);
+            char *stringMem = this->data.MemPtr;
+
+            if (this->Capacity < lenAligned)
+            {
+                stringMem = (char *)stringAlloc(lenAligned);
+                if (!this->IsSSO)
+                    stringFree(this->data.MemPtr);
+            }
+
+            this->data.MemPtr = stringMem;
+            this->Capacity = lenAligned;
+            this->Len = len;
+            this->IsSSO = false;
+            SHU_MEMCOPY(str, this->data.MemPtr, len);
+        }
     }
 
-    string &
-    string::Append(const char *String, size_t Length)
+    void StringTest()
     {
-        i32 lenA = StringLength(this->Data) - 1;
-        lenA = MAX(lenA, 0);
+        string s = "a";
+        ASSERT(StringsEqual(s.c_str(), "a") && s.IsSmallString() && s.Length() == 1);
+        s.Modify("b");
+        ASSERT(StringsEqual(s.c_str(), "b") && s.IsSmallString() && s.Length() == 1);
+        s.Modify("abcdefghi");
+        ASSERT(StringsEqual(s.c_str(), "abcdefghi") && !s.IsSmallString() && s.Length() == 9);
+        s.Modify("a");
+        s.Append("b");
+        ASSERT(StringsEqual(s.c_str(), "ab") && !s.IsSmallString() && s.Length() == 2);
+        s.Append("c");
+        ASSERT(StringsEqual(s.c_str(), "abc") && !s.IsSmallString() && s.Length() == 3);
+        s.Append("d");
+        ASSERT(StringsEqual(s.c_str(), "abcd") && !s.IsSmallString() && s.Length() == 4);
+        s.Append("e");
+        ASSERT(StringsEqual(s.c_str(), "abcde") && !s.IsSmallString() && s.Length() == 5);
+        s.Append("f");
+        ASSERT(StringsEqual(s.c_str(), "abcdef") && !s.IsSmallString() && s.Length() == 6);
+        s.Append("g");
+        ASSERT(StringsEqual(s.c_str(), "abcdefg") && !s.IsSmallString() && s.Length() == 7);
+        // should be heap allocated here.
+        s.Append("h");
+        const char *heapStr = s.c_str();
+        ASSERT(StringsEqual(heapStr, "abcdefgh") && !s.IsSmallString() && s.Length() == 8);
+        s.Append("i");
+        // the memory ptr does not change since s should have enough memory to append i.
+        ASSERT(heapStr == s.c_str());
+        ASSERT(StringsEqual(s.c_str(), "abcdefghi") && !s.IsSmallString() && s.Length() == 9);
 
-        i32 lenB = StringLength(String) - 1;
-        i32 totalLength = lenA + lenB + 1;
-        ASSERT(totalLength <= Length);
+        s.Modify("Mani");
+        ASSERT(StringsEqual(s.c_str(), "Mani") && !s.IsSmallString() && s.Length() == 4);
+        s.Append(" Is A Good Boy!");
+        ASSERT(StringsEqual(s.c_str(), "Mani Is A Good Boy!") && !s.IsSmallString());
 
-        if (this->Capacity < Length)
-        {
-            char *newLoc = (char *)stringAlloc(Length);
-            SHU_MEMCOPY(this->Data, newLoc, lenA);
-            if (this->Data)
-            {
-                stringFree(this->Data);
-            }
-            this->Data = newLoc;
-            this->Capacity = Length;
-        }
-
-        SHU_MEMCOPY(String, this->Data + lenA, lenB);
-        this->Data[lenA + lenB] = '\0';
-
-        return *this;
+        int x = 0;
     }
 
     size_t
     string::Length() const noexcept
     {
-        if (!this->Data)
-            return 0;
-
-        size_t Length = StringLength(this->Data);
-        return Length;
+        if (!this->data.MemPtr) return 0;
+        size_t Result = this->Len - 1;
+        return Result;
     }
 
     b32
     string::IsNullOrEmpty() const noexcept
     {
-        if (!this->Data)
+        if (!this->data.MemPtr)
             return true;
 
-        b32 Result = (*this->Data == '\0');
+        b32 Result = (*this->data.MemPtr == '\0');
         return Result;
     }
 
     const char *
     string::c_str() const noexcept
     {
-        return this->Data;
+        return this->IsSSO ? this->data.SmallStringArr : this->data.MemPtr;
     }
 
     void
     string::Free()
     {
-        if (this->Data != nullptr)
+        if (this->data.MemPtr != nullptr)
         {
-            stringFree(this->Data);
+            stringFree(this->data.MemPtr);
         }
 
-        this->Data = nullptr;
+        this->data.MemPtr = nullptr;
         this->Capacity = 0;
     }
 

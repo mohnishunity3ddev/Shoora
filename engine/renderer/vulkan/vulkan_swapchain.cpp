@@ -574,9 +574,10 @@ CreatePresentationSurface(shoora_vulkan_context *Context, VkSurfaceKHR *Surface)
 {
 #ifdef VK_USE_PLATFORM_WIN32_KHR
     VkWin32SurfaceCreateInfoKHR SurfaceCreateInfo = {};
-
-    shoora_platform_presentation_surface Win32Surface = {&SurfaceCreateInfo};
-    FillVulkanWin32SurfaceCreateInfo(&Win32Surface);
+    SurfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+    SurfaceCreateInfo.pNext = 0;
+    SurfaceCreateInfo.flags = 0;
+    Platform_GetWindowDetails((void **)&SurfaceCreateInfo.hwnd, (void **)&SurfaceCreateInfo.hinstance);
 
     VK_CHECK(vkCreateWin32SurfaceKHR(Context->Instance, &SurfaceCreateInfo, 0, Surface));
     LogOutput(LogType_Info, "Created Presentation Surface!\n");

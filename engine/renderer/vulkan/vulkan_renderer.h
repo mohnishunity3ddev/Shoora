@@ -257,11 +257,8 @@ struct shoora_vulkan_context
     // shoora_vulkan_graphics_pipeline WireframePipeline;
 
     shoora_vulkan_synchronization SyncHandles;
-    
     shoora_camera Camera;
-
     shoora_vulkan_imgui ImContext;
-
     shoora_vulkan_geometry Geometry;
 
     b32 IsInitialized;

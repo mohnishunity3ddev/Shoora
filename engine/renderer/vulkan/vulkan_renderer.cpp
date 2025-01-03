@@ -1264,20 +1264,9 @@ DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket)
         // Scene->AddPolygonBody(1, CurrentMouseWorldPos, colorU32::White, 1.0f, 1.0f, 0.0f, 1.0f);
     }
 #endif
-    if(Platform_GetKeyInputState(SU_SPACE, KeyState::SHU_KEYSTATE_PRESS))
-    {
-        GlobalDebugMode = !GlobalDebugMode;
-    }
-    if(Platform_GetKeyInputState('P', KeyState::SHU_KEYSTATE_PRESS))
-    {
-        GlobalPausePhysics = !GlobalPausePhysics;
-    }
-
-    if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS))
-    {
-        GlobalLastFrameMousePos = {FramePacket->MouseXPos, FramePacket->MouseYPos};
-    }
-
+    if(Platform_GetKeyInputState(SU_SPACE, KeyState::SHU_KEYSTATE_PRESS)) { GlobalDebugMode = !GlobalDebugMode; }
+    if(Platform_GetKeyInputState('P', KeyState::SHU_KEYSTATE_PRESS)) { GlobalPausePhysics = !GlobalPausePhysics; }
+    if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_PRESS)) { GlobalLastFrameMousePos = {FramePacket->MouseXPos, FramePacket->MouseYPos}; }
     if(Platform_GetKeyInputState(SU_RIGHTMOUSEBUTTON, KeyState::SHU_KEYSTATE_DOWN))
     {
         shoora_camera_input CameraInput = {};

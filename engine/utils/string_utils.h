@@ -11,35 +11,57 @@ namespace shu
     #define stringCalloc calloc
     struct string
     {
-        // #define SSO_SIZE 32
-
-        explicit string();
-        explicit string(size_t InitLength);
-        explicit string(const char *d, size_t InitLength);
         string(const char *d);
-        string(const string &other);
 
-        string &operator=(const char *cString);
-        string &operator=(const string &other);
-        string &operator=(string &&other) noexcept;
-        string &operator+=(const char *str);
+        string() = delete;
+        string(const string &other) = delete;
+        string &operator=(const char *d) = delete;
+        string &operator=(string &&other) = delete;
+
+        void Append(const char *str);
+        void Modify(const char *str);
 
         size_t Length() const noexcept;
         b32 IsNullOrEmpty() const noexcept;
-
         const char *c_str() const noexcept;
-        string &Append(const char *str);
-        string &Append(const char *str, size_t Length);
+
         void Free();
 
         ~string();
+        b32 IsSmallString() { return IsSSO; }
 
       private:
-        char *Data;
+        union {
+          char *MemPtr;
+          char SmallStringArr[8];
+        } data;
+
+        b32 IsSSO = false;
+        size_t Len;
         // TODO: If the size is less than SSO_SIZE, then we don't need to use heap memory.
-        // char ssoData[SSO_SIZE];
         size_t Capacity;
     };
+
+    struct string_table
+    {
+        public:
+          u32 GetHash(const char *InputString, size_t Length, b32 IgnoreCase = false);
+          void Initialize(u32 InitCount, u32 Seed);
+          b32 AddString(const char *String);
+          void Enumerate() const;
+          void Free();
+          u32
+          GetSeed() { return Seed; }
+
+        private:
+          u32 Seed;
+          b32 Initialized;
+          size_t EntryCount;
+          size_t Capacity;
+          const char **Entries;
+    };
+    void StringTest();
+    void StringTableTest();
 
     size_t StringLength(const char *A);
     void StringConcat(const char *A, const char *B, char *Out);

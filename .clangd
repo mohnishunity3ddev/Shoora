@@ -1,0 +1,6 @@
+CompileFlags:
+    Add:
+    [
+      -DCGLTF_IMPLEMENTATION,
+      -DSTB_IMAGE_IMPLEMENTATION,
+    ]

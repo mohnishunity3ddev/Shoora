@@ -1,14 +1,15 @@
 {
-    "editor.fontFamily": "'comic code ligatures regular', 'RecMonoCasual Nerd Font Mono', 'maple mono nf', 'pragmatapro mono liga', 'sf mono', 'ZedMono NFM', 'UbuntuSansMono NFM', 'caskaydiacove nf mono', 'iosevkaterm nerd font mono', 'jetbrainsmono nf', 'agave nerd font mono r', 'JetBrainsMono nerd font mono'",
-    "editor.fontSize": 16,
+    "editor.fontFamily": "'caskaydiacove nf mono', 'comic code ligatures regular', 'sf mono', 'RecMonoCasual Nerd Font Mono', 'maple mono nf', 'pragmatapro mono liga', 'sf mono', 'ZedMono NFM', 'UbuntuSansMono NFM', 'iosevkaterm nerd font mono', 'jetbrainsmono nf', 'agave nerd font mono r', 'JetBrainsMono nerd font mono'",
+    "editor.fontSize": 14,
     // "editor.lineHeight": 25,
     // "editor.letterSpacing": 0.5,
     "editor.fontLigatures": true,
     "editor.fontWeight": "normal",
-    "editor.renderWhitespace": "selection",
-
+    "editor.renderWhitespace": "trailing",
+    "editor.bracketPairColorization.enabled": false,
     // "editor.letterSpacing": 1,
-
+    "editor.lineNumbers": "off",
+    
     "terminal.integrated.profiles.windows": {
         "Default Profile": {
             "path": [
@@ -25,7 +26,7 @@
     "terminal.integrated.fontFamily": "'maple mono nf', 'JetBrainsMono Nerd Font Mono', 'firacode nerd font mono',  'caskaydiacove nf mono'",
     "terminal.integrated.fontSize": 14,
     "terminal.integrated.fontWeight":"normal",
-    "debug.console.fontFamily": "'comic code ligatures regular'",
+    "debug.console.fontFamily": "'caskaydiacove nf mono', 'comic code ligatures regular'",
 
     "files.associations": {
         "chrono": "cpp",
