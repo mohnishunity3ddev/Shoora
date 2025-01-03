@@ -33,14 +33,12 @@ enum KeyState
     SHU_KEYSTATE_MAX_COUNT
 };
 
-#if defined(SHU_RENDERER_BACKEND_VULKAN) && defined(VK_USE_PLATFORM_WIN32_KHR)
 typedef void func_window_resize(u32 Width, u32 Height);
+void Platform_GetWindowDetails(void **WindowHandle, void **WindowInstance);
+
 #if 0
 typedef void exit_application(const char *Reason);
 typedef b8 check_keyboard_input_state(u8 KeyCode, KeyState State);
-#endif
-void Platform_GetWindowDetails(void **WindowHandle, void **WindowInstance);
-
 #endif
 
 struct platform_work_queue;
@@ -52,7 +50,7 @@ struct platform_memory
     size_t FrameMemorySize;
 };
 
-struct shoora_app_info
+struct shoora_platform_app_info
 {
     const char *AppName;
 
@@ -77,10 +75,11 @@ struct shoora_platform_frame_packet
     u32 Fps;
 };
 
+#if 0
 struct platform_mutex
 {
   private:
-#if WIN32
+#if _WIN32
     HANDLE MutexHandle;
 #endif
 
@@ -90,6 +89,7 @@ struct platform_mutex
     void Lock();
     void Unlock();
 };
+#endif
 
 struct platform_read_file_result
 {

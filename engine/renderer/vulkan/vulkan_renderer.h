@@ -266,7 +266,7 @@ struct shoora_vulkan_context
     u32 FrameCounter;
 };
 
-void InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo);
+void InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_platform_app_info *AppInfo);
 void DrawFrameInVulkan(shoora_platform_frame_packet *FramePacket);
 void DestroyVulkanRenderer(shoora_vulkan_context *Context);
 

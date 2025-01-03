@@ -14,6 +14,8 @@
 // TODO)): Remove this and implement your own!
 #include <stdio.h>
 
+#define FPS_CAPPING_ENABLED 0
+
 #if FPS_CAPPING_ENABLED
 // TODO)): Get a different strategy for waiting times. TimeBeginPeriod decreases system performance as per spec.
 #include <timeapi.h>
@@ -50,7 +52,7 @@ static win32_state Win32State;
 
 void DummyWinResize(u32 Width, u32 Height) {}
 
-static shoora_app_info AppInfo =
+static shoora_platform_app_info AppInfo =
 {
     .AppName = "Placeholder App Name",
     .WindowResizeCallback = &DummyWinResize
@@ -852,6 +854,7 @@ PLATFORM_WORK_QUEUE_CALLBACK(DoWorkerWork)
     LogInfo("Thread: %u, Data: %s\n", GetCurrentThreadId(), (char *)Args);
 }
 
+#if 0
 platform_mutex::platform_mutex()
     : MutexHandle(CreateMutex(0, FALSE, 0))
 {
@@ -880,6 +883,7 @@ void platform_mutex::Unlock()
         LogFatalUnformatted("Trouble releasing mutex!\n");
     }
 }
+#endif
 
 void
 Platform_FreeFileMemory(platform_read_file_result *File)
@@ -1123,9 +1127,8 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
     platform_input_state *OldInputState = InputStates;
     platform_input_state *NewInputState = InputStates + 1;
 
-    renderer_context RendererContext = {};
     // TODO)): Get the AppName from the game dll.
-    InitializeRenderer(&RendererContext, &AppInfo);
+    InitializeRenderer(&AppInfo);
 
     Win32State.Running = true;
     LARGE_INTEGER FrameMarkerStart = Win32GetWallClock();
@@ -1222,7 +1225,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         }
     }
 
-    DestroyRenderer(&RendererContext);
+    DestroyRenderer();
     CloseWindow(Win32State.WindowContext.Handle);
 
     if(CreateConsole)

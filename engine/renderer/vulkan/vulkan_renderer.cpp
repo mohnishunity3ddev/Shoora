@@ -25,6 +25,7 @@
 #ifdef WIN32
 #include "platform/windows/win_platform.h"
 #endif
+#include <platform/platform.h>
 
 #if SHU_USE_GLM
 #include <glm/glm.hpp>
@@ -1021,7 +1022,7 @@ InitializeLightData()
 }
 
 void
-InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *AppInfo)
+InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_platform_app_info *AppInfo)
 {
     platform_memory GameMemory = AppInfo->GameMemory;
     InitializeMemory(GameMemory.PermSize, GameMemory.PermMemory, GameMemory.FrameMemorySize, GameMemory.FrameMemory);
@@ -1041,7 +1042,7 @@ InitializeVulkanRenderer(shoora_vulkan_context *VulkanContext, shoora_app_info *
     ShuraInstanceCreateInfo.ppRequiredInstanceLayers = RequiredInstanceLayers;
     ShuraInstanceCreateInfo.RequiredInstanceLayerCount = ARRAY_SIZE(RequiredInstanceLayers);
 #endif
-    
+
     CreateVulkanInstance(VulkanContext, &ShuraInstanceCreateInfo);
     volkLoadInstance(VulkanContext->Instance);
 

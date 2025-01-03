@@ -30,14 +30,12 @@ typedef double f64;
 
 // NOTE: To make sure NSight is able to launch the app.
 #define SHU_ENGINE_NAME "Shoora Game Engine"
-#define SHU_RENDERER_BACKEND_VULKAN
 #define SHU_USE_STB 1
 #define SHU_VULKAN_EXAMPLE 1
 #define SHU_DEFAULT_FENCE_TIMEOUT 100000000000
 #define ARRAY_SIZE(Arr) (sizeof((Arr)) / sizeof(Arr[0]))
 #define SHU_VK_ENABLE_MSAA 1
 #define SHU_PIXELS_PER_METER 100.0f
-#define FPS_CAPPING_ENABLED 0
 
 #define KILOBYTES(Val) ((Val) * 1024)
 #define MEGABYTES(Val) (KILOBYTES(Val) * 1024LL)
