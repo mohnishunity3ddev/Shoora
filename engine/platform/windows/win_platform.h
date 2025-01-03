@@ -149,7 +149,9 @@ enum VirtualKeyCodes
     SU_NONAME = 0xFC,
     SU_PA1 = 0xFD,
     SU_OEM_CLEAR = 0xFE,
+    SU_KEYCODE_MAX = 0xFF
 };
+#define SHU_FIRST_KEYBOARD_KEYCODE SU_BACKSPACE
 
 #define WIN_PLATFORM_H
 #endif

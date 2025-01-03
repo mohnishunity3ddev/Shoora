@@ -1,5 +1,6 @@
 #ifndef UNICODE
 #define UNICODE
+// #include <winuser.h>
 #endif
 
 #include "defines.h"
@@ -15,6 +16,7 @@
 #include <stdio.h>
 
 #define FPS_CAPPING_ENABLED 0
+#define KEY_PRESS_MASK (1ULL << 15)
 
 #if FPS_CAPPING_ENABLED
 // TODO)): Get a different strategy for waiting times. TimeBeginPeriod decreases system performance as per spec.
@@ -98,8 +100,8 @@ Win32ToggleFullscreen(HWND Window)
 struct platform_input_button_state
 {
     i32 ButtonTransitionsPerFrame;
-    i16 IsCurrentlyDown;
-    i16 IsReleased;
+    b8 IsCurrentlyDown;
+    b8 IsReleased;
 };
 
 enum platform_input_mouse_button
@@ -117,44 +119,8 @@ enum platform_input_mouse_button
 // TODO: platform::VirtualKeyCodes.
 struct platform_input_state
 {
+    platform_input_button_state Buttons[SU_KEYCODE_MAX];
     f32 MouseXPos, MouseYPos;
-    union
-    {
-        platform_input_button_state MouseButtons[MouseButton_Count];
-
-        struct
-        {
-            platform_input_button_state LeftMouseButton;
-            platform_input_button_state RightMouseButton;
-            platform_input_button_state MiddleMouseButton;
-            platform_input_button_state ExtendedMouseButton0;
-            platform_input_button_state ExtendedMouseButton1;
-        };
-    };
-
-    union
-    {
-        platform_input_button_state KeyboardButtons[15];
-
-        struct
-        {
-            platform_input_button_state Keyboard_W;
-            platform_input_button_state Keyboard_A;
-            platform_input_button_state Keyboard_S;
-            platform_input_button_state Keyboard_D;
-            platform_input_button_state Keyboard_F;
-            platform_input_button_state Keyboard_P;
-            platform_input_button_state Keyboard_M;
-            platform_input_button_state Keyboard_N;
-            platform_input_button_state Keyboard_Space;
-            platform_input_button_state Keyboard_UpArrow;
-            platform_input_button_state Keyboard_DownArrow;
-            platform_input_button_state Keyboard_LeftArrow;
-            platform_input_button_state Keyboard_RightArrow;
-            platform_input_button_state Keyboard_Enter;
-            platform_input_button_state Keyboard_LeftShift;
-        };
-    };
 };
 
 LRESULT CALLBACK
@@ -210,8 +176,7 @@ Win32WindowCallback(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LPara
 void
 Win32UpdateInputButtonState(platform_input_button_state *InputButtonState, b32 IsCurrentlyDown)
 {
-    if(InputButtonState->IsCurrentlyDown != IsCurrentlyDown)
-    {
+    if(InputButtonState->IsCurrentlyDown != IsCurrentlyDown) {
         ++InputButtonState->ButtonTransitionsPerFrame;
         InputButtonState->IsCurrentlyDown = IsCurrentlyDown;
         InputButtonState->IsReleased = !IsCurrentlyDown;
@@ -223,7 +188,6 @@ Win32InputKeyPressed(platform_input_button_state *InputState)
 {
     b32 Result = ((InputState->ButtonTransitionsPerFrame > 1) ||
                   (InputState->ButtonTransitionsPerFrame == 1 && InputState->IsCurrentlyDown));
-
     return Result;
 }
 
@@ -255,57 +219,10 @@ Platform_GetKeyInputState(u8 KeyCode, KeyState State)
     b8 Result = false;
     switch(State)
     {
-        case SHU_KEYSTATE_PRESS:
-        {
-            if(KeyCode == SU_LEFTMOUSEBUTTON && Win32InputKeyPressed(&Win32State.InputState->LeftMouseButton)) { Result = true; }
-            else if(KeyCode == SU_RIGHTMOUSEBUTTON && Win32InputKeyPressed(&Win32State.InputState->RightMouseButton)) { Result = true; }
-            else if(KeyCode == SU_LEFTARROW && Win32InputKeyPressed(&Win32State.InputState->Keyboard_LeftArrow)) { Result = true; }
-            else if(KeyCode == SU_RIGHTARROW && Win32InputKeyPressed(&Win32State.InputState->Keyboard_RightArrow)) { Result = true; }
-            else if(KeyCode == SU_UPARROW && Win32InputKeyPressed(&Win32State.InputState->Keyboard_UpArrow)) { Result = true; }
-            else if(KeyCode == SU_DOWNARROW && Win32InputKeyPressed(&Win32State.InputState->Keyboard_DownArrow)) { Result = true; }
-            else if(KeyCode == SU_SPACE && Win32InputKeyPressed(&Win32State.InputState->Keyboard_Space)) { Result = true; }
-            else if(KeyCode == 'F' && Win32InputKeyPressed(&Win32State.InputState->Keyboard_F)) { Result = true; }
-            else if(KeyCode == 'P' && Win32InputKeyPressed(&Win32State.InputState->Keyboard_P)) { Result = true; }
-            else if(KeyCode == 'M' && Win32InputKeyPressed(&Win32State.InputState->Keyboard_M)) { Result = true; }
-            else if(KeyCode == 'N' && Win32InputKeyPressed(&Win32State.InputState->Keyboard_N)) { Result = true; }
-        } break;
-
-        case SHU_KEYSTATE_DOWN:
-        {
-            if(KeyCode == SU_RIGHTMOUSEBUTTON && Win32State.InputState->RightMouseButton.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == SU_LEFTMOUSEBUTTON && Win32State.InputState->LeftMouseButton.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == 'W' && Win32State.InputState->Keyboard_W.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == 'A' && Win32State.InputState->Keyboard_A.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == 'S' && Win32State.InputState->Keyboard_S.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == 'D' && Win32State.InputState->Keyboard_D.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == 'P' && Win32State.InputState->Keyboard_P.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == 'M' && Win32State.InputState->Keyboard_M.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == 'N' && Win32State.InputState->Keyboard_N.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == SU_LEFTARROW && Win32State.InputState->Keyboard_LeftArrow.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == SU_RIGHTARROW && Win32State.InputState->Keyboard_RightArrow.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == SU_UPARROW && Win32State.InputState->Keyboard_UpArrow.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == SU_DOWNARROW && Win32State.InputState->Keyboard_DownArrow.IsCurrentlyDown) { Result = true; }
-            else if(KeyCode == SU_LEFTSHIFT && Win32State.InputState->Keyboard_LeftShift.IsCurrentlyDown) { Result = true; }
-        } break;
-
-        case SHU_KEYSTATE_RELEASE:
-        {
-            if (KeyCode == 'W' && Win32State.InputState->Keyboard_W.IsReleased) { Result = true; }
-            else if (KeyCode == 'A' && Win32State.InputState->Keyboard_A.IsReleased) { Result = true; }
-            else if (KeyCode == 'S' && Win32State.InputState->Keyboard_S.IsReleased) { Result = true; }
-            else if (KeyCode == 'D' && Win32State.InputState->Keyboard_D.IsReleased) { Result = true; }
-            else if (KeyCode == 'P' && Win32State.InputState->Keyboard_P.IsReleased) { Result = true; }
-            else if (KeyCode == 'M' && Win32State.InputState->Keyboard_M.IsReleased) { Result = true; }
-            else if (KeyCode == 'N' && Win32State.InputState->Keyboard_N.IsReleased) { Result = true; }
-            else if (KeyCode == SU_LEFTSHIFT && Win32State.InputState->Keyboard_LeftShift.IsReleased) { Result = true; }
-            else if (KeyCode == SU_LEFTMOUSEBUTTON && Win32State.InputState->LeftMouseButton.IsReleased) { Result = true; }
-            else if (KeyCode == SU_RIGHTMOUSEBUTTON && Win32State.InputState->RightMouseButton.IsReleased) { Result = true; }
-        } break;
-
-        default:
-        {
-            LogWarn("KeyState (%u) for Key(%u) was not identified!", (u32)State, (u32)KeyCode);
-        } break;
+        case SHU_KEYSTATE_PRESS: { return Win32InputKeyPressed(&Win32State.InputState->Buttons[KeyCode]); } break;
+        case SHU_KEYSTATE_DOWN: { return Win32State.InputState->Buttons[KeyCode].IsCurrentlyDown; } break;
+        case SHU_KEYSTATE_RELEASE: { return Win32State.InputState->Buttons[KeyCode].IsReleased; } break;
+        default: { LogWarn("KeyState (%u) for Key(%u) was not identified!", (u32)State, (u32)KeyCode); } break;
     }
 
     return Result;
@@ -321,8 +238,7 @@ Win32LogLastError()
                                   nullptr, ErrorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                                   (LPSTR)(&ErrorMessage), 0, nullptr);
 
-    if(Result != 0)
-    {
+    if(Result != 0) {
         char Buffer[512];
         sprintf_s(Buffer, ARRAY_SIZE(Buffer), "Error(%d): %s", ErrorCode, ErrorMessage);
         OutputDebugStringA(Buffer);
@@ -339,27 +255,20 @@ Win32SetConsoleHandle()
 {
     HANDLE Console = Win32State.WindowContext.ConsoleHandle;
 
-    if(Console == 0)
-    {
+    if(Console == 0) {
         Console = GetStdHandle(STD_OUTPUT_HANDLE);
-        if (Console == 0)
-        {
+        if (Console == 0) {
             // If GetStdHandle fails, allocate a new console
             AllocConsole();
             Console = GetStdHandle(STD_OUTPUT_HANDLE);
-            if (Console == 0)
-            {
+            if (Console == 0) {
                 // If GetStdHandle still fails after allocation, log the error and return
                 Win32LogLastError();
                 return;
-            }
-            else
-            {
+            } else {
                 Win32State.WindowContext.ConsoleHandle = Console;
             }
-        }
-        else
-        {
+        } else {
             Win32State.WindowContext.ConsoleHandle = Console;
         }
     }
@@ -373,12 +282,9 @@ Win32PauseConsoleWindow()
 
     while (true)
     {
-        if (GetAsyncKeyState(VK_RETURN) & (1 << 15))
-        {
+        if (GetAsyncKeyState(VK_RETURN) & KEY_PRESS_MASK) {
             break;
-        }
-        else if (GetAsyncKeyState(VK_ESCAPE) & (1 << 15))
-        {
+        } else if (GetAsyncKeyState(VK_ESCAPE) & KEY_PRESS_MASK) {
             break;
         }
 
@@ -542,51 +448,37 @@ Win32ProcessWindowsMessageQueue(HWND WindowHandle, platform_input_state *Input)
 
                 b8 KeyWasPreviouslyDown = ((Message.lParam & (1ULL << 30)) != 0);
                 b8 KeyIsCurrentlyDown = ((Message.lParam & (1ULL << 31)) == 0);
-
                 b8 KeyIsPressed = (KeyIsCurrentlyDown) &
                                   (KeyIsCurrentlyDown != KeyWasPreviouslyDown);
 
-                if(KeyCode == SU_ESCAPE && KeyIsPressed) { Win32State.Running = false; }
-                else if(KeyCode == 'W')           { Win32UpdateInputButtonState(&Input->Keyboard_W, KeyIsCurrentlyDown); }
-                else if(KeyCode == 'A')           { Win32UpdateInputButtonState(&Input->Keyboard_A, KeyIsCurrentlyDown); }
-                else if(KeyCode == 'S')           { Win32UpdateInputButtonState(&Input->Keyboard_S, KeyIsCurrentlyDown); }
-                else if(KeyCode == 'D')           { Win32UpdateInputButtonState(&Input->Keyboard_D, KeyIsCurrentlyDown); }
-                else if(KeyCode == 'F')           { Win32UpdateInputButtonState(&Input->Keyboard_F, KeyIsCurrentlyDown); }
-                else if(KeyCode == 'P')           { Win32UpdateInputButtonState(&Input->Keyboard_P, KeyIsCurrentlyDown); }
-                else if(KeyCode == 'M')           { Win32UpdateInputButtonState(&Input->Keyboard_M, KeyIsCurrentlyDown); }
-                else if(KeyCode == 'N')           { Win32UpdateInputButtonState(&Input->Keyboard_N, KeyIsCurrentlyDown); }
-                else if(KeyCode == SU_SPACE)      { Win32UpdateInputButtonState(&Input->Keyboard_Space, KeyIsCurrentlyDown); }
-                else if(KeyCode == SU_UPARROW)    { Win32UpdateInputButtonState(&Input->Keyboard_UpArrow, KeyIsCurrentlyDown); }
-                else if(KeyCode == SU_DOWNARROW)  { Win32UpdateInputButtonState(&Input->Keyboard_DownArrow, KeyIsCurrentlyDown); }
-                else if(KeyCode == SU_LEFTARROW)  { Win32UpdateInputButtonState(&Input->Keyboard_LeftArrow, KeyIsCurrentlyDown); }
-                else if(KeyCode == SU_RIGHTARROW) { Win32UpdateInputButtonState(&Input->Keyboard_RightArrow, KeyIsCurrentlyDown); }
-                else
-                {
-                    b32 ShiftKeyDown = (GetKeyState(SU_LEFTSHIFT) & (1 << 15));
-                    Win32UpdateInputButtonState(&Input->Keyboard_LeftShift, ShiftKeyDown ? true : false);
-
-                    // GGetAsyncKeyState returns the state of the key RIGHT NOW! even if previously keys were
-                    // pressed and were not handled.
-                    b32 WasAltKeyDown = (GetKeyState(SU_ALT) & (1 << 15));
-                    if(WasAltKeyDown && KeyIsPressed)
-                    {
-                        // Alt + F4
-                        if(KeyCode == SU_F4) {
-                            Win32State.Running = false;
-                        } else
-                        if(KeyCode == SU_RETURN) {
-                            // Alt + Enter
-                            Win32ToggleFullscreen(Message.hwnd);
-                        }
-                    }
-
-                    if(WasAltKeyDown && ShiftKeyDown && KeyIsPressed) {
-                        if(KeyCode == SU_KEY1) {
-                            LogErrorUnformatted("Shift + Alt + 1 was pressed!\n");
-                        }
-                    }
-
+                if (KeyCode == SU_ESCAPE && KeyIsPressed) {
+                    Win32State.Running = false;
+                    return;
                 }
+
+                // LogInfo("Updating input state for %d\n", KeyCode);
+                if (KeyCode == SU_SHIFT) {
+                    b32 ShiftKeyDown = (GetKeyState(SU_LEFTSHIFT) & KEY_PRESS_MASK) == KEY_PRESS_MASK;
+                    if (ShiftKeyDown) {
+                        Win32UpdateInputButtonState(&Input->Buttons[SU_LEFTSHIFT], ShiftKeyDown);
+                    }
+                } else {
+                    b8 IsAltKeyDown = (GetKeyState(SU_LEFTALT) & KEY_PRESS_MASK) == KEY_PRESS_MASK;
+                    if (IsAltKeyDown) {
+                        Win32UpdateInputButtonState(&Input->Buttons[SU_LEFTALT], KeyIsCurrentlyDown);
+                        if (KeyCode == SU_F4 && KeyIsCurrentlyDown) {
+                            Win32State.Running = false;
+                            return;
+                        } else if (KeyCode == SU_RETURN && KeyIsCurrentlyDown) {
+                            Win32ToggleFullscreen(Win32State.WindowContext.Handle);
+                            Win32UpdateInputButtonState(&Input->Buttons[SU_RETURN], KeyIsCurrentlyDown);
+                        }
+                    } else {
+                        // NOTE: Update the rest of the buttons
+                        Win32UpdateInputButtonState(&Input->Buttons[KeyCode], KeyIsCurrentlyDown);
+                    }
+                }
+
             } break;
 
             default:
@@ -1154,31 +1046,33 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int CmdSh
         ScreenToClient(WindowHandle, &ClientRelativeMousePos);
         NewInputState->MouseXPos = ClientRelativeMousePos.x;
         NewInputState->MouseYPos = ClientRelativeMousePos.y;
-        if(NewInputState->MouseButtons[1].IsCurrentlyDown)
+        if(NewInputState->Buttons[SU_RIGHTMOUSEBUTTON].IsCurrentlyDown)
         {
             Win32SetOutOfBoundsCursor(WindowHandle);
         }
 
-        for(i32 ButtonIndex = 0;
-            ButtonIndex < 5;
-            ++ButtonIndex)
+        for(i32 MouseButtonIndex = 0;
+            MouseButtonIndex < ARRAY_SIZE(MouseButtonsKeyCodes);
+            ++MouseButtonIndex)
         {
-                NewInputState->MouseButtons[ButtonIndex].IsCurrentlyDown = OldInputState->MouseButtons[ButtonIndex].IsCurrentlyDown;
-                NewInputState->MouseButtons[ButtonIndex].IsReleased = OldInputState->MouseButtons[ButtonIndex].IsReleased;
-                NewInputState->MouseButtons[ButtonIndex].ButtonTransitionsPerFrame = 0;
+            u32 kc = MouseButtonsKeyCodes[MouseButtonIndex];
 
-                b32 IsButtonDown = (GetAsyncKeyState(MouseButtonsKeyCodes[ButtonIndex])&(1 << 15)) != 0;
-                Win32UpdateInputButtonState(&NewInputState->MouseButtons[ButtonIndex], IsButtonDown);
+            NewInputState->Buttons[kc].IsCurrentlyDown = OldInputState->Buttons[kc].IsCurrentlyDown;
+            NewInputState->Buttons[kc].IsReleased = OldInputState->Buttons[kc].IsReleased;
+            NewInputState->Buttons[kc].ButtonTransitionsPerFrame = 0;
+
+            b32 IsButtonDown = (GetAsyncKeyState(MouseButtonsKeyCodes[MouseButtonIndex]) & KEY_PRESS_MASK) != 0;
+            Win32UpdateInputButtonState(&NewInputState->Buttons[kc], IsButtonDown);
         }
 
         // KEYBOARD
-        for(i32 ButtonIndex = 0;
-            ButtonIndex < ARRAY_SIZE(NewInputState->KeyboardButtons);
-            ++ButtonIndex)
+        for(i32 KeyboardKeycode = SHU_FIRST_KEYBOARD_KEYCODE;
+            KeyboardKeycode < SU_KEYCODE_MAX;
+            ++KeyboardKeycode)
         {
-            NewInputState->KeyboardButtons[ButtonIndex].IsCurrentlyDown = OldInputState->KeyboardButtons[ButtonIndex].IsCurrentlyDown;
-            NewInputState->KeyboardButtons[ButtonIndex].IsReleased = false;
-            NewInputState->KeyboardButtons[ButtonIndex].ButtonTransitionsPerFrame = 0;
+            NewInputState->Buttons[KeyboardKeycode].IsCurrentlyDown = OldInputState->Buttons[KeyboardKeycode].IsCurrentlyDown;
+            NewInputState->Buttons[KeyboardKeycode].IsReleased = false;
+            NewInputState->Buttons[KeyboardKeycode].ButtonTransitionsPerFrame = 0;
         }
         Win32ProcessWindowsMessageQueue(Win32State.WindowContext.Handle, NewInputState);
 
